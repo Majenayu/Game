@@ -40,7 +40,25 @@ import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './
 import { TouchControls, isTouchDevice, setTouchDevice } from './ui/touch';
 import { Ui } from './ui/ui';
 
+/**
+ * Removes data from older versions (old save, old nickname). Opening the game with ?reset=1 wipes everything
+ * this game stored in the browser, including the device token, for a completely fresh player.
+ */
+function cleanStorage(): void {
+  try {
+    const full = new URLSearchParams(location.search).get('reset') === '1';
+    for (const k of Object.keys(localStorage)) {
+      if (!k.startsWith('orb.')) continue;
+      if (full || k === 'orb.save2' || k === 'orb.nick') localStorage.removeItem(k);
+    }
+    if (full) history.replaceState(null, '', location.pathname);
+  } catch {
+    /* storage blocked */
+  }
+}
+
 async function boot(): Promise<void> {
+  cleanStorage();
   const platform = await createPlatform();
   platform.loadingStart();
   await Promise.all([
@@ -80,7 +98,7 @@ async function boot(): Promise<void> {
   // ---- identity -----------------------------------------------------------
   const user = await platform.getUser();
   let nick = sanitizeNick(
-    user?.username ?? (progress.data.nick || localStorage.getItem('orb.nick')) ?? randomNick(),
+    user?.username ?? (progress.data.nick || randomNick()),
   );
   ui.setNick(nick);
   const readNick = (raw: string): string => {
