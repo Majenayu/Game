@@ -31,7 +31,8 @@ import { LevelRunner } from './meta/campaign';
 import { showOnboarding } from './meta/onboarding';
 import { Progress, type SkillDrop } from './meta/economy';
 import { Pages, type PageName } from './meta/pages';
-import { joinArena, reconnect, serverUrls, type JoinTarget } from './net';
+import { joinArena, joinDuel, reconnect, serverUrls, type JoinTarget } from './net';
+import { DuelScene, OfflineDuel, OnlineDuel, type DuelSource } from './game/duel';
 import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './platform/crazygames';
 import { TouchControls, isTouchDevice } from './ui/touch';
 import { Ui } from './ui/ui';
@@ -54,6 +55,9 @@ async function boot(): Promise<void> {
   const scene = new GameScene();
   scene.ui = ui;
   scene.touch = touch;
+  const duelScene = new DuelScene();
+  duelScene.ui = ui;
+  duelScene.touch = touch;
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
@@ -64,7 +68,7 @@ async function boot(): Promise<void> {
     audio: { noAudio: true },
     banner: false,
     input: { mouse: { preventDefaultWheel: true }, touch: { capture: true } },
-    scene,
+    scene: [scene, duelScene],
   });
   (window as any).__orbGame = game;
   (window as any).__orbProgress = progress;
@@ -228,9 +232,72 @@ async function boot(): Promise<void> {
       platform.leftRoom();
     }
     scene.setSource(null);
+    if (duelScene.active) {
+      duelScene.setSource(null);
+      game.scene.sleep('duel');
+      game.scene.wake('game');
+    }
     touch.setEnabled(false);
     document.body.dataset.mode = '';
     document.body.dataset.room = '';
+  };
+  /** Ranked 1v1 duel (online) or a practice duel against a bot (offline). */
+  const startDuel = async (online: boolean) => {
+    const name = readNick(ui.nickValue());
+    await endSession();
+    const mySession = sessionId;
+    let src: DuelSource;
+    let room: Room | null = null;
+    if (online) {
+      ui.showGame();
+      ui.showOverlay('Finding a ranked opponent...');
+      try {
+        room = (await joinDuel(name, loadoutOf(), progress.level.level)).room;
+      } catch (e) {
+        console.warn('duel join failed', e);
+        ui.showOverlay('Could not reach the game server.', [
+          { label: 'Practice duel vs bot', onClick: () => void startDuel(false) },
+          { label: 'Menu', ghost: true, onClick: () => void toMenu().then(() => ui.hideOverlay()) },
+        ]);
+        return;
+      }
+      if (mySession !== sessionId) {
+        void room.leave();
+        return;
+      }
+      current = room;
+      intentionalLeave = false;
+      src = new OnlineDuel(room);
+    } else {
+      src = new OfflineDuel(name, loadoutOf(), progress.loadoutInstances(), progress.level.level, 0.45);
+    }
+    ui.hideOverlay();
+    game.scene.sleep('game');
+    if (game.scene.isSleeping('duel')) game.scene.wake('duel');
+    else game.scene.run('duel');
+    duelScene.setSource(src);
+    duelScene.onMatchEnd = (won) => {
+      let line = '';
+      if (online) {
+        const rk = progress.recordRanked(won);
+        line = `Ranked: ${rk.delta >= 0 ? '+' : ''}${rk.delta} &middot; ${rk.rating} (${rankedTier(rk.rating).name})`;
+        if (rk.drop) ui.notify(`Ranked drop: ${dropText(rk.drop)}`, '#b77dff', 4500);
+        if (won) progress.data.chests.silver += 1;
+      }
+      const res = progress.recordMatch({ mode: 'duel', kills: won ? 1 : 0, deaths: won ? 0 : 1, score: won ? 1 : 0, won }, online ? 1 : 0.5);
+      window.setTimeout(() => {
+        ui.showOverlayHtml(
+          `<h2 style="margin:0;color:${won ? '#ffc93c' : '#ff8a9a'}">${won ? 'Victory!' : 'Defeat'}</h2><div class="reward">+${res.coins} coins &middot; +${res.xp} XP${online && won ? ' &middot; Silver Chest' : ''}</div>${line ? `<div class="reward">${line}</div>` : ''}`,
+          [
+            { label: online ? 'Next ranked duel' : 'Duel again', onClick: () => void startDuel(online) },
+            { label: 'Menu', ghost: true, onClick: () => void toMenu().then(() => ui.hideOverlay()) },
+          ],
+        );
+      }, 1800);
+    };
+    document.body.dataset.mode = online ? 'duel' : 'duelpractice';
+    ui.showDuel();
+    touch.setEnabled(true);
   };
 
   const toMenu = async () => {
@@ -477,9 +544,15 @@ async function boot(): Promise<void> {
     },
     playRanked: () => {
       pages.close();
-      void startOnline(ui.nickValue(), { ranked: true }).then(() => {
-        rankedActive = !!current;
-      });
+      void startDuel(true);
+    },
+    playDuelPractice: () => {
+      pages.close();
+      void startDuel(false);
+    },
+    playTeam2v2: () => {
+      pages.close();
+      void startOnline(ui.nickValue(), { ranked: true });
     },
     watchAd: () => showRewardedAd(platform),
   });
@@ -518,7 +591,7 @@ async function boot(): Promise<void> {
     }
     if (e.key !== 'Escape') return;
     if (pages.current) ui.onPageClose();
-    else if (scene.hasSource) void toMenu();
+    else if (scene.hasSource || duelScene.active) void toMenu();
   });
   window.addEventListener('pagehide', () => progress.flush());
 

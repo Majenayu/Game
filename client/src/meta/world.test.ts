@@ -34,12 +34,48 @@ describe('boss tower progress', () => {
 });
 
 describe('champion, weapons and accessories', () => {
-  it('anyone can challenge Majen, and the first win grants a unique skill', async () => {
+  it('challenging the champion needs level 10; the winner picks a skill from his kit and takes the crown', async () => {
     const p = await fresh();
     const majen = BOSS_LEVELS[8];
+    expect(p.levelUnlocked(majen)).toBe(false);
+    p.data.xp = 100000;
     expect(p.levelUnlocked(majen)).toBe(true);
-    const r = p.finishLevel(majen, 1);
-    expect(r.drop?.rank).toBe('U');
+    p.finishLevel(majen, 1);
+    const kit = p.championKit();
+    expect(kit.length).toBe(5);
+    expect(p.claimChampion(123)).toBeNull();
+    const d = p.claimChampion(kit[2])!;
+    expect(d.rank).toBe('U');
+    expect(p.data.champion.isYou).toBe(true);
+    expect(p.data.chests.legend).toBe(1);
+    expect(p.canChallengeChampion().ok).toBe(false);
+  });
+  it('opens chests and lists every item, and out-of-battle skills boost rewards', async () => {
+    const p = await fresh();
+    p.data.chests.gold = 1;
+    const coins = p.data.coins;
+    const r = p.openChest('gold')!;
+    expect(r.items.length).toBeGreaterThanOrEqual(5);
+    expect(p.data.coins).toBeGreaterThanOrEqual(coins + 300);
+    expect(p.openChest('gold')).toBeNull();
+    expect(p.passives.coins).toBe(0);
+    const { firstIdOfRank, skillCount, getSkill } = await import('@orb/shared');
+    const st = firstIdOfRank('S');
+    for (let k = 0; k < skillCount('S'); k++)
+      if (getSkill(st + k).kind === 'world') p.addSkill(makeInstance(st + k, Math.random, 'w' + k));
+    const pv = p.passives;
+    expect(pv.xp + pv.coins + pv.luck + pv.double).toBeGreaterThan(0);
+  });
+  it('the 30 day calendar pays chests on milestone days, and the profile sets a class kit', async () => {
+    const p = await fresh();
+    p.data.daily = { last: '', streak: 2 };
+    const r = p.claimDaily()!;
+    expect(r.day).toBe(1);
+    expect(p.createProfile('guardian', { nick: 'G', char: 'medic', color: 2, acc: 6 })).toBe(true);
+    expect(p.data.loadout.skillIds.length).toBeGreaterThanOrEqual(4);
+    expect(p.data.loadout.acc).toBe(6);
+    expect(p.data.loadout.char).toBe('medic');
+    expect(p.needsProfile).toBe(false);
   });
   it('buys and equips weapons and accessories', async () => {
     const p = await fresh();

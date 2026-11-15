@@ -152,6 +152,17 @@ export class Ui {
   hideLobby(): void {
     this.lobbyEl.hidden = true;
     this.lobbyEl.innerHTML = '';
+    this.lobbyKey = '';
+  }
+  /** Lets a caller skip re-rendering an unchanged lobby. */
+  lobbyKey = '';
+  /** Duel view: the Phaser duel scene draws its own HUD. */
+  showDuel(): void {
+    this.showGame();
+    this.hud.hidden = true;
+    this.skillBtns.forEach((b) => (b.hidden = true));
+    this.autoBtn.hidden = true;
+    this.setEmoteVisible(false);
   }
   get lobbyVisible(): boolean {
     return !this.lobbyEl.hidden;

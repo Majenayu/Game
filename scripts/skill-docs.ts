@@ -4,6 +4,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import {
   ELEMENTS,
   RANK_INFO,
+  SIGNATURES,
+  duelUsable,
   UNIQUES,
   firstIdOfRank,
   getSkill,
@@ -27,7 +29,9 @@ function row(id: number): string {
     return `| ${id} | ${esc(s.name)} | out of battle | - | ${esc(b.text)} | ${esc(s.desc)} |`;
   }
   const st = slotFromInstance(neutralInstance(id)).stats;
-  return `| ${id} | ${esc(s.name)} | ${s.kind} | ${el} | power ${Math.round(st.power)}, cooldown ${st.cooldown.toFixed(1)}s, mana ${Math.round(st.mp)}, cast ${st.cast.toFixed(2)}s, range ${Math.round(st.range)} | ${esc(s.desc)} |`;
+  const sig = s.unique && SIGNATURES[s.name] ? `Signature: ${SIGNATURES[s.name].text} ` : '';
+  const duel = duelUsable(id) ? '' : '(not usable in ranked duels) ';
+  return `| ${id} | ${esc(s.name)} | ${s.kind} | ${el} | power ${Math.round(st.power)}, cooldown ${st.cooldown.toFixed(1)}s, mana ${Math.round(st.mp)}, cast ${st.cast.toFixed(2)}s, range ${Math.round(st.range)} | ${esc(sig + duel + s.desc)} |`;
 }
 
 const index: string[] = [

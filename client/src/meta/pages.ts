@@ -69,8 +69,12 @@ export interface PageActions {
   playOnline(mode: ModeId | 'mix', map: string): void;
   playOffline(mode: ModeId, map: string): void;
   startLevel(level: LevelDef): void;
-  /** Joins the online 2v2 ranked queue. */
+  /** Joins the online ranked 1v1 duel queue. */
   playRanked(): void;
+  /** Offline practice duel against a bot. */
+  playDuelPractice(): void;
+  /** Unranked 2v2 team match in the top-down arena. */
+  playTeam2v2(): void;
   /** Opens the training ground (harmless dummies). */
   playTraining(): void;
   /** 1v1 against the champion Majen. Open to everyone. */
@@ -111,7 +115,7 @@ const TITLES: Record<PageName, string> = {
   dex: 'Powerup Collection',
   bestiary: 'Bestiary',
   tower: 'Boss Tower',
-  ranked: '2v2 Ranked',
+  ranked: 'Ranked Duel',
   market: 'Market',
   training: 'Training Ground',
   profile: 'Profile',
@@ -551,8 +555,10 @@ export class Pages {
     ).join(' ');
     return `<div class="row"><div class="grow"><b style="font-size:22px;color:${hex(t.color)}">${esc(t.name)}</b>
         <div class="sub" style="margin:0">Rating ${r.rating} &middot; best ${r.best} &middot; ${r.wins} wins, ${losses} losses</div></div>
-        <button data-ranked="1">Find 2v2 match</button></div>
-      <p class="sub">Two against two, team battle, rotating arenas. Win to gain rating, lose to drop a little. You never lose levels or skills. Empty seats are filled by bots so a match always starts at once. Every fifth win pays a ranked skill drop.</p>
+        <button data-ranked="1">Find ranked duel</button></div>
+      <div class="row"><div class="grow"><b>Practice duel</b><div class="sub" style="margin:0">Same fight against a bot, offline. No rating change.</div></div><button class="ghost" data-duelpractice="1">Practice</button></div>
+      <div class="row"><div class="grow"><b>2v2 team match</b><div class="sub" style="margin:0">Unranked team battle in the arena.</div></div><button class="ghost" data-team2="1">Play 2v2</button></div>
+      <p class="sub">Ranked is a 1v1 side-view duel: walk, jump, block, punch and kick combos, plus your skills. Best of three rounds. Win to gain rating, lose to drop a little. You never lose levels or skills. If nobody else is queueing, a ranked bot steps in after 12 seconds. Summons, mines, stealth, portals, zones and out-of-battle skills do not work in duels. Every fifth ranked win pays a ranked skill drop; every win pays a Silver Chest.</p>
       <h3>Tiers</h3><p>${tiers}</p>`;
   }
   private profileHtml(): string {
@@ -729,7 +735,11 @@ export class Pages {
       on('[data-tower]', (el) =>
         this.actions.startLevel(BOSS_LEVELS.find((l) => l.id === Number(el.dataset.tower))!),
       );
-    if (name === 'ranked') on('[data-ranked]', () => this.actions.playRanked());
+    if (name === 'ranked') {
+      on('[data-ranked]', () => this.actions.playRanked());
+      on('[data-duelpractice]', () => this.actions.playDuelPractice());
+      on('[data-team2]', () => this.actions.playTeam2v2());
+    }
     if (name === 'training') on('[data-train]', () => this.actions.playTraining());
     if (name === 'profile') on('[data-goto]', (el) => this.open(el.dataset.goto as PageName));
     if (name === 'chests')

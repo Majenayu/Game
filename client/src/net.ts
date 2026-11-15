@@ -68,6 +68,12 @@ export interface JoinTarget {
   level?: number;
 }
 
+/** Joins the ranked 1v1 duel queue. */
+export async function joinDuel(name: string, loadout: unknown, level: number): Promise<{ room: Room; serverIndex: number }> {
+  const { index, url } = await pickServer(serverUrls());
+  const room = await new Client(url).joinOrCreate('ranked', { name, loadout, level });
+  return { room, serverIndex: index };
+}
 export async function joinArena(
   name: string,
   target: JoinTarget = {},
@@ -94,7 +100,7 @@ export async function joinArena(
     : target.createPrivate
       ? await client.create('arena', { ...opts, private: true })
       : target.ranked
-        ? await client.joinOrCreate('ranked', { name, loadout: target.loadout, level: target.level })
+        ? await client.joinOrCreate('ranked2v2', { name, loadout: target.loadout, level: target.level })
         : await client.joinOrCreate('arena', opts);
   return { room, serverIndex };
 }

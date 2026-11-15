@@ -106,7 +106,8 @@ describe('util', () => {
     expect(ok.moveY).toBe(-1);
     expect(Math.abs(ok.aim)).toBeLessThanOrEqual(Math.PI);
     expect(ok.shooting).toBe(false);
-    expect(ok.skill).toBe(3);
+    expect(ok.skill).toBe(7);
+    expect(sanitizeInput({ moveX: 0, moveY: 0, aimAngle: 0, seq: 1, skill: 255 })!.skill).toBe(31);
   });
 });
 

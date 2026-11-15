@@ -9,7 +9,7 @@ import {
   type Rank,
 } from '@orb/shared';
 import type { Platform } from '../platform/crazygames';
-import { DAILY_REWARDS, Progress, WHEEL, dateKey, levelFromXp, weekKey, xpToNext } from './economy';
+import { DAILY_REWARDS, Progress, WHEEL, WHEELS, dateKey, levelFromXp, weekKey, xpToNext } from './economy';
 import { defaultSave, parseSave } from './save';
 
 // vitest runs in node: provide the browser bits Progress touches
@@ -264,28 +264,32 @@ describe('daily reward, quests, lucky draw', () => {
   it('lucky draw: one free spin per day, then it costs coins; prizes are granted', async () => {
     const p = await fresh();
     expect(p.spinStatus().free).toBe(true);
-    expect(p.payForSpin()).toBe(true);
+    expect(p.spinStatus().left).toBe(10);
+    for (let i = 0; i < 10; i++) expect(p.payForSpin()).toBe(true);
     expect(p.spinStatus().free).toBe(false);
     p.data.coins = 0;
     expect(p.payForSpin()).toBe(false);
     p.data.coins = 1000;
     expect(p.payForSpin()).toBe(true);
     expect(p.data.coins).toBe(850);
-    const counts = new Array(WHEEL.length).fill(0);
+    const counts = new Array(WHEELS.coins.length).fill(0);
     let s = 3;
     const rng = () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296;
     for (let i = 0; i < 4000; i++) counts[p.rollSpin(rng)]++;
     counts.forEach((n) => expect(n).toBeGreaterThan(0));
     expect(counts[0]).toBeGreaterThan(counts[7]);
     const before = p.data.coins;
-    expect(p.grantPrize(WHEEL.findIndex((w) => w.kind === 'coins' && w.value === 50))).toBe('50 coins');
+    expect(p.grantPrize(WHEELS.coins.findIndex((w) => w.kind === 'coins' && w.value === 50))).toBe('50 coins');
     expect(p.data.coins).toBe(before + 50);
     const skills = p.data.skills.length;
-    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'skill'));
-    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'unique'));
+    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'skill'), Math.random, 'skills');
+    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'unique'), Math.random, 'skills');
+    const wi = p.data.owned.weapons.length;
+    p.grantPrize(0, Math.random, 'weapons');
+    expect(p.data.owned.weapons.length).toBe(wi + 1);
     expect(p.data.skills.length).toBeGreaterThanOrEqual(skills + 1);
     expect(p.data.skills.some((s) => s.skillId > 1_000_000)).toBe(true);
-    const skinIdx = WHEEL.findIndex((w) => w.kind === 'cosmetic');
+    const skinIdx = WHEELS.coins.findIndex((w) => w.kind === 'cosmetic');
     const owned = p.data.owned.colors.length + p.data.owned.trails.length + p.data.owned.bfx.length;
     p.grantPrize(skinIdx);
     expect(p.data.owned.colors.length + p.data.owned.trails.length + p.data.owned.bfx.length).toBe(owned + 1);

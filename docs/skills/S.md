@@ -4,1003 +4,1003 @@ Stats are level 1 values with neutral rolls. Skills marked "out of battle" are p
 
 | Id | Name | Kind | Element | Stats | Description |
 | --- | --- | --- | --- | --- | --- |
-| 114000 | Fallen Star Gravity | pull | Star | power 21, cooldown 12.0s, mana 47, cast 0.31s, range 420 | homing pull. cast twist 6/10. |
-| 114001 | Onyx Metal Legion | summon | Metal | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | bounce summon. count twist 4/10. |
-| 114002 | Gentle Light Bow | projectile | Light | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | heal projectile. area twist 2/10. |
-| 114003 | Forgotten Frost Phantom | stealth | Frost | power 0, cooldown 9.6s, mana 38, cast 0.10s, range 0 | slow stealth. cooldown twist 10/10. |
-| 114004 | Rogue Star Haste | buff | Star | power 42, cooldown 15.0s, mana 35, cast 0.20s, range 0 | homing buff. mp twist 7/10. |
-| 114005 | Infernal Metal Aura | aura | Metal | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | bounce aura. duration twist 5/10. |
-| 114006 | Frozen Light Bulwark | barrier | Light | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 182 | heal barrier. range twist 3/10. |
-| 114007 | Crimson Frost Cleave | cleave | Frost | power 105, cooldown 6.0s, mana 33, cast 0.25s, range 120 | slow cleave. power twist 1/10. |
-| 114008 | Void-touched Star Beam | beam | Star | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | homing beam. count twist 8/10. |
+| 114000 | Fallen Star Gravity | pull | Star | power 21, cooldown 12.0s, mana 24, cast 0.31s, range 420 | (not usable in ranked duels) homing pull. cast twist 6/10. |
+| 114001 | Onyx Metal Legion | summon | Metal | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) bounce summon. count twist 4/10. |
+| 114002 | Gentle Light Bow | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. area twist 2/10. |
+| 114003 | Forgotten Frost Phantom | stealth | Frost | power 0, cooldown 9.6s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) slow stealth. cooldown twist 10/10. |
+| 114004 | Rogue Star Haste | buff | Star | power 42, cooldown 15.0s, mana 17, cast 0.20s, range 0 | homing buff. mp twist 7/10. |
+| 114005 | Infernal Metal Aura | aura | Metal | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) bounce aura. duration twist 5/10. |
+| 114006 | Frozen Light Bulwark | barrier | Light | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 182 | (not usable in ranked duels) heal barrier. range twist 3/10. |
+| 114007 | Crimson Frost Cleave | cleave | Frost | power 105, cooldown 6.0s, mana 16, cast 0.25s, range 120 | slow cleave. power twist 1/10. |
+| 114008 | Void-touched Star Beam | beam | Star | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | homing beam. count twist 8/10. |
 | 114009 | Tidal Toxin Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | poison world. area twist 6/10. |
-| 114010 | Scarlet Void Blink | blink | Void | power 0, cooldown 5.2s, mana 27, cast 0.10s, range 260 | pierce blink. cooldown twist 4/10. |
-| 114011 | Ancient Flame Snare | slow | Flame | power 13, cooldown 11.0s, mana 41, cast 0.29s, range 360 | burn slow. cast twist 1/10. |
-| 114012 | Echoing Blood Familiar | summon | Blood | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | leech summon. duration twist 9/10. |
-| 114013 | Fierce Toxin Gun | volley | Toxin | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 789 | poison volley. range twist 7/10. |
-| 114014 | Stellar Void Veil | stealth | Void | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | pierce stealth. power twist 5/10. |
-| 114015 | Savage Flame Surge | buff | Flame | power 42, cooldown 15.0s, mana 42, cast 0.20s, range 0 | burn buff. mp twist 2/10. |
-| 114016 | Grand Blood Blessing | aura | Blood | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | leech aura. area twist 10/10. |
-| 114017 | Arcane Toxin Ward | shield | Toxin | power 0, cooldown 9.0s, mana 41, cast 0.10s, range 0 | poison shield. cooldown twist 8/10. |
-| 114018 | Desert Void Comet | projectile | Void | power 84, cooldown 5.0s, mana 27, cast 0.16s, range 640 | pierce projectile. cast twist 5/10. |
-| 114019 | Iron Flame Orb | projectile | Flame | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | burn projectile. count twist 3/10. |
+| 114010 | Scarlet Void Blink | blink | Void | power 0, cooldown 5.2s, mana 13, cast 0.10s, range 260 | pierce blink. cooldown twist 4/10. |
+| 114011 | Ancient Flame Snare | slow | Flame | power 13, cooldown 11.0s, mana 21, cast 0.29s, range 360 | (not usable in ranked duels) burn slow. cast twist 1/10. |
+| 114012 | Echoing Blood Familiar | summon | Blood | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) leech summon. duration twist 9/10. |
+| 114013 | Fierce Toxin Gun | volley | Toxin | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 789 | poison volley. range twist 7/10. |
+| 114014 | Stellar Void Veil | stealth | Void | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) pierce stealth. power twist 5/10. |
+| 114015 | Savage Flame Surge | buff | Flame | power 42, cooldown 15.0s, mana 21, cast 0.20s, range 0 | burn buff. mp twist 2/10. |
+| 114016 | Grand Blood Blessing | aura | Blood | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) leech aura. area twist 10/10. |
+| 114017 | Arcane Toxin Ward | shield | Toxin | power 0, cooldown 9.0s, mana 21, cast 0.10s, range 0 | poison shield. cooldown twist 8/10. |
+| 114018 | Desert Void Comet | projectile | Void | power 84, cooldown 5.0s, mana 13, cast 0.16s, range 640 | pierce projectile. cast twist 5/10. |
+| 114019 | Iron Flame Orb | projectile | Flame | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | burn projectile. count twist 3/10. |
 | 114020 | Golden Wind Appraisal | out of battle | - | +35% more coins from matches, levels and chests | knockback world. range twist 1/10. |
-| 114021 | Dusk Shadow Dash | dash | Shadow | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | hide dash. power twist 9/10. |
-| 114022 | Titan Storm Totem | mine | Storm | power 95, cooldown 7.0s, mana 24, cast 0.20s, range 0 | chain mine. mp twist 6/10. |
-| 114023 | Amber Gravity Chain | pull | Gravity | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | pull pull. area twist 4/10. |
-| 114024 | Heavy Wind Blade | cleave | Wind | power 101, cooldown 5.6s, mana 33, cast 0.25s, range 120 | knockback cleave. cooldown twist 2/10. |
-| 114025 | Vengeful Shadow Overdrive | buff | Shadow | power 42, cooldown 15.0s, mana 44, cast 0.14s, range 0 | hide buff. cast twist 9/10. |
-| 114026 | Noble Storm Renew | heal | Storm | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | chain heal. count twist 7/10. |
-| 114027 | Abyssal Gravity Mend | heal | Gravity | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | pull heal. range twist 5/10. |
-| 114028 | Cursed Wind Barrier | barrier | Wind | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | knockback barrier. power twist 3/10. |
-| 114029 | Final Shadow Nova | nova | Shadow | power 63, cooldown 10.0s, mana 36, cast 0.40s, range 260 | hide nova. mp twist 10/10. |
-| 114030 | Molten Storm Lance | beam | Storm | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | chain beam. duration twist 8/10. |
+| 114021 | Dusk Shadow Dash | dash | Shadow | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | hide dash. power twist 9/10. |
+| 114022 | Titan Storm Totem | mine | Storm | power 95, cooldown 7.0s, mana 12, cast 0.20s, range 0 | (not usable in ranked duels) chain mine. mp twist 6/10. |
+| 114023 | Amber Gravity Chain | pull | Gravity | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) pull pull. area twist 4/10. |
+| 114024 | Heavy Wind Blade | cleave | Wind | power 101, cooldown 5.6s, mana 16, cast 0.25s, range 120 | knockback cleave. cooldown twist 2/10. |
+| 114025 | Vengeful Shadow Overdrive | buff | Shadow | power 42, cooldown 15.0s, mana 22, cast 0.14s, range 0 | hide buff. cast twist 9/10. |
+| 114026 | Noble Storm Renew | heal | Storm | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | chain heal. count twist 7/10. |
+| 114027 | Abyssal Gravity Mend | heal | Gravity | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | pull heal. range twist 5/10. |
+| 114028 | Cursed Wind Barrier | barrier | Wind | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) knockback barrier. power twist 3/10. |
+| 114029 | Final Shadow Nova | nova | Shadow | power 63, cooldown 10.0s, mana 18, cast 0.40s, range 260 | hide nova. mp twist 10/10. |
+| 114030 | Molten Storm Lance | beam | Storm | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | chain beam. duration twist 8/10. |
 | 114031 | Ember Star Forge | out of battle | - | +35% more XP from matches and levels | homing world. cooldown twist 6/10. |
-| 114032 | Obsidian Metal Quake | nova | Metal | power 63, cooldown 10.0s, mana 53, cast 0.36s, range 260 | bounce nova. cast twist 3/10. |
-| 114033 | Hollow Light Golem | summon | Light | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | heal summon. count twist 1/10. |
-| 114034 | Shatter Frost Missile | projectile | Frost | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | slow projectile. area twist 9/10. |
-| 114035 | Rising Star Umbra | slow | Star | power 17, cooldown 11.0s, mana 41, cast 0.30s, range 360 | homing slow. power twist 7/10. |
-| 114036 | Lunar Metal Focus | buff | Metal | power 42, cooldown 15.0s, mana 39, cast 0.20s, range 0 | bounce buff. mp twist 4/10. |
-| 114037 | Primal Light Link | buff | Light | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | heal buff. duration twist 2/10. |
-| 114038 | Twin Frost Guard | shield | Frost | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | slow shield. range twist 10/10. |
-| 114039 | Royal Star Aegis | shield | Star | power 0, cooldown 12.0s, mana 41, cast 0.07s, range 0 | homing shield. cast twist 7/10. |
-| 114040 | Verdant Metal Volley | volley | Metal | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | bounce volley. count twist 5/10. |
-| 114041 | Thunder Light Bolt | projectile | Light | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | heal projectile. area twist 3/10. |
-| 114042 | Azure Flame Warp | blink | Flame | power 0, cooldown 5.8s, mana 27, cast 0.10s, range 260 | burn blink. cooldown twist 1/10. |
-| 114043 | Dread Blood Stasis | slow | Blood | power 13, cooldown 11.0s, mana 31, cast 0.30s, range 360 | leech slow. mp twist 8/10. |
-| 114044 | Rune Toxin Swarm | summon | Toxin | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | poison summon. duration twist 6/10. |
-| 114045 | Violet Void Hammer | cleave | Void | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 142 | pierce cleave. range twist 4/10. |
-| 114046 | Swift Flame Ambush | ambush | Flame | power 160, cooldown 12.0s, mana 44, cast 0.20s, range 260 | burn ambush. power twist 2/10. |
-| 114047 | Burning Blood Fury | buff | Blood | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | leech buff. count twist 9/10. |
-| 114048 | Calm Toxin Haven | barrier | Toxin | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | poison barrier. area twist 7/10. |
-| 114049 | Cosmic Void Mirror | shield | Void | power 0, cooldown 10.1s, mana 41, cast 0.10s, range 0 | pierce shield. cooldown twist 5/10. |
-| 114050 | Sacred Flame Slash | cleave | Flame | power 101, cooldown 6.0s, mana 33, cast 0.23s, range 120 | burn cleave. cast twist 2/10. |
-| 114051 | Tiny Blood Barrage | volley | Blood | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | leech volley. duration twist 10/10. |
+| 114032 | Obsidian Metal Quake | nova | Metal | power 63, cooldown 10.0s, mana 27, cast 0.36s, range 260 | bounce nova. cast twist 3/10. |
+| 114033 | Hollow Light Golem | summon | Light | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) heal summon. count twist 1/10. |
+| 114034 | Shatter Frost Missile | projectile | Frost | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | slow projectile. area twist 9/10. |
+| 114035 | Rising Star Umbra | slow | Star | power 17, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) homing slow. power twist 7/10. |
+| 114036 | Lunar Metal Focus | buff | Metal | power 42, cooldown 15.0s, mana 19, cast 0.20s, range 0 | bounce buff. mp twist 4/10. |
+| 114037 | Primal Light Link | buff | Light | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | heal buff. duration twist 2/10. |
+| 114038 | Twin Frost Guard | shield | Frost | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | slow shield. range twist 10/10. |
+| 114039 | Royal Star Aegis | shield | Star | power 0, cooldown 12.0s, mana 21, cast 0.07s, range 0 | homing shield. cast twist 7/10. |
+| 114040 | Verdant Metal Volley | volley | Metal | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | bounce volley. count twist 5/10. |
+| 114041 | Thunder Light Bolt | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. area twist 3/10. |
+| 114042 | Azure Flame Warp | blink | Flame | power 0, cooldown 5.8s, mana 13, cast 0.10s, range 260 | burn blink. cooldown twist 1/10. |
+| 114043 | Dread Blood Stasis | slow | Blood | power 13, cooldown 11.0s, mana 15, cast 0.30s, range 360 | (not usable in ranked duels) leech slow. mp twist 8/10. |
+| 114044 | Rune Toxin Swarm | summon | Toxin | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) poison summon. duration twist 6/10. |
+| 114045 | Violet Void Hammer | cleave | Void | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 142 | pierce cleave. range twist 4/10. |
+| 114046 | Swift Flame Ambush | ambush | Flame | power 160, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) burn ambush. power twist 2/10. |
+| 114047 | Burning Blood Fury | buff | Blood | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | leech buff. count twist 9/10. |
+| 114048 | Calm Toxin Haven | barrier | Toxin | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) poison barrier. area twist 7/10. |
+| 114049 | Cosmic Void Mirror | shield | Void | power 0, cooldown 10.1s, mana 21, cast 0.10s, range 0 | pierce shield. cooldown twist 5/10. |
+| 114050 | Sacred Flame Slash | cleave | Flame | power 101, cooldown 6.0s, mana 16, cast 0.23s, range 120 | burn cleave. cast twist 2/10. |
+| 114051 | Tiny Blood Barrage | volley | Blood | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | leech volley. duration twist 10/10. |
 | 114052 | Spectral Shadow Gather | out of battle | - | +35% chance to get each skill drop twice | hide world. range twist 8/10. |
-| 114053 | Storm Storm Rift | portal | Storm | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | chain portal. power twist 6/10. |
-| 114054 | Iron Gravity Gravity | pull | Gravity | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | pull pull. count twist 3/10. |
-| 114055 | Silent Wind Legion | summon | Wind | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | knockback summon. area twist 1/10. |
-| 114056 | Dawn Shadow Bow | projectile | Shadow | power 84, cooldown 3.6s, mana 27, cast 0.20s, range 640 | hide projectile. cooldown twist 9/10. |
-| 114057 | Fallen Storm Phantom | stealth | Storm | power 0, cooldown 14.0s, mana 38, cast 0.08s, range 0 | chain stealth. cast twist 6/10. |
-| 114058 | Ivory Gravity Haste | buff | Gravity | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pull buff. duration twist 4/10. |
-| 114059 | Wicked Wind Aura | aura | Wind | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | knockback aura. range twist 2/10. |
-| 114060 | Lucky Shadow Bulwark | barrier | Shadow | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | hide barrier. power twist 10/10. |
-| 114061 | Rogue Storm Cleave | cleave | Storm | power 101, cooldown 6.0s, mana 25, cast 0.25s, range 120 | chain cleave. mp twist 7/10. |
-| 114062 | Celestial Gravity Beam | beam | Gravity | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | pull beam. area twist 5/10. |
+| 114053 | Storm Storm Rift | portal | Storm | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) chain portal. power twist 6/10. |
+| 114054 | Iron Gravity Gravity | pull | Gravity | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) pull pull. count twist 3/10. |
+| 114055 | Silent Wind Legion | summon | Wind | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) knockback summon. area twist 1/10. |
+| 114056 | Dawn Shadow Bow | projectile | Shadow | power 84, cooldown 3.6s, mana 13, cast 0.20s, range 640 | hide projectile. cooldown twist 9/10. |
+| 114057 | Fallen Storm Phantom | stealth | Storm | power 0, cooldown 14.0s, mana 19, cast 0.08s, range 0 | (not usable in ranked duels) chain stealth. cast twist 6/10. |
+| 114058 | Ivory Gravity Haste | buff | Gravity | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pull buff. duration twist 4/10. |
+| 114059 | Wicked Wind Aura | aura | Wind | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) knockback aura. range twist 2/10. |
+| 114060 | Lucky Shadow Bulwark | barrier | Shadow | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) hide barrier. power twist 10/10. |
+| 114061 | Rogue Storm Cleave | cleave | Storm | power 101, cooldown 6.0s, mana 13, cast 0.25s, range 120 | chain cleave. mp twist 7/10. |
+| 114062 | Celestial Gravity Beam | beam | Gravity | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | pull beam. area twist 5/10. |
 | 114063 | Blazing Metal Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | bounce world. cooldown twist 3/10. |
-| 114064 | Genesis Light Blink | blink | Light | power 0, cooldown 6.0s, mana 27, cast 0.06s, range 260 | heal blink. cast twist 10/10. |
-| 114065 | Void-touched Frost Snare | slow | Frost | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | slow slow. count twist 8/10. |
-| 114066 | Gale Star Familiar | summon | Star | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 254 | homing summon. range twist 6/10. |
-| 114067 | Jade Metal Gun | volley | Metal | power 55, cooldown 8.0s, mana 47, cast 0.40s, range 600 | bounce volley. power twist 4/10. |
-| 114068 | Radiant Light Veil | stealth | Light | power 0, cooldown 14.0s, mana 37, cast 0.10s, range 0 | heal stealth. mp twist 1/10. |
-| 114069 | Echoing Frost Surge | buff | Frost | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | slow buff. duration twist 9/10. |
-| 114070 | Eternal Star Blessing | aura | Star | power 17, cooldown 14.0s, mana 65, cast 0.30s, range 0 | homing aura. cooldown twist 7/10. |
-| 114071 | Solar Metal Ward | shield | Metal | power 0, cooldown 12.0s, mana 41, cast 0.09s, range 0 | bounce shield. cast twist 4/10. |
-| 114072 | Ethereal Light Comet | projectile | Light | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | heal projectile. count twist 2/10. |
-| 114073 | Grand Frost Orb | projectile | Frost | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | slow projectile. area twist 10/10. |
+| 114064 | Genesis Light Blink | blink | Light | power 0, cooldown 6.0s, mana 13, cast 0.06s, range 260 | heal blink. cast twist 10/10. |
+| 114065 | Void-touched Frost Snare | slow | Frost | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) slow slow. count twist 8/10. |
+| 114066 | Gale Star Familiar | summon | Star | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 254 | (not usable in ranked duels) homing summon. range twist 6/10. |
+| 114067 | Jade Metal Gun | volley | Metal | power 55, cooldown 8.0s, mana 24, cast 0.40s, range 600 | bounce volley. power twist 4/10. |
+| 114068 | Radiant Light Veil | stealth | Light | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) heal stealth. mp twist 1/10. |
+| 114069 | Echoing Frost Surge | buff | Frost | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | slow buff. duration twist 9/10. |
+| 114070 | Eternal Star Blessing | aura | Star | power 17, cooldown 14.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) homing aura. cooldown twist 7/10. |
+| 114071 | Solar Metal Ward | shield | Metal | power 0, cooldown 12.0s, mana 21, cast 0.09s, range 0 | bounce shield. cast twist 4/10. |
+| 114072 | Ethereal Light Comet | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. count twist 2/10. |
+| 114073 | Grand Frost Orb | projectile | Frost | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | slow projectile. area twist 10/10. |
 | 114074 | Mystic Blood Appraisal | out of battle | - | +35% more coins from matches, levels and chests | leech world. power twist 8/10. |
-| 114075 | Arctic Toxin Dash | dash | Toxin | power 0, cooldown 4.0s, mana 17, cast 0.05s, range 200 | poison dash. mp twist 5/10. |
-| 114076 | Phantom Void Totem | mine | Void | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | pierce mine. duration twist 3/10. |
-| 114077 | Golden Flame Chain | pull | Flame | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 439 | burn pull. range twist 1/10. |
-| 114078 | Bright Blood Blade | cleave | Blood | power 101, cooldown 6.0s, mana 33, cast 0.18s, range 120 | leech cleave. cast twist 8/10. |
-| 114079 | Dragon Toxin Overdrive | buff | Toxin | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | poison buff. count twist 6/10. |
-| 114080 | Amber Void Renew | heal | Void | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | pierce heal. area twist 4/10. |
-| 114081 | Heavy Flame Mend | heal | Flame | power 63, cooldown 15.0s, mana 59, cast 0.50s, range 0 | burn heal. cooldown twist 2/10. |
-| 114082 | Piercing Blood Barrier | barrier | Blood | power 0, cooldown 14.0s, mana 36, cast 0.30s, range 160 | leech barrier. mp twist 9/10. |
-| 114083 | Wild Toxin Nova | nova | Toxin | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | poison nova. duration twist 7/10. |
-| 114084 | Abyssal Void Lance | beam | Void | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 858 | pierce beam. range twist 5/10. |
+| 114075 | Arctic Toxin Dash | dash | Toxin | power 0, cooldown 4.0s, mana 9, cast 0.05s, range 200 | poison dash. mp twist 5/10. |
+| 114076 | Phantom Void Totem | mine | Void | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) pierce mine. duration twist 3/10. |
+| 114077 | Golden Flame Chain | pull | Flame | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 439 | (not usable in ranked duels) burn pull. range twist 1/10. |
+| 114078 | Bright Blood Blade | cleave | Blood | power 101, cooldown 6.0s, mana 16, cast 0.18s, range 120 | leech cleave. cast twist 8/10. |
+| 114079 | Dragon Toxin Overdrive | buff | Toxin | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | poison buff. count twist 6/10. |
+| 114080 | Amber Void Renew | heal | Void | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | pierce heal. area twist 4/10. |
+| 114081 | Heavy Flame Mend | heal | Flame | power 63, cooldown 15.0s, mana 30, cast 0.50s, range 0 | burn heal. cooldown twist 2/10. |
+| 114082 | Piercing Blood Barrier | barrier | Blood | power 0, cooldown 14.0s, mana 18, cast 0.30s, range 160 | (not usable in ranked duels) leech barrier. mp twist 9/10. |
+| 114083 | Wild Toxin Nova | nova | Toxin | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | poison nova. duration twist 7/10. |
+| 114084 | Abyssal Void Lance | beam | Void | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 858 | pierce beam. range twist 5/10. |
 | 114085 | Sacred Gravity Forge | out of battle | - | +35% more XP from matches and levels | pull world. cast twist 2/10. |
-| 114086 | Endless Wind Quake | nova | Wind | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | knockback nova. count twist 10/10. |
-| 114087 | Crystal Shadow Golem | summon | Shadow | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | hide summon. area twist 8/10. |
-| 114088 | Ember Storm Missile | projectile | Storm | power 84, cooldown 4.1s, mana 27, cast 0.20s, range 640 | chain projectile. cooldown twist 6/10. |
-| 114089 | Silver Gravity Umbra | slow | Gravity | power 13, cooldown 11.0s, mana 38, cast 0.30s, range 360 | pull slow. mp twist 3/10. |
-| 114090 | Raging Wind Focus | buff | Wind | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | knockback buff. duration twist 1/10. |
-| 114091 | Mirror Shadow Link | buff | Shadow | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | hide buff. range twist 9/10. |
-| 114092 | Rising Storm Guard | shield | Storm | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | chain shield. power twist 7/10. |
-| 114093 | Onyx Gravity Aegis | shield | Gravity | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | pull shield. count twist 4/10. |
-| 114094 | Gentle Wind Volley | volley | Wind | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | knockback volley. area twist 2/10. |
-| 114095 | Forgotten Shadow Bolt | projectile | Shadow | power 84, cooldown 3.4s, mana 27, cast 0.20s, range 640 | hide projectile. cooldown twist 10/10. |
-| 114096 | Royal Frost Warp | blink | Frost | power 0, cooldown 6.0s, mana 27, cast 0.07s, range 260 | slow blink. cast twist 7/10. |
-| 114097 | Infernal Star Stasis | slow | Star | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | homing slow. duration twist 5/10. |
-| 114098 | Frozen Metal Swarm | summon | Metal | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 227 | bounce summon. range twist 3/10. |
-| 114099 | Crimson Light Hammer | cleave | Light | power 105, cooldown 6.0s, mana 33, cast 0.25s, range 120 | heal cleave. power twist 1/10. |
-| 114100 | Dread Frost Ambush | ambush | Frost | power 147, cooldown 12.0s, mana 33, cast 0.20s, range 260 | slow ambush. mp twist 8/10. |
-| 114101 | Tidal Star Fury | buff | Star | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | homing buff. area twist 6/10. |
-| 114102 | Scarlet Metal Haven | barrier | Metal | power 0, cooldown 12.2s, mana 50, cast 0.30s, range 160 | bounce barrier. cooldown twist 4/10. |
-| 114103 | Ancient Light Mirror | shield | Light | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | heal shield. cast twist 1/10. |
-| 114104 | Burning Frost Slash | cleave | Frost | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | slow cleave. count twist 9/10. |
-| 114105 | Fierce Star Barrage | volley | Star | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 789 | homing volley. range twist 7/10. |
+| 114086 | Endless Wind Quake | nova | Wind | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | knockback nova. count twist 10/10. |
+| 114087 | Crystal Shadow Golem | summon | Shadow | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) hide summon. area twist 8/10. |
+| 114088 | Ember Storm Missile | projectile | Storm | power 84, cooldown 4.1s, mana 13, cast 0.20s, range 640 | chain projectile. cooldown twist 6/10. |
+| 114089 | Silver Gravity Umbra | slow | Gravity | power 13, cooldown 11.0s, mana 19, cast 0.30s, range 360 | (not usable in ranked duels) pull slow. mp twist 3/10. |
+| 114090 | Raging Wind Focus | buff | Wind | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | knockback buff. duration twist 1/10. |
+| 114091 | Mirror Shadow Link | buff | Shadow | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | hide buff. range twist 9/10. |
+| 114092 | Rising Storm Guard | shield | Storm | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | chain shield. power twist 7/10. |
+| 114093 | Onyx Gravity Aegis | shield | Gravity | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | pull shield. count twist 4/10. |
+| 114094 | Gentle Wind Volley | volley | Wind | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | knockback volley. area twist 2/10. |
+| 114095 | Forgotten Shadow Bolt | projectile | Shadow | power 84, cooldown 3.4s, mana 13, cast 0.20s, range 640 | hide projectile. cooldown twist 10/10. |
+| 114096 | Royal Frost Warp | blink | Frost | power 0, cooldown 6.0s, mana 13, cast 0.07s, range 260 | slow blink. cast twist 7/10. |
+| 114097 | Infernal Star Stasis | slow | Star | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) homing slow. duration twist 5/10. |
+| 114098 | Frozen Metal Swarm | summon | Metal | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 227 | (not usable in ranked duels) bounce summon. range twist 3/10. |
+| 114099 | Crimson Light Hammer | cleave | Light | power 105, cooldown 6.0s, mana 16, cast 0.25s, range 120 | heal cleave. power twist 1/10. |
+| 114100 | Dread Frost Ambush | ambush | Frost | power 147, cooldown 12.0s, mana 17, cast 0.20s, range 260 | (not usable in ranked duels) slow ambush. mp twist 8/10. |
+| 114101 | Tidal Star Fury | buff | Star | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | homing buff. area twist 6/10. |
+| 114102 | Scarlet Metal Haven | barrier | Metal | power 0, cooldown 12.2s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) bounce barrier. cooldown twist 4/10. |
+| 114103 | Ancient Light Mirror | shield | Light | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | heal shield. cast twist 1/10. |
+| 114104 | Burning Frost Slash | cleave | Frost | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | slow cleave. count twist 9/10. |
+| 114105 | Fierce Star Barrage | volley | Star | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 789 | homing volley. range twist 7/10. |
 | 114106 | Stellar Toxin Gather | out of battle | - | +35% chance to get each skill drop twice | poison world. power twist 5/10. |
-| 114107 | Savage Void Rift | portal | Void | power 0, cooldown 16.0s, mana 55, cast 0.50s, range 500 | pierce portal. mp twist 2/10. |
-| 114108 | Tiny Flame Gravity | pull | Flame | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | burn pull. duration twist 10/10. |
-| 114109 | Arcane Blood Legion | summon | Blood | power 38, cooldown 13.5s, mana 68, cast 0.60s, range 200 | leech summon. cooldown twist 8/10. |
-| 114110 | Desert Toxin Bow | projectile | Toxin | power 84, cooldown 5.0s, mana 27, cast 0.16s, range 640 | poison projectile. cast twist 5/10. |
-| 114111 | Iron Void Phantom | stealth | Void | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | pierce stealth. count twist 3/10. |
-| 114112 | Silent Flame Haste | buff | Flame | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | burn buff. area twist 1/10. |
-| 114113 | Dusk Blood Aura | aura | Blood | power 24, cooldown 18.0s, mana 65, cast 0.30s, range 0 | leech aura. power twist 9/10. |
-| 114114 | Titan Toxin Bulwark | barrier | Toxin | power 0, cooldown 14.0s, mana 41, cast 0.30s, range 160 | poison barrier. mp twist 6/10. |
-| 114115 | Ivory Void Cleave | cleave | Void | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | pierce cleave. duration twist 4/10. |
-| 114116 | Wicked Flame Beam | beam | Flame | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 763 | burn beam. range twist 2/10. |
+| 114107 | Savage Void Rift | portal | Void | power 0, cooldown 16.0s, mana 28, cast 0.50s, range 500 | (not usable in ranked duels) pierce portal. mp twist 2/10. |
+| 114108 | Tiny Flame Gravity | pull | Flame | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) burn pull. duration twist 10/10. |
+| 114109 | Arcane Blood Legion | summon | Blood | power 38, cooldown 13.5s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) leech summon. cooldown twist 8/10. |
+| 114110 | Desert Toxin Bow | projectile | Toxin | power 84, cooldown 5.0s, mana 13, cast 0.16s, range 640 | poison projectile. cast twist 5/10. |
+| 114111 | Iron Void Phantom | stealth | Void | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) pierce stealth. count twist 3/10. |
+| 114112 | Silent Flame Haste | buff | Flame | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | burn buff. area twist 1/10. |
+| 114113 | Dusk Blood Aura | aura | Blood | power 24, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) leech aura. power twist 9/10. |
+| 114114 | Titan Toxin Bulwark | barrier | Toxin | power 0, cooldown 14.0s, mana 20, cast 0.30s, range 160 | (not usable in ranked duels) poison barrier. mp twist 6/10. |
+| 114115 | Ivory Void Cleave | cleave | Void | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | pierce cleave. duration twist 4/10. |
+| 114116 | Wicked Flame Beam | beam | Flame | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 763 | burn beam. range twist 2/10. |
 | 114117 | Vengeful Wind Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | knockback world. cast twist 9/10. |
-| 114118 | Noble Shadow Blink | blink | Shadow | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | hide blink. count twist 7/10. |
-| 114119 | Celestial Storm Snare | slow | Storm | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | chain slow. area twist 5/10. |
-| 114120 | Cursed Gravity Familiar | summon | Gravity | power 43, cooldown 18.0s, mana 68, cast 0.60s, range 200 | pull summon. power twist 3/10. |
-| 114121 | Final Wind Gun | volley | Wind | power 46, cooldown 8.0s, mana 32, cast 0.40s, range 600 | knockback volley. mp twist 10/10. |
-| 114122 | Molten Shadow Veil | stealth | Shadow | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | hide stealth. duration twist 8/10. |
-| 114123 | Gale Storm Surge | buff | Storm | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | chain buff. range twist 6/10. |
-| 114124 | Obsidian Gravity Blessing | aura | Gravity | power 17, cooldown 18.0s, mana 65, cast 0.27s, range 0 | pull aura. cast twist 3/10. |
-| 114125 | Hollow Wind Ward | shield | Wind | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | knockback shield. count twist 1/10. |
-| 114126 | Shatter Shadow Comet | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | hide projectile. area twist 9/10. |
-| 114127 | Eternal Storm Orb | projectile | Storm | power 84, cooldown 3.9s, mana 27, cast 0.20s, range 640 | chain projectile. cooldown twist 7/10. |
+| 114118 | Noble Shadow Blink | blink | Shadow | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | hide blink. count twist 7/10. |
+| 114119 | Celestial Storm Snare | slow | Storm | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) chain slow. area twist 5/10. |
+| 114120 | Cursed Gravity Familiar | summon | Gravity | power 43, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) pull summon. power twist 3/10. |
+| 114121 | Final Wind Gun | volley | Wind | power 46, cooldown 8.0s, mana 16, cast 0.40s, range 600 | knockback volley. mp twist 10/10. |
+| 114122 | Molten Shadow Veil | stealth | Shadow | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) hide stealth. duration twist 8/10. |
+| 114123 | Gale Storm Surge | buff | Storm | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | chain buff. range twist 6/10. |
+| 114124 | Obsidian Gravity Blessing | aura | Gravity | power 17, cooldown 18.0s, mana 33, cast 0.27s, range 0 | (not usable in ranked duels) pull aura. cast twist 3/10. |
+| 114125 | Hollow Wind Ward | shield | Wind | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | knockback shield. count twist 1/10. |
+| 114126 | Shatter Shadow Comet | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | hide projectile. area twist 9/10. |
+| 114127 | Eternal Storm Orb | projectile | Storm | power 84, cooldown 3.9s, mana 13, cast 0.20s, range 640 | chain projectile. cooldown twist 7/10. |
 | 114128 | Lunar Star Appraisal | out of battle | - | +35% more coins from matches, levels and chests | homing world. mp twist 4/10. |
-| 114129 | Primal Metal Dash | dash | Metal | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | bounce dash. duration twist 2/10. |
-| 114130 | Twin Light Totem | mine | Light | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | heal mine. range twist 10/10. |
-| 114131 | Mystic Frost Chain | pull | Frost | power 29, cooldown 12.0s, mana 47, cast 0.40s, range 420 | slow pull. power twist 8/10. |
-| 114132 | Verdant Star Blade | cleave | Star | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | homing cleave. count twist 5/10. |
-| 114133 | Thunder Metal Overdrive | buff | Metal | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | bounce buff. area twist 3/10. |
-| 114134 | Azure Light Renew | heal | Light | power 63, cooldown 15.5s, mana 59, cast 0.50s, range 0 | heal heal. cooldown twist 1/10. |
-| 114135 | Bright Frost Mend | heal | Frost | power 63, cooldown 16.0s, mana 59, cast 0.36s, range 0 | slow heal. cast twist 8/10. |
-| 114136 | Rune Star Barrier | barrier | Star | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | homing barrier. duration twist 6/10. |
-| 114137 | Violet Metal Nova | nova | Metal | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 307 | bounce nova. range twist 4/10. |
-| 114138 | Swift Light Lance | beam | Light | power 126, cooldown 9.0s, mana 44, cast 0.50s, range 700 | heal beam. power twist 2/10. |
+| 114129 | Primal Metal Dash | dash | Metal | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | bounce dash. duration twist 2/10. |
+| 114130 | Twin Light Totem | mine | Light | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) heal mine. range twist 10/10. |
+| 114131 | Mystic Frost Chain | pull | Frost | power 29, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) slow pull. power twist 8/10. |
+| 114132 | Verdant Star Blade | cleave | Star | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | homing cleave. count twist 5/10. |
+| 114133 | Thunder Metal Overdrive | buff | Metal | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | bounce buff. area twist 3/10. |
+| 114134 | Azure Light Renew | heal | Light | power 63, cooldown 15.5s, mana 30, cast 0.50s, range 0 | heal heal. cooldown twist 1/10. |
+| 114135 | Bright Frost Mend | heal | Frost | power 63, cooldown 16.0s, mana 30, cast 0.36s, range 0 | slow heal. cast twist 8/10. |
+| 114136 | Rune Star Barrier | barrier | Star | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) homing barrier. duration twist 6/10. |
+| 114137 | Violet Metal Nova | nova | Metal | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 307 | bounce nova. range twist 4/10. |
+| 114138 | Swift Light Lance | beam | Light | power 126, cooldown 9.0s, mana 22, cast 0.50s, range 700 | heal beam. power twist 2/10. |
 | 114139 | Piercing Flame Forge | out of battle | - | +35% more XP from matches and levels | burn world. mp twist 9/10. |
-| 114140 | Calm Blood Quake | nova | Blood | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | leech nova. area twist 7/10. |
-| 114141 | Cosmic Toxin Golem | summon | Toxin | power 38, cooldown 15.2s, mana 68, cast 0.60s, range 200 | poison summon. cooldown twist 5/10. |
-| 114142 | Sacred Void Missile | projectile | Void | power 84, cooldown 5.0s, mana 27, cast 0.19s, range 640 | pierce projectile. cast twist 2/10. |
-| 114143 | Endless Flame Umbra | slow | Flame | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | burn slow. count twist 10/10. |
-| 114144 | Spectral Blood Focus | buff | Blood | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | leech buff. range twist 8/10. |
-| 114145 | Storm Toxin Link | buff | Toxin | power 53, cooldown 15.0s, mana 44, cast 0.20s, range 0 | poison buff. power twist 6/10. |
-| 114146 | Silver Void Guard | shield | Void | power 0, cooldown 12.0s, mana 38, cast 0.10s, range 0 | pierce shield. mp twist 3/10. |
-| 114147 | Raging Flame Aegis | shield | Flame | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | burn shield. duration twist 1/10. |
-| 114148 | Dawn Blood Volley | volley | Blood | power 46, cooldown 5.7s, mana 47, cast 0.40s, range 600 | leech volley. cooldown twist 9/10. |
-| 114149 | Fallen Toxin Bolt | projectile | Toxin | power 84, cooldown 5.0s, mana 27, cast 0.16s, range 640 | poison projectile. cast twist 6/10. |
-| 114150 | Onyx Storm Warp | blink | Storm | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | chain blink. count twist 4/10. |
-| 114151 | Wicked Gravity Stasis | slow | Gravity | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 392 | pull slow. range twist 2/10. |
-| 114152 | Lucky Wind Swarm | summon | Wind | power 55, cooldown 18.0s, mana 68, cast 0.60s, range 200 | knockback summon. power twist 10/10. |
-| 114153 | Rogue Shadow Hammer | cleave | Shadow | power 101, cooldown 6.0s, mana 25, cast 0.25s, range 120 | hide cleave. mp twist 7/10. |
-| 114154 | Infernal Storm Ambush | ambush | Storm | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 260 | chain ambush. duration twist 5/10. |
-| 114155 | Blazing Gravity Fury | buff | Gravity | power 42, cooldown 13.6s, mana 44, cast 0.20s, range 0 | pull buff. cooldown twist 3/10. |
-| 114156 | Genesis Wind Haven | barrier | Wind | power 0, cooldown 14.0s, mana 50, cast 0.19s, range 160 | knockback barrier. cast twist 10/10. |
-| 114157 | Void-touched Shadow Mirror | shield | Shadow | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | hide shield. count twist 8/10. |
-| 114158 | Tidal Storm Slash | cleave | Storm | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | chain cleave. area twist 6/10. |
-| 114159 | Jade Gravity Barrage | volley | Gravity | power 55, cooldown 8.0s, mana 47, cast 0.40s, range 600 | pull volley. power twist 4/10. |
+| 114140 | Calm Blood Quake | nova | Blood | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | leech nova. area twist 7/10. |
+| 114141 | Cosmic Toxin Golem | summon | Toxin | power 38, cooldown 15.2s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) poison summon. cooldown twist 5/10. |
+| 114142 | Sacred Void Missile | projectile | Void | power 84, cooldown 5.0s, mana 13, cast 0.19s, range 640 | pierce projectile. cast twist 2/10. |
+| 114143 | Endless Flame Umbra | slow | Flame | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) burn slow. count twist 10/10. |
+| 114144 | Spectral Blood Focus | buff | Blood | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | leech buff. range twist 8/10. |
+| 114145 | Storm Toxin Link | buff | Toxin | power 53, cooldown 15.0s, mana 22, cast 0.20s, range 0 | poison buff. power twist 6/10. |
+| 114146 | Silver Void Guard | shield | Void | power 0, cooldown 12.0s, mana 19, cast 0.10s, range 0 | pierce shield. mp twist 3/10. |
+| 114147 | Raging Flame Aegis | shield | Flame | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | burn shield. duration twist 1/10. |
+| 114148 | Dawn Blood Volley | volley | Blood | power 46, cooldown 5.7s, mana 24, cast 0.40s, range 600 | leech volley. cooldown twist 9/10. |
+| 114149 | Fallen Toxin Bolt | projectile | Toxin | power 84, cooldown 5.0s, mana 13, cast 0.16s, range 640 | poison projectile. cast twist 6/10. |
+| 114150 | Onyx Storm Warp | blink | Storm | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | chain blink. count twist 4/10. |
+| 114151 | Wicked Gravity Stasis | slow | Gravity | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 392 | (not usable in ranked duels) pull slow. range twist 2/10. |
+| 114152 | Lucky Wind Swarm | summon | Wind | power 55, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) knockback summon. power twist 10/10. |
+| 114153 | Rogue Shadow Hammer | cleave | Shadow | power 101, cooldown 6.0s, mana 13, cast 0.25s, range 120 | hide cleave. mp twist 7/10. |
+| 114154 | Infernal Storm Ambush | ambush | Storm | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) chain ambush. duration twist 5/10. |
+| 114155 | Blazing Gravity Fury | buff | Gravity | power 42, cooldown 13.6s, mana 22, cast 0.20s, range 0 | pull buff. cooldown twist 3/10. |
+| 114156 | Genesis Wind Haven | barrier | Wind | power 0, cooldown 14.0s, mana 25, cast 0.19s, range 160 | (not usable in ranked duels) knockback barrier. cast twist 10/10. |
+| 114157 | Void-touched Shadow Mirror | shield | Shadow | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | hide shield. count twist 8/10. |
+| 114158 | Tidal Storm Slash | cleave | Storm | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | chain cleave. area twist 6/10. |
+| 114159 | Jade Gravity Barrage | volley | Gravity | power 55, cooldown 8.0s, mana 24, cast 0.40s, range 600 | pull volley. power twist 4/10. |
 | 114160 | Radiant Metal Gather | out of battle | - | +35% chance to get each skill drop twice | bounce world. mp twist 1/10. |
-| 114161 | Echoing Light Rift | portal | Light | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | heal portal. duration twist 9/10. |
-| 114162 | Fierce Frost Gravity | pull | Frost | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 552 | slow pull. range twist 7/10. |
-| 114163 | Solar Star Legion | summon | Star | power 38, cooldown 18.0s, mana 68, cast 0.51s, range 200 | homing summon. cast twist 4/10. |
-| 114164 | Ethereal Metal Bow | projectile | Metal | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | bounce projectile. count twist 2/10. |
-| 114165 | Grand Light Phantom | stealth | Light | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | heal stealth. area twist 10/10. |
-| 114166 | Arcane Frost Haste | buff | Frost | power 42, cooldown 11.2s, mana 44, cast 0.20s, range 0 | slow buff. cooldown twist 8/10. |
-| 114167 | Arctic Star Aura | aura | Star | power 17, cooldown 18.0s, mana 55, cast 0.30s, range 0 | homing aura. mp twist 5/10. |
-| 114168 | Phantom Metal Bulwark | barrier | Metal | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | bounce barrier. duration twist 3/10. |
-| 114169 | Golden Light Cleave | cleave | Light | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 125 | heal cleave. range twist 1/10. |
-| 114170 | Dusk Frost Beam | beam | Frost | power 162, cooldown 9.0s, mana 44, cast 0.50s, range 700 | slow beam. power twist 9/10. |
+| 114161 | Echoing Light Rift | portal | Light | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) heal portal. duration twist 9/10. |
+| 114162 | Fierce Frost Gravity | pull | Frost | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 552 | (not usable in ranked duels) slow pull. range twist 7/10. |
+| 114163 | Solar Star Legion | summon | Star | power 38, cooldown 18.0s, mana 34, cast 0.51s, range 200 | (not usable in ranked duels) homing summon. cast twist 4/10. |
+| 114164 | Ethereal Metal Bow | projectile | Metal | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | bounce projectile. count twist 2/10. |
+| 114165 | Grand Light Phantom | stealth | Light | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) heal stealth. area twist 10/10. |
+| 114166 | Arcane Frost Haste | buff | Frost | power 42, cooldown 11.2s, mana 22, cast 0.20s, range 0 | slow buff. cooldown twist 8/10. |
+| 114167 | Arctic Star Aura | aura | Star | power 17, cooldown 18.0s, mana 27, cast 0.30s, range 0 | (not usable in ranked duels) homing aura. mp twist 5/10. |
+| 114168 | Phantom Metal Bulwark | barrier | Metal | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) bounce barrier. duration twist 3/10. |
+| 114169 | Golden Light Cleave | cleave | Light | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 125 | heal cleave. range twist 1/10. |
+| 114170 | Dusk Frost Beam | beam | Frost | power 162, cooldown 9.0s, mana 22, cast 0.50s, range 700 | slow beam. power twist 9/10. |
 | 114171 | Dragon Blood Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | leech world. count twist 6/10. |
-| 114172 | Amber Toxin Blink | blink | Toxin | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | poison blink. area twist 4/10. |
-| 114173 | Heavy Void Snare | slow | Void | power 13, cooldown 10.3s, mana 41, cast 0.30s, range 360 | pierce slow. cooldown twist 2/10. |
-| 114174 | Vengeful Flame Familiar | summon | Flame | power 38, cooldown 18.0s, mana 68, cast 0.41s, range 200 | burn summon. cast twist 9/10. |
-| 114175 | Wild Blood Gun | volley | Blood | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | leech volley. duration twist 7/10. |
-| 114176 | Abyssal Toxin Veil | stealth | Toxin | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | poison stealth. range twist 5/10. |
-| 114177 | Cursed Void Surge | buff | Void | power 48, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pierce buff. power twist 3/10. |
-| 114178 | Final Flame Blessing | aura | Flame | power 17, cooldown 18.0s, mana 45, cast 0.30s, range 0 | burn aura. mp twist 10/10. |
-| 114179 | Crystal Blood Ward | shield | Blood | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | leech shield. area twist 8/10. |
-| 114180 | Ember Toxin Comet | projectile | Toxin | power 84, cooldown 4.1s, mana 27, cast 0.20s, range 640 | poison projectile. cooldown twist 6/10. |
-| 114181 | Obsidian Void Orb | projectile | Void | power 84, cooldown 5.0s, mana 27, cast 0.18s, range 640 | pierce projectile. cast twist 3/10. |
+| 114172 | Amber Toxin Blink | blink | Toxin | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | poison blink. area twist 4/10. |
+| 114173 | Heavy Void Snare | slow | Void | power 13, cooldown 10.3s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) pierce slow. cooldown twist 2/10. |
+| 114174 | Vengeful Flame Familiar | summon | Flame | power 38, cooldown 18.0s, mana 34, cast 0.41s, range 200 | (not usable in ranked duels) burn summon. cast twist 9/10. |
+| 114175 | Wild Blood Gun | volley | Blood | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | leech volley. duration twist 7/10. |
+| 114176 | Abyssal Toxin Veil | stealth | Toxin | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) poison stealth. range twist 5/10. |
+| 114177 | Cursed Void Surge | buff | Void | power 48, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pierce buff. power twist 3/10. |
+| 114178 | Final Flame Blessing | aura | Flame | power 17, cooldown 18.0s, mana 22, cast 0.30s, range 0 | (not usable in ranked duels) burn aura. mp twist 10/10. |
+| 114179 | Crystal Blood Ward | shield | Blood | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | leech shield. area twist 8/10. |
+| 114180 | Ember Toxin Comet | projectile | Toxin | power 84, cooldown 4.1s, mana 13, cast 0.20s, range 640 | poison projectile. cooldown twist 6/10. |
+| 114181 | Obsidian Void Orb | projectile | Void | power 84, cooldown 5.0s, mana 13, cast 0.18s, range 640 | pierce projectile. cast twist 3/10. |
 | 114182 | Raging Gravity Appraisal | out of battle | - | +35% more coins from matches, levels and chests | pull world. duration twist 1/10. |
-| 114183 | Mirror Wind Dash | dash | Wind | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 281 | knockback dash. range twist 9/10. |
-| 114184 | Rising Shadow Totem | mine | Shadow | power 124, cooldown 7.0s, mana 30, cast 0.20s, range 0 | hide mine. power twist 7/10. |
-| 114185 | Lunar Storm Chain | pull | Storm | power 21, cooldown 12.0s, mana 41, cast 0.40s, range 420 | chain pull. mp twist 4/10. |
-| 114186 | Gentle Gravity Blade | cleave | Gravity | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | pull cleave. area twist 2/10. |
-| 114187 | Forgotten Wind Overdrive | buff | Wind | power 42, cooldown 10.3s, mana 44, cast 0.20s, range 0 | knockback buff. cooldown twist 10/10. |
-| 114188 | Royal Shadow Renew | heal | Shadow | power 63, cooldown 16.0s, mana 59, cast 0.37s, range 0 | hide heal. cast twist 7/10. |
-| 114189 | Verdant Storm Mend | heal | Storm | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | chain heal. count twist 5/10. |
-| 114190 | Frozen Gravity Barrier | barrier | Gravity | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 182 | pull barrier. range twist 3/10. |
-| 114191 | Crimson Wind Nova | nova | Wind | power 66, cooldown 10.0s, mana 53, cast 0.40s, range 260 | knockback nova. power twist 1/10. |
-| 114192 | Dread Shadow Lance | beam | Shadow | power 116, cooldown 9.0s, mana 33, cast 0.50s, range 700 | hide beam. mp twist 8/10. |
+| 114183 | Mirror Wind Dash | dash | Wind | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 281 | knockback dash. range twist 9/10. |
+| 114184 | Rising Shadow Totem | mine | Shadow | power 124, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) hide mine. power twist 7/10. |
+| 114185 | Lunar Storm Chain | pull | Storm | power 21, cooldown 12.0s, mana 21, cast 0.40s, range 420 | (not usable in ranked duels) chain pull. mp twist 4/10. |
+| 114186 | Gentle Gravity Blade | cleave | Gravity | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | pull cleave. area twist 2/10. |
+| 114187 | Forgotten Wind Overdrive | buff | Wind | power 42, cooldown 10.3s, mana 22, cast 0.20s, range 0 | knockback buff. cooldown twist 10/10. |
+| 114188 | Royal Shadow Renew | heal | Shadow | power 63, cooldown 16.0s, mana 30, cast 0.37s, range 0 | hide heal. cast twist 7/10. |
+| 114189 | Verdant Storm Mend | heal | Storm | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | chain heal. count twist 5/10. |
+| 114190 | Frozen Gravity Barrier | barrier | Gravity | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 182 | (not usable in ranked duels) pull barrier. range twist 3/10. |
+| 114191 | Crimson Wind Nova | nova | Wind | power 66, cooldown 10.0s, mana 27, cast 0.40s, range 260 | knockback nova. power twist 1/10. |
+| 114192 | Dread Shadow Lance | beam | Shadow | power 116, cooldown 9.0s, mana 17, cast 0.50s, range 700 | hide beam. mp twist 8/10. |
 | 114193 | Rune Frost Forge | out of battle | - | +35% more XP from matches and levels | slow world. duration twist 6/10. |
-| 114194 | Scarlet Star Quake | nova | Star | power 63, cooldown 8.7s, mana 53, cast 0.40s, range 260 | homing nova. cooldown twist 4/10. |
-| 114195 | Ancient Metal Golem | summon | Metal | power 38, cooldown 18.0s, mana 68, cast 0.58s, range 200 | bounce summon. cast twist 1/10. |
-| 114196 | Burning Light Missile | projectile | Light | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | heal projectile. count twist 9/10. |
-| 114197 | Calm Frost Umbra | slow | Frost | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | slow slow. area twist 7/10. |
-| 114198 | Stellar Star Focus | buff | Star | power 51, cooldown 15.0s, mana 44, cast 0.20s, range 0 | homing buff. power twist 5/10. |
-| 114199 | Savage Metal Link | buff | Metal | power 42, cooldown 15.0s, mana 42, cast 0.20s, range 0 | bounce buff. mp twist 2/10. |
-| 114200 | Tiny Light Guard | shield | Light | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | heal shield. duration twist 10/10. |
-| 114201 | Spectral Frost Aegis | shield | Frost | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | slow shield. range twist 8/10. |
-| 114202 | Desert Star Volley | volley | Star | power 46, cooldown 8.0s, mana 47, cast 0.33s, range 600 | homing volley. cast twist 5/10. |
-| 114203 | Iron Metal Bolt | projectile | Metal | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | bounce projectile. count twist 3/10. |
-| 114204 | Silent Void Warp | blink | Void | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | pierce blink. area twist 1/10. |
-| 114205 | Dawn Flame Stasis | slow | Flame | power 13, cooldown 7.9s, mana 41, cast 0.30s, range 360 | burn slow. cooldown twist 9/10. |
-| 114206 | Titan Blood Swarm | summon | Blood | power 38, cooldown 18.0s, mana 55, cast 0.60s, range 200 | leech summon. mp twist 6/10. |
-| 114207 | Ivory Toxin Hammer | cleave | Toxin | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | poison cleave. duration twist 4/10. |
-| 114208 | Wicked Void Ambush | ambush | Void | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 283 | pierce ambush. range twist 2/10. |
-| 114209 | Lucky Flame Fury | buff | Flame | power 61, cooldown 15.0s, mana 44, cast 0.20s, range 0 | burn buff. power twist 10/10. |
-| 114210 | Noble Blood Haven | barrier | Blood | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | leech barrier. count twist 7/10. |
-| 114211 | Celestial Toxin Mirror | shield | Toxin | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | poison shield. area twist 5/10. |
-| 114212 | Blazing Void Slash | cleave | Void | power 101, cooldown 5.4s, mana 33, cast 0.25s, range 120 | pierce cleave. cooldown twist 3/10. |
-| 114213 | Genesis Flame Barrage | volley | Flame | power 46, cooldown 8.0s, mana 47, cast 0.26s, range 600 | burn volley. cast twist 10/10. |
+| 114194 | Scarlet Star Quake | nova | Star | power 63, cooldown 8.7s, mana 27, cast 0.40s, range 260 | homing nova. cooldown twist 4/10. |
+| 114195 | Ancient Metal Golem | summon | Metal | power 38, cooldown 18.0s, mana 34, cast 0.58s, range 200 | (not usable in ranked duels) bounce summon. cast twist 1/10. |
+| 114196 | Burning Light Missile | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. count twist 9/10. |
+| 114197 | Calm Frost Umbra | slow | Frost | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) slow slow. area twist 7/10. |
+| 114198 | Stellar Star Focus | buff | Star | power 51, cooldown 15.0s, mana 22, cast 0.20s, range 0 | homing buff. power twist 5/10. |
+| 114199 | Savage Metal Link | buff | Metal | power 42, cooldown 15.0s, mana 21, cast 0.20s, range 0 | bounce buff. mp twist 2/10. |
+| 114200 | Tiny Light Guard | shield | Light | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | heal shield. duration twist 10/10. |
+| 114201 | Spectral Frost Aegis | shield | Frost | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | slow shield. range twist 8/10. |
+| 114202 | Desert Star Volley | volley | Star | power 46, cooldown 8.0s, mana 24, cast 0.33s, range 600 | homing volley. cast twist 5/10. |
+| 114203 | Iron Metal Bolt | projectile | Metal | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | bounce projectile. count twist 3/10. |
+| 114204 | Silent Void Warp | blink | Void | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | pierce blink. area twist 1/10. |
+| 114205 | Dawn Flame Stasis | slow | Flame | power 13, cooldown 7.9s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) burn slow. cooldown twist 9/10. |
+| 114206 | Titan Blood Swarm | summon | Blood | power 38, cooldown 18.0s, mana 28, cast 0.60s, range 200 | (not usable in ranked duels) leech summon. mp twist 6/10. |
+| 114207 | Ivory Toxin Hammer | cleave | Toxin | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | poison cleave. duration twist 4/10. |
+| 114208 | Wicked Void Ambush | ambush | Void | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 283 | (not usable in ranked duels) pierce ambush. range twist 2/10. |
+| 114209 | Lucky Flame Fury | buff | Flame | power 61, cooldown 15.0s, mana 22, cast 0.20s, range 0 | burn buff. power twist 10/10. |
+| 114210 | Noble Blood Haven | barrier | Blood | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) leech barrier. count twist 7/10. |
+| 114211 | Celestial Toxin Mirror | shield | Toxin | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | poison shield. area twist 5/10. |
+| 114212 | Blazing Void Slash | cleave | Void | power 101, cooldown 5.4s, mana 16, cast 0.25s, range 120 | pierce cleave. cooldown twist 3/10. |
+| 114213 | Genesis Flame Barrage | volley | Flame | power 46, cooldown 8.0s, mana 24, cast 0.26s, range 600 | burn volley. cast twist 10/10. |
 | 114214 | Molten Wind Gather | out of battle | - | +35% chance to get each skill drop twice | knockback world. duration twist 8/10. |
-| 114215 | Gale Shadow Rift | portal | Shadow | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 635 | hide portal. range twist 6/10. |
-| 114216 | Jade Storm Gravity | pull | Storm | power 25, cooldown 12.0s, mana 47, cast 0.40s, range 420 | chain pull. power twist 4/10. |
-| 114217 | Hollow Gravity Legion | summon | Gravity | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | pull summon. count twist 1/10. |
-| 114218 | Shatter Wind Bow | projectile | Wind | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | knockback projectile. area twist 9/10. |
-| 114219 | Eternal Shadow Phantom | stealth | Shadow | power 0, cooldown 10.9s, mana 38, cast 0.10s, range 0 | hide stealth. cooldown twist 7/10. |
-| 114220 | Solar Storm Haste | buff | Storm | power 42, cooldown 15.0s, mana 44, cast 0.17s, range 0 | chain buff. cast twist 4/10. |
-| 114221 | Primal Gravity Aura | aura | Gravity | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | pull aura. duration twist 2/10. |
-| 114222 | Twin Wind Bulwark | barrier | Wind | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 232 | knockback barrier. range twist 10/10. |
-| 114223 | Mystic Shadow Cleave | cleave | Shadow | power 137, cooldown 6.0s, mana 33, cast 0.25s, range 120 | hide cleave. power twist 8/10. |
-| 114224 | Arctic Storm Beam | beam | Storm | power 116, cooldown 9.0s, mana 37, cast 0.50s, range 700 | chain beam. mp twist 5/10. |
+| 114215 | Gale Shadow Rift | portal | Shadow | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 635 | (not usable in ranked duels) hide portal. range twist 6/10. |
+| 114216 | Jade Storm Gravity | pull | Storm | power 25, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) chain pull. power twist 4/10. |
+| 114217 | Hollow Gravity Legion | summon | Gravity | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) pull summon. count twist 1/10. |
+| 114218 | Shatter Wind Bow | projectile | Wind | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | knockback projectile. area twist 9/10. |
+| 114219 | Eternal Shadow Phantom | stealth | Shadow | power 0, cooldown 10.9s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) hide stealth. cooldown twist 7/10. |
+| 114220 | Solar Storm Haste | buff | Storm | power 42, cooldown 15.0s, mana 22, cast 0.17s, range 0 | chain buff. cast twist 4/10. |
+| 114221 | Primal Gravity Aura | aura | Gravity | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) pull aura. duration twist 2/10. |
+| 114222 | Twin Wind Bulwark | barrier | Wind | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 232 | (not usable in ranked duels) knockback barrier. range twist 10/10. |
+| 114223 | Mystic Shadow Cleave | cleave | Shadow | power 137, cooldown 6.0s, mana 16, cast 0.25s, range 120 | hide cleave. power twist 8/10. |
+| 114224 | Arctic Storm Beam | beam | Storm | power 116, cooldown 9.0s, mana 19, cast 0.50s, range 700 | chain beam. mp twist 5/10. |
 | 114225 | Thunder Star Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | homing world. area twist 3/10. |
-| 114226 | Azure Metal Blink | blink | Metal | power 0, cooldown 5.8s, mana 27, cast 0.10s, range 260 | bounce blink. cooldown twist 1/10. |
-| 114227 | Bright Light Snare | slow | Light | power 13, cooldown 11.0s, mana 41, cast 0.21s, range 360 | heal slow. cast twist 8/10. |
-| 114228 | Dragon Frost Familiar | summon | Frost | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | slow summon. count twist 6/10. |
-| 114229 | Violet Star Gun | volley | Star | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 708 | homing volley. range twist 4/10. |
-| 114230 | Swift Metal Veil | stealth | Metal | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | bounce stealth. power twist 2/10. |
-| 114231 | Piercing Light Surge | buff | Light | power 42, cooldown 15.0s, mana 32, cast 0.20s, range 0 | heal buff. mp twist 9/10. |
-| 114232 | Wild Frost Blessing | aura | Frost | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | slow aura. duration twist 7/10. |
-| 114233 | Cosmic Star Ward | shield | Star | power 0, cooldown 10.1s, mana 41, cast 0.10s, range 0 | homing shield. cooldown twist 5/10. |
-| 114234 | Sacred Metal Comet | projectile | Metal | power 84, cooldown 5.0s, mana 27, cast 0.19s, range 640 | bounce projectile. cast twist 2/10. |
-| 114235 | Endless Light Orb | projectile | Light | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | heal projectile. count twist 10/10. |
+| 114226 | Azure Metal Blink | blink | Metal | power 0, cooldown 5.8s, mana 13, cast 0.10s, range 260 | bounce blink. cooldown twist 1/10. |
+| 114227 | Bright Light Snare | slow | Light | power 13, cooldown 11.0s, mana 21, cast 0.21s, range 360 | (not usable in ranked duels) heal slow. cast twist 8/10. |
+| 114228 | Dragon Frost Familiar | summon | Frost | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) slow summon. count twist 6/10. |
+| 114229 | Violet Star Gun | volley | Star | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 708 | homing volley. range twist 4/10. |
+| 114230 | Swift Metal Veil | stealth | Metal | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) bounce stealth. power twist 2/10. |
+| 114231 | Piercing Light Surge | buff | Light | power 42, cooldown 15.0s, mana 16, cast 0.20s, range 0 | heal buff. mp twist 9/10. |
+| 114232 | Wild Frost Blessing | aura | Frost | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) slow aura. duration twist 7/10. |
+| 114233 | Cosmic Star Ward | shield | Star | power 0, cooldown 10.1s, mana 21, cast 0.10s, range 0 | homing shield. cooldown twist 5/10. |
+| 114234 | Sacred Metal Comet | projectile | Metal | power 84, cooldown 5.0s, mana 13, cast 0.19s, range 640 | bounce projectile. cast twist 2/10. |
+| 114235 | Endless Light Orb | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. count twist 10/10. |
 | 114236 | Crystal Flame Appraisal | out of battle | - | +35% more coins from matches, levels and chests | burn world. area twist 8/10. |
-| 114237 | Storm Blood Dash | dash | Blood | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | leech dash. power twist 6/10. |
-| 114238 | Silver Toxin Totem | mine | Toxin | power 95, cooldown 7.0s, mana 27, cast 0.20s, range 0 | poison mine. mp twist 3/10. |
-| 114239 | Raging Void Chain | pull | Void | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | pierce pull. duration twist 1/10. |
-| 114240 | Mirror Flame Blade | cleave | Flame | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 169 | burn cleave. range twist 9/10. |
-| 114241 | Fallen Blood Overdrive | buff | Blood | power 42, cooldown 15.0s, mana 44, cast 0.16s, range 0 | leech buff. cast twist 6/10. |
-| 114242 | Onyx Toxin Renew | heal | Toxin | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | poison heal. count twist 4/10. |
-| 114243 | Gentle Void Mend | heal | Void | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | pierce heal. area twist 2/10. |
-| 114244 | Forgotten Flame Barrier | barrier | Flame | power 0, cooldown 9.6s, mana 50, cast 0.30s, range 160 | burn barrier. cooldown twist 10/10. |
-| 114245 | Rogue Blood Nova | nova | Blood | power 63, cooldown 10.0s, mana 42, cast 0.40s, range 260 | leech nova. mp twist 7/10. |
-| 114246 | Infernal Toxin Lance | beam | Toxin | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | poison beam. duration twist 5/10. |
+| 114237 | Storm Blood Dash | dash | Blood | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | leech dash. power twist 6/10. |
+| 114238 | Silver Toxin Totem | mine | Toxin | power 95, cooldown 7.0s, mana 13, cast 0.20s, range 0 | (not usable in ranked duels) poison mine. mp twist 3/10. |
+| 114239 | Raging Void Chain | pull | Void | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) pierce pull. duration twist 1/10. |
+| 114240 | Mirror Flame Blade | cleave | Flame | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 169 | burn cleave. range twist 9/10. |
+| 114241 | Fallen Blood Overdrive | buff | Blood | power 42, cooldown 15.0s, mana 22, cast 0.16s, range 0 | leech buff. cast twist 6/10. |
+| 114242 | Onyx Toxin Renew | heal | Toxin | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | poison heal. count twist 4/10. |
+| 114243 | Gentle Void Mend | heal | Void | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | pierce heal. area twist 2/10. |
+| 114244 | Forgotten Flame Barrier | barrier | Flame | power 0, cooldown 9.6s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) burn barrier. cooldown twist 10/10. |
+| 114245 | Rogue Blood Nova | nova | Blood | power 63, cooldown 10.0s, mana 21, cast 0.40s, range 260 | leech nova. mp twist 7/10. |
+| 114246 | Infernal Toxin Lance | beam | Toxin | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | poison beam. duration twist 5/10. |
 | 114247 | Frozen Storm Forge | out of battle | - | +35% more XP from matches and levels | chain world. range twist 3/10. |
-| 114248 | Genesis Gravity Quake | nova | Gravity | power 63, cooldown 10.0s, mana 53, cast 0.26s, range 260 | pull nova. cast twist 10/10. |
-| 114249 | Void-touched Wind Golem | summon | Wind | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | knockback summon. count twist 8/10. |
-| 114250 | Tidal Shadow Missile | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | hide projectile. area twist 6/10. |
-| 114251 | Scarlet Storm Umbra | slow | Storm | power 13, cooldown 9.6s, mana 41, cast 0.30s, range 360 | chain slow. cooldown twist 4/10. |
-| 114252 | Radiant Gravity Focus | buff | Gravity | power 42, cooldown 15.0s, mana 43, cast 0.20s, range 0 | pull buff. mp twist 1/10. |
-| 114253 | Echoing Wind Link | buff | Wind | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | knockback buff. duration twist 9/10. |
-| 114254 | Fierce Shadow Guard | shield | Shadow | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | hide shield. range twist 7/10. |
-| 114255 | Stellar Storm Aegis | shield | Storm | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | chain shield. power twist 5/10. |
-| 114256 | Ethereal Gravity Volley | volley | Gravity | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | pull volley. count twist 2/10. |
-| 114257 | Grand Wind Bolt | projectile | Wind | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | knockback projectile. area twist 10/10. |
-| 114258 | Arcane Light Warp | blink | Light | power 0, cooldown 4.5s, mana 27, cast 0.10s, range 260 | heal blink. cooldown twist 8/10. |
-| 114259 | Desert Frost Stasis | slow | Frost | power 13, cooldown 11.0s, mana 41, cast 0.25s, range 360 | slow slow. cast twist 5/10. |
-| 114260 | Phantom Star Swarm | summon | Star | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | homing summon. duration twist 3/10. |
-| 114261 | Golden Metal Hammer | cleave | Metal | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 125 | bounce cleave. range twist 1/10. |
-| 114262 | Dusk Light Ambush | ambush | Light | power 207, cooldown 12.0s, mana 44, cast 0.20s, range 260 | heal ambush. power twist 9/10. |
-| 114263 | Titan Frost Fury | buff | Frost | power 42, cooldown 15.0s, mana 36, cast 0.20s, range 0 | slow buff. mp twist 6/10. |
-| 114264 | Amber Star Haven | barrier | Star | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | homing barrier. area twist 4/10. |
-| 114265 | Heavy Metal Mirror | shield | Metal | power 0, cooldown 11.2s, mana 41, cast 0.10s, range 0 | bounce shield. cooldown twist 2/10. |
-| 114266 | Vengeful Light Slash | cleave | Light | power 101, cooldown 6.0s, mana 33, cast 0.17s, range 120 | heal cleave. cast twist 9/10. |
-| 114267 | Noble Frost Barrage | volley | Frost | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | slow volley. count twist 7/10. |
+| 114248 | Genesis Gravity Quake | nova | Gravity | power 63, cooldown 10.0s, mana 27, cast 0.26s, range 260 | pull nova. cast twist 10/10. |
+| 114249 | Void-touched Wind Golem | summon | Wind | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) knockback summon. count twist 8/10. |
+| 114250 | Tidal Shadow Missile | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | hide projectile. area twist 6/10. |
+| 114251 | Scarlet Storm Umbra | slow | Storm | power 13, cooldown 9.6s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) chain slow. cooldown twist 4/10. |
+| 114252 | Radiant Gravity Focus | buff | Gravity | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pull buff. mp twist 1/10. |
+| 114253 | Echoing Wind Link | buff | Wind | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | knockback buff. duration twist 9/10. |
+| 114254 | Fierce Shadow Guard | shield | Shadow | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | hide shield. range twist 7/10. |
+| 114255 | Stellar Storm Aegis | shield | Storm | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | chain shield. power twist 5/10. |
+| 114256 | Ethereal Gravity Volley | volley | Gravity | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | pull volley. count twist 2/10. |
+| 114257 | Grand Wind Bolt | projectile | Wind | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | knockback projectile. area twist 10/10. |
+| 114258 | Arcane Light Warp | blink | Light | power 0, cooldown 4.5s, mana 13, cast 0.10s, range 260 | heal blink. cooldown twist 8/10. |
+| 114259 | Desert Frost Stasis | slow | Frost | power 13, cooldown 11.0s, mana 21, cast 0.25s, range 360 | (not usable in ranked duels) slow slow. cast twist 5/10. |
+| 114260 | Phantom Star Swarm | summon | Star | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) homing summon. duration twist 3/10. |
+| 114261 | Golden Metal Hammer | cleave | Metal | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 125 | bounce cleave. range twist 1/10. |
+| 114262 | Dusk Light Ambush | ambush | Light | power 207, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) heal ambush. power twist 9/10. |
+| 114263 | Titan Frost Fury | buff | Frost | power 42, cooldown 15.0s, mana 18, cast 0.20s, range 0 | slow buff. mp twist 6/10. |
+| 114264 | Amber Star Haven | barrier | Star | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) homing barrier. area twist 4/10. |
+| 114265 | Heavy Metal Mirror | shield | Metal | power 0, cooldown 11.2s, mana 21, cast 0.10s, range 0 | bounce shield. cooldown twist 2/10. |
+| 114266 | Vengeful Light Slash | cleave | Light | power 101, cooldown 6.0s, mana 16, cast 0.17s, range 120 | heal cleave. cast twist 9/10. |
+| 114267 | Noble Frost Barrage | volley | Frost | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | slow volley. count twist 7/10. |
 | 114268 | Abyssal Blood Gather | out of battle | - | +35% chance to get each skill drop twice | leech world. range twist 5/10. |
-| 114269 | Cursed Toxin Rift | portal | Toxin | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | poison portal. power twist 3/10. |
-| 114270 | Final Void Gravity | pull | Void | power 21, cooldown 12.0s, mana 32, cast 0.40s, range 420 | pierce pull. mp twist 10/10. |
-| 114271 | Molten Flame Legion | summon | Flame | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | burn summon. duration twist 8/10. |
-| 114272 | Ember Blood Bow | projectile | Blood | power 84, cooldown 4.1s, mana 27, cast 0.20s, range 640 | leech projectile. cooldown twist 6/10. |
-| 114273 | Obsidian Toxin Phantom | stealth | Toxin | power 0, cooldown 14.0s, mana 38, cast 0.09s, range 0 | poison stealth. cast twist 3/10. |
-| 114274 | Hollow Void Haste | buff | Void | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pierce buff. count twist 1/10. |
-| 114275 | Shatter Flame Aura | aura | Flame | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | burn aura. area twist 9/10. |
-| 114276 | Rising Blood Bulwark | barrier | Blood | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | leech barrier. power twist 7/10. |
-| 114277 | Lunar Toxin Cleave | cleave | Toxin | power 101, cooldown 6.0s, mana 28, cast 0.25s, range 120 | poison cleave. mp twist 4/10. |
-| 114278 | Primal Void Beam | beam | Void | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | pierce beam. duration twist 2/10. |
+| 114269 | Cursed Toxin Rift | portal | Toxin | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) poison portal. power twist 3/10. |
+| 114270 | Final Void Gravity | pull | Void | power 21, cooldown 12.0s, mana 16, cast 0.40s, range 420 | (not usable in ranked duels) pierce pull. mp twist 10/10. |
+| 114271 | Molten Flame Legion | summon | Flame | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) burn summon. duration twist 8/10. |
+| 114272 | Ember Blood Bow | projectile | Blood | power 84, cooldown 4.1s, mana 13, cast 0.20s, range 640 | leech projectile. cooldown twist 6/10. |
+| 114273 | Obsidian Toxin Phantom | stealth | Toxin | power 0, cooldown 14.0s, mana 19, cast 0.09s, range 0 | (not usable in ranked duels) poison stealth. cast twist 3/10. |
+| 114274 | Hollow Void Haste | buff | Void | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pierce buff. count twist 1/10. |
+| 114275 | Shatter Flame Aura | aura | Flame | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) burn aura. area twist 9/10. |
+| 114276 | Rising Blood Bulwark | barrier | Blood | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) leech barrier. power twist 7/10. |
+| 114277 | Lunar Toxin Cleave | cleave | Toxin | power 101, cooldown 6.0s, mana 14, cast 0.25s, range 120 | poison cleave. mp twist 4/10. |
+| 114278 | Primal Void Beam | beam | Void | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | pierce beam. duration twist 2/10. |
 | 114279 | Forgotten Gravity Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | pull world. cooldown twist 10/10. |
-| 114280 | Royal Wind Blink | blink | Wind | power 0, cooldown 6.0s, mana 27, cast 0.07s, range 260 | knockback blink. cast twist 7/10. |
-| 114281 | Verdant Shadow Snare | slow | Shadow | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | hide slow. count twist 5/10. |
-| 114282 | Thunder Storm Familiar | summon | Storm | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | chain summon. area twist 3/10. |
-| 114283 | Crimson Gravity Gun | volley | Gravity | power 48, cooldown 8.0s, mana 47, cast 0.40s, range 600 | pull volley. power twist 1/10. |
-| 114284 | Dread Wind Veil | stealth | Wind | power 0, cooldown 14.0s, mana 29, cast 0.10s, range 0 | knockback stealth. mp twist 8/10. |
-| 114285 | Rune Shadow Surge | buff | Shadow | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | hide buff. duration twist 6/10. |
-| 114286 | Violet Storm Blessing | aura | Storm | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | chain aura. range twist 4/10. |
-| 114287 | Ancient Gravity Ward | shield | Gravity | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | pull shield. cast twist 1/10. |
-| 114288 | Burning Wind Comet | projectile | Wind | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | knockback projectile. count twist 9/10. |
-| 114289 | Calm Shadow Orb | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | hide projectile. area twist 7/10. |
+| 114280 | Royal Wind Blink | blink | Wind | power 0, cooldown 6.0s, mana 13, cast 0.07s, range 260 | knockback blink. cast twist 7/10. |
+| 114281 | Verdant Shadow Snare | slow | Shadow | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) hide slow. count twist 5/10. |
+| 114282 | Thunder Storm Familiar | summon | Storm | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) chain summon. area twist 3/10. |
+| 114283 | Crimson Gravity Gun | volley | Gravity | power 48, cooldown 8.0s, mana 24, cast 0.40s, range 600 | pull volley. power twist 1/10. |
+| 114284 | Dread Wind Veil | stealth | Wind | power 0, cooldown 14.0s, mana 14, cast 0.10s, range 0 | (not usable in ranked duels) knockback stealth. mp twist 8/10. |
+| 114285 | Rune Shadow Surge | buff | Shadow | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | hide buff. duration twist 6/10. |
+| 114286 | Violet Storm Blessing | aura | Storm | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) chain aura. range twist 4/10. |
+| 114287 | Ancient Gravity Ward | shield | Gravity | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | pull shield. cast twist 1/10. |
+| 114288 | Burning Wind Comet | projectile | Wind | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | knockback projectile. count twist 9/10. |
+| 114289 | Calm Shadow Orb | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | hide projectile. area twist 7/10. |
 | 114290 | Cosmic Frost Appraisal | out of battle | - | +35% more coins from matches, levels and chests | slow world. cooldown twist 5/10. |
-| 114291 | Savage Star Dash | dash | Star | power 0, cooldown 4.0s, mana 19, cast 0.05s, range 200 | homing dash. mp twist 2/10. |
-| 114292 | Tiny Metal Totem | mine | Metal | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | bounce mine. duration twist 10/10. |
-| 114293 | Spectral Light Chain | pull | Light | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 571 | heal pull. range twist 8/10. |
-| 114294 | Storm Frost Blade | cleave | Frost | power 128, cooldown 6.0s, mana 33, cast 0.25s, range 120 | slow cleave. power twist 6/10. |
-| 114295 | Iron Star Overdrive | buff | Star | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | homing buff. count twist 3/10. |
-| 114296 | Silent Metal Renew | heal | Metal | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | bounce heal. area twist 1/10. |
-| 114297 | Dawn Light Mend | heal | Light | power 63, cooldown 11.5s, mana 59, cast 0.50s, range 0 | heal heal. cooldown twist 9/10. |
-| 114298 | Fallen Frost Barrier | barrier | Frost | power 0, cooldown 14.0s, mana 50, cast 0.24s, range 160 | slow barrier. cast twist 6/10. |
-| 114299 | Ivory Star Nova | nova | Star | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | homing nova. duration twist 4/10. |
-| 114300 | Wicked Metal Lance | beam | Metal | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 763 | bounce beam. range twist 2/10. |
+| 114291 | Savage Star Dash | dash | Star | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | homing dash. mp twist 2/10. |
+| 114292 | Tiny Metal Totem | mine | Metal | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) bounce mine. duration twist 10/10. |
+| 114293 | Spectral Light Chain | pull | Light | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 571 | (not usable in ranked duels) heal pull. range twist 8/10. |
+| 114294 | Storm Frost Blade | cleave | Frost | power 128, cooldown 6.0s, mana 16, cast 0.25s, range 120 | slow cleave. power twist 6/10. |
+| 114295 | Iron Star Overdrive | buff | Star | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | homing buff. count twist 3/10. |
+| 114296 | Silent Metal Renew | heal | Metal | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | bounce heal. area twist 1/10. |
+| 114297 | Dawn Light Mend | heal | Light | power 63, cooldown 11.5s, mana 30, cast 0.50s, range 0 | heal heal. cooldown twist 9/10. |
+| 114298 | Fallen Frost Barrier | barrier | Frost | power 0, cooldown 14.0s, mana 25, cast 0.24s, range 160 | (not usable in ranked duels) slow barrier. cast twist 6/10. |
+| 114299 | Ivory Star Nova | nova | Star | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | homing nova. duration twist 4/10. |
+| 114300 | Wicked Metal Lance | beam | Metal | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 763 | bounce beam. range twist 2/10. |
 | 114301 | Lucky Void Forge | out of battle | - | +35% more XP from matches and levels | pierce world. power twist 10/10. |
-| 114302 | Rogue Flame Quake | nova | Flame | power 63, cooldown 10.0s, mana 42, cast 0.40s, range 260 | burn nova. mp twist 7/10. |
-| 114303 | Celestial Blood Golem | summon | Blood | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | leech summon. area twist 5/10. |
-| 114304 | Blazing Toxin Missile | projectile | Toxin | power 84, cooldown 4.5s, mana 27, cast 0.20s, range 640 | poison projectile. cooldown twist 3/10. |
-| 114305 | Genesis Void Umbra | slow | Void | power 13, cooldown 11.0s, mana 41, cast 0.19s, range 360 | pierce slow. cast twist 10/10. |
-| 114306 | Void-touched Flame Focus | buff | Flame | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | burn buff. count twist 8/10. |
-| 114307 | Gale Blood Link | buff | Blood | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | leech buff. range twist 6/10. |
-| 114308 | Jade Toxin Guard | shield | Toxin | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | poison shield. power twist 4/10. |
-| 114309 | Radiant Void Aegis | shield | Void | power 0, cooldown 12.0s, mana 40, cast 0.10s, range 0 | pierce shield. mp twist 1/10. |
-| 114310 | Echoing Flame Volley | volley | Flame | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | burn volley. duration twist 9/10. |
-| 114311 | Eternal Blood Bolt | projectile | Blood | power 84, cooldown 3.9s, mana 27, cast 0.20s, range 640 | leech projectile. cooldown twist 7/10. |
-| 114312 | Solar Shadow Warp | blink | Shadow | power 0, cooldown 6.0s, mana 27, cast 0.09s, range 260 | hide blink. cast twist 4/10. |
-| 114313 | Ethereal Storm Stasis | slow | Storm | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | chain slow. count twist 2/10. |
-| 114314 | Twin Gravity Swarm | summon | Gravity | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 290 | pull summon. range twist 10/10. |
-| 114315 | Mystic Wind Hammer | cleave | Wind | power 137, cooldown 6.0s, mana 33, cast 0.25s, range 120 | knockback cleave. power twist 8/10. |
-| 114316 | Arctic Shadow Ambush | ambush | Shadow | power 147, cooldown 12.0s, mana 37, cast 0.20s, range 260 | hide ambush. mp twist 5/10. |
-| 114317 | Phantom Storm Fury | buff | Storm | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | chain buff. duration twist 3/10. |
-| 114318 | Azure Gravity Haven | barrier | Gravity | power 0, cooldown 13.6s, mana 50, cast 0.30s, range 160 | pull barrier. cooldown twist 1/10. |
-| 114319 | Bright Wind Mirror | shield | Wind | power 0, cooldown 12.0s, mana 41, cast 0.07s, range 0 | knockback shield. cast twist 8/10. |
-| 114320 | Dragon Shadow Slash | cleave | Shadow | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | hide cleave. count twist 6/10. |
-| 114321 | Amber Storm Barrage | volley | Storm | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | chain volley. area twist 4/10. |
+| 114302 | Rogue Flame Quake | nova | Flame | power 63, cooldown 10.0s, mana 21, cast 0.40s, range 260 | burn nova. mp twist 7/10. |
+| 114303 | Celestial Blood Golem | summon | Blood | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) leech summon. area twist 5/10. |
+| 114304 | Blazing Toxin Missile | projectile | Toxin | power 84, cooldown 4.5s, mana 13, cast 0.20s, range 640 | poison projectile. cooldown twist 3/10. |
+| 114305 | Genesis Void Umbra | slow | Void | power 13, cooldown 11.0s, mana 21, cast 0.19s, range 360 | (not usable in ranked duels) pierce slow. cast twist 10/10. |
+| 114306 | Void-touched Flame Focus | buff | Flame | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | burn buff. count twist 8/10. |
+| 114307 | Gale Blood Link | buff | Blood | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | leech buff. range twist 6/10. |
+| 114308 | Jade Toxin Guard | shield | Toxin | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | poison shield. power twist 4/10. |
+| 114309 | Radiant Void Aegis | shield | Void | power 0, cooldown 12.0s, mana 20, cast 0.10s, range 0 | pierce shield. mp twist 1/10. |
+| 114310 | Echoing Flame Volley | volley | Flame | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | burn volley. duration twist 9/10. |
+| 114311 | Eternal Blood Bolt | projectile | Blood | power 84, cooldown 3.9s, mana 13, cast 0.20s, range 640 | leech projectile. cooldown twist 7/10. |
+| 114312 | Solar Shadow Warp | blink | Shadow | power 0, cooldown 6.0s, mana 13, cast 0.09s, range 260 | hide blink. cast twist 4/10. |
+| 114313 | Ethereal Storm Stasis | slow | Storm | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) chain slow. count twist 2/10. |
+| 114314 | Twin Gravity Swarm | summon | Gravity | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 290 | (not usable in ranked duels) pull summon. range twist 10/10. |
+| 114315 | Mystic Wind Hammer | cleave | Wind | power 137, cooldown 6.0s, mana 16, cast 0.25s, range 120 | knockback cleave. power twist 8/10. |
+| 114316 | Arctic Shadow Ambush | ambush | Shadow | power 147, cooldown 12.0s, mana 19, cast 0.20s, range 260 | (not usable in ranked duels) hide ambush. mp twist 5/10. |
+| 114317 | Phantom Storm Fury | buff | Storm | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | chain buff. duration twist 3/10. |
+| 114318 | Azure Gravity Haven | barrier | Gravity | power 0, cooldown 13.6s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) pull barrier. cooldown twist 1/10. |
+| 114319 | Bright Wind Mirror | shield | Wind | power 0, cooldown 12.0s, mana 21, cast 0.07s, range 0 | knockback shield. cast twist 8/10. |
+| 114320 | Dragon Shadow Slash | cleave | Shadow | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | hide cleave. count twist 6/10. |
+| 114321 | Amber Storm Barrage | volley | Storm | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | chain volley. area twist 4/10. |
 | 114322 | Swift Star Gather | out of battle | - | +35% chance to get each skill drop twice | homing world. power twist 2/10. |
-| 114323 | Piercing Metal Rift | portal | Metal | power 0, cooldown 16.0s, mana 42, cast 0.50s, range 500 | bounce portal. mp twist 9/10. |
-| 114324 | Wild Light Gravity | pull | Light | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | heal pull. duration twist 7/10. |
-| 114325 | Abyssal Frost Legion | summon | Frost | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 245 | slow summon. range twist 5/10. |
-| 114326 | Sacred Star Bow | projectile | Star | power 84, cooldown 5.0s, mana 27, cast 0.19s, range 640 | homing projectile. cast twist 2/10. |
-| 114327 | Endless Metal Phantom | stealth | Metal | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | bounce stealth. count twist 10/10. |
-| 114328 | Crystal Light Haste | buff | Light | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | heal buff. area twist 8/10. |
-| 114329 | Ember Frost Aura | aura | Frost | power 17, cooldown 14.6s, mana 65, cast 0.30s, range 0 | slow aura. cooldown twist 6/10. |
-| 114330 | Silver Star Bulwark | barrier | Star | power 0, cooldown 14.0s, mana 46, cast 0.30s, range 160 | homing barrier. mp twist 3/10. |
-| 114331 | Raging Metal Cleave | cleave | Metal | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | bounce cleave. duration twist 1/10. |
-| 114332 | Mirror Light Beam | beam | Light | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 984 | heal beam. range twist 9/10. |
+| 114323 | Piercing Metal Rift | portal | Metal | power 0, cooldown 16.0s, mana 21, cast 0.50s, range 500 | (not usable in ranked duels) bounce portal. mp twist 9/10. |
+| 114324 | Wild Light Gravity | pull | Light | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) heal pull. duration twist 7/10. |
+| 114325 | Abyssal Frost Legion | summon | Frost | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 245 | (not usable in ranked duels) slow summon. range twist 5/10. |
+| 114326 | Sacred Star Bow | projectile | Star | power 84, cooldown 5.0s, mana 13, cast 0.19s, range 640 | homing projectile. cast twist 2/10. |
+| 114327 | Endless Metal Phantom | stealth | Metal | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) bounce stealth. count twist 10/10. |
+| 114328 | Crystal Light Haste | buff | Light | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | heal buff. area twist 8/10. |
+| 114329 | Ember Frost Aura | aura | Frost | power 17, cooldown 14.6s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) slow aura. cooldown twist 6/10. |
+| 114330 | Silver Star Bulwark | barrier | Star | power 0, cooldown 14.0s, mana 23, cast 0.30s, range 160 | (not usable in ranked duels) homing barrier. mp twist 3/10. |
+| 114331 | Raging Metal Cleave | cleave | Metal | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | bounce cleave. duration twist 1/10. |
+| 114332 | Mirror Light Beam | beam | Light | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 984 | heal beam. range twist 9/10. |
 | 114333 | Rising Flame Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | burn world. power twist 7/10. |
-| 114334 | Onyx Blood Blink | blink | Blood | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | leech blink. count twist 4/10. |
-| 114335 | Gentle Toxin Snare | slow | Toxin | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | poison slow. area twist 2/10. |
-| 114336 | Forgotten Void Familiar | summon | Void | power 38, cooldown 12.3s, mana 68, cast 0.60s, range 200 | pierce summon. cooldown twist 10/10. |
-| 114337 | Royal Flame Gun | volley | Flame | power 46, cooldown 8.0s, mana 47, cast 0.30s, range 600 | burn volley. cast twist 7/10. |
-| 114338 | Infernal Blood Veil | stealth | Blood | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | leech stealth. duration twist 5/10. |
-| 114339 | Frozen Toxin Surge | buff | Toxin | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | poison buff. range twist 3/10. |
-| 114340 | Crimson Void Blessing | aura | Void | power 18, cooldown 18.0s, mana 65, cast 0.30s, range 0 | pierce aura. power twist 1/10. |
-| 114341 | Dread Flame Ward | shield | Flame | power 0, cooldown 12.0s, mana 31, cast 0.10s, range 0 | burn shield. mp twist 8/10. |
-| 114342 | Tidal Blood Comet | projectile | Blood | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | leech projectile. area twist 6/10. |
-| 114343 | Scarlet Toxin Orb | projectile | Toxin | power 84, cooldown 4.4s, mana 27, cast 0.20s, range 640 | poison projectile. cooldown twist 4/10. |
+| 114334 | Onyx Blood Blink | blink | Blood | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | leech blink. count twist 4/10. |
+| 114335 | Gentle Toxin Snare | slow | Toxin | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) poison slow. area twist 2/10. |
+| 114336 | Forgotten Void Familiar | summon | Void | power 38, cooldown 12.3s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) pierce summon. cooldown twist 10/10. |
+| 114337 | Royal Flame Gun | volley | Flame | power 46, cooldown 8.0s, mana 24, cast 0.30s, range 600 | burn volley. cast twist 7/10. |
+| 114338 | Infernal Blood Veil | stealth | Blood | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) leech stealth. duration twist 5/10. |
+| 114339 | Frozen Toxin Surge | buff | Toxin | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | poison buff. range twist 3/10. |
+| 114340 | Crimson Void Blessing | aura | Void | power 18, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) pierce aura. power twist 1/10. |
+| 114341 | Dread Flame Ward | shield | Flame | power 0, cooldown 12.0s, mana 15, cast 0.10s, range 0 | burn shield. mp twist 8/10. |
+| 114342 | Tidal Blood Comet | projectile | Blood | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | leech projectile. area twist 6/10. |
+| 114343 | Scarlet Toxin Orb | projectile | Toxin | power 84, cooldown 4.4s, mana 13, cast 0.20s, range 640 | poison projectile. cooldown twist 4/10. |
 | 114344 | Ancient Storm Appraisal | out of battle | - | +35% more coins from matches, levels and chests | chain world. cast twist 1/10. |
-| 114345 | Echoing Gravity Dash | dash | Gravity | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | pull dash. duration twist 9/10. |
-| 114346 | Fierce Wind Totem | mine | Wind | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | knockback mine. range twist 7/10. |
-| 114347 | Stellar Shadow Chain | pull | Shadow | power 26, cooldown 12.0s, mana 47, cast 0.40s, range 420 | hide pull. power twist 5/10. |
-| 114348 | Savage Storm Blade | cleave | Storm | power 101, cooldown 6.0s, mana 31, cast 0.25s, range 120 | chain cleave. mp twist 2/10. |
-| 114349 | Grand Gravity Overdrive | buff | Gravity | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pull buff. area twist 10/10. |
-| 114350 | Arcane Wind Renew | heal | Wind | power 63, cooldown 12.0s, mana 59, cast 0.50s, range 0 | knockback heal. cooldown twist 8/10. |
-| 114351 | Desert Shadow Mend | heal | Shadow | power 63, cooldown 16.0s, mana 59, cast 0.41s, range 0 | hide heal. cast twist 5/10. |
-| 114352 | Iron Storm Barrier | barrier | Storm | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | chain barrier. count twist 3/10. |
-| 114353 | Golden Gravity Nova | nova | Gravity | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 272 | pull nova. range twist 1/10. |
-| 114354 | Dusk Wind Lance | beam | Wind | power 162, cooldown 9.0s, mana 44, cast 0.50s, range 700 | knockback beam. power twist 9/10. |
+| 114345 | Echoing Gravity Dash | dash | Gravity | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | pull dash. duration twist 9/10. |
+| 114346 | Fierce Wind Totem | mine | Wind | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) knockback mine. range twist 7/10. |
+| 114347 | Stellar Shadow Chain | pull | Shadow | power 26, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) hide pull. power twist 5/10. |
+| 114348 | Savage Storm Blade | cleave | Storm | power 101, cooldown 6.0s, mana 15, cast 0.25s, range 120 | chain cleave. mp twist 2/10. |
+| 114349 | Grand Gravity Overdrive | buff | Gravity | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pull buff. area twist 10/10. |
+| 114350 | Arcane Wind Renew | heal | Wind | power 63, cooldown 12.0s, mana 30, cast 0.50s, range 0 | knockback heal. cooldown twist 8/10. |
+| 114351 | Desert Shadow Mend | heal | Shadow | power 63, cooldown 16.0s, mana 30, cast 0.41s, range 0 | hide heal. cast twist 5/10. |
+| 114352 | Iron Storm Barrier | barrier | Storm | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) chain barrier. count twist 3/10. |
+| 114353 | Golden Gravity Nova | nova | Gravity | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 272 | pull nova. range twist 1/10. |
+| 114354 | Dusk Wind Lance | beam | Wind | power 162, cooldown 9.0s, mana 22, cast 0.50s, range 700 | knockback beam. power twist 9/10. |
 | 114355 | Titan Light Forge | out of battle | - | +35% more XP from matches and levels | heal world. mp twist 6/10. |
-| 114356 | Ivory Frost Quake | nova | Frost | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | slow nova. duration twist 4/10. |
-| 114357 | Heavy Star Golem | summon | Star | power 38, cooldown 16.9s, mana 68, cast 0.60s, range 200 | homing summon. cooldown twist 2/10. |
-| 114358 | Vengeful Metal Missile | projectile | Metal | power 84, cooldown 5.0s, mana 27, cast 0.14s, range 640 | bounce projectile. cast twist 9/10. |
-| 114359 | Noble Light Umbra | slow | Light | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | heal slow. count twist 7/10. |
-| 114360 | Celestial Frost Focus | buff | Frost | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | slow buff. area twist 5/10. |
-| 114361 | Cursed Star Link | buff | Star | power 48, cooldown 15.0s, mana 44, cast 0.20s, range 0 | homing buff. power twist 3/10. |
-| 114362 | Final Metal Guard | shield | Metal | power 0, cooldown 12.0s, mana 28, cast 0.10s, range 0 | bounce shield. mp twist 10/10. |
-| 114363 | Molten Light Aegis | shield | Light | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | heal shield. duration twist 8/10. |
-| 114364 | Gale Frost Volley | volley | Frost | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 762 | slow volley. range twist 6/10. |
-| 114365 | Obsidian Star Bolt | projectile | Star | power 84, cooldown 5.0s, mana 27, cast 0.18s, range 640 | homing projectile. cast twist 3/10. |
-| 114366 | Hollow Toxin Warp | blink | Toxin | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | poison blink. count twist 1/10. |
-| 114367 | Shatter Void Stasis | slow | Void | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | pierce slow. area twist 9/10. |
-| 114368 | Eternal Flame Swarm | summon | Flame | power 38, cooldown 14.0s, mana 68, cast 0.60s, range 200 | burn summon. cooldown twist 7/10. |
-| 114369 | Lunar Blood Hammer | cleave | Blood | power 101, cooldown 6.0s, mana 28, cast 0.25s, range 120 | leech cleave. mp twist 4/10. |
-| 114370 | Primal Toxin Ambush | ambush | Toxin | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 260 | poison ambush. duration twist 2/10. |
-| 114371 | Twin Void Fury | buff | Void | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pierce buff. range twist 10/10. |
-| 114372 | Mystic Flame Haven | barrier | Flame | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | burn barrier. power twist 8/10. |
-| 114373 | Verdant Blood Mirror | shield | Blood | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | leech shield. count twist 5/10. |
-| 114374 | Thunder Toxin Slash | cleave | Toxin | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | poison cleave. area twist 3/10. |
-| 114375 | Azure Void Barrage | volley | Void | power 46, cooldown 7.7s, mana 47, cast 0.40s, range 600 | pierce volley. cooldown twist 1/10. |
+| 114356 | Ivory Frost Quake | nova | Frost | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | slow nova. duration twist 4/10. |
+| 114357 | Heavy Star Golem | summon | Star | power 38, cooldown 16.9s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) homing summon. cooldown twist 2/10. |
+| 114358 | Vengeful Metal Missile | projectile | Metal | power 84, cooldown 5.0s, mana 13, cast 0.14s, range 640 | bounce projectile. cast twist 9/10. |
+| 114359 | Noble Light Umbra | slow | Light | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) heal slow. count twist 7/10. |
+| 114360 | Celestial Frost Focus | buff | Frost | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | slow buff. area twist 5/10. |
+| 114361 | Cursed Star Link | buff | Star | power 48, cooldown 15.0s, mana 22, cast 0.20s, range 0 | homing buff. power twist 3/10. |
+| 114362 | Final Metal Guard | shield | Metal | power 0, cooldown 12.0s, mana 14, cast 0.10s, range 0 | bounce shield. mp twist 10/10. |
+| 114363 | Molten Light Aegis | shield | Light | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | heal shield. duration twist 8/10. |
+| 114364 | Gale Frost Volley | volley | Frost | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 762 | slow volley. range twist 6/10. |
+| 114365 | Obsidian Star Bolt | projectile | Star | power 84, cooldown 5.0s, mana 13, cast 0.18s, range 640 | homing projectile. cast twist 3/10. |
+| 114366 | Hollow Toxin Warp | blink | Toxin | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | poison blink. count twist 1/10. |
+| 114367 | Shatter Void Stasis | slow | Void | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) pierce slow. area twist 9/10. |
+| 114368 | Eternal Flame Swarm | summon | Flame | power 38, cooldown 14.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) burn summon. cooldown twist 7/10. |
+| 114369 | Lunar Blood Hammer | cleave | Blood | power 101, cooldown 6.0s, mana 14, cast 0.25s, range 120 | leech cleave. mp twist 4/10. |
+| 114370 | Primal Toxin Ambush | ambush | Toxin | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) poison ambush. duration twist 2/10. |
+| 114371 | Twin Void Fury | buff | Void | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pierce buff. range twist 10/10. |
+| 114372 | Mystic Flame Haven | barrier | Flame | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) burn barrier. power twist 8/10. |
+| 114373 | Verdant Blood Mirror | shield | Blood | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | leech shield. count twist 5/10. |
+| 114374 | Thunder Toxin Slash | cleave | Toxin | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | poison cleave. area twist 3/10. |
+| 114375 | Azure Void Barrage | volley | Void | power 46, cooldown 7.7s, mana 24, cast 0.40s, range 600 | pierce volley. cooldown twist 1/10. |
 | 114376 | Dread Gravity Gather | out of battle | - | +35% chance to get each skill drop twice | pull world. mp twist 8/10. |
-| 114377 | Rune Wind Rift | portal | Wind | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | knockback portal. duration twist 6/10. |
-| 114378 | Violet Shadow Gravity | pull | Shadow | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 496 | hide pull. range twist 4/10. |
-| 114379 | Swift Storm Legion | summon | Storm | power 41, cooldown 18.0s, mana 68, cast 0.60s, range 200 | chain summon. power twist 2/10. |
-| 114380 | Burning Gravity Bow | projectile | Gravity | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | pull projectile. count twist 9/10. |
-| 114381 | Calm Wind Phantom | stealth | Wind | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | knockback stealth. area twist 7/10. |
-| 114382 | Cosmic Shadow Haste | buff | Shadow | power 42, cooldown 12.6s, mana 44, cast 0.20s, range 0 | hide buff. cooldown twist 5/10. |
-| 114383 | Sacred Storm Aura | aura | Storm | power 17, cooldown 18.0s, mana 65, cast 0.28s, range 0 | chain aura. cast twist 2/10. |
-| 114384 | Tiny Gravity Bulwark | barrier | Gravity | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | pull barrier. duration twist 10/10. |
-| 114385 | Spectral Wind Cleave | cleave | Wind | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 163 | knockback cleave. range twist 8/10. |
-| 114386 | Storm Shadow Beam | beam | Shadow | power 147, cooldown 9.0s, mana 44, cast 0.50s, range 700 | hide beam. power twist 6/10. |
+| 114377 | Rune Wind Rift | portal | Wind | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) knockback portal. duration twist 6/10. |
+| 114378 | Violet Shadow Gravity | pull | Shadow | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 496 | (not usable in ranked duels) hide pull. range twist 4/10. |
+| 114379 | Swift Storm Legion | summon | Storm | power 41, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) chain summon. power twist 2/10. |
+| 114380 | Burning Gravity Bow | projectile | Gravity | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | pull projectile. count twist 9/10. |
+| 114381 | Calm Wind Phantom | stealth | Wind | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) knockback stealth. area twist 7/10. |
+| 114382 | Cosmic Shadow Haste | buff | Shadow | power 42, cooldown 12.6s, mana 22, cast 0.20s, range 0 | hide buff. cooldown twist 5/10. |
+| 114383 | Sacred Storm Aura | aura | Storm | power 17, cooldown 18.0s, mana 33, cast 0.28s, range 0 | (not usable in ranked duels) chain aura. cast twist 2/10. |
+| 114384 | Tiny Gravity Bulwark | barrier | Gravity | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) pull barrier. duration twist 10/10. |
+| 114385 | Spectral Wind Cleave | cleave | Wind | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 163 | knockback cleave. range twist 8/10. |
+| 114386 | Storm Shadow Beam | beam | Shadow | power 147, cooldown 9.0s, mana 22, cast 0.50s, range 700 | hide beam. power twist 6/10. |
 | 114387 | Silver Frost Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | slow world. mp twist 3/10. |
-| 114388 | Silent Star Blink | blink | Star | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | homing blink. area twist 1/10. |
-| 114389 | Dawn Metal Snare | slow | Metal | power 13, cooldown 7.9s, mana 41, cast 0.30s, range 360 | bounce slow. cooldown twist 9/10. |
-| 114390 | Fallen Light Familiar | summon | Light | power 38, cooldown 18.0s, mana 68, cast 0.47s, range 200 | heal summon. cast twist 6/10. |
-| 114391 | Onyx Frost Gun | volley | Frost | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | slow volley. count twist 4/10. |
-| 114392 | Wicked Star Veil | stealth | Star | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | homing stealth. range twist 2/10. |
-| 114393 | Lucky Metal Surge | buff | Metal | power 61, cooldown 15.0s, mana 44, cast 0.20s, range 0 | bounce buff. power twist 10/10. |
-| 114394 | Rogue Light Blessing | aura | Light | power 17, cooldown 18.0s, mana 51, cast 0.30s, range 0 | heal aura. mp twist 7/10. |
-| 114395 | Infernal Frost Ward | shield | Frost | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | slow shield. duration twist 5/10. |
-| 114396 | Blazing Star Comet | projectile | Star | power 84, cooldown 4.5s, mana 27, cast 0.20s, range 640 | homing projectile. cooldown twist 3/10. |
-| 114397 | Genesis Metal Orb | projectile | Metal | power 84, cooldown 5.0s, mana 27, cast 0.13s, range 640 | bounce projectile. cast twist 10/10. |
+| 114388 | Silent Star Blink | blink | Star | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | homing blink. area twist 1/10. |
+| 114389 | Dawn Metal Snare | slow | Metal | power 13, cooldown 7.9s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) bounce slow. cooldown twist 9/10. |
+| 114390 | Fallen Light Familiar | summon | Light | power 38, cooldown 18.0s, mana 34, cast 0.47s, range 200 | (not usable in ranked duels) heal summon. cast twist 6/10. |
+| 114391 | Onyx Frost Gun | volley | Frost | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | slow volley. count twist 4/10. |
+| 114392 | Wicked Star Veil | stealth | Star | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) homing stealth. range twist 2/10. |
+| 114393 | Lucky Metal Surge | buff | Metal | power 61, cooldown 15.0s, mana 22, cast 0.20s, range 0 | bounce buff. power twist 10/10. |
+| 114394 | Rogue Light Blessing | aura | Light | power 17, cooldown 18.0s, mana 25, cast 0.30s, range 0 | (not usable in ranked duels) heal aura. mp twist 7/10. |
+| 114395 | Infernal Frost Ward | shield | Frost | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | slow shield. duration twist 5/10. |
+| 114396 | Blazing Star Comet | projectile | Star | power 84, cooldown 4.5s, mana 13, cast 0.20s, range 640 | homing projectile. cooldown twist 3/10. |
+| 114397 | Genesis Metal Orb | projectile | Metal | power 84, cooldown 5.0s, mana 13, cast 0.13s, range 640 | bounce projectile. cast twist 10/10. |
 | 114398 | Void-touched Void Appraisal | out of battle | - | +35% more coins from matches, levels and chests | pierce world. count twist 8/10. |
-| 114399 | Tidal Flame Dash | dash | Flame | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | burn dash. area twist 6/10. |
-| 114400 | Jade Blood Totem | mine | Blood | power 112, cooldown 7.0s, mana 30, cast 0.20s, range 0 | leech mine. power twist 4/10. |
-| 114401 | Radiant Toxin Chain | pull | Toxin | power 21, cooldown 12.0s, mana 46, cast 0.40s, range 420 | poison pull. mp twist 1/10. |
-| 114402 | Echoing Void Blade | cleave | Void | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | pierce cleave. duration twist 9/10. |
-| 114403 | Fierce Flame Overdrive | buff | Flame | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | burn buff. range twist 7/10. |
-| 114404 | Solar Blood Renew | heal | Blood | power 63, cooldown 16.0s, mana 59, cast 0.43s, range 0 | leech heal. cast twist 4/10. |
-| 114405 | Ethereal Toxin Mend | heal | Toxin | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | poison heal. count twist 2/10. |
-| 114406 | Grand Void Barrier | barrier | Void | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | pierce barrier. area twist 10/10. |
-| 114407 | Arcane Flame Nova | nova | Flame | power 63, cooldown 7.5s, mana 53, cast 0.40s, range 260 | burn nova. cooldown twist 8/10. |
-| 114408 | Arctic Blood Lance | beam | Blood | power 116, cooldown 9.0s, mana 37, cast 0.50s, range 700 | leech beam. mp twist 5/10. |
+| 114399 | Tidal Flame Dash | dash | Flame | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | burn dash. area twist 6/10. |
+| 114400 | Jade Blood Totem | mine | Blood | power 112, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) leech mine. power twist 4/10. |
+| 114401 | Radiant Toxin Chain | pull | Toxin | power 21, cooldown 12.0s, mana 23, cast 0.40s, range 420 | (not usable in ranked duels) poison pull. mp twist 1/10. |
+| 114402 | Echoing Void Blade | cleave | Void | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | pierce cleave. duration twist 9/10. |
+| 114403 | Fierce Flame Overdrive | buff | Flame | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | burn buff. range twist 7/10. |
+| 114404 | Solar Blood Renew | heal | Blood | power 63, cooldown 16.0s, mana 30, cast 0.43s, range 0 | leech heal. cast twist 4/10. |
+| 114405 | Ethereal Toxin Mend | heal | Toxin | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | poison heal. count twist 2/10. |
+| 114406 | Grand Void Barrier | barrier | Void | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) pierce barrier. area twist 10/10. |
+| 114407 | Arcane Flame Nova | nova | Flame | power 63, cooldown 7.5s, mana 27, cast 0.40s, range 260 | burn nova. cooldown twist 8/10. |
+| 114408 | Arctic Blood Lance | beam | Blood | power 116, cooldown 9.0s, mana 19, cast 0.50s, range 700 | leech beam. mp twist 5/10. |
 | 114409 | Phantom Shadow Forge | out of battle | - | +35% more XP from matches and levels | hide world. duration twist 3/10. |
-| 114410 | Golden Storm Quake | nova | Storm | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 272 | chain nova. range twist 1/10. |
-| 114411 | Bright Gravity Golem | summon | Gravity | power 38, cooldown 18.0s, mana 68, cast 0.43s, range 200 | pull summon. cast twist 8/10. |
-| 114412 | Dragon Wind Missile | projectile | Wind | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | knockback projectile. count twist 6/10. |
-| 114413 | Amber Shadow Umbra | slow | Shadow | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | hide slow. area twist 4/10. |
-| 114414 | Heavy Storm Focus | buff | Storm | power 42, cooldown 14.1s, mana 44, cast 0.20s, range 0 | chain buff. cooldown twist 2/10. |
-| 114415 | Piercing Gravity Link | buff | Gravity | power 42, cooldown 15.0s, mana 32, cast 0.20s, range 0 | pull buff. mp twist 9/10. |
-| 114416 | Wild Wind Guard | shield | Wind | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | knockback shield. duration twist 7/10. |
-| 114417 | Abyssal Shadow Aegis | shield | Shadow | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | hide shield. range twist 5/10. |
-| 114418 | Cursed Storm Volley | volley | Storm | power 52, cooldown 8.0s, mana 47, cast 0.40s, range 600 | chain volley. power twist 3/10. |
-| 114419 | Endless Gravity Bolt | projectile | Gravity | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | pull projectile. count twist 10/10. |
-| 114420 | Crystal Metal Warp | blink | Metal | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | bounce blink. area twist 8/10. |
-| 114421 | Ember Light Stasis | slow | Light | power 13, cooldown 8.9s, mana 41, cast 0.30s, range 360 | heal slow. cooldown twist 6/10. |
-| 114422 | Obsidian Frost Swarm | summon | Frost | power 38, cooldown 18.0s, mana 68, cast 0.54s, range 200 | slow summon. cast twist 3/10. |
-| 114423 | Raging Star Hammer | cleave | Star | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | homing cleave. duration twist 1/10. |
-| 114424 | Mirror Metal Ambush | ambush | Metal | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 365 | bounce ambush. range twist 9/10. |
-| 114425 | Rising Light Fury | buff | Light | power 55, cooldown 15.0s, mana 44, cast 0.20s, range 0 | heal buff. power twist 7/10. |
-| 114426 | Lunar Frost Haven | barrier | Frost | power 0, cooldown 14.0s, mana 44, cast 0.30s, range 160 | slow barrier. mp twist 4/10. |
-| 114427 | Gentle Star Mirror | shield | Star | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | homing shield. area twist 2/10. |
-| 114428 | Forgotten Metal Slash | cleave | Metal | power 101, cooldown 4.1s, mana 33, cast 0.25s, range 120 | bounce cleave. cooldown twist 10/10. |
-| 114429 | Royal Light Barrage | volley | Light | power 46, cooldown 8.0s, mana 47, cast 0.30s, range 600 | heal volley. cast twist 7/10. |
+| 114410 | Golden Storm Quake | nova | Storm | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 272 | chain nova. range twist 1/10. |
+| 114411 | Bright Gravity Golem | summon | Gravity | power 38, cooldown 18.0s, mana 34, cast 0.43s, range 200 | (not usable in ranked duels) pull summon. cast twist 8/10. |
+| 114412 | Dragon Wind Missile | projectile | Wind | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | knockback projectile. count twist 6/10. |
+| 114413 | Amber Shadow Umbra | slow | Shadow | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) hide slow. area twist 4/10. |
+| 114414 | Heavy Storm Focus | buff | Storm | power 42, cooldown 14.1s, mana 22, cast 0.20s, range 0 | chain buff. cooldown twist 2/10. |
+| 114415 | Piercing Gravity Link | buff | Gravity | power 42, cooldown 15.0s, mana 16, cast 0.20s, range 0 | pull buff. mp twist 9/10. |
+| 114416 | Wild Wind Guard | shield | Wind | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | knockback shield. duration twist 7/10. |
+| 114417 | Abyssal Shadow Aegis | shield | Shadow | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | hide shield. range twist 5/10. |
+| 114418 | Cursed Storm Volley | volley | Storm | power 52, cooldown 8.0s, mana 24, cast 0.40s, range 600 | chain volley. power twist 3/10. |
+| 114419 | Endless Gravity Bolt | projectile | Gravity | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | pull projectile. count twist 10/10. |
+| 114420 | Crystal Metal Warp | blink | Metal | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | bounce blink. area twist 8/10. |
+| 114421 | Ember Light Stasis | slow | Light | power 13, cooldown 8.9s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) heal slow. cooldown twist 6/10. |
+| 114422 | Obsidian Frost Swarm | summon | Frost | power 38, cooldown 18.0s, mana 34, cast 0.54s, range 200 | (not usable in ranked duels) slow summon. cast twist 3/10. |
+| 114423 | Raging Star Hammer | cleave | Star | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | homing cleave. duration twist 1/10. |
+| 114424 | Mirror Metal Ambush | ambush | Metal | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 365 | (not usable in ranked duels) bounce ambush. range twist 9/10. |
+| 114425 | Rising Light Fury | buff | Light | power 55, cooldown 15.0s, mana 22, cast 0.20s, range 0 | heal buff. power twist 7/10. |
+| 114426 | Lunar Frost Haven | barrier | Frost | power 0, cooldown 14.0s, mana 22, cast 0.30s, range 160 | (not usable in ranked duels) slow barrier. mp twist 4/10. |
+| 114427 | Gentle Star Mirror | shield | Star | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | homing shield. area twist 2/10. |
+| 114428 | Forgotten Metal Slash | cleave | Metal | power 101, cooldown 4.1s, mana 16, cast 0.25s, range 120 | bounce cleave. cooldown twist 10/10. |
+| 114429 | Royal Light Barrage | volley | Light | power 46, cooldown 8.0s, mana 24, cast 0.30s, range 600 | heal volley. cast twist 7/10. |
 | 114430 | Verdant Flame Gather | out of battle | - | +35% chance to get each skill drop twice | burn world. count twist 5/10. |
-| 114431 | Frozen Blood Rift | portal | Blood | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 568 | leech portal. range twist 3/10. |
-| 114432 | Crimson Toxin Gravity | pull | Toxin | power 22, cooldown 12.0s, mana 47, cast 0.40s, range 420 | poison pull. power twist 1/10. |
-| 114433 | Dread Void Legion | summon | Void | power 38, cooldown 18.0s, mana 51, cast 0.60s, range 200 | pierce summon. mp twist 8/10. |
-| 114434 | Rune Flame Bow | projectile | Flame | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | burn projectile. duration twist 6/10. |
-| 114435 | Scarlet Blood Phantom | stealth | Blood | power 0, cooldown 12.2s, mana 38, cast 0.10s, range 0 | leech stealth. cooldown twist 4/10. |
-| 114436 | Ancient Toxin Haste | buff | Toxin | power 42, cooldown 15.0s, mana 44, cast 0.19s, range 0 | poison buff. cast twist 1/10. |
-| 114437 | Burning Void Aura | aura | Void | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | pierce aura. count twist 9/10. |
-| 114438 | Calm Flame Bulwark | barrier | Flame | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | burn barrier. area twist 7/10. |
-| 114439 | Stellar Blood Cleave | cleave | Blood | power 123, cooldown 6.0s, mana 33, cast 0.25s, range 120 | leech cleave. power twist 5/10. |
-| 114440 | Savage Toxin Beam | beam | Toxin | power 116, cooldown 9.0s, mana 42, cast 0.50s, range 700 | poison beam. mp twist 2/10. |
+| 114431 | Frozen Blood Rift | portal | Blood | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 568 | (not usable in ranked duels) leech portal. range twist 3/10. |
+| 114432 | Crimson Toxin Gravity | pull | Toxin | power 22, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) poison pull. power twist 1/10. |
+| 114433 | Dread Void Legion | summon | Void | power 38, cooldown 18.0s, mana 25, cast 0.60s, range 200 | (not usable in ranked duels) pierce summon. mp twist 8/10. |
+| 114434 | Rune Flame Bow | projectile | Flame | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | burn projectile. duration twist 6/10. |
+| 114435 | Scarlet Blood Phantom | stealth | Blood | power 0, cooldown 12.2s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) leech stealth. cooldown twist 4/10. |
+| 114436 | Ancient Toxin Haste | buff | Toxin | power 42, cooldown 15.0s, mana 22, cast 0.19s, range 0 | poison buff. cast twist 1/10. |
+| 114437 | Burning Void Aura | aura | Void | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) pierce aura. count twist 9/10. |
+| 114438 | Calm Flame Bulwark | barrier | Flame | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) burn barrier. area twist 7/10. |
+| 114439 | Stellar Blood Cleave | cleave | Blood | power 123, cooldown 6.0s, mana 16, cast 0.25s, range 120 | leech cleave. power twist 5/10. |
+| 114440 | Savage Toxin Beam | beam | Toxin | power 116, cooldown 9.0s, mana 21, cast 0.50s, range 700 | poison beam. mp twist 2/10. |
 | 114441 | Tiny Storm Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | chain world. duration twist 10/10. |
-| 114442 | Arcane Gravity Blink | blink | Gravity | power 0, cooldown 4.5s, mana 27, cast 0.10s, range 260 | pull blink. cooldown twist 8/10. |
-| 114443 | Desert Wind Snare | slow | Wind | power 13, cooldown 11.0s, mana 41, cast 0.25s, range 360 | knockback slow. cast twist 5/10. |
-| 114444 | Iron Shadow Familiar | summon | Shadow | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | hide summon. count twist 3/10. |
-| 114445 | Silent Storm Gun | volley | Storm | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | chain volley. area twist 1/10. |
-| 114446 | Dusk Gravity Veil | stealth | Gravity | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | pull stealth. power twist 9/10. |
-| 114447 | Titan Wind Surge | buff | Wind | power 42, cooldown 15.0s, mana 36, cast 0.20s, range 0 | knockback buff. mp twist 6/10. |
-| 114448 | Ivory Shadow Blessing | aura | Shadow | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | hide aura. duration twist 4/10. |
-| 114449 | Wicked Storm Ward | shield | Storm | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | chain shield. range twist 2/10. |
-| 114450 | Vengeful Gravity Comet | projectile | Gravity | power 84, cooldown 5.0s, mana 27, cast 0.14s, range 640 | pull projectile. cast twist 9/10. |
-| 114451 | Noble Wind Orb | projectile | Wind | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | knockback projectile. count twist 7/10. |
+| 114442 | Arcane Gravity Blink | blink | Gravity | power 0, cooldown 4.5s, mana 13, cast 0.10s, range 260 | pull blink. cooldown twist 8/10. |
+| 114443 | Desert Wind Snare | slow | Wind | power 13, cooldown 11.0s, mana 21, cast 0.25s, range 360 | (not usable in ranked duels) knockback slow. cast twist 5/10. |
+| 114444 | Iron Shadow Familiar | summon | Shadow | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) hide summon. count twist 3/10. |
+| 114445 | Silent Storm Gun | volley | Storm | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | chain volley. area twist 1/10. |
+| 114446 | Dusk Gravity Veil | stealth | Gravity | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) pull stealth. power twist 9/10. |
+| 114447 | Titan Wind Surge | buff | Wind | power 42, cooldown 15.0s, mana 18, cast 0.20s, range 0 | knockback buff. mp twist 6/10. |
+| 114448 | Ivory Shadow Blessing | aura | Shadow | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) hide aura. duration twist 4/10. |
+| 114449 | Wicked Storm Ward | shield | Storm | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | chain shield. range twist 2/10. |
+| 114450 | Vengeful Gravity Comet | projectile | Gravity | power 84, cooldown 5.0s, mana 13, cast 0.14s, range 640 | pull projectile. cast twist 9/10. |
+| 114451 | Noble Wind Orb | projectile | Wind | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | knockback projectile. count twist 7/10. |
 | 114452 | Celestial Light Appraisal | out of battle | - | +35% more coins from matches, levels and chests | heal world. area twist 5/10. |
-| 114453 | Blazing Frost Dash | dash | Frost | power 0, cooldown 3.6s, mana 21, cast 0.05s, range 200 | slow dash. cooldown twist 3/10. |
-| 114454 | Final Star Totem | mine | Star | power 95, cooldown 7.0s, mana 20, cast 0.20s, range 0 | homing mine. mp twist 10/10. |
-| 114455 | Molten Metal Chain | pull | Metal | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | bounce pull. duration twist 8/10. |
-| 114456 | Gale Light Blade | cleave | Light | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 152 | heal cleave. range twist 6/10. |
-| 114457 | Jade Frost Overdrive | buff | Frost | power 50, cooldown 15.0s, mana 44, cast 0.20s, range 0 | slow buff. power twist 4/10. |
-| 114458 | Hollow Star Renew | heal | Star | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | homing heal. count twist 1/10. |
-| 114459 | Shatter Metal Mend | heal | Metal | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | bounce heal. area twist 9/10. |
-| 114460 | Eternal Light Barrier | barrier | Light | power 0, cooldown 10.9s, mana 50, cast 0.30s, range 160 | heal barrier. cooldown twist 7/10. |
-| 114461 | Solar Frost Nova | nova | Frost | power 63, cooldown 10.0s, mana 53, cast 0.34s, range 260 | slow nova. cast twist 4/10. |
-| 114462 | Primal Star Lance | beam | Star | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | homing beam. duration twist 2/10. |
+| 114453 | Blazing Frost Dash | dash | Frost | power 0, cooldown 3.6s, mana 10, cast 0.05s, range 200 | slow dash. cooldown twist 3/10. |
+| 114454 | Final Star Totem | mine | Star | power 95, cooldown 7.0s, mana 10, cast 0.20s, range 0 | (not usable in ranked duels) homing mine. mp twist 10/10. |
+| 114455 | Molten Metal Chain | pull | Metal | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) bounce pull. duration twist 8/10. |
+| 114456 | Gale Light Blade | cleave | Light | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 152 | heal cleave. range twist 6/10. |
+| 114457 | Jade Frost Overdrive | buff | Frost | power 50, cooldown 15.0s, mana 22, cast 0.20s, range 0 | slow buff. power twist 4/10. |
+| 114458 | Hollow Star Renew | heal | Star | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | homing heal. count twist 1/10. |
+| 114459 | Shatter Metal Mend | heal | Metal | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | bounce heal. area twist 9/10. |
+| 114460 | Eternal Light Barrier | barrier | Light | power 0, cooldown 10.9s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) heal barrier. cooldown twist 7/10. |
+| 114461 | Solar Frost Nova | nova | Frost | power 63, cooldown 10.0s, mana 27, cast 0.34s, range 260 | slow nova. cast twist 4/10. |
+| 114462 | Primal Star Lance | beam | Star | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | homing beam. duration twist 2/10. |
 | 114463 | Twin Toxin Forge | out of battle | - | +35% more XP from matches and levels | poison world. range twist 10/10. |
-| 114464 | Mystic Void Quake | nova | Void | power 86, cooldown 10.0s, mana 53, cast 0.40s, range 260 | pierce nova. power twist 8/10. |
-| 114465 | Arctic Flame Golem | summon | Flame | power 38, cooldown 18.0s, mana 57, cast 0.60s, range 200 | burn summon. mp twist 5/10. |
-| 114466 | Thunder Blood Missile | projectile | Blood | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | leech projectile. area twist 3/10. |
-| 114467 | Azure Toxin Umbra | slow | Toxin | power 13, cooldown 10.7s, mana 41, cast 0.30s, range 360 | poison slow. cooldown twist 1/10. |
-| 114468 | Bright Void Focus | buff | Void | power 42, cooldown 15.0s, mana 44, cast 0.14s, range 0 | pierce buff. cast twist 8/10. |
-| 114469 | Dragon Flame Link | buff | Flame | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | burn buff. count twist 6/10. |
-| 114470 | Violet Blood Guard | shield | Blood | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | leech shield. range twist 4/10. |
-| 114471 | Swift Toxin Aegis | shield | Toxin | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | poison shield. power twist 2/10. |
-| 114472 | Piercing Void Volley | volley | Void | power 46, cooldown 8.0s, mana 34, cast 0.40s, range 600 | pierce volley. mp twist 9/10. |
-| 114473 | Wild Flame Bolt | projectile | Flame | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | burn projectile. duration twist 7/10. |
-| 114474 | Cosmic Wind Warp | blink | Wind | power 0, cooldown 5.1s, mana 27, cast 0.10s, range 260 | knockback blink. cooldown twist 5/10. |
-| 114475 | Sacred Shadow Stasis | slow | Shadow | power 13, cooldown 11.0s, mana 41, cast 0.28s, range 360 | hide slow. cast twist 2/10. |
-| 114476 | Endless Storm Swarm | summon | Storm | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | chain summon. count twist 10/10. |
-| 114477 | Spectral Gravity Hammer | cleave | Gravity | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 163 | pull cleave. range twist 8/10. |
-| 114478 | Storm Wind Ambush | ambush | Wind | power 187, cooldown 12.0s, mana 44, cast 0.20s, range 260 | knockback ambush. power twist 6/10. |
-| 114479 | Silver Shadow Fury | buff | Shadow | power 42, cooldown 15.0s, mana 40, cast 0.20s, range 0 | hide buff. mp twist 3/10. |
-| 114480 | Raging Storm Haven | barrier | Storm | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | chain barrier. duration twist 1/10. |
-| 114481 | Dawn Gravity Mirror | shield | Gravity | power 0, cooldown 8.6s, mana 41, cast 0.10s, range 0 | pull shield. cooldown twist 9/10. |
-| 114482 | Fallen Wind Slash | cleave | Wind | power 101, cooldown 6.0s, mana 33, cast 0.20s, range 120 | knockback cleave. cast twist 6/10. |
-| 114483 | Onyx Shadow Barrage | volley | Shadow | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | hide volley. count twist 4/10. |
+| 114464 | Mystic Void Quake | nova | Void | power 86, cooldown 10.0s, mana 27, cast 0.40s, range 260 | pierce nova. power twist 8/10. |
+| 114465 | Arctic Flame Golem | summon | Flame | power 38, cooldown 18.0s, mana 29, cast 0.60s, range 200 | (not usable in ranked duels) burn summon. mp twist 5/10. |
+| 114466 | Thunder Blood Missile | projectile | Blood | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | leech projectile. area twist 3/10. |
+| 114467 | Azure Toxin Umbra | slow | Toxin | power 13, cooldown 10.7s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) poison slow. cooldown twist 1/10. |
+| 114468 | Bright Void Focus | buff | Void | power 42, cooldown 15.0s, mana 22, cast 0.14s, range 0 | pierce buff. cast twist 8/10. |
+| 114469 | Dragon Flame Link | buff | Flame | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | burn buff. count twist 6/10. |
+| 114470 | Violet Blood Guard | shield | Blood | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | leech shield. range twist 4/10. |
+| 114471 | Swift Toxin Aegis | shield | Toxin | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | poison shield. power twist 2/10. |
+| 114472 | Piercing Void Volley | volley | Void | power 46, cooldown 8.0s, mana 17, cast 0.40s, range 600 | pierce volley. mp twist 9/10. |
+| 114473 | Wild Flame Bolt | projectile | Flame | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | burn projectile. duration twist 7/10. |
+| 114474 | Cosmic Wind Warp | blink | Wind | power 0, cooldown 5.1s, mana 13, cast 0.10s, range 260 | knockback blink. cooldown twist 5/10. |
+| 114475 | Sacred Shadow Stasis | slow | Shadow | power 13, cooldown 11.0s, mana 21, cast 0.28s, range 360 | (not usable in ranked duels) hide slow. cast twist 2/10. |
+| 114476 | Endless Storm Swarm | summon | Storm | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) chain summon. count twist 10/10. |
+| 114477 | Spectral Gravity Hammer | cleave | Gravity | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 163 | pull cleave. range twist 8/10. |
+| 114478 | Storm Wind Ambush | ambush | Wind | power 187, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) knockback ambush. power twist 6/10. |
+| 114479 | Silver Shadow Fury | buff | Shadow | power 42, cooldown 15.0s, mana 20, cast 0.20s, range 0 | hide buff. mp twist 3/10. |
+| 114480 | Raging Storm Haven | barrier | Storm | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) chain barrier. duration twist 1/10. |
+| 114481 | Dawn Gravity Mirror | shield | Gravity | power 0, cooldown 8.6s, mana 21, cast 0.10s, range 0 | pull shield. cooldown twist 9/10. |
+| 114482 | Fallen Wind Slash | cleave | Wind | power 101, cooldown 6.0s, mana 16, cast 0.20s, range 120 | knockback cleave. cast twist 6/10. |
+| 114483 | Onyx Shadow Barrage | volley | Shadow | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | hide volley. count twist 4/10. |
 | 114484 | Gentle Frost Gather | out of battle | - | +35% chance to get each skill drop twice | slow world. area twist 2/10. |
-| 114485 | Lucky Star Rift | portal | Star | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | homing portal. power twist 10/10. |
-| 114486 | Rogue Metal Gravity | pull | Metal | power 21, cooldown 12.0s, mana 37, cast 0.40s, range 420 | bounce pull. mp twist 7/10. |
-| 114487 | Infernal Light Legion | summon | Light | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | heal summon. duration twist 5/10. |
-| 114488 | Frozen Frost Bow | projectile | Frost | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 726 | slow projectile. range twist 3/10. |
-| 114489 | Genesis Star Phantom | stealth | Star | power 0, cooldown 14.0s, mana 38, cast 0.06s, range 0 | homing stealth. cast twist 10/10. |
-| 114490 | Void-touched Metal Haste | buff | Metal | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | bounce buff. count twist 8/10. |
-| 114491 | Tidal Light Aura | aura | Light | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | heal aura. area twist 6/10. |
-| 114492 | Scarlet Frost Bulwark | barrier | Frost | power 0, cooldown 12.2s, mana 50, cast 0.30s, range 160 | slow barrier. cooldown twist 4/10. |
-| 114493 | Radiant Star Cleave | cleave | Star | power 101, cooldown 6.0s, mana 32, cast 0.25s, range 120 | homing cleave. mp twist 1/10. |
-| 114494 | Echoing Metal Beam | beam | Metal | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | bounce beam. duration twist 9/10. |
+| 114485 | Lucky Star Rift | portal | Star | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) homing portal. power twist 10/10. |
+| 114486 | Rogue Metal Gravity | pull | Metal | power 21, cooldown 12.0s, mana 18, cast 0.40s, range 420 | (not usable in ranked duels) bounce pull. mp twist 7/10. |
+| 114487 | Infernal Light Legion | summon | Light | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) heal summon. duration twist 5/10. |
+| 114488 | Frozen Frost Bow | projectile | Frost | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 726 | slow projectile. range twist 3/10. |
+| 114489 | Genesis Star Phantom | stealth | Star | power 0, cooldown 14.0s, mana 19, cast 0.06s, range 0 | (not usable in ranked duels) homing stealth. cast twist 10/10. |
+| 114490 | Void-touched Metal Haste | buff | Metal | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | bounce buff. count twist 8/10. |
+| 114491 | Tidal Light Aura | aura | Light | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) heal aura. area twist 6/10. |
+| 114492 | Scarlet Frost Bulwark | barrier | Frost | power 0, cooldown 12.2s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) slow barrier. cooldown twist 4/10. |
+| 114493 | Radiant Star Cleave | cleave | Star | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | homing cleave. mp twist 1/10. |
+| 114494 | Echoing Metal Beam | beam | Metal | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | bounce beam. duration twist 9/10. |
 | 114495 | Fierce Void Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | pierce world. range twist 7/10. |
-| 114496 | Stellar Flame Blink | blink | Flame | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | burn blink. power twist 5/10. |
-| 114497 | Ethereal Blood Snare | slow | Blood | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | leech slow. count twist 2/10. |
-| 114498 | Grand Toxin Familiar | summon | Toxin | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | poison summon. area twist 10/10. |
-| 114499 | Arcane Void Gun | volley | Void | power 46, cooldown 6.0s, mana 47, cast 0.40s, range 600 | pierce volley. cooldown twist 8/10. |
-| 114500 | Desert Flame Veil | stealth | Flame | power 0, cooldown 14.0s, mana 38, cast 0.08s, range 0 | burn stealth. cast twist 5/10. |
-| 114501 | Phantom Blood Surge | buff | Blood | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | leech buff. duration twist 3/10. |
-| 114502 | Golden Toxin Blessing | aura | Toxin | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | poison aura. range twist 1/10. |
-| 114503 | Dusk Void Ward | shield | Void | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | pierce shield. power twist 9/10. |
-| 114504 | Titan Flame Comet | projectile | Flame | power 84, cooldown 5.0s, mana 22, cast 0.20s, range 640 | burn projectile. mp twist 6/10. |
-| 114505 | Amber Blood Orb | projectile | Blood | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | leech projectile. area twist 4/10. |
+| 114496 | Stellar Flame Blink | blink | Flame | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | burn blink. power twist 5/10. |
+| 114497 | Ethereal Blood Snare | slow | Blood | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) leech slow. count twist 2/10. |
+| 114498 | Grand Toxin Familiar | summon | Toxin | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) poison summon. area twist 10/10. |
+| 114499 | Arcane Void Gun | volley | Void | power 46, cooldown 6.0s, mana 24, cast 0.40s, range 600 | pierce volley. cooldown twist 8/10. |
+| 114500 | Desert Flame Veil | stealth | Flame | power 0, cooldown 14.0s, mana 19, cast 0.08s, range 0 | (not usable in ranked duels) burn stealth. cast twist 5/10. |
+| 114501 | Phantom Blood Surge | buff | Blood | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | leech buff. duration twist 3/10. |
+| 114502 | Golden Toxin Blessing | aura | Toxin | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) poison aura. range twist 1/10. |
+| 114503 | Dusk Void Ward | shield | Void | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | pierce shield. power twist 9/10. |
+| 114504 | Titan Flame Comet | projectile | Flame | power 84, cooldown 5.0s, mana 11, cast 0.20s, range 640 | burn projectile. mp twist 6/10. |
+| 114505 | Amber Blood Orb | projectile | Blood | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | leech projectile. area twist 4/10. |
 | 114506 | Heavy Shadow Appraisal | out of battle | - | +35% more coins from matches, levels and chests | hide world. cooldown twist 2/10. |
-| 114507 | Vengeful Storm Dash | dash | Storm | power 0, cooldown 4.0s, mana 21, cast 0.03s, range 200 | chain dash. cast twist 9/10. |
-| 114508 | Wild Gravity Totem | mine | Gravity | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | pull mine. duration twist 7/10. |
-| 114509 | Abyssal Wind Chain | pull | Wind | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 515 | knockback pull. range twist 5/10. |
-| 114510 | Cursed Shadow Blade | cleave | Shadow | power 114, cooldown 6.0s, mana 33, cast 0.25s, range 120 | hide cleave. power twist 3/10. |
-| 114511 | Final Storm Overdrive | buff | Storm | power 42, cooldown 15.0s, mana 30, cast 0.20s, range 0 | chain buff. mp twist 10/10. |
-| 114512 | Crystal Gravity Renew | heal | Gravity | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | pull heal. area twist 8/10. |
-| 114513 | Ember Wind Mend | heal | Wind | power 63, cooldown 13.0s, mana 59, cast 0.50s, range 0 | knockback heal. cooldown twist 6/10. |
-| 114514 | Obsidian Shadow Barrier | barrier | Shadow | power 0, cooldown 14.0s, mana 50, cast 0.27s, range 160 | hide barrier. cast twist 3/10. |
-| 114515 | Hollow Storm Nova | nova | Storm | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | chain nova. count twist 1/10. |
-| 114516 | Mirror Gravity Lance | beam | Gravity | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 984 | pull beam. range twist 9/10. |
+| 114507 | Vengeful Storm Dash | dash | Storm | power 0, cooldown 4.0s, mana 10, cast 0.03s, range 200 | chain dash. cast twist 9/10. |
+| 114508 | Wild Gravity Totem | mine | Gravity | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) pull mine. duration twist 7/10. |
+| 114509 | Abyssal Wind Chain | pull | Wind | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 515 | (not usable in ranked duels) knockback pull. range twist 5/10. |
+| 114510 | Cursed Shadow Blade | cleave | Shadow | power 114, cooldown 6.0s, mana 16, cast 0.25s, range 120 | hide cleave. power twist 3/10. |
+| 114511 | Final Storm Overdrive | buff | Storm | power 42, cooldown 15.0s, mana 15, cast 0.20s, range 0 | chain buff. mp twist 10/10. |
+| 114512 | Crystal Gravity Renew | heal | Gravity | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | pull heal. area twist 8/10. |
+| 114513 | Ember Wind Mend | heal | Wind | power 63, cooldown 13.0s, mana 30, cast 0.50s, range 0 | knockback heal. cooldown twist 6/10. |
+| 114514 | Obsidian Shadow Barrier | barrier | Shadow | power 0, cooldown 14.0s, mana 25, cast 0.27s, range 160 | (not usable in ranked duels) hide barrier. cast twist 3/10. |
+| 114515 | Hollow Storm Nova | nova | Storm | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | chain nova. count twist 1/10. |
+| 114516 | Mirror Gravity Lance | beam | Gravity | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 984 | pull beam. range twist 9/10. |
 | 114517 | Rising Metal Forge | out of battle | - | +35% more XP from matches and levels | bounce world. power twist 7/10. |
-| 114518 | Lunar Light Quake | nova | Light | power 63, cooldown 10.0s, mana 47, cast 0.40s, range 260 | heal nova. mp twist 4/10. |
-| 114519 | Primal Frost Golem | summon | Frost | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | slow summon. duration twist 2/10. |
-| 114520 | Forgotten Star Missile | projectile | Star | power 84, cooldown 3.4s, mana 27, cast 0.20s, range 640 | homing projectile. cooldown twist 10/10. |
-| 114521 | Royal Metal Umbra | slow | Metal | power 13, cooldown 11.0s, mana 41, cast 0.22s, range 360 | bounce slow. cast twist 7/10. |
-| 114522 | Verdant Light Focus | buff | Light | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | heal buff. count twist 5/10. |
-| 114523 | Thunder Frost Link | buff | Frost | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | slow buff. area twist 3/10. |
-| 114524 | Crimson Star Guard | shield | Star | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | homing shield. power twist 1/10. |
-| 114525 | Dread Metal Aegis | shield | Metal | power 0, cooldown 12.0s, mana 31, cast 0.10s, range 0 | bounce shield. mp twist 8/10. |
-| 114526 | Rune Light Volley | volley | Light | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | heal volley. duration twist 6/10. |
-| 114527 | Violet Frost Bolt | projectile | Frost | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 755 | slow projectile. range twist 4/10. |
-| 114528 | Ancient Blood Warp | blink | Blood | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | leech blink. cast twist 1/10. |
-| 114529 | Burning Toxin Stasis | slow | Toxin | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | poison slow. count twist 9/10. |
-| 114530 | Calm Void Swarm | summon | Void | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | pierce summon. area twist 7/10. |
-| 114531 | Cosmic Flame Hammer | cleave | Flame | power 101, cooldown 5.1s, mana 33, cast 0.25s, range 120 | burn cleave. cooldown twist 5/10. |
-| 114532 | Savage Blood Ambush | ambush | Blood | power 147, cooldown 12.0s, mana 42, cast 0.20s, range 260 | leech ambush. mp twist 2/10. |
-| 114533 | Tiny Toxin Fury | buff | Toxin | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | poison buff. duration twist 10/10. |
-| 114534 | Spectral Void Haven | barrier | Void | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 218 | pierce barrier. range twist 8/10. |
-| 114535 | Storm Flame Mirror | shield | Flame | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | burn shield. power twist 6/10. |
-| 114536 | Iron Blood Slash | cleave | Blood | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | leech cleave. count twist 3/10. |
-| 114537 | Silent Toxin Barrage | volley | Toxin | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | poison volley. area twist 1/10. |
+| 114518 | Lunar Light Quake | nova | Light | power 63, cooldown 10.0s, mana 23, cast 0.40s, range 260 | heal nova. mp twist 4/10. |
+| 114519 | Primal Frost Golem | summon | Frost | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) slow summon. duration twist 2/10. |
+| 114520 | Forgotten Star Missile | projectile | Star | power 84, cooldown 3.4s, mana 13, cast 0.20s, range 640 | homing projectile. cooldown twist 10/10. |
+| 114521 | Royal Metal Umbra | slow | Metal | power 13, cooldown 11.0s, mana 21, cast 0.22s, range 360 | (not usable in ranked duels) bounce slow. cast twist 7/10. |
+| 114522 | Verdant Light Focus | buff | Light | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | heal buff. count twist 5/10. |
+| 114523 | Thunder Frost Link | buff | Frost | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | slow buff. area twist 3/10. |
+| 114524 | Crimson Star Guard | shield | Star | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | homing shield. power twist 1/10. |
+| 114525 | Dread Metal Aegis | shield | Metal | power 0, cooldown 12.0s, mana 15, cast 0.10s, range 0 | bounce shield. mp twist 8/10. |
+| 114526 | Rune Light Volley | volley | Light | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | heal volley. duration twist 6/10. |
+| 114527 | Violet Frost Bolt | projectile | Frost | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 755 | slow projectile. range twist 4/10. |
+| 114528 | Ancient Blood Warp | blink | Blood | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | leech blink. cast twist 1/10. |
+| 114529 | Burning Toxin Stasis | slow | Toxin | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) poison slow. count twist 9/10. |
+| 114530 | Calm Void Swarm | summon | Void | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) pierce summon. area twist 7/10. |
+| 114531 | Cosmic Flame Hammer | cleave | Flame | power 101, cooldown 5.1s, mana 16, cast 0.25s, range 120 | burn cleave. cooldown twist 5/10. |
+| 114532 | Savage Blood Ambush | ambush | Blood | power 147, cooldown 12.0s, mana 21, cast 0.20s, range 260 | (not usable in ranked duels) leech ambush. mp twist 2/10. |
+| 114533 | Tiny Toxin Fury | buff | Toxin | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | poison buff. duration twist 10/10. |
+| 114534 | Spectral Void Haven | barrier | Void | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 218 | (not usable in ranked duels) pierce barrier. range twist 8/10. |
+| 114535 | Storm Flame Mirror | shield | Flame | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | burn shield. power twist 6/10. |
+| 114536 | Iron Blood Slash | cleave | Blood | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | leech cleave. count twist 3/10. |
+| 114537 | Silent Toxin Barrage | volley | Toxin | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | poison volley. area twist 1/10. |
 | 114538 | Dawn Storm Gather | out of battle | - | +35% chance to get each skill drop twice | chain world. cooldown twist 9/10. |
-| 114539 | Titan Gravity Rift | portal | Gravity | power 0, cooldown 16.0s, mana 48, cast 0.50s, range 500 | pull portal. mp twist 6/10. |
-| 114540 | Ivory Wind Gravity | pull | Wind | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | knockback pull. duration twist 4/10. |
-| 114541 | Wicked Shadow Legion | summon | Shadow | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 218 | hide summon. range twist 2/10. |
-| 114542 | Lucky Storm Bow | projectile | Storm | power 122, cooldown 5.0s, mana 27, cast 0.20s, range 640 | chain projectile. power twist 10/10. |
-| 114543 | Noble Gravity Phantom | stealth | Gravity | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | pull stealth. count twist 7/10. |
-| 114544 | Celestial Wind Haste | buff | Wind | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | knockback buff. area twist 5/10. |
-| 114545 | Blazing Shadow Aura | aura | Shadow | power 17, cooldown 16.3s, mana 65, cast 0.30s, range 0 | hide aura. cooldown twist 3/10. |
-| 114546 | Genesis Storm Bulwark | barrier | Storm | power 0, cooldown 14.0s, mana 50, cast 0.19s, range 160 | chain barrier. cast twist 10/10. |
-| 114547 | Molten Gravity Cleave | cleave | Gravity | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | pull cleave. duration twist 8/10. |
-| 114548 | Gale Wind Beam | beam | Wind | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 889 | knockback beam. range twist 6/10. |
+| 114539 | Titan Gravity Rift | portal | Gravity | power 0, cooldown 16.0s, mana 24, cast 0.50s, range 500 | (not usable in ranked duels) pull portal. mp twist 6/10. |
+| 114540 | Ivory Wind Gravity | pull | Wind | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) knockback pull. duration twist 4/10. |
+| 114541 | Wicked Shadow Legion | summon | Shadow | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 218 | (not usable in ranked duels) hide summon. range twist 2/10. |
+| 114542 | Lucky Storm Bow | projectile | Storm | power 122, cooldown 5.0s, mana 13, cast 0.20s, range 640 | chain projectile. power twist 10/10. |
+| 114543 | Noble Gravity Phantom | stealth | Gravity | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) pull stealth. count twist 7/10. |
+| 114544 | Celestial Wind Haste | buff | Wind | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | knockback buff. area twist 5/10. |
+| 114545 | Blazing Shadow Aura | aura | Shadow | power 17, cooldown 16.3s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) hide aura. cooldown twist 3/10. |
+| 114546 | Genesis Storm Bulwark | barrier | Storm | power 0, cooldown 14.0s, mana 25, cast 0.19s, range 160 | (not usable in ranked duels) chain barrier. cast twist 10/10. |
+| 114547 | Molten Gravity Cleave | cleave | Gravity | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | pull cleave. duration twist 8/10. |
+| 114548 | Gale Wind Beam | beam | Wind | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 889 | knockback beam. range twist 6/10. |
 | 114549 | Jade Light Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | heal world. power twist 4/10. |
-| 114550 | Radiant Frost Blink | blink | Frost | power 0, cooldown 6.0s, mana 26, cast 0.10s, range 260 | slow blink. mp twist 1/10. |
-| 114551 | Shatter Star Snare | slow | Star | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | homing slow. area twist 9/10. |
-| 114552 | Eternal Metal Familiar | summon | Metal | power 38, cooldown 14.0s, mana 68, cast 0.60s, range 200 | bounce summon. cooldown twist 7/10. |
-| 114553 | Solar Light Gun | volley | Light | power 46, cooldown 8.0s, mana 47, cast 0.34s, range 600 | heal volley. cast twist 4/10. |
-| 114554 | Ethereal Frost Veil | stealth | Frost | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | slow stealth. count twist 2/10. |
-| 114555 | Twin Star Surge | buff | Star | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | homing buff. range twist 10/10. |
-| 114556 | Mystic Metal Blessing | aura | Metal | power 23, cooldown 18.0s, mana 65, cast 0.30s, range 0 | bounce aura. power twist 8/10. |
-| 114557 | Arctic Light Ward | shield | Light | power 0, cooldown 12.0s, mana 35, cast 0.10s, range 0 | heal shield. mp twist 5/10. |
-| 114558 | Phantom Frost Comet | projectile | Frost | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | slow projectile. duration twist 3/10. |
-| 114559 | Azure Star Orb | projectile | Star | power 84, cooldown 4.8s, mana 27, cast 0.20s, range 640 | homing projectile. cooldown twist 1/10. |
+| 114550 | Radiant Frost Blink | blink | Frost | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | slow blink. mp twist 1/10. |
+| 114551 | Shatter Star Snare | slow | Star | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) homing slow. area twist 9/10. |
+| 114552 | Eternal Metal Familiar | summon | Metal | power 38, cooldown 14.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) bounce summon. cooldown twist 7/10. |
+| 114553 | Solar Light Gun | volley | Light | power 46, cooldown 8.0s, mana 24, cast 0.34s, range 600 | heal volley. cast twist 4/10. |
+| 114554 | Ethereal Frost Veil | stealth | Frost | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) slow stealth. count twist 2/10. |
+| 114555 | Twin Star Surge | buff | Star | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | homing buff. range twist 10/10. |
+| 114556 | Mystic Metal Blessing | aura | Metal | power 23, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) bounce aura. power twist 8/10. |
+| 114557 | Arctic Light Ward | shield | Light | power 0, cooldown 12.0s, mana 17, cast 0.10s, range 0 | heal shield. mp twist 5/10. |
+| 114558 | Phantom Frost Comet | projectile | Frost | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | slow projectile. duration twist 3/10. |
+| 114559 | Azure Star Orb | projectile | Star | power 84, cooldown 4.8s, mana 13, cast 0.20s, range 640 | homing projectile. cooldown twist 1/10. |
 | 114560 | Bright Toxin Appraisal | out of battle | - | +35% more coins from matches, levels and chests | poison world. cast twist 8/10. |
-| 114561 | Dragon Void Dash | dash | Void | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | pierce dash. count twist 6/10. |
-| 114562 | Amber Flame Totem | mine | Flame | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | burn mine. area twist 4/10. |
-| 114563 | Swift Blood Chain | pull | Blood | power 23, cooldown 12.0s, mana 47, cast 0.40s, range 420 | leech pull. power twist 2/10. |
-| 114564 | Piercing Toxin Blade | cleave | Toxin | power 101, cooldown 6.0s, mana 23, cast 0.25s, range 120 | poison cleave. mp twist 9/10. |
-| 114565 | Wild Void Overdrive | buff | Void | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pierce buff. duration twist 7/10. |
-| 114566 | Abyssal Flame Renew | heal | Flame | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | burn heal. range twist 5/10. |
-| 114567 | Sacred Blood Mend | heal | Blood | power 63, cooldown 16.0s, mana 59, cast 0.46s, range 0 | leech heal. cast twist 2/10. |
-| 114568 | Endless Toxin Barrier | barrier | Toxin | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | poison barrier. count twist 10/10. |
-| 114569 | Crystal Void Nova | nova | Void | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | pierce nova. area twist 8/10. |
-| 114570 | Ember Flame Lance | beam | Flame | power 116, cooldown 7.3s, mana 44, cast 0.50s, range 700 | burn beam. cooldown twist 6/10. |
+| 114561 | Dragon Void Dash | dash | Void | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | pierce dash. count twist 6/10. |
+| 114562 | Amber Flame Totem | mine | Flame | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) burn mine. area twist 4/10. |
+| 114563 | Swift Blood Chain | pull | Blood | power 23, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) leech pull. power twist 2/10. |
+| 114564 | Piercing Toxin Blade | cleave | Toxin | power 101, cooldown 6.0s, mana 12, cast 0.25s, range 120 | poison cleave. mp twist 9/10. |
+| 114565 | Wild Void Overdrive | buff | Void | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pierce buff. duration twist 7/10. |
+| 114566 | Abyssal Flame Renew | heal | Flame | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | burn heal. range twist 5/10. |
+| 114567 | Sacred Blood Mend | heal | Blood | power 63, cooldown 16.0s, mana 30, cast 0.46s, range 0 | leech heal. cast twist 2/10. |
+| 114568 | Endless Toxin Barrier | barrier | Toxin | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) poison barrier. count twist 10/10. |
+| 114569 | Crystal Void Nova | nova | Void | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | pierce nova. area twist 8/10. |
+| 114570 | Ember Flame Lance | beam | Flame | power 116, cooldown 7.3s, mana 22, cast 0.50s, range 700 | burn beam. cooldown twist 6/10. |
 | 114571 | Silver Wind Forge | out of battle | - | +35% more XP from matches and levels | knockback world. mp twist 3/10. |
-| 114572 | Raging Shadow Quake | nova | Shadow | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | hide nova. duration twist 1/10. |
-| 114573 | Mirror Storm Golem | summon | Storm | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 281 | chain summon. range twist 9/10. |
-| 114574 | Fallen Gravity Missile | projectile | Gravity | power 84, cooldown 5.0s, mana 27, cast 0.16s, range 640 | pull projectile. cast twist 6/10. |
-| 114575 | Onyx Wind Umbra | slow | Wind | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | knockback slow. count twist 4/10. |
-| 114576 | Gentle Shadow Focus | buff | Shadow | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | hide buff. area twist 2/10. |
-| 114577 | Forgotten Storm Link | buff | Storm | power 42, cooldown 10.3s, mana 44, cast 0.20s, range 0 | chain buff. cooldown twist 10/10. |
-| 114578 | Rogue Gravity Guard | shield | Gravity | power 0, cooldown 12.0s, mana 32, cast 0.10s, range 0 | pull shield. mp twist 7/10. |
-| 114579 | Infernal Wind Aegis | shield | Wind | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | knockback shield. duration twist 5/10. |
-| 114580 | Frozen Shadow Volley | volley | Shadow | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 681 | hide volley. range twist 3/10. |
-| 114581 | Crimson Storm Bolt | projectile | Storm | power 88, cooldown 5.0s, mana 27, cast 0.20s, range 640 | chain projectile. power twist 1/10. |
-| 114582 | Void-touched Star Warp | blink | Star | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | homing blink. count twist 8/10. |
-| 114583 | Tidal Metal Stasis | slow | Metal | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | bounce slow. area twist 6/10. |
-| 114584 | Scarlet Light Swarm | summon | Light | power 38, cooldown 15.7s, mana 68, cast 0.60s, range 200 | heal summon. cooldown twist 4/10. |
-| 114585 | Ancient Frost Hammer | cleave | Frost | power 101, cooldown 6.0s, mana 33, cast 0.24s, range 120 | slow cleave. cast twist 1/10. |
-| 114586 | Echoing Star Ambush | ambush | Star | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 260 | homing ambush. duration twist 9/10. |
-| 114587 | Fierce Metal Fury | buff | Metal | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | bounce buff. range twist 7/10. |
-| 114588 | Stellar Light Haven | barrier | Light | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | heal barrier. power twist 5/10. |
-| 114589 | Savage Frost Mirror | shield | Frost | power 0, cooldown 12.0s, mana 39, cast 0.10s, range 0 | slow shield. mp twist 2/10. |
-| 114590 | Grand Star Slash | cleave | Star | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | homing cleave. area twist 10/10. |
-| 114591 | Arcane Metal Barrage | volley | Metal | power 46, cooldown 6.0s, mana 47, cast 0.40s, range 600 | bounce volley. cooldown twist 8/10. |
+| 114572 | Raging Shadow Quake | nova | Shadow | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | hide nova. duration twist 1/10. |
+| 114573 | Mirror Storm Golem | summon | Storm | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 281 | (not usable in ranked duels) chain summon. range twist 9/10. |
+| 114574 | Fallen Gravity Missile | projectile | Gravity | power 84, cooldown 5.0s, mana 13, cast 0.16s, range 640 | pull projectile. cast twist 6/10. |
+| 114575 | Onyx Wind Umbra | slow | Wind | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) knockback slow. count twist 4/10. |
+| 114576 | Gentle Shadow Focus | buff | Shadow | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | hide buff. area twist 2/10. |
+| 114577 | Forgotten Storm Link | buff | Storm | power 42, cooldown 10.3s, mana 22, cast 0.20s, range 0 | chain buff. cooldown twist 10/10. |
+| 114578 | Rogue Gravity Guard | shield | Gravity | power 0, cooldown 12.0s, mana 16, cast 0.10s, range 0 | pull shield. mp twist 7/10. |
+| 114579 | Infernal Wind Aegis | shield | Wind | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | knockback shield. duration twist 5/10. |
+| 114580 | Frozen Shadow Volley | volley | Shadow | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 681 | hide volley. range twist 3/10. |
+| 114581 | Crimson Storm Bolt | projectile | Storm | power 88, cooldown 5.0s, mana 13, cast 0.20s, range 640 | chain projectile. power twist 1/10. |
+| 114582 | Void-touched Star Warp | blink | Star | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | homing blink. count twist 8/10. |
+| 114583 | Tidal Metal Stasis | slow | Metal | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) bounce slow. area twist 6/10. |
+| 114584 | Scarlet Light Swarm | summon | Light | power 38, cooldown 15.7s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) heal summon. cooldown twist 4/10. |
+| 114585 | Ancient Frost Hammer | cleave | Frost | power 101, cooldown 6.0s, mana 16, cast 0.24s, range 120 | slow cleave. cast twist 1/10. |
+| 114586 | Echoing Star Ambush | ambush | Star | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) homing ambush. duration twist 9/10. |
+| 114587 | Fierce Metal Fury | buff | Metal | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | bounce buff. range twist 7/10. |
+| 114588 | Stellar Light Haven | barrier | Light | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) heal barrier. power twist 5/10. |
+| 114589 | Savage Frost Mirror | shield | Frost | power 0, cooldown 12.0s, mana 19, cast 0.10s, range 0 | slow shield. mp twist 2/10. |
+| 114590 | Grand Star Slash | cleave | Star | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | homing cleave. area twist 10/10. |
+| 114591 | Arcane Metal Barrage | volley | Metal | power 46, cooldown 6.0s, mana 24, cast 0.40s, range 600 | bounce volley. cooldown twist 8/10. |
 | 114592 | Desert Void Gather | out of battle | - | +35% chance to get each skill drop twice | pierce world. cast twist 5/10. |
-| 114593 | Iron Flame Rift | portal | Flame | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | burn portal. count twist 3/10. |
-| 114594 | Golden Blood Gravity | pull | Blood | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 439 | leech pull. range twist 1/10. |
-| 114595 | Dusk Toxin Legion | summon | Toxin | power 53, cooldown 18.0s, mana 68, cast 0.60s, range 200 | poison summon. power twist 9/10. |
-| 114596 | Titan Void Bow | projectile | Void | power 84, cooldown 5.0s, mana 22, cast 0.20s, range 640 | pierce projectile. mp twist 6/10. |
-| 114597 | Ivory Flame Phantom | stealth | Flame | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | burn stealth. duration twist 4/10. |
-| 114598 | Heavy Blood Haste | buff | Blood | power 42, cooldown 14.1s, mana 44, cast 0.20s, range 0 | leech buff. cooldown twist 2/10. |
-| 114599 | Vengeful Toxin Aura | aura | Toxin | power 17, cooldown 18.0s, mana 65, cast 0.20s, range 0 | poison aura. cast twist 9/10. |
-| 114600 | Noble Void Bulwark | barrier | Void | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | pierce barrier. count twist 7/10. |
-| 114601 | Celestial Flame Cleave | cleave | Flame | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | burn cleave. area twist 5/10. |
-| 114602 | Cursed Blood Beam | beam | Blood | power 131, cooldown 9.0s, mana 44, cast 0.50s, range 700 | leech beam. power twist 3/10. |
+| 114593 | Iron Flame Rift | portal | Flame | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) burn portal. count twist 3/10. |
+| 114594 | Golden Blood Gravity | pull | Blood | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 439 | (not usable in ranked duels) leech pull. range twist 1/10. |
+| 114595 | Dusk Toxin Legion | summon | Toxin | power 53, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) poison summon. power twist 9/10. |
+| 114596 | Titan Void Bow | projectile | Void | power 84, cooldown 5.0s, mana 11, cast 0.20s, range 640 | pierce projectile. mp twist 6/10. |
+| 114597 | Ivory Flame Phantom | stealth | Flame | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) burn stealth. duration twist 4/10. |
+| 114598 | Heavy Blood Haste | buff | Blood | power 42, cooldown 14.1s, mana 22, cast 0.20s, range 0 | leech buff. cooldown twist 2/10. |
+| 114599 | Vengeful Toxin Aura | aura | Toxin | power 17, cooldown 18.0s, mana 33, cast 0.20s, range 0 | (not usable in ranked duels) poison aura. cast twist 9/10. |
+| 114600 | Noble Void Bulwark | barrier | Void | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) pierce barrier. count twist 7/10. |
+| 114601 | Celestial Flame Cleave | cleave | Flame | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | burn cleave. area twist 5/10. |
+| 114602 | Cursed Blood Beam | beam | Blood | power 131, cooldown 9.0s, mana 22, cast 0.50s, range 700 | leech beam. power twist 3/10. |
 | 114603 | Final Shadow Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | hide world. mp twist 10/10. |
-| 114604 | Molten Storm Blink | blink | Storm | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | chain blink. duration twist 8/10. |
-| 114605 | Ember Gravity Snare | slow | Gravity | power 13, cooldown 8.9s, mana 41, cast 0.30s, range 360 | pull slow. cooldown twist 6/10. |
-| 114606 | Obsidian Wind Familiar | summon | Wind | power 38, cooldown 18.0s, mana 68, cast 0.54s, range 200 | knockback summon. cast twist 3/10. |
-| 114607 | Hollow Shadow Gun | volley | Shadow | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | hide volley. count twist 1/10. |
-| 114608 | Shatter Storm Veil | stealth | Storm | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | chain stealth. area twist 9/10. |
-| 114609 | Rising Gravity Surge | buff | Gravity | power 55, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pull buff. power twist 7/10. |
-| 114610 | Lunar Wind Blessing | aura | Wind | power 17, cooldown 18.0s, mana 57, cast 0.30s, range 0 | knockback aura. mp twist 4/10. |
-| 114611 | Primal Shadow Ward | shield | Shadow | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | hide shield. duration twist 2/10. |
-| 114612 | Twin Storm Comet | projectile | Storm | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 928 | chain projectile. range twist 10/10. |
-| 114613 | Royal Gravity Orb | projectile | Gravity | power 84, cooldown 5.0s, mana 27, cast 0.15s, range 640 | pull projectile. cast twist 7/10. |
+| 114604 | Molten Storm Blink | blink | Storm | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | chain blink. duration twist 8/10. |
+| 114605 | Ember Gravity Snare | slow | Gravity | power 13, cooldown 8.9s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) pull slow. cooldown twist 6/10. |
+| 114606 | Obsidian Wind Familiar | summon | Wind | power 38, cooldown 18.0s, mana 34, cast 0.54s, range 200 | (not usable in ranked duels) knockback summon. cast twist 3/10. |
+| 114607 | Hollow Shadow Gun | volley | Shadow | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | hide volley. count twist 1/10. |
+| 114608 | Shatter Storm Veil | stealth | Storm | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) chain stealth. area twist 9/10. |
+| 114609 | Rising Gravity Surge | buff | Gravity | power 55, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pull buff. power twist 7/10. |
+| 114610 | Lunar Wind Blessing | aura | Wind | power 17, cooldown 18.0s, mana 28, cast 0.30s, range 0 | (not usable in ranked duels) knockback aura. mp twist 4/10. |
+| 114611 | Primal Shadow Ward | shield | Shadow | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | hide shield. duration twist 2/10. |
+| 114612 | Twin Storm Comet | projectile | Storm | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 928 | chain projectile. range twist 10/10. |
+| 114613 | Royal Gravity Orb | projectile | Gravity | power 84, cooldown 5.0s, mana 13, cast 0.15s, range 640 | pull projectile. cast twist 7/10. |
 | 114614 | Verdant Metal Appraisal | out of battle | - | +35% more coins from matches, levels and chests | bounce world. count twist 5/10. |
-| 114615 | Thunder Light Dash | dash | Light | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | heal dash. area twist 3/10. |
-| 114616 | Azure Frost Totem | mine | Frost | power 95, cooldown 6.8s, mana 30, cast 0.20s, range 0 | slow mine. cooldown twist 1/10. |
-| 114617 | Dread Star Chain | pull | Star | power 21, cooldown 12.0s, mana 35, cast 0.40s, range 420 | homing pull. mp twist 8/10. |
-| 114618 | Rune Metal Blade | cleave | Metal | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | bounce cleave. duration twist 6/10. |
-| 114619 | Violet Light Overdrive | buff | Light | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | heal buff. range twist 4/10. |
-| 114620 | Swift Frost Renew | heal | Frost | power 69, cooldown 16.0s, mana 59, cast 0.50s, range 0 | slow heal. power twist 2/10. |
-| 114621 | Burning Star Mend | heal | Star | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | homing heal. count twist 9/10. |
-| 114622 | Calm Metal Barrier | barrier | Metal | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | bounce barrier. area twist 7/10. |
-| 114623 | Cosmic Light Nova | nova | Light | power 63, cooldown 8.4s, mana 53, cast 0.40s, range 260 | heal nova. cooldown twist 5/10. |
-| 114624 | Sacred Frost Lance | beam | Frost | power 116, cooldown 9.0s, mana 44, cast 0.46s, range 700 | slow beam. cast twist 2/10. |
+| 114615 | Thunder Light Dash | dash | Light | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | heal dash. area twist 3/10. |
+| 114616 | Azure Frost Totem | mine | Frost | power 95, cooldown 6.8s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) slow mine. cooldown twist 1/10. |
+| 114617 | Dread Star Chain | pull | Star | power 21, cooldown 12.0s, mana 18, cast 0.40s, range 420 | (not usable in ranked duels) homing pull. mp twist 8/10. |
+| 114618 | Rune Metal Blade | cleave | Metal | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | bounce cleave. duration twist 6/10. |
+| 114619 | Violet Light Overdrive | buff | Light | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | heal buff. range twist 4/10. |
+| 114620 | Swift Frost Renew | heal | Frost | power 69, cooldown 16.0s, mana 30, cast 0.50s, range 0 | slow heal. power twist 2/10. |
+| 114621 | Burning Star Mend | heal | Star | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | homing heal. count twist 9/10. |
+| 114622 | Calm Metal Barrier | barrier | Metal | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) bounce barrier. area twist 7/10. |
+| 114623 | Cosmic Light Nova | nova | Light | power 63, cooldown 8.4s, mana 27, cast 0.40s, range 260 | heal nova. cooldown twist 5/10. |
+| 114624 | Sacred Frost Lance | beam | Frost | power 116, cooldown 9.0s, mana 22, cast 0.46s, range 700 | slow beam. cast twist 2/10. |
 | 114625 | Tiny Blood Forge | out of battle | - | +35% more XP from matches and levels | leech world. duration twist 10/10. |
-| 114626 | Spectral Toxin Quake | nova | Toxin | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 354 | poison nova. range twist 8/10. |
-| 114627 | Storm Void Golem | summon | Void | power 48, cooldown 18.0s, mana 68, cast 0.60s, range 200 | pierce summon. power twist 6/10. |
-| 114628 | Silver Flame Missile | projectile | Flame | power 84, cooldown 5.0s, mana 24, cast 0.20s, range 640 | burn projectile. mp twist 3/10. |
-| 114629 | Silent Blood Umbra | slow | Blood | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | leech slow. area twist 1/10. |
-| 114630 | Dawn Toxin Focus | buff | Toxin | power 42, cooldown 10.7s, mana 44, cast 0.20s, range 0 | poison buff. cooldown twist 9/10. |
-| 114631 | Fallen Void Link | buff | Void | power 42, cooldown 15.0s, mana 44, cast 0.16s, range 0 | pierce buff. cast twist 6/10. |
-| 114632 | Onyx Flame Guard | shield | Flame | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | burn shield. count twist 4/10. |
-| 114633 | Wicked Blood Aegis | shield | Blood | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | leech shield. range twist 2/10. |
-| 114634 | Lucky Toxin Volley | volley | Toxin | power 67, cooldown 8.0s, mana 47, cast 0.40s, range 600 | poison volley. power twist 10/10. |
-| 114635 | Rogue Void Bolt | projectile | Void | power 84, cooldown 5.0s, mana 21, cast 0.20s, range 640 | pierce projectile. mp twist 7/10. |
-| 114636 | Celestial Gravity Warp | blink | Gravity | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | pull blink. area twist 5/10. |
-| 114637 | Blazing Wind Stasis | slow | Wind | power 13, cooldown 10.0s, mana 41, cast 0.30s, range 360 | knockback slow. cooldown twist 3/10. |
-| 114638 | Genesis Shadow Swarm | summon | Shadow | power 38, cooldown 18.0s, mana 68, cast 0.38s, range 200 | hide summon. cast twist 10/10. |
-| 114639 | Void-touched Storm Hammer | cleave | Storm | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | chain cleave. count twist 8/10. |
-| 114640 | Gale Gravity Ambush | ambush | Gravity | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 330 | pull ambush. range twist 6/10. |
-| 114641 | Jade Wind Fury | buff | Wind | power 50, cooldown 15.0s, mana 44, cast 0.20s, range 0 | knockback buff. power twist 4/10. |
-| 114642 | Radiant Shadow Haven | barrier | Shadow | power 0, cooldown 14.0s, mana 49, cast 0.30s, range 160 | hide barrier. mp twist 1/10. |
-| 114643 | Echoing Storm Mirror | shield | Storm | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | chain shield. duration twist 9/10. |
-| 114644 | Eternal Gravity Slash | cleave | Gravity | power 101, cooldown 4.7s, mana 33, cast 0.25s, range 120 | pull cleave. cooldown twist 7/10. |
-| 114645 | Solar Wind Barrage | volley | Wind | power 46, cooldown 8.0s, mana 47, cast 0.34s, range 600 | knockback volley. cast twist 4/10. |
+| 114626 | Spectral Toxin Quake | nova | Toxin | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 354 | poison nova. range twist 8/10. |
+| 114627 | Storm Void Golem | summon | Void | power 48, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) pierce summon. power twist 6/10. |
+| 114628 | Silver Flame Missile | projectile | Flame | power 84, cooldown 5.0s, mana 12, cast 0.20s, range 640 | burn projectile. mp twist 3/10. |
+| 114629 | Silent Blood Umbra | slow | Blood | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) leech slow. area twist 1/10. |
+| 114630 | Dawn Toxin Focus | buff | Toxin | power 42, cooldown 10.7s, mana 22, cast 0.20s, range 0 | poison buff. cooldown twist 9/10. |
+| 114631 | Fallen Void Link | buff | Void | power 42, cooldown 15.0s, mana 22, cast 0.16s, range 0 | pierce buff. cast twist 6/10. |
+| 114632 | Onyx Flame Guard | shield | Flame | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | burn shield. count twist 4/10. |
+| 114633 | Wicked Blood Aegis | shield | Blood | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | leech shield. range twist 2/10. |
+| 114634 | Lucky Toxin Volley | volley | Toxin | power 67, cooldown 8.0s, mana 24, cast 0.40s, range 600 | poison volley. power twist 10/10. |
+| 114635 | Rogue Void Bolt | projectile | Void | power 84, cooldown 5.0s, mana 10, cast 0.20s, range 640 | pierce projectile. mp twist 7/10. |
+| 114636 | Celestial Gravity Warp | blink | Gravity | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | pull blink. area twist 5/10. |
+| 114637 | Blazing Wind Stasis | slow | Wind | power 13, cooldown 10.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) knockback slow. cooldown twist 3/10. |
+| 114638 | Genesis Shadow Swarm | summon | Shadow | power 38, cooldown 18.0s, mana 34, cast 0.38s, range 200 | (not usable in ranked duels) hide summon. cast twist 10/10. |
+| 114639 | Void-touched Storm Hammer | cleave | Storm | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | chain cleave. count twist 8/10. |
+| 114640 | Gale Gravity Ambush | ambush | Gravity | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 330 | (not usable in ranked duels) pull ambush. range twist 6/10. |
+| 114641 | Jade Wind Fury | buff | Wind | power 50, cooldown 15.0s, mana 22, cast 0.20s, range 0 | knockback buff. power twist 4/10. |
+| 114642 | Radiant Shadow Haven | barrier | Shadow | power 0, cooldown 14.0s, mana 24, cast 0.30s, range 160 | (not usable in ranked duels) hide barrier. mp twist 1/10. |
+| 114643 | Echoing Storm Mirror | shield | Storm | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | chain shield. duration twist 9/10. |
+| 114644 | Eternal Gravity Slash | cleave | Gravity | power 101, cooldown 4.7s, mana 16, cast 0.25s, range 120 | pull cleave. cooldown twist 7/10. |
+| 114645 | Solar Wind Barrage | volley | Wind | power 46, cooldown 8.0s, mana 24, cast 0.34s, range 600 | knockback volley. cast twist 4/10. |
 | 114646 | Ethereal Light Gather | out of battle | - | +35% chance to get each skill drop twice | heal world. count twist 2/10. |
-| 114647 | Grand Frost Rift | portal | Frost | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | slow portal. area twist 10/10. |
-| 114648 | Mystic Star Gravity | pull | Star | power 29, cooldown 12.0s, mana 47, cast 0.40s, range 420 | homing pull. power twist 8/10. |
-| 114649 | Arctic Metal Legion | summon | Metal | power 38, cooldown 18.0s, mana 57, cast 0.60s, range 200 | bounce summon. mp twist 5/10. |
-| 114650 | Phantom Light Bow | projectile | Light | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | heal projectile. duration twist 3/10. |
-| 114651 | Golden Frost Phantom | stealth | Frost | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | slow stealth. range twist 1/10. |
-| 114652 | Bright Star Haste | buff | Star | power 42, cooldown 15.0s, mana 44, cast 0.14s, range 0 | homing buff. cast twist 8/10. |
-| 114653 | Dragon Metal Aura | aura | Metal | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | bounce aura. count twist 6/10. |
-| 114654 | Amber Light Bulwark | barrier | Light | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | heal barrier. area twist 4/10. |
-| 114655 | Heavy Frost Cleave | cleave | Frost | power 101, cooldown 5.6s, mana 33, cast 0.25s, range 120 | slow cleave. cooldown twist 2/10. |
-| 114656 | Piercing Star Beam | beam | Star | power 116, cooldown 9.0s, mana 32, cast 0.50s, range 700 | homing beam. mp twist 9/10. |
+| 114647 | Grand Frost Rift | portal | Frost | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) slow portal. area twist 10/10. |
+| 114648 | Mystic Star Gravity | pull | Star | power 29, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) homing pull. power twist 8/10. |
+| 114649 | Arctic Metal Legion | summon | Metal | power 38, cooldown 18.0s, mana 29, cast 0.60s, range 200 | (not usable in ranked duels) bounce summon. mp twist 5/10. |
+| 114650 | Phantom Light Bow | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. duration twist 3/10. |
+| 114651 | Golden Frost Phantom | stealth | Frost | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) slow stealth. range twist 1/10. |
+| 114652 | Bright Star Haste | buff | Star | power 42, cooldown 15.0s, mana 22, cast 0.14s, range 0 | homing buff. cast twist 8/10. |
+| 114653 | Dragon Metal Aura | aura | Metal | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) bounce aura. count twist 6/10. |
+| 114654 | Amber Light Bulwark | barrier | Light | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) heal barrier. area twist 4/10. |
+| 114655 | Heavy Frost Cleave | cleave | Frost | power 101, cooldown 5.6s, mana 16, cast 0.25s, range 120 | slow cleave. cooldown twist 2/10. |
+| 114656 | Piercing Star Beam | beam | Star | power 116, cooldown 9.0s, mana 16, cast 0.50s, range 700 | homing beam. mp twist 9/10. |
 | 114657 | Wild Toxin Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | poison world. duration twist 7/10. |
-| 114658 | Abyssal Void Blink | blink | Void | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 319 | pierce blink. range twist 5/10. |
-| 114659 | Cursed Flame Snare | slow | Flame | power 14, cooldown 11.0s, mana 41, cast 0.30s, range 360 | burn slow. power twist 3/10. |
-| 114660 | Endless Blood Familiar | summon | Blood | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | leech summon. count twist 10/10. |
-| 114661 | Crystal Toxin Gun | volley | Toxin | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | poison volley. area twist 8/10. |
-| 114662 | Ember Void Veil | stealth | Void | power 0, cooldown 11.4s, mana 38, cast 0.10s, range 0 | pierce stealth. cooldown twist 6/10. |
-| 114663 | Obsidian Flame Surge | buff | Flame | power 42, cooldown 15.0s, mana 44, cast 0.18s, range 0 | burn buff. cast twist 3/10. |
-| 114664 | Raging Blood Blessing | aura | Blood | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | leech aura. duration twist 1/10. |
-| 114665 | Mirror Toxin Ward | shield | Toxin | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | poison shield. range twist 9/10. |
-| 114666 | Rising Void Comet | projectile | Void | power 110, cooldown 5.0s, mana 27, cast 0.20s, range 640 | pierce projectile. power twist 7/10. |
-| 114667 | Lunar Flame Orb | projectile | Flame | power 84, cooldown 5.0s, mana 23, cast 0.20s, range 640 | burn projectile. mp twist 4/10. |
+| 114658 | Abyssal Void Blink | blink | Void | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 319 | pierce blink. range twist 5/10. |
+| 114659 | Cursed Flame Snare | slow | Flame | power 14, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) burn slow. power twist 3/10. |
+| 114660 | Endless Blood Familiar | summon | Blood | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) leech summon. count twist 10/10. |
+| 114661 | Crystal Toxin Gun | volley | Toxin | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | poison volley. area twist 8/10. |
+| 114662 | Ember Void Veil | stealth | Void | power 0, cooldown 11.4s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) pierce stealth. cooldown twist 6/10. |
+| 114663 | Obsidian Flame Surge | buff | Flame | power 42, cooldown 15.0s, mana 22, cast 0.18s, range 0 | burn buff. cast twist 3/10. |
+| 114664 | Raging Blood Blessing | aura | Blood | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) leech aura. duration twist 1/10. |
+| 114665 | Mirror Toxin Ward | shield | Toxin | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | poison shield. range twist 9/10. |
+| 114666 | Rising Void Comet | projectile | Void | power 110, cooldown 5.0s, mana 13, cast 0.20s, range 640 | pierce projectile. power twist 7/10. |
+| 114667 | Lunar Flame Orb | projectile | Flame | power 84, cooldown 5.0s, mana 12, cast 0.20s, range 640 | burn projectile. mp twist 4/10. |
 | 114668 | Gentle Wind Appraisal | out of battle | - | +35% more coins from matches, levels and chests | knockback world. area twist 2/10. |
-| 114669 | Forgotten Shadow Dash | dash | Shadow | power 0, cooldown 2.7s, mana 21, cast 0.05s, range 200 | hide dash. cooldown twist 10/10. |
-| 114670 | Royal Storm Totem | mine | Storm | power 95, cooldown 7.0s, mana 30, cast 0.15s, range 0 | chain mine. cast twist 7/10. |
-| 114671 | Infernal Gravity Chain | pull | Gravity | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | pull pull. duration twist 5/10. |
-| 114672 | Frozen Wind Blade | cleave | Wind | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 136 | knockback cleave. range twist 3/10. |
-| 114673 | Crimson Shadow Overdrive | buff | Shadow | power 44, cooldown 15.0s, mana 44, cast 0.20s, range 0 | hide buff. power twist 1/10. |
-| 114674 | Dread Storm Renew | heal | Storm | power 63, cooldown 16.0s, mana 44, cast 0.50s, range 0 | chain heal. mp twist 8/10. |
-| 114675 | Tidal Gravity Mend | heal | Gravity | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | pull heal. area twist 6/10. |
-| 114676 | Scarlet Wind Barrier | barrier | Wind | power 0, cooldown 12.2s, mana 50, cast 0.30s, range 160 | knockback barrier. cooldown twist 4/10. |
-| 114677 | Ancient Shadow Nova | nova | Shadow | power 63, cooldown 10.0s, mana 53, cast 0.39s, range 260 | hide nova. cast twist 1/10. |
-| 114678 | Burning Storm Lance | beam | Storm | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | chain beam. count twist 9/10. |
+| 114669 | Forgotten Shadow Dash | dash | Shadow | power 0, cooldown 2.7s, mana 10, cast 0.05s, range 200 | hide dash. cooldown twist 10/10. |
+| 114670 | Royal Storm Totem | mine | Storm | power 95, cooldown 7.0s, mana 15, cast 0.15s, range 0 | (not usable in ranked duels) chain mine. cast twist 7/10. |
+| 114671 | Infernal Gravity Chain | pull | Gravity | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) pull pull. duration twist 5/10. |
+| 114672 | Frozen Wind Blade | cleave | Wind | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 136 | knockback cleave. range twist 3/10. |
+| 114673 | Crimson Shadow Overdrive | buff | Shadow | power 44, cooldown 15.0s, mana 22, cast 0.20s, range 0 | hide buff. power twist 1/10. |
+| 114674 | Dread Storm Renew | heal | Storm | power 63, cooldown 16.0s, mana 22, cast 0.50s, range 0 | chain heal. mp twist 8/10. |
+| 114675 | Tidal Gravity Mend | heal | Gravity | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | pull heal. area twist 6/10. |
+| 114676 | Scarlet Wind Barrier | barrier | Wind | power 0, cooldown 12.2s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) knockback barrier. cooldown twist 4/10. |
+| 114677 | Ancient Shadow Nova | nova | Shadow | power 63, cooldown 10.0s, mana 27, cast 0.39s, range 260 | hide nova. cast twist 1/10. |
+| 114678 | Burning Storm Lance | beam | Storm | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | chain beam. count twist 9/10. |
 | 114679 | Fierce Star Forge | out of battle | - | +35% more XP from matches and levels | homing world. range twist 7/10. |
-| 114680 | Stellar Metal Quake | nova | Metal | power 77, cooldown 10.0s, mana 53, cast 0.40s, range 260 | bounce nova. power twist 5/10. |
-| 114681 | Savage Light Golem | summon | Light | power 38, cooldown 18.0s, mana 64, cast 0.60s, range 200 | heal summon. mp twist 2/10. |
-| 114682 | Tiny Frost Missile | projectile | Frost | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | slow projectile. duration twist 10/10. |
-| 114683 | Arcane Star Umbra | slow | Star | power 13, cooldown 8.2s, mana 41, cast 0.30s, range 360 | homing slow. cooldown twist 8/10. |
-| 114684 | Desert Metal Focus | buff | Metal | power 42, cooldown 15.0s, mana 44, cast 0.16s, range 0 | bounce buff. cast twist 5/10. |
-| 114685 | Iron Light Link | buff | Light | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | heal buff. count twist 3/10. |
-| 114686 | Silent Frost Guard | shield | Frost | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | slow shield. area twist 1/10. |
-| 114687 | Dusk Star Aegis | shield | Star | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | homing shield. power twist 9/10. |
-| 114688 | Titan Metal Volley | volley | Metal | power 46, cooldown 8.0s, mana 38, cast 0.40s, range 600 | bounce volley. mp twist 6/10. |
-| 114689 | Ivory Light Bolt | projectile | Light | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | heal projectile. duration twist 4/10. |
-| 114690 | Wicked Flame Warp | blink | Flame | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 283 | burn blink. range twist 2/10. |
-| 114691 | Vengeful Blood Stasis | slow | Blood | power 13, cooldown 11.0s, mana 41, cast 0.20s, range 360 | leech slow. cast twist 9/10. |
-| 114692 | Noble Toxin Swarm | summon | Toxin | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | poison summon. count twist 7/10. |
-| 114693 | Celestial Void Hammer | cleave | Void | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | pierce cleave. area twist 5/10. |
-| 114694 | Blazing Flame Ambush | ambush | Flame | power 147, cooldown 10.9s, mana 44, cast 0.20s, range 260 | burn ambush. cooldown twist 3/10. |
-| 114695 | Final Blood Fury | buff | Blood | power 42, cooldown 15.0s, mana 30, cast 0.20s, range 0 | leech buff. mp twist 10/10. |
-| 114696 | Molten Toxin Haven | barrier | Toxin | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | poison barrier. duration twist 8/10. |
-| 114697 | Gale Void Mirror | shield | Void | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | pierce shield. range twist 6/10. |
-| 114698 | Jade Flame Slash | cleave | Flame | power 119, cooldown 6.0s, mana 33, cast 0.25s, range 120 | burn cleave. power twist 4/10. |
-| 114699 | Hollow Blood Barrage | volley | Blood | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | leech volley. count twist 1/10. |
+| 114680 | Stellar Metal Quake | nova | Metal | power 77, cooldown 10.0s, mana 27, cast 0.40s, range 260 | bounce nova. power twist 5/10. |
+| 114681 | Savage Light Golem | summon | Light | power 38, cooldown 18.0s, mana 32, cast 0.60s, range 200 | (not usable in ranked duels) heal summon. mp twist 2/10. |
+| 114682 | Tiny Frost Missile | projectile | Frost | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | slow projectile. duration twist 10/10. |
+| 114683 | Arcane Star Umbra | slow | Star | power 13, cooldown 8.2s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) homing slow. cooldown twist 8/10. |
+| 114684 | Desert Metal Focus | buff | Metal | power 42, cooldown 15.0s, mana 22, cast 0.16s, range 0 | bounce buff. cast twist 5/10. |
+| 114685 | Iron Light Link | buff | Light | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | heal buff. count twist 3/10. |
+| 114686 | Silent Frost Guard | shield | Frost | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | slow shield. area twist 1/10. |
+| 114687 | Dusk Star Aegis | shield | Star | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | homing shield. power twist 9/10. |
+| 114688 | Titan Metal Volley | volley | Metal | power 46, cooldown 8.0s, mana 19, cast 0.40s, range 600 | bounce volley. mp twist 6/10. |
+| 114689 | Ivory Light Bolt | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. duration twist 4/10. |
+| 114690 | Wicked Flame Warp | blink | Flame | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 283 | burn blink. range twist 2/10. |
+| 114691 | Vengeful Blood Stasis | slow | Blood | power 13, cooldown 11.0s, mana 21, cast 0.20s, range 360 | (not usable in ranked duels) leech slow. cast twist 9/10. |
+| 114692 | Noble Toxin Swarm | summon | Toxin | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) poison summon. count twist 7/10. |
+| 114693 | Celestial Void Hammer | cleave | Void | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | pierce cleave. area twist 5/10. |
+| 114694 | Blazing Flame Ambush | ambush | Flame | power 147, cooldown 10.9s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) burn ambush. cooldown twist 3/10. |
+| 114695 | Final Blood Fury | buff | Blood | power 42, cooldown 15.0s, mana 15, cast 0.20s, range 0 | leech buff. mp twist 10/10. |
+| 114696 | Molten Toxin Haven | barrier | Toxin | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) poison barrier. duration twist 8/10. |
+| 114697 | Gale Void Mirror | shield | Void | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | pierce shield. range twist 6/10. |
+| 114698 | Jade Flame Slash | cleave | Flame | power 119, cooldown 6.0s, mana 16, cast 0.25s, range 120 | burn cleave. power twist 4/10. |
+| 114699 | Hollow Blood Barrage | volley | Blood | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | leech volley. count twist 1/10. |
 | 114700 | Shatter Shadow Gather | out of battle | - | +35% chance to get each skill drop twice | hide world. area twist 9/10. |
-| 114701 | Eternal Storm Rift | portal | Storm | power 0, cooldown 12.5s, mana 59, cast 0.50s, range 500 | chain portal. cooldown twist 7/10. |
-| 114702 | Lunar Gravity Gravity | pull | Gravity | power 21, cooldown 12.0s, mana 41, cast 0.40s, range 420 | pull pull. mp twist 4/10. |
-| 114703 | Primal Wind Legion | summon | Wind | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | knockback summon. duration twist 2/10. |
-| 114704 | Twin Shadow Bow | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 928 | hide projectile. range twist 10/10. |
-| 114705 | Mystic Storm Phantom | stealth | Storm | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | chain stealth. power twist 8/10. |
-| 114706 | Verdant Gravity Haste | buff | Gravity | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pull buff. count twist 5/10. |
-| 114707 | Thunder Wind Aura | aura | Wind | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | knockback aura. area twist 3/10. |
-| 114708 | Azure Shadow Bulwark | barrier | Shadow | power 0, cooldown 13.6s, mana 50, cast 0.30s, range 160 | hide barrier. cooldown twist 1/10. |
-| 114709 | Bright Storm Cleave | cleave | Storm | power 101, cooldown 6.0s, mana 33, cast 0.18s, range 120 | chain cleave. cast twist 8/10. |
-| 114710 | Rune Gravity Beam | beam | Gravity | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | pull beam. duration twist 6/10. |
+| 114701 | Eternal Storm Rift | portal | Storm | power 0, cooldown 12.5s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) chain portal. cooldown twist 7/10. |
+| 114702 | Lunar Gravity Gravity | pull | Gravity | power 21, cooldown 12.0s, mana 21, cast 0.40s, range 420 | (not usable in ranked duels) pull pull. mp twist 4/10. |
+| 114703 | Primal Wind Legion | summon | Wind | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) knockback summon. duration twist 2/10. |
+| 114704 | Twin Shadow Bow | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 928 | hide projectile. range twist 10/10. |
+| 114705 | Mystic Storm Phantom | stealth | Storm | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) chain stealth. power twist 8/10. |
+| 114706 | Verdant Gravity Haste | buff | Gravity | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pull buff. count twist 5/10. |
+| 114707 | Thunder Wind Aura | aura | Wind | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) knockback aura. area twist 3/10. |
+| 114708 | Azure Shadow Bulwark | barrier | Shadow | power 0, cooldown 13.6s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) hide barrier. cooldown twist 1/10. |
+| 114709 | Bright Storm Cleave | cleave | Storm | power 101, cooldown 6.0s, mana 16, cast 0.18s, range 120 | chain cleave. cast twist 8/10. |
+| 114710 | Rune Gravity Beam | beam | Gravity | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | pull beam. duration twist 6/10. |
 | 114711 | Violet Metal Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | bounce world. range twist 4/10. |
-| 114712 | Swift Light Blink | blink | Light | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | heal blink. power twist 2/10. |
-| 114713 | Piercing Frost Snare | slow | Frost | power 13, cooldown 11.0s, mana 30, cast 0.30s, range 360 | slow slow. mp twist 9/10. |
-| 114714 | Calm Star Familiar | summon | Star | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | homing summon. area twist 7/10. |
-| 114715 | Cosmic Metal Gun | volley | Metal | power 46, cooldown 6.7s, mana 47, cast 0.40s, range 600 | bounce volley. cooldown twist 5/10. |
-| 114716 | Sacred Light Veil | stealth | Light | power 0, cooldown 14.0s, mana 38, cast 0.09s, range 0 | heal stealth. cast twist 2/10. |
-| 114717 | Endless Frost Surge | buff | Frost | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | slow buff. count twist 10/10. |
-| 114718 | Spectral Star Blessing | aura | Star | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | homing aura. range twist 8/10. |
-| 114719 | Storm Metal Ward | shield | Metal | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | bounce shield. power twist 6/10. |
-| 114720 | Silver Light Comet | projectile | Light | power 84, cooldown 5.0s, mana 24, cast 0.20s, range 640 | heal projectile. mp twist 3/10. |
-| 114721 | Raging Frost Orb | projectile | Frost | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | slow projectile. duration twist 1/10. |
+| 114712 | Swift Light Blink | blink | Light | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | heal blink. power twist 2/10. |
+| 114713 | Piercing Frost Snare | slow | Frost | power 13, cooldown 11.0s, mana 15, cast 0.30s, range 360 | (not usable in ranked duels) slow slow. mp twist 9/10. |
+| 114714 | Calm Star Familiar | summon | Star | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) homing summon. area twist 7/10. |
+| 114715 | Cosmic Metal Gun | volley | Metal | power 46, cooldown 6.7s, mana 24, cast 0.40s, range 600 | bounce volley. cooldown twist 5/10. |
+| 114716 | Sacred Light Veil | stealth | Light | power 0, cooldown 14.0s, mana 19, cast 0.09s, range 0 | (not usable in ranked duels) heal stealth. cast twist 2/10. |
+| 114717 | Endless Frost Surge | buff | Frost | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | slow buff. count twist 10/10. |
+| 114718 | Spectral Star Blessing | aura | Star | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) homing aura. range twist 8/10. |
+| 114719 | Storm Metal Ward | shield | Metal | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | bounce shield. power twist 6/10. |
+| 114720 | Silver Light Comet | projectile | Light | power 84, cooldown 5.0s, mana 12, cast 0.20s, range 640 | heal projectile. mp twist 3/10. |
+| 114721 | Raging Frost Orb | projectile | Frost | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | slow projectile. duration twist 1/10. |
 | 114722 | Dawn Blood Appraisal | out of battle | - | +35% more coins from matches, levels and chests | leech world. cooldown twist 9/10. |
-| 114723 | Fallen Toxin Dash | dash | Toxin | power 0, cooldown 4.0s, mana 21, cast 0.04s, range 200 | poison dash. cast twist 6/10. |
-| 114724 | Onyx Void Totem | mine | Void | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | pierce mine. count twist 4/10. |
-| 114725 | Gentle Flame Chain | pull | Flame | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | burn pull. area twist 2/10. |
-| 114726 | Lucky Blood Blade | cleave | Blood | power 146, cooldown 6.0s, mana 33, cast 0.25s, range 120 | leech cleave. power twist 10/10. |
-| 114727 | Rogue Toxin Overdrive | buff | Toxin | power 42, cooldown 15.0s, mana 35, cast 0.20s, range 0 | poison buff. mp twist 7/10. |
-| 114728 | Infernal Void Renew | heal | Void | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | pierce heal. duration twist 5/10. |
-| 114729 | Frozen Flame Mend | heal | Flame | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | burn heal. range twist 3/10. |
-| 114730 | Genesis Blood Barrier | barrier | Blood | power 0, cooldown 14.0s, mana 50, cast 0.19s, range 160 | leech barrier. cast twist 10/10. |
-| 114731 | Void-touched Toxin Nova | nova | Toxin | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | poison nova. count twist 8/10. |
-| 114732 | Tidal Void Lance | beam | Void | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | pierce beam. area twist 6/10. |
+| 114723 | Fallen Toxin Dash | dash | Toxin | power 0, cooldown 4.0s, mana 10, cast 0.04s, range 200 | poison dash. cast twist 6/10. |
+| 114724 | Onyx Void Totem | mine | Void | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) pierce mine. count twist 4/10. |
+| 114725 | Gentle Flame Chain | pull | Flame | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) burn pull. area twist 2/10. |
+| 114726 | Lucky Blood Blade | cleave | Blood | power 146, cooldown 6.0s, mana 16, cast 0.25s, range 120 | leech cleave. power twist 10/10. |
+| 114727 | Rogue Toxin Overdrive | buff | Toxin | power 42, cooldown 15.0s, mana 17, cast 0.20s, range 0 | poison buff. mp twist 7/10. |
+| 114728 | Infernal Void Renew | heal | Void | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | pierce heal. duration twist 5/10. |
+| 114729 | Frozen Flame Mend | heal | Flame | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | burn heal. range twist 3/10. |
+| 114730 | Genesis Blood Barrier | barrier | Blood | power 0, cooldown 14.0s, mana 25, cast 0.19s, range 160 | (not usable in ranked duels) leech barrier. cast twist 10/10. |
+| 114731 | Void-touched Toxin Nova | nova | Toxin | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | poison nova. count twist 8/10. |
+| 114732 | Tidal Void Lance | beam | Void | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | pierce beam. area twist 6/10. |
 | 114733 | Jade Gravity Forge | out of battle | - | +35% more XP from matches and levels | pull world. power twist 4/10. |
-| 114734 | Radiant Wind Quake | nova | Wind | power 63, cooldown 10.0s, mana 52, cast 0.40s, range 260 | knockback nova. mp twist 1/10. |
-| 114735 | Echoing Shadow Golem | summon | Shadow | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | hide summon. duration twist 9/10. |
-| 114736 | Fierce Storm Missile | projectile | Storm | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 842 | chain projectile. range twist 7/10. |
-| 114737 | Solar Gravity Umbra | slow | Gravity | power 13, cooldown 11.0s, mana 41, cast 0.26s, range 360 | pull slow. cast twist 4/10. |
-| 114738 | Ethereal Wind Focus | buff | Wind | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | knockback buff. count twist 2/10. |
-| 114739 | Grand Shadow Link | buff | Shadow | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | hide buff. area twist 10/10. |
-| 114740 | Arcane Storm Guard | shield | Storm | power 0, cooldown 9.0s, mana 41, cast 0.10s, range 0 | chain shield. cooldown twist 8/10. |
-| 114741 | Arctic Gravity Aegis | shield | Gravity | power 0, cooldown 12.0s, mana 35, cast 0.10s, range 0 | pull shield. mp twist 5/10. |
-| 114742 | Phantom Wind Volley | volley | Wind | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | knockback volley. duration twist 3/10. |
-| 114743 | Golden Shadow Bolt | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 669 | hide projectile. range twist 1/10. |
-| 114744 | Dusk Frost Warp | blink | Frost | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | slow blink. power twist 9/10. |
-| 114745 | Dragon Star Stasis | slow | Star | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | homing slow. count twist 6/10. |
-| 114746 | Amber Metal Swarm | summon | Metal | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | bounce summon. area twist 4/10. |
-| 114747 | Heavy Light Hammer | cleave | Light | power 101, cooldown 5.6s, mana 33, cast 0.25s, range 120 | heal cleave. cooldown twist 2/10. |
-| 114748 | Vengeful Frost Ambush | ambush | Frost | power 147, cooldown 12.0s, mana 44, cast 0.14s, range 260 | slow ambush. cast twist 9/10. |
-| 114749 | Wild Star Fury | buff | Star | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | homing buff. duration twist 7/10. |
-| 114750 | Abyssal Metal Haven | barrier | Metal | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 196 | bounce barrier. range twist 5/10. |
-| 114751 | Cursed Light Mirror | shield | Light | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | heal shield. power twist 3/10. |
-| 114752 | Final Frost Slash | cleave | Frost | power 101, cooldown 6.0s, mana 22, cast 0.25s, range 120 | slow cleave. mp twist 10/10. |
-| 114753 | Crystal Star Barrage | volley | Star | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | homing volley. area twist 8/10. |
+| 114734 | Radiant Wind Quake | nova | Wind | power 63, cooldown 10.0s, mana 26, cast 0.40s, range 260 | knockback nova. mp twist 1/10. |
+| 114735 | Echoing Shadow Golem | summon | Shadow | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) hide summon. duration twist 9/10. |
+| 114736 | Fierce Storm Missile | projectile | Storm | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 842 | chain projectile. range twist 7/10. |
+| 114737 | Solar Gravity Umbra | slow | Gravity | power 13, cooldown 11.0s, mana 21, cast 0.26s, range 360 | (not usable in ranked duels) pull slow. cast twist 4/10. |
+| 114738 | Ethereal Wind Focus | buff | Wind | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | knockback buff. count twist 2/10. |
+| 114739 | Grand Shadow Link | buff | Shadow | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | hide buff. area twist 10/10. |
+| 114740 | Arcane Storm Guard | shield | Storm | power 0, cooldown 9.0s, mana 21, cast 0.10s, range 0 | chain shield. cooldown twist 8/10. |
+| 114741 | Arctic Gravity Aegis | shield | Gravity | power 0, cooldown 12.0s, mana 17, cast 0.10s, range 0 | pull shield. mp twist 5/10. |
+| 114742 | Phantom Wind Volley | volley | Wind | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | knockback volley. duration twist 3/10. |
+| 114743 | Golden Shadow Bolt | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 669 | hide projectile. range twist 1/10. |
+| 114744 | Dusk Frost Warp | blink | Frost | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | slow blink. power twist 9/10. |
+| 114745 | Dragon Star Stasis | slow | Star | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) homing slow. count twist 6/10. |
+| 114746 | Amber Metal Swarm | summon | Metal | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) bounce summon. area twist 4/10. |
+| 114747 | Heavy Light Hammer | cleave | Light | power 101, cooldown 5.6s, mana 16, cast 0.25s, range 120 | heal cleave. cooldown twist 2/10. |
+| 114748 | Vengeful Frost Ambush | ambush | Frost | power 147, cooldown 12.0s, mana 22, cast 0.14s, range 260 | (not usable in ranked duels) slow ambush. cast twist 9/10. |
+| 114749 | Wild Star Fury | buff | Star | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | homing buff. duration twist 7/10. |
+| 114750 | Abyssal Metal Haven | barrier | Metal | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 196 | (not usable in ranked duels) bounce barrier. range twist 5/10. |
+| 114751 | Cursed Light Mirror | shield | Light | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | heal shield. power twist 3/10. |
+| 114752 | Final Frost Slash | cleave | Frost | power 101, cooldown 6.0s, mana 11, cast 0.25s, range 120 | slow cleave. mp twist 10/10. |
+| 114753 | Crystal Star Barrage | volley | Star | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | homing volley. area twist 8/10. |
 | 114754 | Ember Toxin Gather | out of battle | - | +35% chance to get each skill drop twice | poison world. cooldown twist 6/10. |
-| 114755 | Obsidian Void Rift | portal | Void | power 0, cooldown 16.0s, mana 59, cast 0.45s, range 500 | pierce portal. cast twist 3/10. |
-| 114756 | Hollow Flame Gravity | pull | Flame | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | burn pull. count twist 1/10. |
-| 114757 | Mirror Blood Legion | summon | Blood | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 281 | leech summon. range twist 9/10. |
-| 114758 | Rising Toxin Bow | projectile | Toxin | power 110, cooldown 5.0s, mana 27, cast 0.20s, range 640 | poison projectile. power twist 7/10. |
-| 114759 | Lunar Void Phantom | stealth | Void | power 0, cooldown 14.0s, mana 34, cast 0.10s, range 0 | pierce stealth. mp twist 4/10. |
-| 114760 | Primal Flame Haste | buff | Flame | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | burn buff. duration twist 2/10. |
-| 114761 | Forgotten Blood Aura | aura | Blood | power 17, cooldown 12.3s, mana 65, cast 0.30s, range 0 | leech aura. cooldown twist 10/10. |
-| 114762 | Royal Toxin Bulwark | barrier | Toxin | power 0, cooldown 14.0s, mana 50, cast 0.22s, range 160 | poison barrier. cast twist 7/10. |
-| 114763 | Verdant Void Cleave | cleave | Void | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | pierce cleave. count twist 5/10. |
-| 114764 | Thunder Flame Beam | beam | Flame | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | burn beam. area twist 3/10. |
+| 114755 | Obsidian Void Rift | portal | Void | power 0, cooldown 16.0s, mana 30, cast 0.45s, range 500 | (not usable in ranked duels) pierce portal. cast twist 3/10. |
+| 114756 | Hollow Flame Gravity | pull | Flame | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) burn pull. count twist 1/10. |
+| 114757 | Mirror Blood Legion | summon | Blood | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 281 | (not usable in ranked duels) leech summon. range twist 9/10. |
+| 114758 | Rising Toxin Bow | projectile | Toxin | power 110, cooldown 5.0s, mana 13, cast 0.20s, range 640 | poison projectile. power twist 7/10. |
+| 114759 | Lunar Void Phantom | stealth | Void | power 0, cooldown 14.0s, mana 17, cast 0.10s, range 0 | (not usable in ranked duels) pierce stealth. mp twist 4/10. |
+| 114760 | Primal Flame Haste | buff | Flame | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | burn buff. duration twist 2/10. |
+| 114761 | Forgotten Blood Aura | aura | Blood | power 17, cooldown 12.3s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) leech aura. cooldown twist 10/10. |
+| 114762 | Royal Toxin Bulwark | barrier | Toxin | power 0, cooldown 14.0s, mana 25, cast 0.22s, range 160 | (not usable in ranked duels) poison barrier. cast twist 7/10. |
+| 114763 | Verdant Void Cleave | cleave | Void | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | pierce cleave. count twist 5/10. |
+| 114764 | Thunder Flame Beam | beam | Flame | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | burn beam. area twist 3/10. |
 | 114765 | Crimson Wind Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | knockback world. power twist 1/10. |
-| 114766 | Dread Shadow Blink | blink | Shadow | power 0, cooldown 6.0s, mana 20, cast 0.10s, range 260 | hide blink. mp twist 8/10. |
-| 114767 | Rune Storm Snare | slow | Storm | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | chain slow. duration twist 6/10. |
-| 114768 | Scarlet Gravity Familiar | summon | Gravity | power 38, cooldown 15.7s, mana 68, cast 0.60s, range 200 | pull summon. cooldown twist 4/10. |
-| 114769 | Ancient Wind Gun | volley | Wind | power 46, cooldown 8.0s, mana 47, cast 0.39s, range 600 | knockback volley. cast twist 1/10. |
-| 114770 | Burning Shadow Veil | stealth | Shadow | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | hide stealth. count twist 9/10. |
-| 114771 | Calm Storm Surge | buff | Storm | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | chain buff. area twist 7/10. |
-| 114772 | Stellar Gravity Blessing | aura | Gravity | power 21, cooldown 18.0s, mana 65, cast 0.30s, range 0 | pull aura. power twist 5/10. |
-| 114773 | Savage Wind Ward | shield | Wind | power 0, cooldown 12.0s, mana 39, cast 0.10s, range 0 | knockback shield. mp twist 2/10. |
-| 114774 | Tiny Shadow Comet | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | hide projectile. duration twist 10/10. |
-| 114775 | Spectral Storm Orb | projectile | Storm | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 870 | chain projectile. range twist 8/10. |
+| 114766 | Dread Shadow Blink | blink | Shadow | power 0, cooldown 6.0s, mana 10, cast 0.10s, range 260 | hide blink. mp twist 8/10. |
+| 114767 | Rune Storm Snare | slow | Storm | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) chain slow. duration twist 6/10. |
+| 114768 | Scarlet Gravity Familiar | summon | Gravity | power 38, cooldown 15.7s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) pull summon. cooldown twist 4/10. |
+| 114769 | Ancient Wind Gun | volley | Wind | power 46, cooldown 8.0s, mana 24, cast 0.39s, range 600 | knockback volley. cast twist 1/10. |
+| 114770 | Burning Shadow Veil | stealth | Shadow | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) hide stealth. count twist 9/10. |
+| 114771 | Calm Storm Surge | buff | Storm | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | chain buff. area twist 7/10. |
+| 114772 | Stellar Gravity Blessing | aura | Gravity | power 21, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) pull aura. power twist 5/10. |
+| 114773 | Savage Wind Ward | shield | Wind | power 0, cooldown 12.0s, mana 19, cast 0.10s, range 0 | knockback shield. mp twist 2/10. |
+| 114774 | Tiny Shadow Comet | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | hide projectile. duration twist 10/10. |
+| 114775 | Spectral Storm Orb | projectile | Storm | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 870 | chain projectile. range twist 8/10. |
 | 114776 | Desert Star Appraisal | out of battle | - | +35% more coins from matches, levels and chests | homing world. cast twist 5/10. |
-| 114777 | Iron Metal Dash | dash | Metal | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | bounce dash. count twist 3/10. |
-| 114778 | Silent Light Totem | mine | Light | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | heal mine. area twist 1/10. |
-| 114779 | Dawn Frost Chain | pull | Frost | power 21, cooldown 8.6s, mana 47, cast 0.40s, range 420 | slow pull. cooldown twist 9/10. |
-| 114780 | Titan Star Blade | cleave | Star | power 101, cooldown 6.0s, mana 26, cast 0.25s, range 120 | homing cleave. mp twist 6/10. |
-| 114781 | Ivory Metal Overdrive | buff | Metal | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | bounce buff. duration twist 4/10. |
-| 114782 | Wicked Light Renew | heal | Light | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | heal heal. range twist 2/10. |
-| 114783 | Lucky Frost Mend | heal | Frost | power 91, cooldown 16.0s, mana 59, cast 0.50s, range 0 | slow heal. power twist 10/10. |
-| 114784 | Noble Star Barrier | barrier | Star | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | homing barrier. count twist 7/10. |
-| 114785 | Celestial Metal Nova | nova | Metal | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | bounce nova. area twist 5/10. |
-| 114786 | Blazing Light Lance | beam | Light | power 116, cooldown 8.1s, mana 44, cast 0.50s, range 700 | heal beam. cooldown twist 3/10. |
+| 114777 | Iron Metal Dash | dash | Metal | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | bounce dash. count twist 3/10. |
+| 114778 | Silent Light Totem | mine | Light | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) heal mine. area twist 1/10. |
+| 114779 | Dawn Frost Chain | pull | Frost | power 21, cooldown 8.6s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) slow pull. cooldown twist 9/10. |
+| 114780 | Titan Star Blade | cleave | Star | power 101, cooldown 6.0s, mana 13, cast 0.25s, range 120 | homing cleave. mp twist 6/10. |
+| 114781 | Ivory Metal Overdrive | buff | Metal | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | bounce buff. duration twist 4/10. |
+| 114782 | Wicked Light Renew | heal | Light | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | heal heal. range twist 2/10. |
+| 114783 | Lucky Frost Mend | heal | Frost | power 91, cooldown 16.0s, mana 30, cast 0.50s, range 0 | slow heal. power twist 10/10. |
+| 114784 | Noble Star Barrier | barrier | Star | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) homing barrier. count twist 7/10. |
+| 114785 | Celestial Metal Nova | nova | Metal | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | bounce nova. area twist 5/10. |
+| 114786 | Blazing Light Lance | beam | Light | power 116, cooldown 8.1s, mana 22, cast 0.50s, range 700 | heal beam. cooldown twist 3/10. |
 | 114787 | Genesis Flame Forge | out of battle | - | +35% more XP from matches and levels | burn world. cast twist 10/10. |
-| 114788 | Molten Blood Quake | nova | Blood | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | leech nova. duration twist 8/10. |
-| 114789 | Gale Toxin Golem | summon | Toxin | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 254 | poison summon. range twist 6/10. |
-| 114790 | Jade Void Missile | projectile | Void | power 99, cooldown 5.0s, mana 27, cast 0.20s, range 640 | pierce projectile. power twist 4/10. |
-| 114791 | Radiant Flame Umbra | slow | Flame | power 13, cooldown 11.0s, mana 40, cast 0.30s, range 360 | burn slow. mp twist 1/10. |
-| 114792 | Shatter Blood Focus | buff | Blood | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | leech buff. area twist 9/10. |
-| 114793 | Eternal Toxin Link | buff | Toxin | power 42, cooldown 11.7s, mana 44, cast 0.20s, range 0 | poison buff. cooldown twist 7/10. |
-| 114794 | Solar Void Guard | shield | Void | power 0, cooldown 12.0s, mana 41, cast 0.09s, range 0 | pierce shield. cast twist 4/10. |
-| 114795 | Ethereal Flame Aegis | shield | Flame | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | burn shield. count twist 2/10. |
-| 114796 | Twin Blood Volley | volley | Blood | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 870 | leech volley. range twist 10/10. |
-| 114797 | Mystic Toxin Bolt | projectile | Toxin | power 114, cooldown 5.0s, mana 27, cast 0.20s, range 640 | poison projectile. power twist 8/10. |
-| 114798 | Arctic Storm Warp | blink | Storm | power 0, cooldown 6.0s, mana 22, cast 0.10s, range 260 | chain blink. mp twist 5/10. |
-| 114799 | Thunder Gravity Stasis | slow | Gravity | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | pull slow. area twist 3/10. |
-| 114800 | Azure Wind Swarm | summon | Wind | power 38, cooldown 17.4s, mana 68, cast 0.60s, range 200 | knockback summon. cooldown twist 1/10. |
-| 114801 | Bright Shadow Hammer | cleave | Shadow | power 101, cooldown 6.0s, mana 33, cast 0.18s, range 120 | hide cleave. cast twist 8/10. |
-| 114802 | Dragon Storm Ambush | ambush | Storm | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 260 | chain ambush. count twist 6/10. |
-| 114803 | Violet Gravity Fury | buff | Gravity | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pull buff. range twist 4/10. |
-| 114804 | Swift Wind Haven | barrier | Wind | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | knockback barrier. power twist 2/10. |
-| 114805 | Piercing Shadow Mirror | shield | Shadow | power 0, cooldown 12.0s, mana 30, cast 0.10s, range 0 | hide shield. mp twist 9/10. |
-| 114806 | Wild Storm Slash | cleave | Storm | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | chain cleave. duration twist 7/10. |
-| 114807 | Cosmic Gravity Barrage | volley | Gravity | power 46, cooldown 6.7s, mana 47, cast 0.40s, range 600 | pull volley. cooldown twist 5/10. |
+| 114788 | Molten Blood Quake | nova | Blood | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | leech nova. duration twist 8/10. |
+| 114789 | Gale Toxin Golem | summon | Toxin | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 254 | (not usable in ranked duels) poison summon. range twist 6/10. |
+| 114790 | Jade Void Missile | projectile | Void | power 99, cooldown 5.0s, mana 13, cast 0.20s, range 640 | pierce projectile. power twist 4/10. |
+| 114791 | Radiant Flame Umbra | slow | Flame | power 13, cooldown 11.0s, mana 20, cast 0.30s, range 360 | (not usable in ranked duels) burn slow. mp twist 1/10. |
+| 114792 | Shatter Blood Focus | buff | Blood | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | leech buff. area twist 9/10. |
+| 114793 | Eternal Toxin Link | buff | Toxin | power 42, cooldown 11.7s, mana 22, cast 0.20s, range 0 | poison buff. cooldown twist 7/10. |
+| 114794 | Solar Void Guard | shield | Void | power 0, cooldown 12.0s, mana 21, cast 0.09s, range 0 | pierce shield. cast twist 4/10. |
+| 114795 | Ethereal Flame Aegis | shield | Flame | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | burn shield. count twist 2/10. |
+| 114796 | Twin Blood Volley | volley | Blood | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 870 | leech volley. range twist 10/10. |
+| 114797 | Mystic Toxin Bolt | projectile | Toxin | power 114, cooldown 5.0s, mana 13, cast 0.20s, range 640 | poison projectile. power twist 8/10. |
+| 114798 | Arctic Storm Warp | blink | Storm | power 0, cooldown 6.0s, mana 11, cast 0.10s, range 260 | chain blink. mp twist 5/10. |
+| 114799 | Thunder Gravity Stasis | slow | Gravity | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) pull slow. area twist 3/10. |
+| 114800 | Azure Wind Swarm | summon | Wind | power 38, cooldown 17.4s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) knockback summon. cooldown twist 1/10. |
+| 114801 | Bright Shadow Hammer | cleave | Shadow | power 101, cooldown 6.0s, mana 16, cast 0.18s, range 120 | hide cleave. cast twist 8/10. |
+| 114802 | Dragon Storm Ambush | ambush | Storm | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) chain ambush. count twist 6/10. |
+| 114803 | Violet Gravity Fury | buff | Gravity | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pull buff. range twist 4/10. |
+| 114804 | Swift Wind Haven | barrier | Wind | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) knockback barrier. power twist 2/10. |
+| 114805 | Piercing Shadow Mirror | shield | Shadow | power 0, cooldown 12.0s, mana 15, cast 0.10s, range 0 | hide shield. mp twist 9/10. |
+| 114806 | Wild Storm Slash | cleave | Storm | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | chain cleave. duration twist 7/10. |
+| 114807 | Cosmic Gravity Barrage | volley | Gravity | power 46, cooldown 6.7s, mana 24, cast 0.40s, range 600 | pull volley. cooldown twist 5/10. |
 | 114808 | Sacred Metal Gather | out of battle | - | +35% chance to get each skill drop twice | bounce world. cast twist 2/10. |
-| 114809 | Endless Light Rift | portal | Light | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | heal portal. count twist 10/10. |
-| 114810 | Crystal Frost Gravity | pull | Frost | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | slow pull. area twist 8/10. |
-| 114811 | Storm Star Legion | summon | Star | power 48, cooldown 18.0s, mana 68, cast 0.60s, range 200 | homing summon. power twist 6/10. |
-| 114812 | Silver Metal Bow | projectile | Metal | power 84, cooldown 5.0s, mana 24, cast 0.20s, range 640 | bounce projectile. mp twist 3/10. |
-| 114813 | Raging Light Phantom | stealth | Light | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | heal stealth. duration twist 1/10. |
-| 114814 | Mirror Frost Haste | buff | Frost | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | slow buff. range twist 9/10. |
-| 114815 | Fallen Star Aura | aura | Star | power 17, cooldown 18.0s, mana 65, cast 0.24s, range 0 | homing aura. cast twist 6/10. |
-| 114816 | Onyx Metal Bulwark | barrier | Metal | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | bounce barrier. count twist 4/10. |
-| 114817 | Gentle Light Cleave | cleave | Light | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | heal cleave. area twist 2/10. |
-| 114818 | Forgotten Frost Beam | beam | Frost | power 116, cooldown 6.2s, mana 44, cast 0.50s, range 700 | slow beam. cooldown twist 10/10. |
+| 114809 | Endless Light Rift | portal | Light | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) heal portal. count twist 10/10. |
+| 114810 | Crystal Frost Gravity | pull | Frost | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) slow pull. area twist 8/10. |
+| 114811 | Storm Star Legion | summon | Star | power 48, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) homing summon. power twist 6/10. |
+| 114812 | Silver Metal Bow | projectile | Metal | power 84, cooldown 5.0s, mana 12, cast 0.20s, range 640 | bounce projectile. mp twist 3/10. |
+| 114813 | Raging Light Phantom | stealth | Light | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) heal stealth. duration twist 1/10. |
+| 114814 | Mirror Frost Haste | buff | Frost | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | slow buff. range twist 9/10. |
+| 114815 | Fallen Star Aura | aura | Star | power 17, cooldown 18.0s, mana 33, cast 0.24s, range 0 | (not usable in ranked duels) homing aura. cast twist 6/10. |
+| 114816 | Onyx Metal Bulwark | barrier | Metal | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) bounce barrier. count twist 4/10. |
+| 114817 | Gentle Light Cleave | cleave | Light | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | heal cleave. area twist 2/10. |
+| 114818 | Forgotten Frost Beam | beam | Frost | power 116, cooldown 6.2s, mana 22, cast 0.50s, range 700 | slow beam. cooldown twist 10/10. |
 | 114819 | Rogue Blood Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | leech world. mp twist 7/10. |
-| 114820 | Infernal Toxin Blink | blink | Toxin | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | poison blink. duration twist 5/10. |
-| 114821 | Frozen Void Snare | slow | Void | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 409 | pierce slow. range twist 3/10. |
-| 114822 | Crimson Flame Familiar | summon | Flame | power 40, cooldown 18.0s, mana 68, cast 0.60s, range 200 | burn summon. power twist 1/10. |
-| 114823 | Void-touched Blood Gun | volley | Blood | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | leech volley. count twist 8/10. |
-| 114824 | Tidal Toxin Veil | stealth | Toxin | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | poison stealth. area twist 6/10. |
-| 114825 | Scarlet Void Surge | buff | Void | power 42, cooldown 13.1s, mana 44, cast 0.20s, range 0 | pierce buff. cooldown twist 4/10. |
-| 114826 | Ancient Flame Blessing | aura | Flame | power 17, cooldown 18.0s, mana 65, cast 0.29s, range 0 | burn aura. cast twist 1/10. |
-| 114827 | Echoing Blood Ward | shield | Blood | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | leech shield. duration twist 9/10. |
-| 114828 | Fierce Toxin Comet | projectile | Toxin | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 842 | poison projectile. range twist 7/10. |
-| 114829 | Stellar Void Orb | projectile | Void | power 103, cooldown 5.0s, mana 27, cast 0.20s, range 640 | pierce projectile. power twist 5/10. |
+| 114820 | Infernal Toxin Blink | blink | Toxin | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | poison blink. duration twist 5/10. |
+| 114821 | Frozen Void Snare | slow | Void | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 409 | (not usable in ranked duels) pierce slow. range twist 3/10. |
+| 114822 | Crimson Flame Familiar | summon | Flame | power 40, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) burn summon. power twist 1/10. |
+| 114823 | Void-touched Blood Gun | volley | Blood | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | leech volley. count twist 8/10. |
+| 114824 | Tidal Toxin Veil | stealth | Toxin | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) poison stealth. area twist 6/10. |
+| 114825 | Scarlet Void Surge | buff | Void | power 42, cooldown 13.1s, mana 22, cast 0.20s, range 0 | pierce buff. cooldown twist 4/10. |
+| 114826 | Ancient Flame Blessing | aura | Flame | power 17, cooldown 18.0s, mana 33, cast 0.29s, range 0 | (not usable in ranked duels) burn aura. cast twist 1/10. |
+| 114827 | Echoing Blood Ward | shield | Blood | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | leech shield. duration twist 9/10. |
+| 114828 | Fierce Toxin Comet | projectile | Toxin | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 842 | poison projectile. range twist 7/10. |
+| 114829 | Stellar Void Orb | projectile | Void | power 103, cooldown 5.0s, mana 13, cast 0.20s, range 640 | pierce projectile. power twist 5/10. |
 | 114830 | Ethereal Gravity Appraisal | out of battle | - | +35% more coins from matches, levels and chests | pull world. count twist 2/10. |
-| 114831 | Grand Wind Dash | dash | Wind | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | knockback dash. area twist 10/10. |
-| 114832 | Arcane Shadow Totem | mine | Shadow | power 95, cooldown 5.2s, mana 30, cast 0.20s, range 0 | hide mine. cooldown twist 8/10. |
-| 114833 | Desert Storm Chain | pull | Storm | power 21, cooldown 12.0s, mana 47, cast 0.33s, range 420 | chain pull. cast twist 5/10. |
-| 114834 | Phantom Gravity Blade | cleave | Gravity | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | pull cleave. duration twist 3/10. |
-| 114835 | Golden Wind Overdrive | buff | Wind | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | knockback buff. range twist 1/10. |
-| 114836 | Dusk Shadow Renew | heal | Shadow | power 89, cooldown 16.0s, mana 59, cast 0.50s, range 0 | hide heal. power twist 9/10. |
-| 114837 | Titan Storm Mend | heal | Storm | power 63, cooldown 16.0s, mana 48, cast 0.50s, range 0 | chain heal. mp twist 6/10. |
-| 114838 | Amber Gravity Barrier | barrier | Gravity | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | pull barrier. area twist 4/10. |
-| 114839 | Heavy Wind Nova | nova | Wind | power 63, cooldown 9.4s, mana 53, cast 0.40s, range 260 | knockback nova. cooldown twist 2/10. |
-| 114840 | Vengeful Shadow Lance | beam | Shadow | power 116, cooldown 9.0s, mana 44, cast 0.34s, range 700 | hide beam. cast twist 9/10. |
+| 114831 | Grand Wind Dash | dash | Wind | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | knockback dash. area twist 10/10. |
+| 114832 | Arcane Shadow Totem | mine | Shadow | power 95, cooldown 5.2s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) hide mine. cooldown twist 8/10. |
+| 114833 | Desert Storm Chain | pull | Storm | power 21, cooldown 12.0s, mana 24, cast 0.33s, range 420 | (not usable in ranked duels) chain pull. cast twist 5/10. |
+| 114834 | Phantom Gravity Blade | cleave | Gravity | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | pull cleave. duration twist 3/10. |
+| 114835 | Golden Wind Overdrive | buff | Wind | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | knockback buff. range twist 1/10. |
+| 114836 | Dusk Shadow Renew | heal | Shadow | power 89, cooldown 16.0s, mana 30, cast 0.50s, range 0 | hide heal. power twist 9/10. |
+| 114837 | Titan Storm Mend | heal | Storm | power 63, cooldown 16.0s, mana 24, cast 0.50s, range 0 | chain heal. mp twist 6/10. |
+| 114838 | Amber Gravity Barrier | barrier | Gravity | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) pull barrier. area twist 4/10. |
+| 114839 | Heavy Wind Nova | nova | Wind | power 63, cooldown 9.4s, mana 27, cast 0.40s, range 260 | knockback nova. cooldown twist 2/10. |
+| 114840 | Vengeful Shadow Lance | beam | Shadow | power 116, cooldown 9.0s, mana 22, cast 0.34s, range 700 | hide beam. cast twist 9/10. |
 | 114841 | Noble Frost Forge | out of battle | - | +35% more XP from matches and levels | slow world. count twist 7/10. |
-| 114842 | Abyssal Star Quake | nova | Star | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 319 | homing nova. range twist 5/10. |
-| 114843 | Cursed Metal Golem | summon | Metal | power 43, cooldown 18.0s, mana 68, cast 0.60s, range 200 | bounce summon. power twist 3/10. |
-| 114844 | Final Light Missile | projectile | Light | power 84, cooldown 5.0s, mana 18, cast 0.20s, range 640 | heal projectile. mp twist 10/10. |
-| 114845 | Molten Frost Umbra | slow | Frost | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | slow slow. duration twist 8/10. |
-| 114846 | Ember Star Focus | buff | Star | power 42, cooldown 12.2s, mana 44, cast 0.20s, range 0 | homing buff. cooldown twist 6/10. |
-| 114847 | Obsidian Metal Link | buff | Metal | power 42, cooldown 15.0s, mana 44, cast 0.18s, range 0 | bounce buff. cast twist 3/10. |
-| 114848 | Hollow Light Guard | shield | Light | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | heal shield. count twist 1/10. |
-| 114849 | Shatter Frost Aegis | shield | Frost | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | slow shield. area twist 9/10. |
-| 114850 | Rising Star Volley | volley | Star | power 61, cooldown 8.0s, mana 47, cast 0.40s, range 600 | homing volley. power twist 7/10. |
-| 114851 | Lunar Metal Bolt | projectile | Metal | power 84, cooldown 5.0s, mana 23, cast 0.20s, range 640 | bounce projectile. mp twist 4/10. |
-| 114852 | Primal Void Warp | blink | Void | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | pierce blink. duration twist 2/10. |
-| 114853 | Twin Flame Stasis | slow | Flame | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 522 | burn slow. range twist 10/10. |
-| 114854 | Royal Blood Swarm | summon | Blood | power 38, cooldown 18.0s, mana 68, cast 0.45s, range 200 | leech summon. cast twist 7/10. |
-| 114855 | Verdant Toxin Hammer | cleave | Toxin | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | poison cleave. count twist 5/10. |
-| 114856 | Thunder Void Ambush | ambush | Void | power 147, cooldown 12.0s, mana 44, cast 0.20s, range 260 | pierce ambush. area twist 3/10. |
-| 114857 | Azure Flame Fury | buff | Flame | power 42, cooldown 14.5s, mana 44, cast 0.20s, range 0 | burn buff. cooldown twist 1/10. |
-| 114858 | Dread Blood Haven | barrier | Blood | power 0, cooldown 14.0s, mana 38, cast 0.30s, range 160 | leech barrier. mp twist 8/10. |
-| 114859 | Rune Toxin Mirror | shield | Toxin | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | poison shield. duration twist 6/10. |
-| 114860 | Violet Void Slash | cleave | Void | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 142 | pierce cleave. range twist 4/10. |
-| 114861 | Swift Flame Barrage | volley | Flame | power 50, cooldown 8.0s, mana 47, cast 0.40s, range 600 | burn volley. power twist 2/10. |
+| 114842 | Abyssal Star Quake | nova | Star | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 319 | homing nova. range twist 5/10. |
+| 114843 | Cursed Metal Golem | summon | Metal | power 43, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) bounce summon. power twist 3/10. |
+| 114844 | Final Light Missile | projectile | Light | power 84, cooldown 5.0s, mana 9, cast 0.20s, range 640 | heal projectile. mp twist 10/10. |
+| 114845 | Molten Frost Umbra | slow | Frost | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) slow slow. duration twist 8/10. |
+| 114846 | Ember Star Focus | buff | Star | power 42, cooldown 12.2s, mana 22, cast 0.20s, range 0 | homing buff. cooldown twist 6/10. |
+| 114847 | Obsidian Metal Link | buff | Metal | power 42, cooldown 15.0s, mana 22, cast 0.18s, range 0 | bounce buff. cast twist 3/10. |
+| 114848 | Hollow Light Guard | shield | Light | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | heal shield. count twist 1/10. |
+| 114849 | Shatter Frost Aegis | shield | Frost | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | slow shield. area twist 9/10. |
+| 114850 | Rising Star Volley | volley | Star | power 61, cooldown 8.0s, mana 24, cast 0.40s, range 600 | homing volley. power twist 7/10. |
+| 114851 | Lunar Metal Bolt | projectile | Metal | power 84, cooldown 5.0s, mana 12, cast 0.20s, range 640 | bounce projectile. mp twist 4/10. |
+| 114852 | Primal Void Warp | blink | Void | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | pierce blink. duration twist 2/10. |
+| 114853 | Twin Flame Stasis | slow | Flame | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 522 | (not usable in ranked duels) burn slow. range twist 10/10. |
+| 114854 | Royal Blood Swarm | summon | Blood | power 38, cooldown 18.0s, mana 34, cast 0.45s, range 200 | (not usable in ranked duels) leech summon. cast twist 7/10. |
+| 114855 | Verdant Toxin Hammer | cleave | Toxin | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | poison cleave. count twist 5/10. |
+| 114856 | Thunder Void Ambush | ambush | Void | power 147, cooldown 12.0s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) pierce ambush. area twist 3/10. |
+| 114857 | Azure Flame Fury | buff | Flame | power 42, cooldown 14.5s, mana 22, cast 0.20s, range 0 | burn buff. cooldown twist 1/10. |
+| 114858 | Dread Blood Haven | barrier | Blood | power 0, cooldown 14.0s, mana 19, cast 0.30s, range 160 | (not usable in ranked duels) leech barrier. mp twist 8/10. |
+| 114859 | Rune Toxin Mirror | shield | Toxin | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | poison shield. duration twist 6/10. |
+| 114860 | Violet Void Slash | cleave | Void | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 142 | pierce cleave. range twist 4/10. |
+| 114861 | Swift Flame Barrage | volley | Flame | power 50, cooldown 8.0s, mana 24, cast 0.40s, range 600 | burn volley. power twist 2/10. |
 | 114862 | Burning Wind Gather | out of battle | - | +35% chance to get each skill drop twice | knockback world. count twist 9/10. |
-| 114863 | Calm Shadow Rift | portal | Shadow | power 0, cooldown 16.0s, mana 59, cast 0.50s, range 500 | hide portal. area twist 7/10. |
-| 114864 | Cosmic Storm Gravity | pull | Storm | power 21, cooldown 10.1s, mana 47, cast 0.40s, range 420 | chain pull. cooldown twist 5/10. |
-| 114865 | Savage Gravity Legion | summon | Gravity | power 38, cooldown 18.0s, mana 64, cast 0.60s, range 200 | pull summon. mp twist 2/10. |
-| 114866 | Tiny Wind Bow | projectile | Wind | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | knockback projectile. duration twist 10/10. |
-| 114867 | Spectral Shadow Phantom | stealth | Shadow | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | hide stealth. range twist 8/10. |
-| 114868 | Storm Storm Haste | buff | Storm | power 53, cooldown 15.0s, mana 44, cast 0.20s, range 0 | chain buff. power twist 6/10. |
-| 114869 | Iron Gravity Aura | aura | Gravity | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | pull aura. count twist 3/10. |
-| 114870 | Silent Wind Bulwark | barrier | Wind | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | knockback barrier. area twist 1/10. |
-| 114871 | Dawn Shadow Cleave | cleave | Shadow | power 101, cooldown 4.3s, mana 33, cast 0.25s, range 120 | hide cleave. cooldown twist 9/10. |
-| 114872 | Fallen Storm Beam | beam | Storm | power 116, cooldown 9.0s, mana 44, cast 0.39s, range 700 | chain beam. cast twist 6/10. |
+| 114863 | Calm Shadow Rift | portal | Shadow | power 0, cooldown 16.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) hide portal. area twist 7/10. |
+| 114864 | Cosmic Storm Gravity | pull | Storm | power 21, cooldown 10.1s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) chain pull. cooldown twist 5/10. |
+| 114865 | Savage Gravity Legion | summon | Gravity | power 38, cooldown 18.0s, mana 32, cast 0.60s, range 200 | (not usable in ranked duels) pull summon. mp twist 2/10. |
+| 114866 | Tiny Wind Bow | projectile | Wind | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | knockback projectile. duration twist 10/10. |
+| 114867 | Spectral Shadow Phantom | stealth | Shadow | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) hide stealth. range twist 8/10. |
+| 114868 | Storm Storm Haste | buff | Storm | power 53, cooldown 15.0s, mana 22, cast 0.20s, range 0 | chain buff. power twist 6/10. |
+| 114869 | Iron Gravity Aura | aura | Gravity | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) pull aura. count twist 3/10. |
+| 114870 | Silent Wind Bulwark | barrier | Wind | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) knockback barrier. area twist 1/10. |
+| 114871 | Dawn Shadow Cleave | cleave | Shadow | power 101, cooldown 4.3s, mana 16, cast 0.25s, range 120 | hide cleave. cooldown twist 9/10. |
+| 114872 | Fallen Storm Beam | beam | Storm | power 116, cooldown 9.0s, mana 22, cast 0.39s, range 700 | chain beam. cast twist 6/10. |
 | 114873 | Ivory Star Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | homing world. duration twist 4/10. |
-| 114874 | Wicked Metal Blink | blink | Metal | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 283 | bounce blink. range twist 2/10. |
-| 114875 | Lucky Light Snare | slow | Light | power 18, cooldown 11.0s, mana 41, cast 0.30s, range 360 | heal slow. power twist 10/10. |
-| 114876 | Rogue Frost Familiar | summon | Frost | power 38, cooldown 18.0s, mana 53, cast 0.60s, range 200 | slow summon. mp twist 7/10. |
-| 114877 | Celestial Star Gun | volley | Star | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | homing volley. area twist 5/10. |
-| 114878 | Blazing Metal Veil | stealth | Metal | power 0, cooldown 12.7s, mana 38, cast 0.10s, range 0 | bounce stealth. cooldown twist 3/10. |
-| 114879 | Genesis Light Surge | buff | Light | power 42, cooldown 15.0s, mana 44, cast 0.13s, range 0 | heal buff. cast twist 10/10. |
-| 114880 | Void-touched Frost Blessing | aura | Frost | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | slow aura. count twist 8/10. |
-| 114881 | Gale Star Ward | shield | Star | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | homing shield. range twist 6/10. |
-| 114882 | Jade Metal Comet | projectile | Metal | power 99, cooldown 5.0s, mana 27, cast 0.20s, range 640 | bounce projectile. power twist 4/10. |
-| 114883 | Radiant Light Orb | projectile | Light | power 84, cooldown 5.0s, mana 26, cast 0.20s, range 640 | heal projectile. mp twist 1/10. |
+| 114874 | Wicked Metal Blink | blink | Metal | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 283 | bounce blink. range twist 2/10. |
+| 114875 | Lucky Light Snare | slow | Light | power 18, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) heal slow. power twist 10/10. |
+| 114876 | Rogue Frost Familiar | summon | Frost | power 38, cooldown 18.0s, mana 27, cast 0.60s, range 200 | (not usable in ranked duels) slow summon. mp twist 7/10. |
+| 114877 | Celestial Star Gun | volley | Star | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | homing volley. area twist 5/10. |
+| 114878 | Blazing Metal Veil | stealth | Metal | power 0, cooldown 12.7s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) bounce stealth. cooldown twist 3/10. |
+| 114879 | Genesis Light Surge | buff | Light | power 42, cooldown 15.0s, mana 22, cast 0.13s, range 0 | heal buff. cast twist 10/10. |
+| 114880 | Void-touched Frost Blessing | aura | Frost | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) slow aura. count twist 8/10. |
+| 114881 | Gale Star Ward | shield | Star | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | homing shield. range twist 6/10. |
+| 114882 | Jade Metal Comet | projectile | Metal | power 99, cooldown 5.0s, mana 13, cast 0.20s, range 640 | bounce projectile. power twist 4/10. |
+| 114883 | Radiant Light Orb | projectile | Light | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | heal projectile. mp twist 1/10. |
 | 114884 | Echoing Flame Appraisal | out of battle | - | +35% more coins from matches, levels and chests | burn world. duration twist 9/10. |
-| 114885 | Eternal Blood Dash | dash | Blood | power 0, cooldown 3.1s, mana 21, cast 0.05s, range 200 | leech dash. cooldown twist 7/10. |
-| 114886 | Solar Toxin Totem | mine | Toxin | power 95, cooldown 7.0s, mana 30, cast 0.17s, range 0 | poison mine. cast twist 4/10. |
-| 114887 | Ethereal Void Chain | pull | Void | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | pierce pull. count twist 2/10. |
-| 114888 | Grand Flame Blade | cleave | Flame | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | burn cleave. area twist 10/10. |
-| 114889 | Mystic Blood Overdrive | buff | Blood | power 57, cooldown 15.0s, mana 44, cast 0.20s, range 0 | leech buff. power twist 8/10. |
-| 114890 | Arctic Toxin Renew | heal | Toxin | power 63, cooldown 16.0s, mana 50, cast 0.50s, range 0 | poison heal. mp twist 5/10. |
-| 114891 | Phantom Void Mend | heal | Void | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | pierce heal. duration twist 3/10. |
-| 114892 | Golden Flame Barrier | barrier | Flame | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 167 | burn barrier. range twist 1/10. |
-| 114893 | Bright Blood Nova | nova | Blood | power 63, cooldown 10.0s, mana 53, cast 0.28s, range 260 | leech nova. cast twist 8/10. |
-| 114894 | Dragon Toxin Lance | beam | Toxin | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | poison beam. count twist 6/10. |
+| 114885 | Eternal Blood Dash | dash | Blood | power 0, cooldown 3.1s, mana 10, cast 0.05s, range 200 | leech dash. cooldown twist 7/10. |
+| 114886 | Solar Toxin Totem | mine | Toxin | power 95, cooldown 7.0s, mana 15, cast 0.17s, range 0 | (not usable in ranked duels) poison mine. cast twist 4/10. |
+| 114887 | Ethereal Void Chain | pull | Void | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) pierce pull. count twist 2/10. |
+| 114888 | Grand Flame Blade | cleave | Flame | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | burn cleave. area twist 10/10. |
+| 114889 | Mystic Blood Overdrive | buff | Blood | power 57, cooldown 15.0s, mana 22, cast 0.20s, range 0 | leech buff. power twist 8/10. |
+| 114890 | Arctic Toxin Renew | heal | Toxin | power 63, cooldown 16.0s, mana 25, cast 0.50s, range 0 | poison heal. mp twist 5/10. |
+| 114891 | Phantom Void Mend | heal | Void | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | pierce heal. duration twist 3/10. |
+| 114892 | Golden Flame Barrier | barrier | Flame | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 167 | (not usable in ranked duels) burn barrier. range twist 1/10. |
+| 114893 | Bright Blood Nova | nova | Blood | power 63, cooldown 10.0s, mana 27, cast 0.28s, range 260 | leech nova. cast twist 8/10. |
+| 114894 | Dragon Toxin Lance | beam | Toxin | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | poison beam. count twist 6/10. |
 | 114895 | Amber Storm Forge | out of battle | - | +35% more XP from matches and levels | chain world. area twist 4/10. |
-| 114896 | Swift Gravity Quake | nova | Gravity | power 69, cooldown 10.0s, mana 53, cast 0.40s, range 260 | pull nova. power twist 2/10. |
-| 114897 | Piercing Wind Golem | summon | Wind | power 38, cooldown 18.0s, mana 49, cast 0.60s, range 200 | knockback summon. mp twist 9/10. |
-| 114898 | Wild Shadow Missile | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | hide projectile. duration twist 7/10. |
-| 114899 | Abyssal Storm Umbra | slow | Storm | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 441 | chain slow. range twist 5/10. |
-| 114900 | Sacred Gravity Focus | buff | Gravity | power 42, cooldown 15.0s, mana 44, cast 0.19s, range 0 | pull buff. cast twist 2/10. |
-| 114901 | Endless Wind Link | buff | Wind | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | knockback buff. count twist 10/10. |
-| 114902 | Crystal Shadow Guard | shield | Shadow | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | hide shield. area twist 8/10. |
-| 114903 | Ember Storm Aegis | shield | Storm | power 0, cooldown 9.7s, mana 41, cast 0.10s, range 0 | chain shield. cooldown twist 6/10. |
-| 114904 | Silver Gravity Volley | volley | Gravity | power 46, cooldown 8.0s, mana 43, cast 0.40s, range 600 | pull volley. mp twist 3/10. |
-| 114905 | Raging Wind Bolt | projectile | Wind | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | knockback projectile. duration twist 1/10. |
-| 114906 | Mirror Light Warp | blink | Light | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 365 | heal blink. range twist 9/10. |
-| 114907 | Rising Frost Stasis | slow | Frost | power 17, cooldown 11.0s, mana 41, cast 0.30s, range 360 | slow slow. power twist 7/10. |
-| 114908 | Onyx Star Swarm | summon | Star | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | homing summon. count twist 4/10. |
-| 114909 | Gentle Metal Hammer | cleave | Metal | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | bounce cleave. area twist 2/10. |
-| 114910 | Forgotten Light Ambush | ambush | Light | power 147, cooldown 8.2s, mana 44, cast 0.20s, range 260 | heal ambush. cooldown twist 10/10. |
-| 114911 | Royal Frost Fury | buff | Frost | power 42, cooldown 15.0s, mana 44, cast 0.15s, range 0 | slow buff. cast twist 7/10. |
-| 114912 | Infernal Star Haven | barrier | Star | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | homing barrier. duration twist 5/10. |
-| 114913 | Frozen Metal Mirror | shield | Metal | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | bounce shield. range twist 3/10. |
-| 114914 | Crimson Light Slash | cleave | Light | power 105, cooldown 6.0s, mana 33, cast 0.25s, range 120 | heal cleave. power twist 1/10. |
-| 114915 | Dread Frost Barrage | volley | Frost | power 46, cooldown 8.0s, mana 35, cast 0.40s, range 600 | slow volley. mp twist 8/10. |
+| 114896 | Swift Gravity Quake | nova | Gravity | power 69, cooldown 10.0s, mana 27, cast 0.40s, range 260 | pull nova. power twist 2/10. |
+| 114897 | Piercing Wind Golem | summon | Wind | power 38, cooldown 18.0s, mana 24, cast 0.60s, range 200 | (not usable in ranked duels) knockback summon. mp twist 9/10. |
+| 114898 | Wild Shadow Missile | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | hide projectile. duration twist 7/10. |
+| 114899 | Abyssal Storm Umbra | slow | Storm | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 441 | (not usable in ranked duels) chain slow. range twist 5/10. |
+| 114900 | Sacred Gravity Focus | buff | Gravity | power 42, cooldown 15.0s, mana 22, cast 0.19s, range 0 | pull buff. cast twist 2/10. |
+| 114901 | Endless Wind Link | buff | Wind | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | knockback buff. count twist 10/10. |
+| 114902 | Crystal Shadow Guard | shield | Shadow | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | hide shield. area twist 8/10. |
+| 114903 | Ember Storm Aegis | shield | Storm | power 0, cooldown 9.7s, mana 21, cast 0.10s, range 0 | chain shield. cooldown twist 6/10. |
+| 114904 | Silver Gravity Volley | volley | Gravity | power 46, cooldown 8.0s, mana 21, cast 0.40s, range 600 | pull volley. mp twist 3/10. |
+| 114905 | Raging Wind Bolt | projectile | Wind | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | knockback projectile. duration twist 1/10. |
+| 114906 | Mirror Light Warp | blink | Light | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 365 | heal blink. range twist 9/10. |
+| 114907 | Rising Frost Stasis | slow | Frost | power 17, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) slow slow. power twist 7/10. |
+| 114908 | Onyx Star Swarm | summon | Star | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) homing summon. count twist 4/10. |
+| 114909 | Gentle Metal Hammer | cleave | Metal | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | bounce cleave. area twist 2/10. |
+| 114910 | Forgotten Light Ambush | ambush | Light | power 147, cooldown 8.2s, mana 22, cast 0.20s, range 260 | (not usable in ranked duels) heal ambush. cooldown twist 10/10. |
+| 114911 | Royal Frost Fury | buff | Frost | power 42, cooldown 15.0s, mana 22, cast 0.15s, range 0 | slow buff. cast twist 7/10. |
+| 114912 | Infernal Star Haven | barrier | Star | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) homing barrier. duration twist 5/10. |
+| 114913 | Frozen Metal Mirror | shield | Metal | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | bounce shield. range twist 3/10. |
+| 114914 | Crimson Light Slash | cleave | Light | power 105, cooldown 6.0s, mana 16, cast 0.25s, range 120 | heal cleave. power twist 1/10. |
+| 114915 | Dread Frost Barrage | volley | Frost | power 46, cooldown 8.0s, mana 18, cast 0.40s, range 600 | slow volley. mp twist 8/10. |
 | 114916 | Tidal Blood Gather | out of battle | - | +35% chance to get each skill drop twice | leech world. area twist 6/10. |
-| 114917 | Scarlet Toxin Rift | portal | Toxin | power 0, cooldown 14.0s, mana 59, cast 0.50s, range 500 | poison portal. cooldown twist 4/10. |
-| 114918 | Ancient Void Gravity | pull | Void | power 21, cooldown 12.0s, mana 47, cast 0.39s, range 420 | pierce pull. cast twist 1/10. |
-| 114919 | Burning Flame Legion | summon | Flame | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | burn summon. count twist 9/10. |
-| 114920 | Fierce Blood Bow | projectile | Blood | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 842 | leech projectile. range twist 7/10. |
-| 114921 | Stellar Toxin Phantom | stealth | Toxin | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | poison stealth. power twist 5/10. |
-| 114922 | Savage Void Haste | buff | Void | power 42, cooldown 15.0s, mana 42, cast 0.20s, range 0 | pierce buff. mp twist 2/10. |
-| 114923 | Tiny Flame Aura | aura | Flame | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | burn aura. duration twist 10/10. |
-| 114924 | Arcane Blood Bulwark | barrier | Blood | power 0, cooldown 10.5s, mana 50, cast 0.30s, range 160 | leech barrier. cooldown twist 8/10. |
-| 114925 | Desert Toxin Cleave | cleave | Toxin | power 101, cooldown 6.0s, mana 33, cast 0.21s, range 120 | poison cleave. cast twist 5/10. |
-| 114926 | Iron Void Beam | beam | Void | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | pierce beam. count twist 3/10. |
+| 114917 | Scarlet Toxin Rift | portal | Toxin | power 0, cooldown 14.0s, mana 30, cast 0.50s, range 500 | (not usable in ranked duels) poison portal. cooldown twist 4/10. |
+| 114918 | Ancient Void Gravity | pull | Void | power 21, cooldown 12.0s, mana 24, cast 0.39s, range 420 | (not usable in ranked duels) pierce pull. cast twist 1/10. |
+| 114919 | Burning Flame Legion | summon | Flame | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) burn summon. count twist 9/10. |
+| 114920 | Fierce Blood Bow | projectile | Blood | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 842 | leech projectile. range twist 7/10. |
+| 114921 | Stellar Toxin Phantom | stealth | Toxin | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) poison stealth. power twist 5/10. |
+| 114922 | Savage Void Haste | buff | Void | power 42, cooldown 15.0s, mana 21, cast 0.20s, range 0 | pierce buff. mp twist 2/10. |
+| 114923 | Tiny Flame Aura | aura | Flame | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) burn aura. duration twist 10/10. |
+| 114924 | Arcane Blood Bulwark | barrier | Blood | power 0, cooldown 10.5s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) leech barrier. cooldown twist 8/10. |
+| 114925 | Desert Toxin Cleave | cleave | Toxin | power 101, cooldown 6.0s, mana 16, cast 0.21s, range 120 | poison cleave. cast twist 5/10. |
+| 114926 | Iron Void Beam | beam | Void | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | pierce beam. count twist 3/10. |
 | 114927 | Golden Gravity Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | pull world. range twist 1/10. |
-| 114928 | Dusk Wind Blink | blink | Wind | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | knockback blink. power twist 9/10. |
-| 114929 | Titan Shadow Snare | slow | Shadow | power 13, cooldown 11.0s, mana 34, cast 0.30s, range 360 | hide slow. mp twist 6/10. |
-| 114930 | Ivory Storm Familiar | summon | Storm | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | chain summon. duration twist 4/10. |
-| 114931 | Heavy Gravity Gun | volley | Gravity | power 46, cooldown 7.5s, mana 47, cast 0.40s, range 600 | pull volley. cooldown twist 2/10. |
-| 114932 | Vengeful Wind Veil | stealth | Wind | power 0, cooldown 14.0s, mana 38, cast 0.07s, range 0 | knockback stealth. cast twist 9/10. |
-| 114933 | Noble Shadow Surge | buff | Shadow | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | hide buff. count twist 7/10. |
-| 114934 | Celestial Storm Blessing | aura | Storm | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | chain aura. area twist 5/10. |
-| 114935 | Cursed Gravity Ward | shield | Gravity | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | pull shield. power twist 3/10. |
-| 114936 | Final Wind Comet | projectile | Wind | power 84, cooldown 5.0s, mana 18, cast 0.20s, range 640 | knockback projectile. mp twist 10/10. |
-| 114937 | Molten Shadow Orb | projectile | Shadow | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | hide projectile. duration twist 8/10. |
+| 114928 | Dusk Wind Blink | blink | Wind | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | knockback blink. power twist 9/10. |
+| 114929 | Titan Shadow Snare | slow | Shadow | power 13, cooldown 11.0s, mana 17, cast 0.30s, range 360 | (not usable in ranked duels) hide slow. mp twist 6/10. |
+| 114930 | Ivory Storm Familiar | summon | Storm | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) chain summon. duration twist 4/10. |
+| 114931 | Heavy Gravity Gun | volley | Gravity | power 46, cooldown 7.5s, mana 24, cast 0.40s, range 600 | pull volley. cooldown twist 2/10. |
+| 114932 | Vengeful Wind Veil | stealth | Wind | power 0, cooldown 14.0s, mana 19, cast 0.07s, range 0 | (not usable in ranked duels) knockback stealth. cast twist 9/10. |
+| 114933 | Noble Shadow Surge | buff | Shadow | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | hide buff. count twist 7/10. |
+| 114934 | Celestial Storm Blessing | aura | Storm | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) chain aura. area twist 5/10. |
+| 114935 | Cursed Gravity Ward | shield | Gravity | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | pull shield. power twist 3/10. |
+| 114936 | Final Wind Comet | projectile | Wind | power 84, cooldown 5.0s, mana 9, cast 0.20s, range 640 | knockback projectile. mp twist 10/10. |
+| 114937 | Molten Shadow Orb | projectile | Shadow | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | hide projectile. duration twist 8/10. |
 | 114938 | Gale Frost Appraisal | out of battle | - | +35% more coins from matches, levels and chests | slow world. range twist 6/10. |
-| 114939 | Obsidian Star Dash | dash | Star | power 0, cooldown 4.0s, mana 21, cast 0.04s, range 200 | homing dash. cast twist 3/10. |
-| 114940 | Hollow Metal Totem | mine | Metal | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | bounce mine. count twist 1/10. |
-| 114941 | Shatter Light Chain | pull | Light | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | heal pull. area twist 9/10. |
-| 114942 | Eternal Frost Blade | cleave | Frost | power 101, cooldown 4.7s, mana 33, cast 0.25s, range 120 | slow cleave. cooldown twist 7/10. |
-| 114943 | Lunar Star Overdrive | buff | Star | power 42, cooldown 15.0s, mana 39, cast 0.20s, range 0 | homing buff. mp twist 4/10. |
-| 114944 | Primal Metal Renew | heal | Metal | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | bounce heal. duration twist 2/10. |
-| 114945 | Twin Light Mend | heal | Light | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | heal heal. range twist 10/10. |
-| 114946 | Mystic Frost Barrier | barrier | Frost | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 160 | slow barrier. power twist 8/10. |
-| 114947 | Verdant Star Nova | nova | Star | power 63, cooldown 10.0s, mana 53, cast 0.40s, range 260 | homing nova. count twist 5/10. |
-| 114948 | Thunder Metal Lance | beam | Metal | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | bounce beam. area twist 3/10. |
+| 114939 | Obsidian Star Dash | dash | Star | power 0, cooldown 4.0s, mana 10, cast 0.04s, range 200 | homing dash. cast twist 3/10. |
+| 114940 | Hollow Metal Totem | mine | Metal | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) bounce mine. count twist 1/10. |
+| 114941 | Shatter Light Chain | pull | Light | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) heal pull. area twist 9/10. |
+| 114942 | Eternal Frost Blade | cleave | Frost | power 101, cooldown 4.7s, mana 16, cast 0.25s, range 120 | slow cleave. cooldown twist 7/10. |
+| 114943 | Lunar Star Overdrive | buff | Star | power 42, cooldown 15.0s, mana 19, cast 0.20s, range 0 | homing buff. mp twist 4/10. |
+| 114944 | Primal Metal Renew | heal | Metal | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | bounce heal. duration twist 2/10. |
+| 114945 | Twin Light Mend | heal | Light | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | heal heal. range twist 10/10. |
+| 114946 | Mystic Frost Barrier | barrier | Frost | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 160 | (not usable in ranked duels) slow barrier. power twist 8/10. |
+| 114947 | Verdant Star Nova | nova | Star | power 63, cooldown 10.0s, mana 27, cast 0.40s, range 260 | homing nova. count twist 5/10. |
+| 114948 | Thunder Metal Lance | beam | Metal | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | bounce beam. area twist 3/10. |
 | 114949 | Azure Void Forge | out of battle | - | +35% more XP from matches and levels | pierce world. cooldown twist 1/10. |
-| 114950 | Bright Flame Quake | nova | Flame | power 63, cooldown 10.0s, mana 53, cast 0.28s, range 260 | burn nova. cast twist 8/10. |
-| 114951 | Rune Blood Golem | summon | Blood | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | leech summon. duration twist 6/10. |
-| 114952 | Violet Toxin Missile | projectile | Toxin | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 755 | poison projectile. range twist 4/10. |
-| 114953 | Swift Void Umbra | slow | Void | power 14, cooldown 11.0s, mana 41, cast 0.30s, range 360 | pierce slow. power twist 2/10. |
-| 114954 | Piercing Flame Focus | buff | Flame | power 42, cooldown 15.0s, mana 32, cast 0.20s, range 0 | burn buff. mp twist 9/10. |
-| 114955 | Calm Blood Link | buff | Blood | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | leech buff. area twist 7/10. |
-| 114956 | Cosmic Toxin Guard | shield | Toxin | power 0, cooldown 10.1s, mana 41, cast 0.10s, range 0 | poison shield. cooldown twist 5/10. |
-| 114957 | Sacred Void Aegis | shield | Void | power 0, cooldown 12.0s, mana 41, cast 0.09s, range 0 | pierce shield. cast twist 2/10. |
-| 114958 | Endless Flame Volley | volley | Flame | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | burn volley. count twist 10/10. |
-| 114959 | Spectral Blood Bolt | projectile | Blood | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 870 | leech projectile. range twist 8/10. |
-| 114960 | Storm Shadow Warp | blink | Shadow | power 0, cooldown 6.0s, mana 27, cast 0.10s, range 260 | hide blink. power twist 6/10. |
-| 114961 | Silver Storm Stasis | slow | Storm | power 13, cooldown 11.0s, mana 38, cast 0.30s, range 360 | chain slow. mp twist 3/10. |
-| 114962 | Silent Gravity Swarm | summon | Gravity | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | pull summon. area twist 1/10. |
-| 114963 | Dawn Wind Hammer | cleave | Wind | power 101, cooldown 4.3s, mana 33, cast 0.25s, range 120 | knockback cleave. cooldown twist 9/10. |
-| 114964 | Fallen Shadow Ambush | ambush | Shadow | power 147, cooldown 12.0s, mana 44, cast 0.16s, range 260 | hide ambush. cast twist 6/10. |
-| 114965 | Onyx Storm Fury | buff | Storm | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | chain buff. count twist 4/10. |
-| 114966 | Wicked Gravity Haven | barrier | Gravity | power 0, cooldown 14.0s, mana 50, cast 0.30s, range 174 | pull barrier. range twist 2/10. |
-| 114967 | Lucky Wind Mirror | shield | Wind | power 0, cooldown 12.0s, mana 41, cast 0.10s, range 0 | knockback shield. power twist 10/10. |
-| 114968 | Rogue Shadow Slash | cleave | Shadow | power 101, cooldown 6.0s, mana 25, cast 0.25s, range 120 | hide cleave. mp twist 7/10. |
-| 114969 | Infernal Storm Barrage | volley | Storm | power 46, cooldown 8.0s, mana 47, cast 0.40s, range 600 | chain volley. duration twist 5/10. |
+| 114950 | Bright Flame Quake | nova | Flame | power 63, cooldown 10.0s, mana 27, cast 0.28s, range 260 | burn nova. cast twist 8/10. |
+| 114951 | Rune Blood Golem | summon | Blood | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) leech summon. duration twist 6/10. |
+| 114952 | Violet Toxin Missile | projectile | Toxin | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 755 | poison projectile. range twist 4/10. |
+| 114953 | Swift Void Umbra | slow | Void | power 14, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) pierce slow. power twist 2/10. |
+| 114954 | Piercing Flame Focus | buff | Flame | power 42, cooldown 15.0s, mana 16, cast 0.20s, range 0 | burn buff. mp twist 9/10. |
+| 114955 | Calm Blood Link | buff | Blood | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | leech buff. area twist 7/10. |
+| 114956 | Cosmic Toxin Guard | shield | Toxin | power 0, cooldown 10.1s, mana 21, cast 0.10s, range 0 | poison shield. cooldown twist 5/10. |
+| 114957 | Sacred Void Aegis | shield | Void | power 0, cooldown 12.0s, mana 21, cast 0.09s, range 0 | pierce shield. cast twist 2/10. |
+| 114958 | Endless Flame Volley | volley | Flame | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | burn volley. count twist 10/10. |
+| 114959 | Spectral Blood Bolt | projectile | Blood | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 870 | leech projectile. range twist 8/10. |
+| 114960 | Storm Shadow Warp | blink | Shadow | power 0, cooldown 6.0s, mana 13, cast 0.10s, range 260 | hide blink. power twist 6/10. |
+| 114961 | Silver Storm Stasis | slow | Storm | power 13, cooldown 11.0s, mana 19, cast 0.30s, range 360 | (not usable in ranked duels) chain slow. mp twist 3/10. |
+| 114962 | Silent Gravity Swarm | summon | Gravity | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) pull summon. area twist 1/10. |
+| 114963 | Dawn Wind Hammer | cleave | Wind | power 101, cooldown 4.3s, mana 16, cast 0.25s, range 120 | knockback cleave. cooldown twist 9/10. |
+| 114964 | Fallen Shadow Ambush | ambush | Shadow | power 147, cooldown 12.0s, mana 22, cast 0.16s, range 260 | (not usable in ranked duels) hide ambush. cast twist 6/10. |
+| 114965 | Onyx Storm Fury | buff | Storm | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | chain buff. count twist 4/10. |
+| 114966 | Wicked Gravity Haven | barrier | Gravity | power 0, cooldown 14.0s, mana 25, cast 0.30s, range 174 | (not usable in ranked duels) pull barrier. range twist 2/10. |
+| 114967 | Lucky Wind Mirror | shield | Wind | power 0, cooldown 12.0s, mana 21, cast 0.10s, range 0 | knockback shield. power twist 10/10. |
+| 114968 | Rogue Shadow Slash | cleave | Shadow | power 101, cooldown 6.0s, mana 13, cast 0.25s, range 120 | hide cleave. mp twist 7/10. |
+| 114969 | Infernal Storm Barrage | volley | Storm | power 46, cooldown 8.0s, mana 24, cast 0.40s, range 600 | chain volley. duration twist 5/10. |
 | 114970 | Blazing Star Gather | out of battle | - | +35% chance to get each skill drop twice | homing world. cooldown twist 3/10. |
-| 114971 | Genesis Metal Rift | portal | Metal | power 0, cooldown 16.0s, mana 59, cast 0.32s, range 500 | bounce portal. cast twist 10/10. |
-| 114972 | Void-touched Light Gravity | pull | Light | power 21, cooldown 12.0s, mana 47, cast 0.40s, range 420 | heal pull. count twist 8/10. |
-| 114973 | Tidal Frost Legion | summon | Frost | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 200 | slow summon. area twist 6/10. |
-| 114974 | Jade Star Bow | projectile | Star | power 99, cooldown 5.0s, mana 27, cast 0.20s, range 640 | homing projectile. power twist 4/10. |
-| 114975 | Radiant Metal Phantom | stealth | Metal | power 0, cooldown 14.0s, mana 37, cast 0.10s, range 0 | bounce stealth. mp twist 1/10. |
-| 114976 | Echoing Light Haste | buff | Light | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | heal buff. duration twist 9/10. |
-| 114977 | Fierce Frost Aura | aura | Frost | power 17, cooldown 18.0s, mana 65, cast 0.30s, range 0 | slow aura. range twist 7/10. |
-| 114978 | Solar Star Bulwark | barrier | Star | power 0, cooldown 14.0s, mana 50, cast 0.26s, range 160 | homing barrier. cast twist 4/10. |
-| 114979 | Ethereal Metal Cleave | cleave | Metal | power 101, cooldown 6.0s, mana 33, cast 0.25s, range 120 | bounce cleave. count twist 2/10. |
-| 114980 | Grand Light Beam | beam | Light | power 116, cooldown 9.0s, mana 44, cast 0.50s, range 700 | heal beam. area twist 10/10. |
+| 114971 | Genesis Metal Rift | portal | Metal | power 0, cooldown 16.0s, mana 30, cast 0.32s, range 500 | (not usable in ranked duels) bounce portal. cast twist 10/10. |
+| 114972 | Void-touched Light Gravity | pull | Light | power 21, cooldown 12.0s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) heal pull. count twist 8/10. |
+| 114973 | Tidal Frost Legion | summon | Frost | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 200 | (not usable in ranked duels) slow summon. area twist 6/10. |
+| 114974 | Jade Star Bow | projectile | Star | power 99, cooldown 5.0s, mana 13, cast 0.20s, range 640 | homing projectile. power twist 4/10. |
+| 114975 | Radiant Metal Phantom | stealth | Metal | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) bounce stealth. mp twist 1/10. |
+| 114976 | Echoing Light Haste | buff | Light | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | heal buff. duration twist 9/10. |
+| 114977 | Fierce Frost Aura | aura | Frost | power 17, cooldown 18.0s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) slow aura. range twist 7/10. |
+| 114978 | Solar Star Bulwark | barrier | Star | power 0, cooldown 14.0s, mana 25, cast 0.26s, range 160 | (not usable in ranked duels) homing barrier. cast twist 4/10. |
+| 114979 | Ethereal Metal Cleave | cleave | Metal | power 101, cooldown 6.0s, mana 16, cast 0.25s, range 120 | bounce cleave. count twist 2/10. |
+| 114980 | Grand Light Beam | beam | Light | power 116, cooldown 9.0s, mana 22, cast 0.50s, range 700 | heal beam. area twist 10/10. |
 | 114981 | Arcane Flame Scout | out of battle | - | +35% chance to upgrade each skill drop by one rank | burn world. cooldown twist 8/10. |
-| 114982 | Arctic Blood Blink | blink | Blood | power 0, cooldown 6.0s, mana 22, cast 0.10s, range 260 | leech blink. mp twist 5/10. |
-| 114983 | Phantom Toxin Snare | slow | Toxin | power 13, cooldown 11.0s, mana 41, cast 0.30s, range 360 | poison slow. duration twist 3/10. |
-| 114984 | Golden Void Familiar | summon | Void | power 38, cooldown 18.0s, mana 68, cast 0.60s, range 209 | pierce summon. range twist 1/10. |
-| 114985 | Dusk Flame Gun | volley | Flame | power 65, cooldown 8.0s, mana 47, cast 0.40s, range 600 | burn volley. power twist 9/10. |
-| 114986 | Dragon Blood Veil | stealth | Blood | power 0, cooldown 14.0s, mana 38, cast 0.10s, range 0 | leech stealth. count twist 6/10. |
-| 114987 | Amber Toxin Surge | buff | Toxin | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | poison buff. area twist 4/10. |
-| 114988 | Heavy Void Blessing | aura | Void | power 17, cooldown 16.9s, mana 65, cast 0.30s, range 0 | pierce aura. cooldown twist 2/10. |
-| 114989 | Vengeful Flame Ward | shield | Flame | power 0, cooldown 12.0s, mana 41, cast 0.07s, range 0 | burn shield. cast twist 9/10. |
-| 114990 | Wild Blood Comet | projectile | Blood | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 640 | leech projectile. duration twist 7/10. |
-| 114991 | Abyssal Toxin Orb | projectile | Toxin | power 84, cooldown 5.0s, mana 27, cast 0.20s, range 784 | poison projectile. range twist 5/10. |
+| 114982 | Arctic Blood Blink | blink | Blood | power 0, cooldown 6.0s, mana 11, cast 0.10s, range 260 | leech blink. mp twist 5/10. |
+| 114983 | Phantom Toxin Snare | slow | Toxin | power 13, cooldown 11.0s, mana 21, cast 0.30s, range 360 | (not usable in ranked duels) poison slow. duration twist 3/10. |
+| 114984 | Golden Void Familiar | summon | Void | power 38, cooldown 18.0s, mana 34, cast 0.60s, range 209 | (not usable in ranked duels) pierce summon. range twist 1/10. |
+| 114985 | Dusk Flame Gun | volley | Flame | power 65, cooldown 8.0s, mana 24, cast 0.40s, range 600 | burn volley. power twist 9/10. |
+| 114986 | Dragon Blood Veil | stealth | Blood | power 0, cooldown 14.0s, mana 19, cast 0.10s, range 0 | (not usable in ranked duels) leech stealth. count twist 6/10. |
+| 114987 | Amber Toxin Surge | buff | Toxin | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | poison buff. area twist 4/10. |
+| 114988 | Heavy Void Blessing | aura | Void | power 17, cooldown 16.9s, mana 33, cast 0.30s, range 0 | (not usable in ranked duels) pierce aura. cooldown twist 2/10. |
+| 114989 | Vengeful Flame Ward | shield | Flame | power 0, cooldown 12.0s, mana 21, cast 0.07s, range 0 | burn shield. cast twist 9/10. |
+| 114990 | Wild Blood Comet | projectile | Blood | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 640 | leech projectile. duration twist 7/10. |
+| 114991 | Abyssal Toxin Orb | projectile | Toxin | power 84, cooldown 5.0s, mana 13, cast 0.20s, range 784 | poison projectile. range twist 5/10. |
 | 114992 | Cursed Storm Appraisal | out of battle | - | +35% more coins from matches, levels and chests | chain world. power twist 3/10. |
-| 114993 | Endless Gravity Dash | dash | Gravity | power 0, cooldown 4.0s, mana 21, cast 0.05s, range 200 | pull dash. count twist 10/10. |
-| 114994 | Crystal Wind Totem | mine | Wind | power 95, cooldown 7.0s, mana 30, cast 0.20s, range 0 | knockback mine. area twist 8/10. |
-| 114995 | Ember Shadow Chain | pull | Shadow | power 21, cooldown 9.7s, mana 47, cast 0.40s, range 420 | hide pull. cooldown twist 6/10. |
-| 114996 | Obsidian Storm Blade | cleave | Storm | power 101, cooldown 6.0s, mana 33, cast 0.22s, range 120 | chain cleave. cast twist 3/10. |
-| 114997 | Raging Gravity Overdrive | buff | Gravity | power 42, cooldown 15.0s, mana 44, cast 0.20s, range 0 | pull buff. duration twist 1/10. |
-| 114998 | Mirror Wind Renew | heal | Wind | power 63, cooldown 16.0s, mana 59, cast 0.50s, range 0 | knockback heal. range twist 9/10. |
-| 114999 | Rising Shadow Mend | heal | Shadow | power 83, cooldown 16.0s, mana 59, cast 0.50s, range 0 | hide heal. power twist 7/10. |
+| 114993 | Endless Gravity Dash | dash | Gravity | power 0, cooldown 4.0s, mana 10, cast 0.05s, range 200 | pull dash. count twist 10/10. |
+| 114994 | Crystal Wind Totem | mine | Wind | power 95, cooldown 7.0s, mana 15, cast 0.20s, range 0 | (not usable in ranked duels) knockback mine. area twist 8/10. |
+| 114995 | Ember Shadow Chain | pull | Shadow | power 21, cooldown 9.7s, mana 24, cast 0.40s, range 420 | (not usable in ranked duels) hide pull. cooldown twist 6/10. |
+| 114996 | Obsidian Storm Blade | cleave | Storm | power 101, cooldown 6.0s, mana 16, cast 0.22s, range 120 | chain cleave. cast twist 3/10. |
+| 114997 | Raging Gravity Overdrive | buff | Gravity | power 42, cooldown 15.0s, mana 22, cast 0.20s, range 0 | pull buff. duration twist 1/10. |
+| 114998 | Mirror Wind Renew | heal | Wind | power 63, cooldown 16.0s, mana 30, cast 0.50s, range 0 | knockback heal. range twist 9/10. |
+| 114999 | Rising Shadow Mend | heal | Shadow | power 83, cooldown 16.0s, mana 30, cast 0.50s, range 0 | hide heal. power twist 7/10. |

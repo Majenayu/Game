@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { seed } from './seed';
+
+test.beforeEach(async ({ page }) => seed(page));
 
 async function openPage(page: Page, name: string) {
   await page.goto('/');
@@ -28,6 +31,9 @@ test('menu shows progress and every page opens', async ({ page }) => {
     'tower',
     'ranked',
     'market',
+    'training',
+    'profile',
+    'chests',
   ]) {
     await page.locator(`[data-page="${name}"]`).click();
     await expect(page.locator('#page')).toBeVisible();
@@ -135,8 +141,15 @@ test('lobby shows every orb with skills, waits for confirm, then counts down 3 2
   await expect(page.locator('#countdown')).toHaveText(/^[123]$/);
   await expect(page.locator('#countdown')).toHaveText('GO!', { timeout: 5_000 });
 });
-test('anyone can challenge Majen 1v1, training starts at once, auto skills toggle', async ({ page }) => {
+test('champion needs level 10; at level 10 Majen fights 1v1; training starts at once; auto toggles', async ({ page }) => {
   await page.goto('/');
+  await expect(page.locator('#menu')).toBeVisible({ timeout: 15_000 });
+  await page.locator('#champfight').click();
+  await expect(page.locator('#notes')).toContainText('level 10');
+  await page.evaluate(() => {
+    const p = (window as any).__orbProgress;
+    p.data.xp = 100000;
+  });
   await page.locator('#champfight').click();
   await expect(page.locator('body')).toHaveAttribute('data-players', '2', { timeout: 8_000 });
   await expect(page.locator('#lobby')).toContainText('Majen');
@@ -152,11 +165,71 @@ test('anyone can challenge Majen 1v1, training starts at once, auto skills toggl
   await page.keyboard.press('q');
   await expect(page.locator('#autobtn')).toHaveText('AUTO');
 });
+test('ranked duel: lobby shows both fighters, confirm, countdown, fight', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await openPage(page, 'ranked');
+  await page.locator('[data-duelpractice]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-mode', 'duelpractice');
+  await expect(page.locator('#lobby')).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator('#lobby .lp')).toHaveCount(2);
+  await page.locator('[data-lconfirm]').click();
+  await expect(page.locator('#lobby')).toBeHidden();
+  await page.waitForTimeout(3500);
+  const st = await page.evaluate(() => {
+    const g = (window as any).__orbGame;
+    const d = g.scene.getScene('duel');
+    return d.src.view().phase;
+  });
+  expect(st).toBe('fight');
+  await page.keyboard.down('d');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('d');
+  await page.keyboard.press('j');
+  await page.keyboard.press('Digit3');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#menu')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+test('online ranked duel finds a match on the server', async ({ page }) => {
+  await openPage(page, 'ranked');
+  await page.locator('[data-ranked]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-mode', 'duel', { timeout: 15_000 });
+  await expect(page.locator('#lobby')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('#lobby')).toContainText('Ranked duel');
+});
+test('chests list their contents and opening one shows what you got', async ({ page }) => {
+  await page.addInitScript(() => {
+    const s = JSON.parse(localStorage.getItem('orb.save2') || '{}');
+    if (!s.chests) {
+      s.chests = { wood: 1, silver: 0, gold: 0, legend: 0 };
+      localStorage.setItem('orb.save2', JSON.stringify(s));
+    }
+  });
+  await openPage(page, 'chests');
+  await expect(page.locator('#pagebody')).toContainText('Skill card odds');
+  await page.locator('[data-open="wood"]').click();
+  await expect(page.locator('#pagebody')).toContainText('You got');
+  await expect(page.locator('#pagebody li').first()).toContainText('coins');
+});
+test('lucky draw has four wheels and 10 free spins', async ({ page }) => {
+  await openPage(page, 'spin');
+  await expect(page.locator('[data-wheel]')).toHaveCount(4);
+  await expect(page.locator('[data-spin]')).toContainText('10 left');
+  await page.locator('[data-wheel="weapons"]').click();
+  await expect(page.locator('#pagebody')).toContainText('Rail Lance');
+});
+test('profile shows stats, loadout and leaderboard', async ({ page }) => {
+  await openPage(page, 'profile');
+  await expect(page.locator('#pagebody')).toContainText('Matches');
+  await expect(page.locator('#pagebody')).toContainText('Leaderboard');
+  await expect(page.locator('#pagebody .ico').first()).toBeVisible();
+});
 test('boss tower lists nine floors and starts locked', async ({ page }) => {
   await openPage(page, 'tower');
   await expect(page.locator('[data-tower]')).toHaveCount(9);
   await expect(page.locator('[data-tower="101"]')).toBeDisabled();
-  await expect(page.locator('[data-tower="109"]')).toBeEnabled();
+  await expect(page.locator('[data-tower="109"]')).toBeDisabled();
   await expect(page.locator('#pagebody')).toContainText('Majen');
 });
 test('market sells a skill for coins and marks it sold', async ({ page }) => {
@@ -174,7 +247,7 @@ test('2v2 ranked joins a four orb team match and quick chat works', async ({ pag
   page.on('pageerror', (e) => errors.push(e.message));
   await openPage(page, 'ranked');
   await expect(page.locator('#pagebody')).toContainText('Bronze');
-  await page.locator('[data-ranked]').click();
+  await page.locator('[data-team2]').click();
   await expect(page.locator('#hud')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('#overlay')).toBeHidden({ timeout: 20_000 });
   await expect(page.locator('#lobby')).toBeVisible({ timeout: 10_000 });

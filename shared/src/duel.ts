@@ -29,7 +29,8 @@ const GRAVITY = 2600;
 const JUMP_V = 1050;
 const WALK = 330;
 const HALF_W = 26;
-const HEIGHT = 150;
+/** Hitbox height; matches the drawn fighter (drawn at 1.35x scale). */
+const HEIGHT = 210;
 /** Light attack chain: jab, jab, kick. */
 const COMBO = [
   { wind: 0.08, active: 0.1, recover: 0.16, range: 95, dmg: 0.35, push: 60, name: 'jab' },
@@ -408,7 +409,7 @@ export class Duel {
             id: this.nextId++,
             owner: f.id,
             x: f.x + dir * 40,
-            y: f.y - HEIGHT * (0.45 + 0.15 * (i - (n - 1) / 2)),
+            y: f.y - HEIGHT * (0.62 + 0.1 * (i - (n - 1) / 2)),
             vx: dir * (900 + i * 60),
             r: 14,
             dmg: s.kind === 'volley' ? hearts * 0.6 : hearts,

@@ -1,4 +1,12 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
+import { seed } from './seed';
+
+test.beforeEach(async ({ page }) => seed(page));
+async function newPage(browser: Browser): Promise<Page> {
+  const ctx = await browser.newContext();
+  await seed(ctx);
+  return ctx.newPage();
+}
 
 async function play(page: Page, name: string) {
   await page.goto('/');
@@ -9,8 +17,8 @@ async function play(page: Page, name: string) {
 const humans = async (p: Page) => Number(await p.locator('body').getAttribute('data-humans'));
 
 test('two browsers join the same room and see each other', async ({ browser }) => {
-  const a = await (await browser.newContext()).newPage();
-  const b = await (await browser.newContext()).newPage();
+  const a = await newPage(browser);
+  const b = await newPage(browser);
   const errors: string[] = [];
   for (const p of [a, b]) p.on('pageerror', (e) => errors.push(e.message));
 
@@ -35,7 +43,7 @@ test('two browsers join the same room and see each other', async ({ browser }) =
   // invite button produces a link containing the room id, and opening it joins the same room
   await a.locator('#invite').click();
   await expect(a.locator('#toast')).toContainText(roomA!);
-  const c = await (await browser.newContext()).newPage();
+  const c = await newPage(browser);
   await c.goto('/?roomId=' + roomA + '&server=0');
   await expect(c.locator('body')).toHaveAttribute('data-room', roomA!, { timeout: 15_000 });
   await expect.poll(() => humans(a), { timeout: 15_000 }).toBe(base + 1);
