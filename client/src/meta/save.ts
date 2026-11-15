@@ -1,4 +1,4 @@
-import { DEFAULT_LOADOUT, rankOf, type Loadout, type SkillInstance } from '@orb/shared';
+import { DEFAULT_LOADOUT, RANKED_START, rankOf, type Loadout, type SkillInstance } from '@orb/shared';
 
 export interface QuestState {
   id: string;
@@ -25,6 +25,10 @@ export interface SaveData {
   stats: { kills: number; wins: number; matches: number; deaths: number; coinsCollected: number };
   /** Discovered powerup ids. */
   dex: number[];
+  /** 2v2 ranked rating and record. */
+  ranked: { rating: number; best: number; games: number; wins: number };
+  /** Market: day of the stock the player bought from, and the offer indexes already bought that day. */
+  market: { day: number; bought: number[] };
 }
 
 export const SAVE_KEY = 'orb.save2';
@@ -51,6 +55,8 @@ export function defaultSave(): SaveData {
     campaign: {},
     stats: { kills: 0, wins: 0, matches: 0, deaths: 0, coinsCollected: 0 },
     dex: [],
+    ranked: { rating: RANKED_START, best: RANKED_START, games: 0, wins: 0 },
+    market: { day: 0, bought: [] },
   };
 }
 
@@ -147,6 +153,16 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
         coinsCollected: num(j.stats?.coinsCollected, 0),
       },
       dex: Array.from(new Set(nums(j.dex, []))).filter((n) => n >= 0 && n < 1008),
+      ranked: {
+        rating: Math.max(0, Math.round(num(j.ranked?.rating, RANKED_START))),
+        best: Math.max(0, Math.round(num(j.ranked?.best, RANKED_START))),
+        games: Math.max(0, Math.floor(num(j.ranked?.games, 0))),
+        wins: Math.max(0, Math.floor(num(j.ranked?.wins, 0))),
+      },
+      market: {
+        day: Math.max(0, Math.floor(num(j.market?.day, 0))),
+        bought: nums(j.market?.bought, []).filter((n) => n >= 0 && n < 32),
+      },
     };
   } catch {
     return null;

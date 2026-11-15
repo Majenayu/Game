@@ -62,6 +62,8 @@ export interface JoinTarget {
   /** Map id or 'rotate'. */
   map?: string;
   loadout?: unknown;
+  /** Join the 2v2 ranked queue (separate room type on the server). */
+  ranked?: boolean;
 }
 
 export async function joinArena(
@@ -83,7 +85,9 @@ export async function joinArena(
     ? await client.joinById(target.roomId, { name, loadout: target.loadout })
     : target.createPrivate
       ? await client.create('arena', { ...opts, private: true })
-      : await client.joinOrCreate('arena', opts);
+      : target.ranked
+        ? await client.joinOrCreate('ranked', { name, loadout: target.loadout })
+        : await client.joinOrCreate('arena', opts);
   return { room, serverIndex };
 }
 

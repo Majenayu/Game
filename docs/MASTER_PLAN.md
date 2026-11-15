@@ -604,3 +604,26 @@ Starter pack: one each of B, C, D, E, F. Luck on the first pack: A about 1 in 1,
 Names are unique within a rank. The UI always shows the rank badge, so the same adjective-element-mechanic name can appear at two different ranks.
 
 Next step (Phase 2b): connect the engine to the match simulation (one behavior per kind), 5-slot input, bots that carry and use skills, and the Collection and Loadout screens with a local save.
+
+## 20. Skill World update (built)
+
+What is in the game now:
+
+- **Skills in matches.** Five skill slots (keys 1-5, Space and E still work), mana, cast times and cooldowns. All 20 skill kinds work: shots, beams, volleys, novas, swings, shields, barriers, heals, auras, buffs, stealth, ambush, pets, mines, pull, slow, dash, blink and portal. Element effects (burn, poison, slow, knockback, pull) apply on hit. Bots carry five skills each.
+- **Skill collection.** Starter pack (one B, C, D, E and F skill), one free skill a day, drops after matches and levels, automatic merging of duplicates, weekly fusion. Pages: Skills, Loadout (5 slots, power budget 3300) and Fusion Lab.
+- **25 arenas.** The 6 hand-made arenas plus 19 new mirrored arenas (`shared/src/mapsExtra.ts`). A test checks that every open spot of every arena can be reached and bots do not get stuck.
+- **Boss Tower.** Nine floors: the 8 bosses from the Bestiary, then the champion Majen. Each boss has its own HP, colour and five unique skills (`shared/src/bosses.ts`). Opens after campaign level 6. First clears pay a boss skill drop.
+- **2v2 Ranked.** A separate `ranked` room on the server (four seats, team battle, rotating arenas, bots fill empty seats). Elo rating with tiers Bronze to Starforged, saved on the device. Every fifth ranked win pays a ranked skill drop.
+- **Market.** A broker that sells 8 skills a day and buys your skills, for coins only. Starter skills are bound and cannot be sold. Uniques are never sold.
+- **Quick chat.** 12 preset lines (no free text, so nothing to moderate). Press T or the chat button. Hidden when CrazyGames turns chat off. The server rate limits it.
+- **Music.** An original generated music loop (no audio files), calm in menus and brighter in matches. The mute button mutes it too.
+
+Still needs a backend (accounts and a database), so it is not built yet:
+
+- Saving skills and rank on a server, so the same account works on every device and nobody can cheat.
+- Real player-to-player auctions and trading (today the market is a broker).
+- A worldwide ranked ladder (today the rating is saved on the device).
+- The shared open world (Plaza) with many players.
+- Unique skills owned by only one player in the world.
+
+CrazyGames rules do not allow a separate login. The backend must use the CrazyGames user account (their SDK gives a user token) and a free database such as Postgres on a free tier.

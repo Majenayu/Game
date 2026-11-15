@@ -7,8 +7,11 @@ import '@fontsource/bangers/latin-400.css';
 import Phaser from 'phaser';
 import type { Room } from 'colyseus.js';
 import {
+  BOSS_LEVELS,
   LEVELS,
   RECONNECT_SECONDS,
+  TOWER_FIRST_ID,
+  rankedTier,
   WORLD_H,
   WORLD_W,
   getSkill,
@@ -135,16 +138,25 @@ async function boot(): Promise<void> {
 
   let campaignActive = false;
   let offlinePractice = false;
+  let rankedActive = false;
 
   scene.hooks = {
     onPlayingChange: (p) => {
       playingFlag = p;
+      sfx.intense = p;
       applyPlaying();
     },
     onRoundEnd: (r: RoundResult) => {
       void showMidgameAd(platform);
       flushMastery();
       if (campaignActive || !r.me) return '';
+      let rankedHtml = '';
+      if (rankedActive) {
+        const rk = progress.recordRanked(r.won);
+        const tier = rankedTier(rk.rating);
+        rankedHtml = `<div class="reward">Ranked: ${rk.delta >= 0 ? '+' : ''}${rk.delta} &middot; ${rk.rating} (${tier.name})</div>`;
+        if (rk.drop) ui.notify(`Ranked drop: ${dropText(rk.drop)}`, '#b77dff', 4500);
+      }
       const res = progress.recordMatch(
         { mode: r.mode, kills: r.me.kills, deaths: r.me.deaths, score: r.me.score, won: r.won },
         offlinePractice ? 0.5 : 1,
@@ -152,7 +164,7 @@ async function boot(): Promise<void> {
       res.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
       if (r.won) ui.notify('Victory!', '#ffc93c', 4000);
       if (res.drop) ui.notify(`Skill drop: ${dropText(res.drop)}`, '#b77dff', 4500);
-      return `<div class="reward">+${res.coins} coins &middot; +${res.xp} XP${r.won ? ' &middot; Victory bonus!' : ''}${offlinePractice ? ' (practice rewards are halved)' : ''}</div>`;
+      return `<div class="reward">+${res.coins} coins &middot; +${res.xp} XP${r.won ? ' &middot; Victory bonus!' : ''}${offlinePractice ? ' (practice rewards are halved)' : ''}</div>${rankedHtml}`;
     },
     onEvent: (ev, me) => {
       if (ev.t === 'skill' && ev.id === me) uses.set(ev.skill, (uses.get(ev.skill) ?? 0) + 1);
@@ -197,6 +209,7 @@ async function boot(): Promise<void> {
     runner = null;
     campaignActive = false;
     offlinePractice = false;
+    rankedActive = false;
     scene.suppressBoard = false;
     ui.setObjective('');
     const r = current;
@@ -251,6 +264,10 @@ async function boot(): Promise<void> {
         autoRestart: false,
         boss: level.boss === true,
         roundTime: level.time,
+        bossName: level.bossName,
+        bossHp: level.bossHp,
+        bossColor: level.bossColor,
+        bossKit: level.bossKit,
       },
       progress.loadoutInstances(),
     );
@@ -267,7 +284,8 @@ async function boot(): Promise<void> {
       const starHtml = [1, 2, 3]
         .map((i) => `<span class="star ${i <= res.stars ? 'on' : ''}" style="font-size:32px">&#9733;</span>`)
         .join('');
-      const next = LEVELS.find((l) => l.id === level.id + 1);
+      const tower = level.id >= TOWER_FIRST_ID;
+      const next = (tower ? BOSS_LEVELS : LEVELS).find((l) => l.id === level.id + 1);
       const buttons = [
         ...(res.won && next ? [{ label: 'Next level', onClick: () => void startLevel(next) }] : []),
         {
@@ -275,7 +293,11 @@ async function boot(): Promise<void> {
           ghost: res.won && !!next,
           onClick: () => void startLevel(level),
         },
-        { label: 'Campaign', ghost: true, onClick: () => void toMenu().then(() => pages.open('campaign')) },
+        {
+          label: tower ? 'Boss Tower' : 'Campaign',
+          ghost: true,
+          onClick: () => void toMenu().then(() => pages.open(tower ? 'tower' : 'campaign')),
+        },
         { label: 'Menu', ghost: true, onClick: () => void toMenu() },
       ];
       ui.showOverlayHtml(
@@ -397,6 +419,12 @@ async function boot(): Promise<void> {
       pages.close();
       void startLevel(level);
     },
+    playRanked: () => {
+      pages.close();
+      void startOnline(ui.nickValue(), { ranked: true }).then(() => {
+        rankedActive = !!current;
+      });
+    },
     watchAd: () => showRewardedAd(platform),
   });
   ui.onPage = (name) => pages.open(name as PageName);
@@ -413,7 +441,13 @@ async function boot(): Promise<void> {
   ui.onPractice = (raw) => void startOffline(raw, 'dm', 'neon');
   ui.onLeave = () => void toMenu();
   ui.onSkill = (slot) => scene.queueSkill(slot);
+  ui.onEmote = (e) => scene.sendEmote(e);
+  ui.chatAllowed = !platform.disableChat;
   window.addEventListener('keydown', (e) => {
+    if ((e.key === 't' || e.key === 'T') && scene.hasSource && !pages.current) {
+      ui.toggleEmotes();
+      return;
+    }
     if (e.key !== 'Escape') return;
     if (pages.current) ui.onPageClose();
     else if (scene.hasSource) void toMenu();

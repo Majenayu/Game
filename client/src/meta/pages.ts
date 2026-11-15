@@ -16,7 +16,13 @@ import {
   RARITIES,
   RECIPES,
   TRAILS,
+  BOSS_FIGHTS,
+  BOSS_LEVELS,
+  RANKED_TIERS,
+  TOWER_UNLOCK_LEVEL,
   budgetCost,
+  neutralInstance,
+  rankedTier,
   getSkill,
   loadoutCost,
   masteryLevel,
@@ -46,6 +52,8 @@ export interface PageActions {
   playOnline(mode: ModeId | 'mix', map: string): void;
   playOffline(mode: ModeId, map: string): void;
   startLevel(level: LevelDef): void;
+  /** Joins the online 2v2 ranked queue. */
+  playRanked(): void;
   /** Shows the rewarded-ad flow for an extra spin. Resolves true when granted. */
   watchAd(): Promise<boolean>;
 }
@@ -61,7 +69,10 @@ export type PageName =
   | 'quests'
   | 'spin'
   | 'dex'
-  | 'bestiary';
+  | 'bestiary'
+  | 'tower'
+  | 'ranked'
+  | 'market';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -75,6 +86,9 @@ const TITLES: Record<PageName, string> = {
   spin: 'Lucky Draw',
   dex: 'Powerup Collection',
   bestiary: 'Bestiary',
+  tower: 'Boss Tower',
+  ranked: '2v2 Ranked',
+  market: 'Market',
 };
 
 export class Pages {
@@ -138,6 +152,12 @@ export class Pages {
         return this.dexHtml();
       case 'bestiary':
         return this.bestiaryHtml();
+      case 'tower':
+        return this.towerHtml();
+      case 'ranked':
+        return this.rankedHtml();
+      case 'market':
+        return this.marketHtml();
     }
   }
 
@@ -171,7 +191,7 @@ export class Pages {
         <div class="grow"><b>${esc(l.name)}${l.boss ? ' <span class="tag" style="color:#ff1744;border-color:#ff1744">BOSS</span>' : ''}</b>
           <div class="sub" style="margin:0">${esc(objectiveText(l))} &middot; ${MODES[l.mode].name} &middot; ${l.bots} enemies</div></div>
         <div style="font-size:20px">${st}</div>
-        <button data-level="${l.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? 'Play' : 'Locked'}</button>
+        <button data-lvl="${l.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? 'Play' : 'Locked'}</button>
       </div>`;
     }).join('');
     return `<p class="sub">Stars earned: ${this.pr.totalStars()} / ${LEVELS.length * 3}. Star 1: clear it. Star 2: beat the par time. Star 3: clear without dying.</p>${rows}`;
@@ -409,8 +429,61 @@ export class Pages {
       ${!st.free && ENABLE_ADS ? '<button class="ghost" data-spinad="1">Watch ad for a spin</button>' : ''}</div>`;
   }
 
-  private bestiaryHtml(): string {
-    const card = (f: (typeof ALL_FIGURES)[number]) => `
+  private towerHtml(): string {
+    const rows = BOSS_LEVELS.map((l, i) => {
+      const f = BOSS_FIGHTS[i];
+      const fig = ALL_FIGURES.find((x) => x.id === f.figure);
+      const unlocked = this.pr.levelUnlocked(l);
+      const stars = this.pr.data.campaign[String(l.id)] ?? 0;
+      const st = [1, 2, 3].map((k) => `<span class="star ${k <= stars ? 'on' : ''}">&#9733;</span>`).join('');
+      const champ = f.figure === 'majen';
+      return `<div class="row ${unlocked ? '' : 'locked'}">
+        <div class="towerart">${fig ? uniqueSvg(fig.svg, `tw${i}`) : ''}</div>
+        <div class="grow"><b style="color:${hex(f.color)}">Floor ${i + 1}: ${esc(f.name)}</b>${champ ? ' <span class="tag" style="color:#ffc93c;border-color:#ffc93c">CHAMPION</span>' : ''}
+          <div class="sub" style="margin:0">${f.hp} HP &middot; ${l.bots - 1} guards &middot; ${esc(MAP_LIST.find((m) => m.id === l.map)?.name ?? l.map)} &middot; ${l.reward} coins</div>
+          <div class="sub" style="margin:0">Skills: ${f.kit.map(esc).join(', ')}</div></div>
+        <div style="font-size:20px">${st}</div>
+        <button data-tower="${l.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? (champ ? 'Challenge' : 'Fight') : 'Locked'}</button>
+      </div>`;
+    }).join('');
+    return `<p class="sub">Climb nine floors. Each boss fights with five unique skills. The tower opens after campaign level ${TOWER_UNLOCK_LEVEL}; Majen, the champion, waits at the top. First clears pay a boss skill drop.</p>${rows}`;
+  }
+  private rankedHtml(): string {
+    const r = this.pr.data.ranked;
+    const t = rankedTier(r.rating);
+    const losses = r.games - r.wins;
+    const tiers = RANKED_TIERS.map(
+      (x) => `<span class="tag" style="color:${hex(x.color)};border-color:${hex(x.color)}">${esc(x.name)} ${x.min}+</span>`,
+    ).join(' ');
+    return `<div class="row"><div class="grow"><b style="font-size:22px;color:${hex(t.color)}">${esc(t.name)}</b>
+        <div class="sub" style="margin:0">Rating ${r.rating} &middot; best ${r.best} &middot; ${r.wins} wins, ${losses} losses</div></div>
+        <button data-ranked="1">Find 2v2 match</button></div>
+      <p class="sub">Two against two, team battle, rotating arenas. Win to gain rating, lose to drop a little. You never lose levels or skills. Empty seats are filled by bots so a match always starts at once. Every fifth win pays a ranked skill drop.</p>
+      <h3>Tiers</h3><p>${tiers}</p>`;
+  }
+  private marketHtml(): string {
+    const pr = this.pr;
+    const offers = pr
+      .marketToday()
+      .map((o, i) =>
+        this.skillCard(
+          neutralInstance(o.skillId),
+          o.sold
+            ? '<button disabled>Sold</button>'
+            : `<button data-buy="${i}" ${pr.data.coins >= o.price ? '' : 'disabled'}>Buy ${o.price}</button>`,
+        ),
+      )
+      .join('');
+    const equipped = new Set(pr.data.loadout.skillIds);
+    const sellable = this.sortedSkills()
+      .filter((s) => !s.bound && !equipped.has(s.skillId))
+      .map((s) => this.skillCard(s, `<button class="ghost" data-sell="${s.skillId}">Sell ${pr.sellValue(s.skillId)}</button>`))
+      .join('');
+    return `<p class="sub">The Starforge broker trades skills for coins only. New stock every day. Uniques are never sold here. Starter skills are bound and cannot be sold. Player-to-player auctions arrive with accounts.</p>
+      <h3>Today's stock</h3><div class="cards">${offers}</div>
+      <h3>Sell your skills</h3><div class="cards">${sellable || '<p class="sub">Nothing to sell. Equipped and starter skills are kept.</p>'}</div>`;
+  }
+  private bestiaryHtml(): string {    const card = (f: (typeof ALL_FIGURES)[number]) => `
       <div class="boss ${f.id === MAJEN.id ? 'champion' : ''}">
         <div class="art">${uniqueSvg(f.svg, 'dex')}</div>
         <div><b style="color:${f.color}">${esc(f.name)}</b><div class="tt">${esc(f.title)} &middot; ${esc(f.element)}</div>
@@ -466,10 +539,30 @@ export class Pages {
       on('[data-offline]', (el) => this.actions.playOffline(this.mode, el.dataset.offline!));
     }
     if (name === 'campaign')
-      on('[data-level]', (el) =>
-        this.actions.startLevel(LEVELS.find((l) => l.id === Number(el.dataset.level))!),
+      on('[data-lvl]', (el) =>
+        this.actions.startLevel(LEVELS.find((l) => l.id === Number(el.dataset.lvl))!),
       );
-    if (name === 'loadout') {
+    if (name === 'tower')
+      on('[data-tower]', (el) =>
+        this.actions.startLevel(BOSS_LEVELS.find((l) => l.id === Number(el.dataset.tower))!),
+      );
+    if (name === 'ranked') on('[data-ranked]', () => this.actions.playRanked());
+    if (name === 'market') {
+      on('[data-buy]', (el) => {
+        const r = pr.buyOffer(Number(el.dataset.buy));
+        if (r.ok && r.drop) {
+          sfx.reward();
+          note(`Bought ${getSkill(r.drop.skillId).name} (${r.drop.rank})${r.drop.merged ? `, merged to level ${r.drop.level}` : ''}`, '#ffc93c');
+        } else if (r.reason) note(r.reason, '#ff8a9a');
+        this.render();
+      });
+      on('[data-sell]', (el) => {
+        const r = pr.sellSkill(Number(el.dataset.sell));
+        if (r.ok) note(`Sold for ${r.coins} coins`, '#ffc93c');
+        else if (r.reason) note(r.reason, '#ff8a9a');
+        this.render();
+      });
+    }    if (name === 'loadout') {
       on('[data-equip]', (el) => {
         const [kind, id] = el.dataset.equip!.split(':');
         const key: ShopKind = kind as ShopKind;

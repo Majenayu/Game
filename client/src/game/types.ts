@@ -80,5 +80,9 @@ export interface GameSource {
   /** Latest authoritative view (remote entities interpolated for online). */
   view(nowMs: number): Snapshot | null;
   onEvent: (ev: SimEvent) => void;
+  /** Sends a preset quick-chat line (index into EMOTES). */
+  sendEmote(e: number): void;
+  /** Fires when any player (including you) shows an emote. */
+  onEmote: (id: string, e: number) => void;
   dispose(): void;
 }

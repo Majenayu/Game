@@ -4,6 +4,12 @@ import {
   COLORS,
   LEVELS,
   CASUAL_BUDGET,
+  TOWER_FIRST_ID,
+  TOWER_UNLOCK_LEVEL,
+  eloUpdate,
+  marketOffers,
+  sellPrice,
+  type MarketOffer,
   TRAILS,
   UniqueRegistry,
   addToInventory,
@@ -568,15 +574,71 @@ export class Progress {
     if (stars > prev) this.data.campaign[key] = stars;
     if (prev === 0) this.track('levels', 1);
     this.addCoins(coins);
-    const xp = prev === 0 ? 80 + level.id * 10 : 20;
+    const tower = level.id >= TOWER_FIRST_ID;
+    const xp = prev === 0 ? (tower ? 200 + (level.id - TOWER_FIRST_ID) * 40 : 80 + level.id * 10) : 20;
     const levelsGained = this.addXp(xp);
-    const drop = prev === 0 ? this.dropSkill('story') : undefined;
+    const drop = prev === 0 ? this.dropSkill(tower ? 'boss' : 'story') : undefined;
     this.commit();
     return { coins, xp, levelsGained, drop };
   }
 
   levelUnlocked(level: LevelDef): boolean {
+    if (level.id === TOWER_FIRST_ID) return (this.data.campaign[String(TOWER_UNLOCK_LEVEL)] ?? 0) > 0;
     return level.id === 1 || (this.data.campaign[String(level.id - 1)] ?? 0) > 0;
+  }
+  // ---- 2v2 ranked ---------------------------------------------------------------
+  /** Applies a ranked result. opp is the average rating of the other team (bots count as your own rating). */
+  recordRanked(won: boolean, opp = this.data.ranked.rating): { rating: number; delta: number; drop?: SkillDrop } {
+    const r = this.data.ranked;
+    const before = r.rating;
+    r.rating = eloUpdate(before, opp, won ? 1 : 0);
+    r.best = Math.max(r.best, r.rating);
+    r.games += 1;
+    if (won) r.wins += 1;
+    // Every fifth ranked win pays a ranked drop.
+    const drop = won && r.wins % 5 === 0 ? this.dropSkill('ranked') : undefined;
+    this.commit();
+    return { rating: r.rating, delta: r.rating - before, drop };
+  }
+  // ---- market (Crowns only) ----------------------------------------------------
+  marketDay(now = Date.now()): number {
+    return Math.floor(now / 86_400_000);
+  }
+  /** Today's broker stock with sold-out flags. */
+  marketToday(now = Date.now()): Array<MarketOffer & { sold: boolean }> {
+    const day = this.marketDay(now);
+    const bought = this.data.market.day === day ? this.data.market.bought : [];
+    return marketOffers(day).map((o, i) => ({ ...o, sold: bought.includes(i) }));
+  }
+  buyOffer(index: number, now = Date.now()): { ok: boolean; reason?: string; drop?: SkillDrop } {
+    const offers = this.marketToday(now);
+    const o = offers[index];
+    if (!o) return { ok: false, reason: 'No such offer' };
+    if (o.sold) return { ok: false, reason: 'Already bought today' };
+    if (this.data.coins < o.price) return { ok: false, reason: 'Not enough Crowns' };
+    const day = this.marketDay(now);
+    if (this.data.market.day !== day) this.data.market = { day, bought: [] };
+    this.data.market.bought.push(index);
+    this.data.coins -= o.price;
+    const drop = this.addSkill(makeInstance(o.skillId, Math.random, this.newUid()));
+    this.commit();
+    return { ok: true, drop };
+  }
+  /** Crowns paid for a skill, or 0 when it cannot be sold. */
+  sellValue(skillId: number): number {
+    const s = this.skillBySkillId(skillId);
+    return s && !s.bound ? sellPrice(skillId, s.level) : 0;
+  }
+  sellSkill(skillId: number): { ok: boolean; reason?: string; coins?: number } {
+    const s = this.skillBySkillId(skillId);
+    if (!s) return { ok: false, reason: 'You do not own that skill' };
+    if (s.bound) return { ok: false, reason: 'Starter skills are bound and cannot be sold' };
+    if (this.data.loadout.skillIds.includes(skillId)) return { ok: false, reason: 'Unequip it first' };
+    const coins = sellPrice(skillId, s.level);
+    this.data.skills = this.data.skills.filter((x) => x !== s);
+    this.addCoins(coins);
+    this.commit();
+    return { ok: true, coins };
   }
 
   totalStars(): number {

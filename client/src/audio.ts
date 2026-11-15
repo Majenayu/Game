@@ -17,6 +17,7 @@ class Sfx {
       this.ctx = new AC();
       this.master = this.ctx.createGain();
       this.master.connect(this.ctx.destination);
+      this.startMusic();
     }
     this.apply();
     if (this.ctx.state === 'suspended' && !document.hidden) void this.ctx.resume();
@@ -102,8 +103,59 @@ class Sfx {
   click(): void {
     this.tone(500, 400, 0.04, 'square', 0.3);
   }
-  roundEnd(): void {
-    [523, 659, 784].forEach((f, i) => this.tone(f, f, 0.4, 'triangle', 0.7, i * 0.12));
+  // ---- music: an original, generated ambient loop (no audio files) -----------
+  private musicGain: GainNode | null = null;
+  private musicTimer = 0;
+  private step = 0;
+  /** Calm in menus, brighter in matches. */
+  intense = false;
+  private startMusic(): void {
+    if (!this.ctx || !this.master || this.musicGain) return;
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.gain.value = 0.22;
+    this.musicGain.connect(this.master);
+    // Am - F - C - G in A minor, two bars each, eighth-note arpeggio over a soft pad.
+    const chords = [
+      [220, 261.63, 329.63],
+      [174.61, 220, 261.63],
+      [130.81, 196, 261.63],
+      [196, 246.94, 293.66],
+    ];
+    const beat = 0.25;
+    const tick = () => {
+      const ctx = this.ctx;
+      const out = this.musicGain;
+      if (!ctx || !out || ctx.state !== 'running') return;
+      const chord = chords[Math.floor(this.step / 16) % chords.length];
+      const t = ctx.currentTime + 0.05;
+      if (this.step % 16 === 0) for (const f of chord) this.note(out, f / 2, t, beat * 16, 'sine', 0.18);
+      const arp = [0, 1, 2, 1, 0, 2, 1, 2];
+      const f = chord[arp[this.step % 8]] * (this.intense ? 2 : 1);
+      this.note(out, f, t, beat * 0.9, 'triangle', this.intense ? 0.2 : 0.12);
+      if (this.intense && this.step % 4 === 0) this.note(out, 55, t, 0.18, 'sine', 0.5);
+      this.step++;
+    };
+    this.musicTimer = window.setInterval(tick, beat * 1000);
+  }
+  private note(out: GainNode, freq: number, t: number, dur: number, type: OscillatorType, vol: number): void {
+    const ctx = this.ctx!;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.04, dur / 4));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  }
+  stopMusic(): void {
+    window.clearInterval(this.musicTimer);
+    this.musicGain?.disconnect();
+    this.musicGain = null;
+  }
+  roundEnd(): void {    [523, 659, 784].forEach((f, i) => this.tone(f, f, 0.4, 'triangle', 0.7, i * 0.12));
   }
 }
 

@@ -1,8 +1,12 @@
 import type { Room } from 'colyseus.js';
 import {
   COLORS,
+  EMOTES,
+  EMOTE_COOLDOWN,
+  MSG_EMOTE,
   MSG_EVENT,
   Sim,
+  isEmoteId,
   powerupId,
   sanitizeInput,
   toView,
@@ -22,7 +26,10 @@ export class OfflineSource implements GameSource {
   readonly online = false;
   readonly localId = 'me';
   onEvent: (ev: SimEvent) => void = () => {};
+  onEmote: (id: string, e: number) => void = () => {};
   readonly sim: Sim;
+  private lastEmote = -Infinity;
+  private replyTimer = 0;
   /** Freezes the simulation (used when a campaign level ends). */
   paused = false;
 
@@ -53,6 +60,19 @@ export class OfflineSource implements GameSource {
   sendInput(input: InputMessage): void {
     const clean = sanitizeInput(input);
     if (clean) this.sim.applyInput(this.localId, clean);
+  }
+  sendEmote(e: number): void {
+    const now = performance.now();
+    if (!isEmoteId(e) || now - this.lastEmote < EMOTE_COOLDOWN * 1000) return;
+    this.lastEmote = now;
+    this.onEmote(this.localId, e);
+    // A bot sometimes answers, so offline chat does not feel empty.
+    const bots = Array.from(this.sim.players.values()).filter((p) => p.bot && p.alive);
+    if (!bots.length || Math.random() < 0.4) return;
+    const bot = bots[Math.floor(Math.random() * bots.length)];
+    const reply = [1, 2, 7, 9][Math.floor(Math.random() * 4)] % EMOTES.length;
+    window.clearTimeout(this.replyTimer);
+    this.replyTimer = window.setTimeout(() => this.onEmote(bot.id, reply), 900 + Math.random() * 900);
   }
 
   view(): Snapshot {
@@ -92,7 +112,10 @@ export class OfflineSource implements GameSource {
     };
   }
 
-  dispose(): void {}
+  dispose(): void {
+    window.clearTimeout(this.replyTimer);
+    this.onEmote = () => {};
+  }
 }
 
 /** Online: reads the Colyseus room state and interpolates remote players. */
@@ -101,12 +124,16 @@ export class OnlineSource implements GameSource {
   onEvent: (ev: SimEvent) => void = () => {};
   /** Fires on every authoritative state update (used for prediction reconciliation). */
   onServerState: (me: PlayerView | undefined) => void = () => {};
+  onEmote: (id: string, e: number) => void = () => {};
   private buf = new SnapshotBuffer();
   private latest: Snapshot | null = null;
   private latestAt = 0;
 
   constructor(private room: Room) {
     room.onMessage(MSG_EVENT, (ev: SimEvent) => this.onEvent(ev));
+    room.onMessage(MSG_EMOTE, (m: { id?: unknown; e?: unknown }) => {
+      if (typeof m?.id === 'string' && isEmoteId(m.e)) this.onEmote(m.id, m.e);
+    });
     room.onStateChange((state: any) => this.ingest(state));
     if (room.state && (room.state as any).players) this.ingest(room.state);
   }
@@ -125,6 +152,14 @@ export class OnlineSource implements GameSource {
     }
   }
 
+  sendEmote(e: number): void {
+    if (!isEmoteId(e)) return;
+    try {
+      this.room.send(MSG_EMOTE, e);
+    } catch {
+      /* socket closing */
+    }
+  }
   private ingest(state: any): void {
     const now = performance.now();
     const players: PlayerView[] = [];
@@ -218,5 +253,6 @@ export class OnlineSource implements GameSource {
   dispose(): void {
     this.onEvent = () => {};
     this.onServerState = () => {};
+    this.onEmote = () => {};
   }
 }

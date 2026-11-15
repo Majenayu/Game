@@ -25,6 +25,9 @@ test('menu shows progress and every page opens', async ({ page }) => {
     'spin',
     'dex',
     'bestiary',
+    'tower',
+    'ranked',
+    'market',
   ]) {
     await page.locator(`[data-page="${name}"]`).click();
     await expect(page.locator('#page')).toBeVisible();
@@ -79,7 +82,7 @@ test('lucky draw spins and grants a prize', async ({ page }) => {
 
 test('campaign level 1 starts offline with an objective and bots', async ({ page }) => {
   await openPage(page, 'campaign');
-  await page.locator('[data-level="1"]').click();
+  await page.locator('[data-lvl="1"]').click();
   await expect(page.locator('body')).toHaveAttribute('data-mode', 'campaign');
   await expect(page.locator('#objective')).toContainText('Defeat 3 orbs');
   await expect(page.locator('body')).toHaveAttribute('data-players', '3', { timeout: 5_000 });
@@ -113,4 +116,38 @@ test('skills can be used with the keyboard and show a cooldown', async ({ page }
   await page.waitForTimeout(500);
   await page.keyboard.press('Digit1');
   await expect(page.locator('#sk0 .cdn')).not.toHaveText('', { timeout: 10_000 });
+});
+
+test('boss tower lists nine floors and starts locked', async ({ page }) => {
+  await openPage(page, 'tower');
+  await expect(page.locator('[data-tower]')).toHaveCount(9);
+  await expect(page.locator('[data-tower="101"]')).toBeDisabled();
+  await expect(page.locator('#pagebody')).toContainText('Majen');
+});
+test('market sells a skill for coins and marks it sold', async ({ page }) => {
+  await openPage(page, 'market');
+  await expect(page.locator('[data-buy]').first()).toBeVisible();
+  const before = Number(await page.locator('#page [data-coins]').first().innerText());
+  const cheapest = page.locator('[data-buy]:not([disabled])').first();
+  await cheapest.click();
+  const after = Number(await page.locator('#page [data-coins]').first().innerText());
+  expect(after).toBeLessThan(before);
+  await expect(page.locator('#pagebody button:has-text("Sold")')).toHaveCount(1);
+});
+test('2v2 ranked joins a four orb team match and quick chat works', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await openPage(page, 'ranked');
+  await expect(page.locator('#pagebody')).toContainText('Bronze');
+  await page.locator('[data-ranked]').click();
+  await expect(page.locator('#hud')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('#overlay')).toBeHidden({ timeout: 20_000 });
+  await expect(page.locator('#emotebtn')).toBeVisible();
+  await page.locator('#emotebtn').click();
+  await expect(page.locator('#emotes')).toBeVisible();
+  await page.locator('[data-emote="1"]').click();
+  await expect(page.locator('#emotes')).toBeHidden();
+  await page.keyboard.press('t');
+  await expect(page.locator('#emotes')).toBeVisible();
+  expect(errors).toEqual([]);
 });

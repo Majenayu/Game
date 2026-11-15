@@ -683,6 +683,32 @@
         box-shadow: none;
         border: 1px solid #33406e;
       }
+      #emotebtn {
+        position: absolute;
+        left: 12px;
+        bottom: 56px;
+        margin: 0;
+        padding: 6px 12px;
+        background: rgba(8, 10, 24, 0.7);
+      }
+      #emotes {
+        position: absolute;
+        left: 12px;
+        bottom: 100px;
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        gap: 6px;
+        padding: 8px;
+        border-radius: 10px;
+        background: rgba(8, 10, 24, 0.85);
+        border: 1px solid #ffd36e66;
+        z-index: 20;
+      }
+      #emotes button {
+        margin: 0;
+        padding: 6px 10px;
+        font-size: 14px;
+      }
       #leave,
       #invite {
         position: absolute;
@@ -1304,6 +1330,15 @@
         height: auto;
         display: block;
       }
+      .towerart {
+        width: 64px;
+        height: 64px;
+        flex: none;
+      }
+      .towerart svg {
+        width: 100%;
+        height: 100%;
+      }
       .bossgrid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -1405,6 +1440,9 @@
           <button class="tile" data-page="fusion"><span class="ic">&#9878;</span>Fusion Lab</button>
           <button class="tile" data-page="dex"><span class="ic">&#128218;</span>Powerups</button>
           <button class="tile" data-page="bestiary"><span class="ic">&#128009;</span>Bestiary</button>
+          <button class="tile" data-page="tower"><span class="ic">&#127984;</span>Boss Tower</button>
+          <button class="tile" data-page="ranked"><span class="ic">&#127942;</span>2v2 Ranked</button>
+          <button class="tile" data-page="market"><span class="ic">&#128176;</span>Market</button>
         </div>
         <button id="practice" class="ghost">Practice offline</button>
         <div class="controls" id="controls">
@@ -1455,6 +1493,8 @@
       <button id="mute" aria-label="Mute" hidden>&#128266;</button>
       <button id="leave" class="ghost" hidden>Leave</button>
       <button id="invite" class="ghost" hidden>Invite friends</button>
+    <button id="emotebtn" class="ghost" hidden aria-label="Quick chat (T)">&#128172;</button>
+    <div id="emotes" hidden></div>
     </div>
     <div id="touch"></div>
     <div id="rotate">Please rotate your phone to landscape<br />to play Orb Arena</div>

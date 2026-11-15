@@ -1,5 +1,6 @@
 import {
   EFFECTS,
+  EMOTES,
   ELEMENTS,
   MAX_NICK,
   MODES,
@@ -40,6 +41,10 @@ export class Ui {
   private muteBtn = $<HTMLButtonElement>('mute');
   private leaveBtn = $<HTMLButtonElement>('leave');
   private inviteBtn = $<HTMLButtonElement>('invite');
+  private emoteBtn = $<HTMLButtonElement>('emotebtn');
+  private emotePanel = $('emotes');
+  /** False when the platform disables chat; then quick chat is hidden. */
+  chatAllowed = true;
   private skillBtns = [0, 1, 2, 3, 4].map((i) => $<HTMLButtonElement>('sk' + i));
   private lastHud = 0;
   private hintTimer = 0;
@@ -50,6 +55,7 @@ export class Ui {
   onLeave: () => void = () => {};
   onInvite: () => void = () => {};
   onSkill: (slot: number) => void = () => {};
+  onEmote: (e: number) => void = () => {};
   onPage: (name: string) => void = () => {};
   onPageClose: () => void = () => {};
 
@@ -61,6 +67,14 @@ export class Ui {
     this.muteBtn.addEventListener('click', () => this.onMuteToggle());
     this.leaveBtn.addEventListener('click', () => this.onLeave());
     this.inviteBtn.addEventListener('click', () => this.onInvite());
+    this.emotePanel.innerHTML = EMOTES.map((t, i) => `<button class="ghost" data-emote="${i}">${esc(t)}</button>`).join('');
+    this.emoteBtn.addEventListener('click', () => this.toggleEmotes());
+    this.emotePanel.querySelectorAll<HTMLButtonElement>('[data-emote]').forEach((b) =>
+      b.addEventListener('click', () => {
+        this.onEmote(Number(b.dataset.emote));
+        this.toggleEmotes(false);
+      }),
+    );
     $('pageclose').addEventListener('click', () => this.onPageClose());
     this.menu
       .querySelectorAll<HTMLButtonElement>('[data-page]')
@@ -95,6 +109,14 @@ export class Ui {
   setInviteVisible(v: boolean): void {
     this.inviteBtn.hidden = !v;
   }
+  setEmoteVisible(v: boolean): void {
+    this.emoteBtn.hidden = !v || !this.chatAllowed;
+    if (this.emoteBtn.hidden) this.emotePanel.hidden = true;
+  }
+  /** Opens or closes the quick-chat panel. */
+  toggleEmotes(open = this.emotePanel.hidden): void {
+    this.emotePanel.hidden = !open || this.emoteBtn.hidden;
+  }
 
   /** Updates the coins, level and xp displays (menu and page header). */
   setStatus(level: number, into: number, need: number, coins: number): void {
@@ -116,6 +138,7 @@ export class Ui {
     this.menu.hidden = false;
     this.leaveBtn.hidden = true;
     this.inviteBtn.hidden = true;
+    this.setEmoteVisible(false);
     this.skillBtns.forEach((b) => (b.hidden = true));
     this.hud.hidden = true;
     this.board.hidden = true;
@@ -132,6 +155,7 @@ export class Ui {
     this.leaveBtn.hidden = false;
     this.hud.hidden = false;
     this.overlay.hidden = true;
+    this.setEmoteVisible(true);
   }
 
   /** Opens a full page (shop, loadout...). `body` is raw trusted HTML built by the pages module. */

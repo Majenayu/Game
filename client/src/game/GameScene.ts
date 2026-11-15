@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import {
+  EMOTES,
   EFFECTS,
   ELEMENTS,
   MODES,
@@ -95,6 +96,8 @@ export class GameScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics;
   private map!: MapDef;
   private names = new Map<string, Phaser.GameObjects.Text>();
+  /** Quick-chat bubbles above orbs, removed when they expire. */
+  private bubbles = new Map<string, { text: Phaser.GameObjects.Text; until: number }>();
   private particles: Particle[] = [];
   private fxs: Fx[] = [];
   private trails = new Map<string, TrailPoint[]>();
@@ -177,6 +180,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     src.onEvent = (ev) => this.handleEvent(ev);
+    src.onEmote = (id, e) => this.showEmote(id, e);
     if (src instanceof OnlineSource) {
       src.onServerState = (me) => {
         if (!me) return;
@@ -205,6 +209,35 @@ export class GameScene extends Phaser.Scene {
   private clearNames(): void {
     for (const t of this.names.values()) t.destroy();
     this.names.clear();
+    for (const b of this.bubbles.values()) b.text.destroy();
+    this.bubbles.clear();
+  }
+  /** Sends a quick-chat line from the local player. */
+  sendEmote(e: number): void {
+    this.source?.sendEmote(e);
+  }
+  private showEmote(id: string, e: number): void {
+    const line = EMOTES[e];
+    if (!line) return;
+    let b = this.bubbles.get(id);
+    if (!b) {
+      const text = this.add
+        .text(0, 0, '', {
+          fontFamily: 'Rajdhani, Trebuchet MS, sans-serif',
+          fontStyle: 'bold',
+          fontSize: '18px',
+          color: '#1b0a3a',
+          backgroundColor: '#ffe9a8',
+          padding: { x: 8, y: 3 },
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(31);
+      b = { text, until: 0 };
+      this.bubbles.set(id, b);
+    }
+    b.text.setText(line).setVisible(true);
+    b.until = performance.now() + 2600;
+    sfx.click();
   }
 
   // ---- arena drawing ---------------------------------------------------------
@@ -851,6 +884,13 @@ export class GameScene extends Phaser.Scene {
       label.setVisible(p.alive).setAlpha(ghost ? 0.25 : 1);
       if (!p.alive) continue;
       label.setText(p.boss ? `${p.name} (boss)` : p.name).setPosition(p.x, p.y + PLAYER_RADIUS + 16);
+      const bubble = this.bubbles.get(p.id);
+      if (bubble) {
+        if (now > bubble.until) {
+          bubble.text.destroy();
+          this.bubbles.delete(p.id);
+        } else bubble.text.setPosition(p.x, p.y - PLAYER_RADIUS - 14).setAlpha(ghost ? 0.25 : 1);
+      }
       if (team) label.setColor(p.team === 0 ? '#80b4ff' : '#ff8a9a');
       const blink = (p.invuln ? 0.45 + 0.35 * Math.sin(now / 70) : 1) * (ghost ? 0.25 : 1);
       g.fillStyle(p.color, 0.08 * blink).fillCircle(p.x, p.y, PLAYER_RADIUS * 2.4);
