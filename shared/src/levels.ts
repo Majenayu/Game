@@ -21,6 +21,8 @@ export interface LevelDef {
   bossHp?: number;
   bossColor?: number;
   bossKit?: number[];
+  bossDomain?: { name: string; color: number; effect: 'silence' | 'slow' | 'burn' | 'haste' | 'all' };
+  bossFinal?: { armor: number; dmg: number };
   reward: number;
 }
 

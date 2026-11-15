@@ -9,8 +9,9 @@ export class PlayerState extends Schema {
   @type('float32') x = 0;
   @type('float32') y = 0;
   @type('float32') aim = 0;
-  @type('uint8') hp = 0;
-  @type('uint8') maxHp = 3;
+  @type('uint16') hp = 0;
+  @type('uint16') maxHp = 300;
+  @type('uint8') form = 0;
   @type('int16') kills = 0;
   @type('int16') deaths = 0;
   @type('int16') score = 0;
@@ -93,6 +94,9 @@ export class ArenaState extends Schema {
   @type('boolean') ranked = false;
   /** Seconds left for lobby confirmations (0 once the match has started). */
   @type('float32') lobby = 0;
+  @type('string') domainName = '';
+  @type('uint32') domainColor = 0;
+  @type('string') domainOwner = '';
   @type('string') phase = 'play';
   @type('string') mode = 'dm';
   @type('string') mapId = 'neon';

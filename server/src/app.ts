@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { ArenaRoom, RankedRoom } from './ArenaRoom';
+import { DuelRoom } from './DuelRoom';
 
 export function createGameServer() {
   const app = express();
@@ -26,6 +27,8 @@ export function createGameServer() {
   });
   gameServer.define('arena', ArenaRoom).filterBy(['mode', 'map']);
   // 2v2 ranked has its own room name so casual players can never land in a ranked match.
-  gameServer.define('ranked', RankedRoom);
+  // Ranked is a 1v1 side-view duel (see DuelRoom). The 2v2 team room stays available as 'ranked2v2'.
+  gameServer.define('ranked', DuelRoom);
+  gameServer.define('ranked2v2', RankedRoom);
   return gameServer;
 }

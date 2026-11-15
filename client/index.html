@@ -683,6 +683,34 @@
         box-shadow: none;
         border: 1px solid #33406e;
       }
+      #onboard {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(960px, 96vw);
+        max-height: 94vh;
+        overflow: auto;
+        z-index: 60;
+        padding: 14px 18px;
+      }
+      #onboard .obrow {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      #onboard .pick {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      #onboard .pick button.on,
+      #onboard .card.sel {
+        outline: 2px solid #ffd36e;
+      }
+      #onboard .card {
+        cursor: pointer;
+      }
       #countdown {
         position: absolute;
         left: 50%;
@@ -1409,6 +1437,21 @@
         height: auto;
         display: block;
       }
+      .ico {
+        width: 44px;
+        height: 44px;
+        flex: none;
+        display: block;
+        margin: 0 auto 4px;
+      }
+      .day .ico {
+        width: 24px;
+        height: 24px;
+        margin: 2px auto 0;
+      }
+      .row .ico {
+        margin: 0 8px 0 0;
+      }
       .towerart {
         width: 64px;
         height: 64px;
@@ -1522,6 +1565,8 @@
           <button class="tile" data-page="bestiary"><span class="ic">&#128009;</span>Bestiary</button>
           <button class="tile" data-page="tower"><span class="ic">&#127984;</span>Boss Tower</button>
           <button class="tile" data-page="ranked"><span class="ic">&#127942;</span>2v2 Ranked</button>
+          <button class="tile" data-page="profile"><span class="ic">&#128100;</span>Profile</button>
+          <button class="tile" data-page="chests"><span class="ic">&#128230;</span>Chests</button>
           <button class="tile" data-page="training"><span class="ic">&#127919;</span>Training</button>
           <button class="tile" data-page="market"><span class="ic">&#128176;</span>Market</button>
         </div>
@@ -1578,6 +1623,7 @@
     <button id="emotebtn" class="ghost" hidden aria-label="Quick chat (T)">&#128172;</button>
     <div id="emotes" hidden></div>
     <div id="countdown" hidden></div>
+    <div id="onboard" class="panel" hidden></div>
     <div id="lobby" class="panel" hidden></div>
     </div>
     <div id="touch"></div>

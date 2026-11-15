@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   COUNTDOWN_SECONDS,
   EMOTES,
+  MP_COST_SCALE,
   getSkill,
   type Kind,
   EFFECTS,
@@ -127,6 +128,7 @@ export class GameScene extends Phaser.Scene {
   /** Auto skills: casts attack and defence skills by itself and aims them at the nearest enemy. */
   autoSkills = localStorage.getItem('orb.auto') === '1';
   private nextAuto = 0;
+  private autoTarget: { x: number; y: number } | null = null;
   private autoAim = 0;
   private autoAimUntil = 0;
   private lastHold = 0;
@@ -171,8 +173,8 @@ export class GameScene extends Phaser.Scene {
   }
   /** Picks a ready skill by situation: defend when hurt, attack enemies in range. */
   private runAuto(me: PlayerView, players: PlayerView[], snap: Snapshot, now: number): void {
-    if (!this.autoSkills || now < this.nextAuto || !me.alive || me.hold > 0 || me.casting > 0) return;
-    this.nextAuto = now + 350;
+    this.autoTarget = null;
+    if (!this.autoSkills || !me.alive || me.hold > 0) return;
     const team = MODES[snap.mode].team;
     let target: PlayerView | null = null;
     let best = 1e9;
@@ -184,13 +186,21 @@ export class GameScene extends Phaser.Scene {
         target = o;
       }
     }
+    // Auto also aims and fires the main weapon at the nearest enemy in range, every frame.
+    if (target && best < 650) this.autoTarget = { x: target.x, y: target.y };
+    if (me.casting > 0) {
+      this.autoAimUntil = Math.max(this.autoAimUntil, now + 120);
+      return;
+    }
+    if (now < this.nextAuto) return;
+    this.nextAuto = now + 160;
     const ids = me.skills ? me.skills.split(',').map(Number) : [];
     const cds = me.cds ? me.cds.split(',').map((c) => Number(c.split(':')[0])) : [];
     const ready: Array<{ slot: number; kind: Kind; range: number }> = [];
     ids.forEach((id, slot) => {
       if (!Number.isFinite(id) || (cds[slot] ?? 0) > 0) return;
       const s = getSkill(id);
-      if (s.kind === 'world' || me.mp < s.base.mp) return;
+      if (s.kind === 'world' || me.mp < s.base.mp * MP_COST_SCALE) return;
       ready.push({ slot, kind: s.kind, range: s.base.range || 500 });
     });
     if (!ready.length) return;
@@ -209,7 +219,7 @@ export class GameScene extends Phaser.Scene {
     if (!choice) return;
     if (target) {
       this.autoAim = Math.atan2(target.y - me.y, target.x - me.x);
-      this.autoAimUntil = now + 220;
+      this.autoAimUntil = now + 600;
     }
     this.queueSkill(choice.slot);
   }
@@ -436,6 +446,20 @@ export class GameScene extends Phaser.Scene {
       case 'roundEnd':
         sfx.roundEnd();
         break;
+      case 'form': {
+        this.burst(ev.x, ev.y, 0xff1744, 80);
+        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: 420, color: 0xff1744, born: performance.now(), ms: 1100 });
+        this.pop(ev.x, ev.y - 80, ev.name.toUpperCase() + '!', '#ff5e8a', 46);
+        this.ui.notify(`Boss form change: ${ev.name}! Stronger attack and defence.`, '#ff5e8a', 3500);
+        this.cameras.main.shake(400, 0.015);
+        sfx.boom();
+        break;
+      }
+      case 'domain':
+        this.ui.notify(`DOMAIN EXPANSION: ${ev.name}`, '#' + ev.color.toString(16).padStart(6, '0'), 4500);
+        this.cameras.main.flash(500, (ev.color >> 16) & 255, (ev.color >> 8) & 255, ev.color & 255, false);
+        sfx.roundEnd();
+        break;
       default:
         break;
     }
@@ -522,6 +546,10 @@ export class GameScene extends Phaser.Scene {
       py = this.predictor.y;
     }
     const input = this.readInput(px, py);
+    if (this.autoSkills && this.autoTarget) {
+      input.aim = Math.atan2(this.autoTarget.y - py, this.autoTarget.x - px);
+      input.shooting = true;
+    }
     if (now < this.autoAimUntil) input.aim = this.autoAim;
     this.localAim = input.aim;
     const send = canMove ? input : { moveX: 0, moveY: 0, aim: input.aim, shooting: false };
@@ -744,7 +772,7 @@ export class GameScene extends Phaser.Scene {
     const ly = Math.sin(p.aim);
     const fx = p.x + lx * 4;
     const fy = p.y + ly * 3 + 1;
-    const hurt = p.hp <= 1 && p.maxHp > 1;
+    const hurt = p.hp <= p.maxHp * 0.34 && p.maxHp > 1;
     const blinking = Math.sin(now / 1700 + p.x * 0.01) > 0.985;
     for (const s of [-1, 1]) {
       const ex = fx + s * 7.5;
@@ -953,6 +981,12 @@ export class GameScene extends Phaser.Scene {
   ): void {
     const t = this.map.theme;
     const team = MODES[snap.mode].team;
+    if (snap.domain) {
+      // Domain expansion: the whole arena glows in the owner's colour
+      const pulse = 0.1 + 0.05 * Math.sin(now / 300);
+      g.fillStyle(snap.domain.color, pulse).fillRect(0, 0, WORLD_W, WORLD_H);
+      g.lineStyle(10, snap.domain.color, 0.6).strokeRect(5, 5, WORLD_W - 10, WORLD_H - 10);
+    }
     // hazards pulse
     for (const h of this.map.hazards) {
       g.fillStyle(t.hazard, 0.12 + 0.12 * Math.sin(now / 250)).fillRoundedRect(h.x, h.y, h.w, h.h, 10);
@@ -1089,15 +1123,20 @@ export class GameScene extends Phaser.Scene {
       if (p.slow) g.lineStyle(3, 0x80d8ff, 0.8).strokeCircle(p.x, p.y, PLAYER_RADIUS + 2);
       if (p.id === meId) g.lineStyle(2, 0xffffff, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 3);
       // hp
-      if (p.maxHp <= 5) {
-        for (let i = 0; i < p.maxHp; i++) {
-          const hx = p.x + (i - (p.maxHp - 1) / 2) * 13;
-          g.fillStyle(i < p.hp ? 0xff5e8a : 0x2a2f4a, 1).fillCircle(hx, p.y - PLAYER_RADIUS - 12, 4);
+      {
+        // HP bar (green > yellow > red); bosses get a wide bar with 25% form marks
+        const w = p.boss ? 90 : 50;
+        const frac = Math.max(0, Math.min(1, p.hp / Math.max(1, p.maxHp)));
+        const col = frac > 0.6 ? 0x5bf09a : frac > 0.3 ? 0xffc93c : 0xff4d5e;
+        const by = p.y - PLAYER_RADIUS - (p.boss ? 20 : 16);
+        g.fillStyle(0x0b0e1a, 0.9).fillRect(p.x - w / 2 - 1, by - 1, w + 2, 9);
+        g.fillStyle(0x2a2f4a, 1).fillRect(p.x - w / 2, by, w, 7);
+        g.fillStyle(col, 1).fillRect(p.x - w / 2, by, w * frac, 7);
+        if (p.boss) for (const m of [0.25, 0.5, 0.75]) g.fillStyle(0xffffff, 0.7).fillRect(p.x - w / 2 + w * m - 1, by, 2, 7);
+        if (p.boss && p.form > 0) {
+          const fc = [0xffffff, 0x4dd2ff, 0xb77dff, 0xff1744][p.form];
+          g.lineStyle(4 + p.form * 2, fc, 0.5 + 0.3 * Math.sin(now / 90)).strokeCircle(p.x, p.y, PLAYER_RADIUS + 8 + p.form * 4);
         }
-      } else {
-        const w = 44;
-        g.fillStyle(0x2a2f4a, 1).fillRect(p.x - w / 2, p.y - PLAYER_RADIUS - 16, w, 7);
-        g.fillStyle(0xff5e8a, 1).fillRect(p.x - w / 2, p.y - PLAYER_RADIUS - 16, (w * p.hp) / p.maxHp, 7);
       }
       // effect dots
       if (p.fx) {

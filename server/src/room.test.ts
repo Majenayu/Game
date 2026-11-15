@@ -124,7 +124,7 @@ describe('ArenaRoom', () => {
     await until(() => b.state.mode === 'hill' && b.state.mapId === 'pillars');
     const me = a.state.players.get(a.sessionId);
     expect(me.char).toBe('titan');
-    expect(me.maxHp).toBe(5);
+    expect(me.maxHp).toBe(500);
     expect(me.skills).toBe(`${SKILL_A},${SKILL_B}`);
     expect(me.color).toBe(0x2979ff);
     await until(() => a.state.coins.size > 0);
@@ -144,7 +144,7 @@ describe('ArenaRoom', () => {
     await until(() => r.state.players?.size === 8);
     const me = r.state.players.get(r.sessionId);
     expect(me.char).toBe('nova');
-    expect(me.maxHp).toBe(3);
+    expect(me.maxHp).toBe(300);
     expect(me.skills.split(',').every((x: string) => Number(x) > 0 && Number(x) < 99999999)).toBe(true);
     await r.leave();
   });
@@ -158,14 +158,15 @@ describe('ArenaRoom', () => {
     await until(() => r.state.players?.size === 8);
     r.send(MSG_READY);
     await until(() => r.state.players.get(r.sessionId).hold === 0, 6000);
+    await new Promise((res) => setTimeout(res, 200));
     r.send(MSG_INPUT, { moveX: 0, moveY: 0, aimAngle: 0, shooting: false, seq: 1, skill: 1 });
     await until(() => (r.state.players.get(r.sessionId).cds as string).split(',')[0].split(':')[0] > '0');
     await r.leave();
   });
 it('2v2 ranked rooms hold four orbs in two teams and stay apart from casual rooms', async () => {
     const url = `ws://localhost:${PORT}`;
-    const a = await new Client(url).joinOrCreate<any>('ranked', { name: 'Rank1', ranked: false });
-    const b = await new Client(url).joinOrCreate<any>('ranked', { name: 'Rank2' });
+    const a = await new Client(url).joinOrCreate<any>('ranked2v2', { name: 'Rank1', ranked: false });
+    const b = await new Client(url).joinOrCreate<any>('ranked2v2', { name: 'Rank2' });
     const c = await new Client(url).joinOrCreate<any>('arena', { name: 'Casual', mode: 'tdm', map: 'rotate' });
     expect(a.roomId).toBe(b.roomId);
     expect(c.roomId).not.toBe(a.roomId);
@@ -173,6 +174,23 @@ it('2v2 ranked rooms hold four orbs in two teams and stay apart from casual room
     const teams = Array.from(a.state.players.values()).map((p: any) => p.team);
     expect(teams.filter((t: number) => t === 0).length).toBe(2);
     await Promise.all([a.leave(), b.leave(), c.leave()]);
+  });
+  it('ranked is a 1v1 duel: two players, confirm, countdown, fight', async () => {
+    const url = `ws://localhost:${PORT}`;
+    const a = await new Client(url).joinOrCreate<any>('ranked', { name: 'Duel1' });
+    const b = await new Client(url).joinOrCreate<any>('ranked', { name: 'Duel2' });
+    expect(a.roomId).toBe(b.roomId);
+    await until(() => a.state.fighters?.size === 2 && a.state.phase === 'lobby');
+    a.send(MSG_READY);
+    b.send(MSG_READY);
+    await until(() => a.state.phase === 'countdown');
+    await until(() => a.state.phase === 'fight', 6000);
+    a.send(MSG_INPUT, { moveX: 1, moveY: 0, aimAngle: 0, shooting: false, seq: 1 });
+    const x0 = a.state.fighters.get(a.sessionId).x;
+    await until(() => a.state.fighters.get(a.sessionId).x > x0 + 20);
+    await b.leave();
+    await until(() => a.state.phase === 'matchEnd' && a.state.winner === a.sessionId);
+    await a.leave();
   });
   it('waits in the lobby until everyone confirms, allows loadout changes only while waiting, then counts down', async () => {
     const url = `ws://localhost:${PORT}`;

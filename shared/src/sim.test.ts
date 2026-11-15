@@ -568,7 +568,7 @@ describe('characters', () => {
   it('characters set max HP and medic regenerates', () => {
     const sim = new Sim(seeded(), { seats: 1 });
     const t = sim.addPlayer('t', 'T', false, { charId: 'titan' });
-    expect(t.maxHp).toBe(CHARACTERS.titan.hp);
+    expect(t.maxHp).toBe(CHARACTERS.titan.hp * 100);
     const m = sim.addPlayer('m', 'M', false, { charId: 'medic' });
     m.hp = 1;
     run(sim, 10);
@@ -582,7 +582,7 @@ describe('characters', () => {
     sim.setLoadout('a', { char: 'bolt', skillIds: ids, color: 2, trail: 1, bfx: 1 });
     const a = sim.players.get('a')!;
     expect(a.charId).toBe('bolt');
-    expect(a.maxHp).toBe(CHARACTERS.bolt.hp);
+    expect(a.maxHp).toBe(CHARACTERS.bolt.hp * 100);
     expect(a.slots.map((s) => s.skillId)).toEqual(ids);
     sim.setLoadout('a', { skillIds: [] });
     expect(a.slots.length).toBe(5);
@@ -683,7 +683,7 @@ describe('game modes', () => {
     a.x = h.x + h.w / 2;
     a.y = h.y + h.h / 2;
     sim.step(0.05);
-    expect(a.hp).toBe(a.maxHp - 1);
+    expect(a.hp).toBe(a.maxHp - 100);
   });
 
   it('quick play rotates modes and maps each round', () => {

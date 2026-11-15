@@ -1,4 +1,11 @@
-import { DEFAULT_LOADOUT, RANKED_START, rankOf, type Loadout, type SkillInstance } from '@orb/shared';
+import {
+  DEFAULT_LOADOUT,
+  RANKED_START,
+  rankOf,
+  type ChestKind,
+  type Loadout,
+  type SkillInstance,
+} from '@orb/shared';
 
 export interface QuestState {
   id: string;
@@ -36,6 +43,14 @@ export interface SaveData {
   ranked: { rating: number; best: number; games: number; wins: number };
   /** Market: day of the stock the player bought from, and the offer indexes already bought that day. */
   market: { day: number; bought: number[] };
+  /** Unopened treasure chests by kind. */
+  chests: Record<ChestKind, number>;
+  /** Spins used today (10 a day across all wheels). */
+  spins: { day: string; used: number };
+  /** First-run profile: chosen class (empty until chosen). */
+  profile: { cls: string; created: number };
+  /** The reigning champion as seen on this device, and the kit passed down from Majen. */
+  champion: { name: string; isYou: boolean; kit: number[]; since: number; defences: number };
 }
 
 export const SAVE_KEY = 'orb.save2';
@@ -66,6 +81,10 @@ export function defaultSave(): SaveData {
     dex: [],
     ranked: { rating: RANKED_START, best: RANKED_START, games: 0, wins: 0 },
     market: { day: 0, bought: [] },
+    chests: { wood: 0, silver: 0, gold: 0, legend: 0 },
+    spins: { day: '', used: 0 },
+    profile: { cls: '', created: 0 },
+    champion: { name: 'Majen', isYou: false, kit: [], since: 0, defences: 0 },
   };
 }
 
@@ -173,6 +192,24 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
       market: {
         day: Math.max(0, Math.floor(num(j.market?.day, 0))),
         bought: nums(j.market?.bought, []).filter((n) => n >= 0 && n < 32),
+      },
+      chests: {
+        wood: Math.max(0, Math.floor(num(j.chests?.wood, 0))),
+        silver: Math.max(0, Math.floor(num(j.chests?.silver, 0))),
+        gold: Math.max(0, Math.floor(num(j.chests?.gold, 0))),
+        legend: Math.max(0, Math.floor(num(j.chests?.legend, 0))),
+      },
+      spins: { day: String(j.spins?.day ?? ''), used: Math.max(0, Math.floor(num(j.spins?.used, 0))) },
+      profile: {
+        cls: typeof j.profile?.cls === 'string' ? j.profile.cls.slice(0, 16) : '',
+        created: num(j.profile?.created, 0),
+      },
+      champion: {
+        name: typeof j.champion?.name === 'string' ? j.champion.name.slice(0, 16) : 'Majen',
+        isYou: j.champion?.isYou === true,
+        kit: nums(j.champion?.kit, []).filter((n) => !!rankOf(n)).slice(0, 5),
+        since: num(j.champion?.since, 0),
+        defences: Math.max(0, Math.floor(num(j.champion?.defences, 0))),
       },
     };
   } catch {

@@ -154,7 +154,7 @@ export interface PlayerInput {
   aim: number;
   shooting: boolean;
   seq: number;
-  /** Bit 0 = skill slot 1, bit 1 = skill slot 2 (pressed since the last message). */
+  /** Bits 0..4 = skill slots 1..5 (pressed since the last message). */
   skill: number;
 }
 
@@ -172,7 +172,7 @@ export function sanitizeInput(raw: unknown): PlayerInput | null {
     aim: normalizeAngle(aimAngle),
     shooting: shooting === true,
     seq,
-    skill: typeof r.skill === 'number' && Number.isInteger(r.skill) ? r.skill & 3 : 0,
+    skill: typeof r.skill === 'number' && Number.isInteger(r.skill) ? r.skill & 31 : 0,
   };
 }
 

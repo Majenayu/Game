@@ -11,6 +11,10 @@ export interface BossFight {
   color: number;
   /** Five unique skill names the boss fights with. */
   kit: string[];
+  /** Domain expansion at half HP: fills the whole arena. */
+  domain: { name: string; color: number; effect: 'silence' | 'slow' | 'burn' | 'haste' | 'all' };
+  /** Final form (below 25% HP): share of damage ignored and damage multiplier. */
+  final: { armor: number; dmg: number };
 }
 
 export const BOSS_FIGHTS: BossFight[] = [
@@ -20,6 +24,8 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 14,
     color: 0x8a5cff,
     kit: ['Dusk Blade', 'Nightfall', 'Shadow Step', 'Thorn Mantle', 'Ghost Army'],
+    domain: { name: 'Forgotten Kingdom', color: 0x8a5cff, effect: 'silence' },
+    final: { armor: 0.6, dmg: 3 },
   },
   {
     figure: 'mirror',
@@ -27,6 +33,8 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 16,
     color: 0x9fe8ff,
     kit: ['Glass Katana', 'Mirror Aegis', 'Black Mirror', 'Prism Link', 'Rewind'],
+    domain: { name: 'Hall of Mirrors', color: 0x9fe8ff, effect: 'haste' },
+    final: { armor: 0.62, dmg: 3 },
   },
   {
     figure: 'storm',
@@ -34,6 +42,8 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 18,
     color: 0x4dd2ff,
     kit: ['Tempest Crown', 'Storm Bow', 'Hyper Dash', 'Rune Barrier', 'Chain Whip'],
+    domain: { name: 'Eye of the Storm', color: 0x4dd2ff, effect: 'slow' },
+    final: { armor: 0.64, dmg: 3.5 },
   },
   {
     figure: 'eclipse',
@@ -41,6 +51,8 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 20,
     color: 0xffb347,
     kit: ['Crimson Eclipse', 'Solar Judgment', 'Eclipse Grip', 'Immortal Oath', 'Phoenix Veil'],
+    domain: { name: 'Endless Eclipse', color: 0xffb347, effect: 'burn' },
+    final: { armor: 0.66, dmg: 3.5 },
   },
   {
     figure: 'hydra',
@@ -48,6 +60,8 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 22,
     color: 0x5bf09a,
     kit: ['Thousand Thorns', 'Twin Fangs', 'Gravity Well', 'Stoneheart', 'Spirit Wolf'],
+    domain: { name: 'Garden of Chains', color: 0x5bf09a, effect: 'slow' },
+    final: { armor: 0.68, dmg: 4 },
   },
   {
     figure: 'maw',
@@ -55,6 +69,8 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 24,
     color: 0xffd36e,
     kit: ['Gravity Maw', 'Siege Cannon', 'Black Hole', 'Unbreakable Bastion', 'Golem Guardian'],
+    domain: { name: 'Golden Hunger', color: 0xffd36e, effect: 'silence' },
+    final: { armor: 0.7, dmg: 4 },
   },
   {
     figure: 'echo',
@@ -62,6 +78,8 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 26,
     color: 0xff5e8a,
     kit: ['Umbral Clone', 'Phantom Cannon', 'Silent Execution', 'Night Dancer', 'Blessing of Haste'],
+    domain: { name: 'Twin Echo Theatre', color: 0xff5e8a, effect: 'haste' },
+    final: { armor: 0.72, dmg: 4.5 },
   },
   {
     figure: 'star',
@@ -69,13 +87,18 @@ export const BOSS_FIGHTS: BossFight[] = [
     hp: 30,
     color: 0xffe9a8,
     kit: ['Starfall Sovereign', 'Meteor Verdict', 'Omega Barrage', 'Sanctuary Field', 'Time Stop'],
+    domain: { name: 'Last Light', color: 0xffe9a8, effect: 'burn' },
+    final: { armor: 0.75, dmg: 5 },
   },
   {
     figure: 'majen',
     name: 'Majen',
-    hp: 36,
+    hp: 50,
     color: 0xffc93c,
     kit: ['Excalibur Orb', 'Solar Judgment', 'Immortal Oath', 'Hyper Dash', 'Domain Expansion'],
+    // The champion: in his final form attack and defence go to the maximum ("9999").
+    domain: { name: 'Crown of Eternity', color: 0xffc93c, effect: 'all' },
+    final: { armor: 0.92, dmg: 99 },
   },
 ];
 
@@ -111,6 +134,8 @@ export const BOSS_LEVELS: LevelDef[] = BOSS_FIGHTS.map((f, i) => ({
   bossHp: f.hp,
   bossColor: f.color,
   bossKit: bossKitIds(f),
+  bossDomain: f.domain,
+  bossFinal: f.final,
   reward: 500 + i * 150,
 }));
 

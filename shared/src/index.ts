@@ -12,3 +12,7 @@ export * from './skills/instances';
 export * from './battle';
 export * from './bosses';
 export * from './social';
+export * from './passives';
+export * from './chests';
+export * from './classes';
+export * from './duel';

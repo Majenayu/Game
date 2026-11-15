@@ -3,6 +3,7 @@ import {
   EMOTES,
   ELEMENTS,
   MAX_NICK,
+  MP_COST_SCALE,
   MODES,
   RANK_INFO,
   RARITIES,
@@ -126,6 +127,16 @@ export class Ui {
   setAuto(on: boolean): void {
     this.autoBtn.classList.toggle('on', on);
     this.autoBtn.textContent = on ? 'AUTO ON' : 'AUTO';
+  }
+  /** Updates the champion panel on the menu. */
+  setChampion(name: string, isYou: boolean): void {
+    const nm = document.querySelector<HTMLElement>('#champ .nm');
+    if (nm) nm.textContent = name.toUpperCase();
+    const btn = document.getElementById('champfight') as HTMLButtonElement | null;
+    if (btn) {
+      btn.disabled = isYou;
+      btn.textContent = isYou ? 'You hold the crown' : `Challenge ${name}`;
+    }
   }
   /** Big "3, 2, 1, GO!" text, or null to hide it. */
   countdown(text: string | null): void {
@@ -374,8 +385,8 @@ export class Ui {
       b.style.setProperty('--cd', `${Math.min(1, rem / tot) * 100}%`);
       b.style.borderColor = elCol;
       b.style.color = elCol;
-      b.classList.toggle('ready', rem <= 0 && me.alive && me.mp >= def.base.mp);
-      b.classList.toggle('nomp', me.mp < def.base.mp);
+      b.classList.toggle('ready', rem <= 0 && me.alive && me.mp >= def.base.mp * MP_COST_SCALE);
+      b.classList.toggle('nomp', me.mp < def.base.mp * MP_COST_SCALE);
       const key = i === 0 ? 'Space / 1' : i === 1 ? 'E / 2' : String(i + 1);
       b.innerHTML = `<span class="rk" style="color:${col}">${rank}</span><span class="skn" style="color:var(--text)">${esc(def.name)}</span><span class="key">${key}</span><span class="cdn">${rem > 0 ? Math.ceil(rem) : ''}</span><span class="el" style="background:${elCol}"></span>`;
     });

@@ -55,6 +55,7 @@ interface JoinOptions {
   map?: unknown;
   loadout?: unknown;
   private?: unknown;
+  level?: unknown;
 }
 /** 2v2 ranked rooms hold four orbs; empty seats are filled by bots so matches start at once. */
 export const RANKED_SEATS = 4;
@@ -170,6 +171,7 @@ export class ArenaRoom extends Room<ArenaState> {
   onJoin(client: Client, options: JoinOptions | undefined): void {
     this.sim.addPlayer(client.sessionId, options?.name);
     this.sim.setLoadout(client.sessionId, options?.loadout);
+    this.sim.setLevel(client.sessionId, Number(options?.level) || 1);
     const colorId = (options?.loadout as { color?: unknown } | undefined)?.color;
     const p = this.sim.players.get(client.sessionId);
     if (p && Number.isInteger(colorId)) p.color = colorHex(colorId as number, p.color);
@@ -254,6 +256,9 @@ export class ArenaRoom extends Room<ArenaState> {
     s.teamScore0 = sim.teamScore[0];
     s.teamScore1 = sim.teamScore[1];
     s.hillHolder = sim.hillHolder;
+    s.domainName = sim.domain?.name ?? '';
+    s.domainColor = sim.domain?.color ?? 0;
+    s.domainOwner = sim.domain?.owner ?? '';
     s.lobby = this.lobbyOpen ? Math.max(0, Math.round((sim.frozenFor - COUNTDOWN_SECONDS) * 10) / 10) : 0;
 
     for (const id of Array.from(s.players.keys())) if (!sim.players.has(id)) s.players.delete(id);
@@ -296,6 +301,7 @@ export class ArenaRoom extends Room<ArenaState> {
       ps.weapon = v.weapon;
       ps.acc = v.acc;
       ps.hold = Math.round(v.hold * 10) / 10;
+      ps.form = v.form;
       ps.ready = v.bot || this.ready.has(p.id);
     }
 

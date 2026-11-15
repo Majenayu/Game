@@ -28,6 +28,7 @@ import { GameScene, type RoundResult } from './game/GameScene';
 import { OfflineSource, OnlineSource } from './game/sources';
 import { LobbyPanel } from './game/lobby';
 import { LevelRunner } from './meta/campaign';
+import { showOnboarding } from './meta/onboarding';
 import { Progress, type SkillDrop } from './meta/economy';
 import { Pages, type PageName } from './meta/pages';
 import { joinArena, reconnect, serverUrls, type JoinTarget } from './net';
@@ -244,7 +245,9 @@ async function boot(): Promise<void> {
     const name = readNick(rawName);
     await endSession();
     offlinePractice = true;
-    scene.setSource(new OfflineSource(name, loadoutOf(), { mode, mapId }, progress.loadoutInstances()));
+    scene.setSource(
+      new OfflineSource(name, loadoutOf(), { mode, mapId }, progress.loadoutInstances(), progress.level.level),
+    );
     document.body.dataset.mode = 'offline';
     ui.showGame();
     ui.setInviteVisible(false);
@@ -264,6 +267,7 @@ async function boot(): Promise<void> {
         loadoutOf(),
         { mode: 'dm', mapId: 'throne', seats: 4, training: true, roundTime: 600 },
         progress.loadoutInstances(),
+        progress.level.level,
       ),
     );
     document.body.dataset.mode = 'offline';
@@ -291,9 +295,12 @@ async function boot(): Promise<void> {
         bossName: level.bossName,
         bossHp: level.bossHp,
         bossColor: level.bossColor,
-        bossKit: level.bossKit,
+        bossKit: level.id === CHAMPION_LEVEL_ID ? progress.championKit() : level.bossKit,
+        bossDomain: level.bossDomain,
+        bossFinal: level.bossFinal,
       },
       progress.loadoutInstances(),
+      progress.level.level,
     );
     scene.setSource(src);
     document.body.dataset.mode = 'campaign';
@@ -332,6 +339,21 @@ async function boot(): Promise<void> {
       );
       if (reward?.drop) ui.notify(`Skill drop: ${dropText(reward.drop)}`, '#b77dff', 4500);
       reward?.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
+      if (res.won && level.id === CHAMPION_LEVEL_ID) {
+        // The new champion chooses one skill from the champion's kit.
+        const kit = progress.championKit();
+        ui.showOverlayHtml(
+          `<h2 style="margin:0;color:#ffc93c">You defeated the champion!</h2><div class="sub">You are the new champion. Choose one skill from the champion's kit.</div>`,
+          kit.map((id) => ({
+            label: `${getSkill(id).name}`,
+            onClick: () => {
+              const d = progress.claimChampion(id);
+              if (d) ui.notify(`Champion skill: ${dropText(d)}. A Legend Chest is waiting!`, '#ffc93c', 6000);
+              void toMenu();
+            },
+          })),
+        );
+      }
     });
     runner.start();
   };
@@ -407,7 +429,7 @@ async function boot(): Promise<void> {
     ui.showGame();
     ui.setInviteVisible(false);
     ui.showOverlay('Connecting...');
-    const full: JoinTarget = { ...target, loadout: loadoutOf() };
+    const full: JoinTarget = { ...target, loadout: loadoutOf(), level: progress.level.level };
     try {
       const { room, serverIndex } = await joinArena(name, full);
       if (mySession !== sessionId) {
@@ -448,6 +470,8 @@ async function boot(): Promise<void> {
       void startTraining();
     },
     challengeChampion: () => {
+      const ok = progress.canChallengeChampion();
+      if (!ok.ok) return ui.notify(ok.reason ?? 'Not yet', '#ff8a9a');
       pages.close();
       void startLevel(BOSS_LEVELS.find((l) => l.id === CHAMPION_LEVEL_ID)!);
     },
@@ -462,6 +486,8 @@ async function boot(): Promise<void> {
   ui.onPage = (name) => pages.open(name as PageName);
   ui.onChampion = () => {
     sfx.unlock();
+    const ok = progress.canChallengeChampion();
+    if (!ok.ok) return ui.notify(ok.reason ?? 'Not yet', '#ff8a9a');
     void startLevel(BOSS_LEVELS.find((l) => l.id === CHAMPION_LEVEL_ID)!);
   };
   ui.onPageClose = () => {
@@ -520,9 +546,15 @@ async function boot(): Promise<void> {
   if (invite) void startOnline(nick, invite);
   else if (platform.isInstantMultiplayer) void startOnline(nick, { createPrivate: true });
   else {
+    if (progress.needsProfile) {
+      await showOnboarding(progress, nick);
+      nick = sanitizeNick(progress.data.nick);
+      ui.setNick(nick);
+      ui.notify('Welcome! Your class skills are equipped. Try them in Training.', '#b77dff', 5000);
+    }
     ui.showMenu();
-    if (progress.starterPack)
-      ui.notify('Welcome! You received 5 starter skills. Check Loadout.', '#b77dff', 5000);
+    refreshStatus();
+    ui.setChampion(progress.data.champion.name, progress.data.champion.isYou);
     if (progress.dailyStatus().canClaim) ui.notify('Your daily reward is ready!', '#ffc93c', 4000);
   }
   nick = nick || '';

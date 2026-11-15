@@ -70,6 +70,8 @@ export interface Snapshot {
   hillHolder: string;
   /** Seconds left to confirm in the lobby; 0 once the match has started. */
   lobby: number;
+  /** Active domain expansion (fills the arena). */
+  domain: { name: string; color: number; owner: string } | null;
 }
 
 /** A source of game state: the local offline simulation or a Colyseus room. */

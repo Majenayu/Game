@@ -1,6 +1,16 @@
 import {
   ACCESSORIES,
+  BOSS_LEVELS,
   BULLET_FX,
+  CHESTS,
+  LOGIN_CALENDAR,
+  classById,
+  isChestKind,
+  luckyRank,
+  rollChestRank,
+  totalPassives,
+  type ChestKind,
+  type Passives,
   CHAMPION_LEVEL_ID,
   CHARACTERS,
   RANKS,
@@ -81,12 +91,19 @@ export const WEEKLY_POOL: QuestDef[] = [
   { id: 'w_rounds25', text: 'Play 25 rounds', type: 'rounds', target: 25, coins: 350, xp: 250 },
 ];
 
-export const DAILY_REWARDS = [50, 75, 100, 150, 200, 300, 500];
+/** Coins for each of the 30 login days (chests on milestone days, see LOGIN_CALENDAR). */
+export const DAILY_REWARDS = LOGIN_CALENDAR.map((d) => d.coins);
+/** Free spins per day, shared by all wheels. */
+export const SPINS_PER_DAY = 10;
+/** Accessories you may pick for free when you create your profile. */
+export const FREE_ACCS = [0, 2, 5, 6, 8];
+/** Level needed to challenge the champion. */
+export const CHAMPION_MIN_LEVEL = 10;
 
 export interface WheelSegment {
   label: string;
   weight: number;
-  kind: 'coins' | 'cosmetic' | 'skill' | 'unique';
+  kind: 'coins' | 'cosmetic' | 'skill' | 'unique' | 'weapon' | 'acc';
   value: number;
   color: string;
 }
@@ -108,6 +125,36 @@ export const WHEEL: WheelSegment[] = [
 ];
 
 export const EXTRA_SPIN_COST = 150;
+export type WheelKind = 'coins' | 'skills' | 'weapons' | 'accs';
+const WCOL = ['#2a3a7a', '#1f5f8f', '#5a2a9a', '#2f7a4a', '#8a6a1f', '#a02a2a', '#1f7a6a', '#7a2a6a'];
+/** Separate wheels on the Lucky Draw page. All share the 10 free spins a day. */
+export const WHEELS: Record<WheelKind, WheelSegment[]> = {
+  coins: [
+    { label: '25', weight: 24, kind: 'coins', value: 25, color: '#2a3a7a' },
+    { label: '50', weight: 22, kind: 'coins', value: 50, color: '#1f5f8f' },
+    { label: 'Skin', weight: 8, kind: 'cosmetic', value: 0, color: '#7a2a6a' },
+    { label: '100', weight: 16, kind: 'coins', value: 100, color: '#2a3a7a' },
+    { label: '150', weight: 12, kind: 'coins', value: 150, color: '#1f5f8f' },
+    { label: '250', weight: 8, kind: 'coins', value: 250, color: '#2f7a4a' },
+    { label: '500', weight: 3, kind: 'coins', value: 500, color: '#8a6a1f' },
+    { label: '1000', weight: 1, kind: 'coins', value: 1000, color: '#a02a2a' },
+  ],
+  skills: WHEEL,
+  weapons: WEAPONS.slice(1).map((w, i) => ({
+    label: w.name,
+    weight: Math.max(1, 12 - w.level),
+    kind: 'weapon' as const,
+    value: w.id,
+    color: WCOL[i % WCOL.length],
+  })),
+  accs: ACCESSORIES.slice(1).map((a, i) => ({
+    label: a.name,
+    weight: Math.max(1, 10 - a.level),
+    kind: 'acc' as const,
+    value: a.id,
+    color: WCOL[i % WCOL.length],
+  })),
+};
 export const MAX_LEVEL = 50;
 
 // ---- helpers ----------------------------------------------------------------
@@ -397,10 +444,109 @@ export class Progress {
     const u = pool[Math.floor(rng() * pool.length)];
     return this.addSkill(makeInstance(uniqueIdOf(u.n), rng, this.newUid()));
   }
+  /** Bonuses from owned out-of-battle skills. They work automatically: no slot needed. */
+  get passives(): Passives {
+    return totalPassives(this.data.skills);
+  }
   private dropSkill(source: DropSource, rng: () => number = Math.random): SkillDrop {
-    const rank = rollDrop(source, rng);
+    const pv = this.passives;
+    const rank = luckyRank(rollDrop(source, rng), pv.luck, rng);
     const id = randomSkillOfRank(rank, rng);
-    return this.addSkill(makeInstance(id, rng, this.newUid()));
+    const first = this.addSkill(makeInstance(id, rng, this.newUid()));
+    if (rng() * 100 < pv.double) return this.addSkill(makeInstance(id, rng, this.newUid()));
+    return first;
+  }
+  // ---- treasure chests ----------------------------------------------------------
+  /** Opens one chest. Returns everything inside so the UI can list it. */
+  openChest(kind: ChestKind, rng: () => number = Math.random): { coins: number; items: string[]; drops: SkillDrop[] } | null {
+    if (!isChestKind(kind) || this.data.chests[kind] <= 0) return null;
+    const def = CHESTS[kind];
+    this.data.chests[kind] -= 1;
+    const items: string[] = [];
+    const coins = Math.round(
+      (def.coins[0] + Math.floor(rng() * (def.coins[1] - def.coins[0] + 1))) * (1 + this.passives.coins / 100),
+    );
+    this.addCoins(coins);
+    items.push(`${coins} coins`);
+    const drops: SkillDrop[] = [];
+    for (let i = 0; i < def.skills; i++) {
+      const rank = luckyRank(rollChestRank(def, rng), this.passives.luck, rng);
+      const d = rank === 'U' ? this.grantUnique(rng) : this.grantSkillOfRank(rank, rng);
+      drops.push(d);
+      items.push(`Skill: ${getSkill(d.skillId).name} (${d.rank})${d.merged ? `, merged to level ${d.level}` : ', new!'}`);
+    }
+    if (rng() * 100 < def.weapon) {
+      const w = WEAPONS.find((x) => !this.owns('weapon', x.id));
+      if (w) {
+        this.grant('weapon', w.id);
+        items.push(`Weapon: ${w.name}`);
+      }
+    }
+    if (rng() * 100 < def.acc) {
+      const left = ACCESSORIES.filter((x) => !this.owns('acc', x.id));
+      if (left.length) {
+        const a = left[Math.floor(rng() * left.length)];
+        this.grant('acc', a.id);
+        items.push(`Accessory: ${a.name}`);
+      }
+    }
+    this.commit();
+    return { coins, items, drops };
+  }
+  // ---- first run: class and look -------------------------------------------------
+  get needsProfile(): boolean {
+    return !this.data.profile.cls;
+  }
+  /** Sets the class, swaps the bound starter skills for the class kit and applies the look. */
+  createProfile(clsId: string, look: { nick: string; char: string; color: number; acc: number }, rng: () => number = Math.random): boolean {
+    const cls = classById(clsId);
+    if (!cls) return false;
+    this.data.profile = { cls: cls.id, created: Date.now() };
+    this.data.nick = look.nick.slice(0, 16);
+    this.data.skills = this.data.skills.filter((s) => !s.bound);
+    const ranks: Rank[] = ['B', 'C', 'D', 'E', 'F'];
+    const ids: number[] = [];
+    ranks.forEach((rank, i) => {
+      const kinds = cls.kinds[i];
+      let id = randomSkillOfRank(rank, rng);
+      for (let t = 0; t < 400 && !kinds.includes(getSkill(id).kind); t++) id = randomSkillOfRank(rank, rng);
+      const d = this.addSkill({ ...makeInstance(id, rng, this.newUid()), bound: true });
+      ids.push(d.skillId);
+    });
+    const l = this.data.loadout;
+    l.skillIds = Array.from(new Set(ids)).slice(0, 5);
+    // The class character and one starter accessory are free.
+    this.grant('char', cls.char);
+    if (FREE_ACCS.includes(look.acc)) this.grant('acc', look.acc);
+    if (this.owns('char', look.char)) l.char = look.char;
+    if (this.owns('color', look.color)) l.color = look.color;
+    if (this.owns('acc', look.acc)) l.acc = look.acc;
+    // Each class gets its signature weapon for free.
+    this.grant('weapon', cls.weapon);
+    l.weapon = cls.weapon;
+    this.data.loadout = sanitizeLoadout(l);
+    this.commit();
+    return true;
+  }
+  // ---- champion ---------------------------------------------------------------
+  /** The champion kit: Majen's five uniques, passed down to every new champion. */
+  championKit(): number[] {
+    return this.data.champion.kit.length ? this.data.champion.kit : (BOSS_LEVELS[8].bossKit ?? []);
+  }
+  canChallengeChampion(): { ok: boolean; reason?: string } {
+    if (this.data.champion.isYou) return { ok: false, reason: 'You are the champion' };
+    if (this.level.level < CHAMPION_MIN_LEVEL) return { ok: false, reason: `Reach level ${CHAMPION_MIN_LEVEL} to challenge the champion` };
+    return { ok: true };
+  }
+  /** After beating the champion: take one skill of your choice from the champion kit and the crown. */
+  claimChampion(skillId: number): SkillDrop | null {
+    const kit = this.championKit();
+    if (!kit.includes(skillId)) return null;
+    const d = this.addSkill(makeInstance(skillId, Math.random, this.newUid()));
+    this.data.champion = { name: this.data.nick || 'You', isYou: true, kit, since: Date.now(), defences: 0 };
+    this.data.chests.legend += 1;
+    this.commit();
+    return d;
   }
 
   /** Equips up to five owned skills by skill id. Rejects unowned skills and loadouts over the casual budget. */
@@ -467,19 +613,21 @@ export class Progress {
     const canClaim = d.last !== today;
     const continuing = d.last === yesterdayKey() || d.last === today;
     const streak = canClaim ? (continuing ? d.streak : 0) : d.streak;
-    return { canClaim, nextDay: canClaim ? (streak % 7) + 1 : (d.streak % 7) + 1, streak };
+    return { canClaim, nextDay: canClaim ? (streak % 30) + 1 : (d.streak % 30) + 1, streak };
   }
 
-  claimDaily(): { coins: number; day: number; levels: number[] } | null {
+  claimDaily(): { coins: number; day: number; levels: number[]; chest?: ChestKind } | null {
     const st = this.dailyStatus();
     if (!st.canClaim) return null;
     const day = st.nextDay;
-    const coins = DAILY_REWARDS[day - 1];
+    const cal = LOGIN_CALENDAR[day - 1];
+    const coins = cal.coins;
     this.data.daily = { last: dateKey(), streak: st.streak + 1 };
     this.addCoins(coins);
+    if (cal.chest) this.data.chests[cal.chest] += 1;
     const levels = this.addXp(30);
     this.commit();
-    return { coins, day, levels };
+    return { coins, day, levels, chest: cal.chest };
   }
 
   // ---- quests ---------------------------------------------------------------
@@ -522,16 +670,20 @@ export class Progress {
 
   // ---- lucky draw -----------------------------------------------------------
 
-  spinStatus(): { free: boolean; cost: number } {
-    return { free: this.data.spin.last !== dateKey(), cost: EXTRA_SPIN_COST };
+  spinStatus(): { free: boolean; cost: number; left: number } {
+    const sp = this.data.spins;
+    const used = sp.day === dateKey() ? sp.used : 0;
+    const left = Math.max(0, SPINS_PER_DAY - used);
+    return { free: left > 0, cost: EXTRA_SPIN_COST, left };
   }
 
   /** Picks the result of a spin without paying. Returns the wheel index. */
-  rollSpin(rng: () => number = Math.random): number {
-    const total = WHEEL.reduce((s, w) => s + w.weight, 0);
+  rollSpin(rng: () => number = Math.random, wheel: WheelKind = 'coins'): number {
+    const list = WHEELS[wheel];
+    const total = list.reduce((s, w) => s + w.weight, 0);
     let r = rng() * total;
-    for (let i = 0; i < WHEEL.length; i++) {
-      r -= WHEEL[i].weight;
+    for (let i = 0; i < list.length; i++) {
+      r -= list[i].weight;
       if (r <= 0) return i;
     }
     return 0;
@@ -540,7 +692,10 @@ export class Progress {
   /** Pays for a spin. Returns false when a paid spin cannot be afforded. */
   payForSpin(): boolean {
     if (this.spinStatus().free) {
-      this.data.spin.last = dateKey();
+      const today = dateKey();
+      if (this.data.spins.day !== today) this.data.spins = { day: today, used: 0 };
+      this.data.spins.used += 1;
+      this.data.spin.last = today;
       this.commit();
       return true;
     }
@@ -551,8 +706,19 @@ export class Progress {
   }
 
   /** Grants the prize of the segment. Returns a text describing it. */
-  grantPrize(index: number, rng: () => number = Math.random): string {
-    const seg = WHEEL[index];
+  grantPrize(index: number, rng: () => number = Math.random, wheel: WheelKind = 'coins'): string {
+    const seg = WHEELS[wheel][index];
+    if (seg.kind === 'weapon' || seg.kind === 'acc') {
+      const k: ShopKind = seg.kind;
+      if (this.owns(k, seg.value)) {
+        this.addCoins(100);
+        this.commit();
+        return `100 coins (you already own ${seg.label})`;
+      }
+      this.grant(k, seg.value);
+      this.commit();
+      return seg.label;
+    }
     if (seg.kind === 'coins') {
       this.addCoins(seg.value);
       this.commit();
@@ -588,8 +754,9 @@ export class Progress {
     let xp = 10 + r.kills * 3 + (r.won ? 40 : 0);
     if (r.mode === 'coins') coins += Math.floor(r.score / 3);
     if (r.mode === 'hill') coins += Math.floor(r.score / 5);
-    coins = Math.round(Math.min(coins, 150) * scale);
-    xp = Math.round(Math.min(xp, 200) * scale);
+    const pv = this.passives;
+    coins = Math.round(Math.min(coins, 150) * scale * (1 + pv.coins / 100));
+    xp = Math.round(Math.min(xp, 200) * scale * (1 + pv.xp / 100));
     const s = this.data.stats;
     s.matches += 1;
     s.kills += r.kills;
@@ -598,6 +765,7 @@ export class Progress {
     this.track('rounds', 1);
     if (r.won) this.track('wins', 1);
     if (r.mode === 'hill') this.track('hold', r.score);
+    if (r.won && s.wins % 3 === 0) this.data.chests.wood += 1;
     this.addCoins(coins);
     const levelsGained = this.addXp(xp);
     const drop = this.dropSkill(r.mode === 'tdm' ? 'team' : 'solo');
@@ -617,19 +785,15 @@ export class Progress {
     const tower = level.id >= TOWER_FIRST_ID;
     const xp = prev === 0 ? (tower ? 200 + (level.id - TOWER_FIRST_ID) * 40 : 80 + level.id * 10) : 20;
     const levelsGained = this.addXp(xp);
-    // Beating the champion Majen for the first time awards a unique skill.
-    const drop =
-      prev === 0
-        ? level.id === CHAMPION_LEVEL_ID
-          ? this.grantUnique()
-          : this.dropSkill(tower ? 'boss' : 'story')
-        : undefined;
+    // The champion's reward (a skill of your choice from his kit) is claimed with claimChampion().
+    const drop = prev === 0 && level.id !== CHAMPION_LEVEL_ID ? this.dropSkill(tower ? 'boss' : 'story') : undefined;
+    if (prev === 0 && level.id !== CHAMPION_LEVEL_ID) this.data.chests[tower ? 'gold' : 'silver'] += 1;
     this.commit();
     return { coins, xp, levelsGained, drop };
   }
 
   levelUnlocked(level: LevelDef): boolean {
-    if (level.id === CHAMPION_LEVEL_ID) return true;
+    if (level.id === CHAMPION_LEVEL_ID) return this.canChallengeChampion().ok;
     if (level.id === TOWER_FIRST_ID) return (this.data.campaign[String(TOWER_UNLOCK_LEVEL)] ?? 0) > 0;
     return level.id === 1 || (this.data.campaign[String(level.id - 1)] ?? 0) > 0;
   }

@@ -7,7 +7,9 @@ import type { Rng } from './util';
 
 /** Mana every player has in a match. */
 export const MAX_MP = 100;
-export const MP_REGEN = 7;
+export const MP_REGEN = 14;
+/** Skills cost this share of their listed mana in battle, so all five slots get used. */
+export const MP_COST_SCALE = 0.5;
 export const MAX_PETS = 5;
 
 /** A skill equipped in one of the five slots during a match. */
@@ -67,9 +69,14 @@ export function slotFromInstance(inst: SkillInstance): SlotState {
     element: d.element,
     rank: d.rank,
     archetype: d.archetype,
-    stats: effectiveStats(inst),
+    stats: battleStats(inst),
     cdUntil: 0,
   };
+}
+
+function battleStats(inst: SkillInstance): ReturnType<typeof effectiveStats> {
+  const st = effectiveStats(inst);
+  return { ...st, mp: st.mp * MP_COST_SCALE };
 }
 
 /** Battle-usable instances only: world skills work outside matches. */
@@ -80,12 +87,32 @@ export function usableInBattle(skillId: number): boolean {
 
 /** Turns hit points of skill power into whole hit points of damage. */
 export function dmgFromPower(power: number): number {
-  return Math.max(1, Math.round(power / 60));
+  // In hearts; the sim multiplies by HP_SCALE, so fractions give fine-grained HP damage.
+  return Math.max(0.4, Math.round((power / 60) * 100) / 100);
 }
 
 export function elementStatus(element: number): string {
   return ELEMENTS[element]?.status ?? '';
 }
+
+/**
+ * Signature effects of some unique skills, on top of their normal kind.
+ * nocd: no cooldowns for a while. venom: every shot poisons. stun: enemies freeze. silence: enemies cannot cast.
+ * domain: the caster opens a domain expansion over the whole arena. rage: big damage and speed boost.
+ */
+export type Signature = 'nocd' | 'venom' | 'stun' | 'silence' | 'domain' | 'rage';
+export const SIGNATURES: Record<string, { sig: Signature; secs: number; text: string }> = {
+  Overclock: { sig: 'nocd', secs: 6, text: 'No cooldowns for 6 seconds.' },
+  'Hyper Dash': { sig: 'nocd', secs: 3, text: 'No cooldowns for 3 seconds.' },
+  'Twin Fangs': { sig: 'venom', secs: 10, text: 'Every shot poisons for 10 seconds.' },
+  'Thousand Thorns': { sig: 'venom', secs: 8, text: 'Every shot poisons for 8 seconds.' },
+  'Time Stop': { sig: 'stun', secs: 2, text: 'Every enemy freezes for 2 seconds.' },
+  'Whisper of Fear': { sig: 'silence', secs: 2, text: 'Enemies cannot cast skills for 2 seconds.' },
+  'Lord of Silence': { sig: 'silence', secs: 4, text: 'Enemies cannot cast skills for 4 seconds.' },
+  'Domain Expansion': { sig: 'domain', secs: 12, text: 'Opens your domain over the whole arena for 12 seconds.' },
+  'Final Form': { sig: 'rage', secs: 10, text: 'Double damage and speed for 10 seconds.' },
+  'Berserker Core': { sig: 'rage', secs: 8, text: 'Double damage and speed for 8 seconds.' },
+};
 
 /** Which timed effect a boost archetype grants. */
 export const BUFF_BY_ARCHETYPE: Record<string, EffectId | 'guard'> = {

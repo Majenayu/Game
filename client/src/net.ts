@@ -62,8 +62,10 @@ export interface JoinTarget {
   /** Map id or 'rotate'. */
   map?: string;
   loadout?: unknown;
-  /** Join the 2v2 ranked queue (separate room type on the server). */
+  /** Join the ranked queue (separate room type on the server). */
   ranked?: boolean;
+  /** Player level (extra max HP). */
+  level?: number;
 }
 
 export async function joinArena(
@@ -80,13 +82,19 @@ export async function joinArena(
     ({ index: serverIndex, url } = await pickServer(urls));
   }
   const client = new Client(url);
-  const opts = { name, mode: target.mode ?? 'mix', map: target.map ?? 'rotate', loadout: target.loadout };
+  const opts = {
+    name,
+    mode: target.mode ?? 'mix',
+    map: target.map ?? 'rotate',
+    loadout: target.loadout,
+    level: target.level,
+  };
   const room = target.roomId
     ? await client.joinById(target.roomId, { name, loadout: target.loadout })
     : target.createPrivate
       ? await client.create('arena', { ...opts, private: true })
       : target.ranked
-        ? await client.joinOrCreate('ranked', { name, loadout: target.loadout })
+        ? await client.joinOrCreate('ranked', { name, loadout: target.loadout, level: target.level })
         : await client.joinOrCreate('arena', opts);
   return { room, serverIndex };
 }

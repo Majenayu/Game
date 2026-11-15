@@ -52,7 +52,7 @@ describe('boss tower', () => {
     sim.rebalanceBots();
     const boss = Array.from(sim.players.values()).find((p) => p.boss)!;
     expect(boss.name).toBe('Majen');
-    expect(boss.maxHp).toBe(36);
+    expect(boss.maxHp).toBe(5000);
     expect(boss.color).toBe(0xffc93c);
     expect(boss.slots.map((s) => s.skillId)).toEqual(l.bossKit);
     for (let i = 0; i < 20 * 20; i++) sim.step(0.05);

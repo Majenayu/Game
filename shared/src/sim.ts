@@ -3,6 +3,8 @@ import {
   BULLET_SPEED,
   BULLET_TTL,
   FIRE_INTERVAL,
+  HP_PER_LEVEL,
+  HP_SCALE,
   INVULN_TIME,
   MAX_PLAYERS,
   PICKUP_RADIUS,
@@ -35,15 +37,18 @@ import {
   MP_REGEN,
   botKit,
   defaultKit,
+  SIGNATURES,
   dmgFromPower,
   elementStatus,
   neutralInstance,
   slotFromInstance,
   type SimPet,
+  type Signature,
   type SimZone,
   type SlotState,
 } from './battle';
 import { ARCHETYPES, ELEMENTS, RANKS, type Kind } from './skills/catalog';
+import { getSkill } from './skills/generate';
 import { ROTATION, getMap, type MapDef } from './maps';
 import type { SkillInstance } from './skills/instances';
 import { findPath, getNav, segmentClear } from './nav';
@@ -78,11 +83,31 @@ export interface SimConfig {
   bossHp?: number;
   bossColor?: number;
   bossKit?: number[];
+  /** Boss domain expansion, cast when the boss drops to half HP. Covers the whole arena. */
+  bossDomain?: DomainDef;
+  /** Final form strength (below 25% HP): share of damage ignored and damage multiplier. */
+  bossFinal?: { armor: number; dmg: number };
   /** Seconds of "3, 2, 1, GO" freeze at the start of every round. 0 = start at once (tests). */
   countdown?: number;
   /** Training ground: bots are harmless dummies, your mana refills fast and you cannot be knocked out. */
   training?: boolean;
 }
+
+/** A domain expansion: fills the whole arena, boosts its owner and weakens everyone else. */
+export interface DomainDef {
+  name: string;
+  color: number;
+  /** silence: enemies regain no mana. slow: enemies move slower. burn: enemies lose HP over time. haste: owner moves and fires faster. all: every effect. */
+  effect: 'silence' | 'slow' | 'burn' | 'haste' | 'all';
+}
+export interface ActiveDomain extends DomainDef {
+  owner: string;
+  until: number;
+}
+/** Boss forms: every 25% of HP lost the boss changes form and gets stronger. */
+export const BOSS_FORMS = ['Base', 'Awakened', 'Ascended', 'FINAL FORM'];
+const FORM_ARMOR = [0, 0.25, 0.45];
+const FORM_DMG = [1, 1.3, 1.7];
 
 export const DEFAULT_CONFIG: SimConfig = {
   mode: 'dm',
@@ -153,6 +178,20 @@ export interface SimPlayer {
   acc: number;
   /** Frozen and safe until this time (waiting in the lobby or for the countdown). */
   holdUntil: number;
+  /** Player level (adds max HP). */
+  level: number;
+  /** Boss form 0..3 (see BOSS_FORMS). */
+  form: number;
+  /** Share of incoming damage ignored (bosses). */
+  armor: number;
+  /** Multiplier on damage this orb deals (bosses). */
+  dmgMul: number;
+  /** Signature effect timers (see SIGNATURES). */
+  stunUntil: number;
+  silenceUntil: number;
+  nocdUntil: number;
+  venomUntil: number;
+  rageUntil: number;
 }
 
 export interface SimBullet {
@@ -203,7 +242,7 @@ export interface SimMine {
 }
 
 export type SimEvent =
-  | { t: 'hit'; id: string; by: string; x: number; y: number }
+  | { t: 'hit'; id: string; by: string; x: number; y: number; dmg?: number }
   | { t: 'kill'; id: string; by: string; x: number; y: number }
   | { t: 'respawn'; id: string; x: number; y: number }
   | { t: 'pickup'; id: string; pu: number; x: number; y: number }
@@ -215,7 +254,9 @@ export type SimEvent =
   | { t: 'shield'; id: string; x: number; y: number }
   | { t: 'boom'; x: number; y: number }
   | { t: 'roundStart'; round: number; mode: ModeId; map: string }
-  | { t: 'roundEnd'; winner: string; team: number };
+  | { t: 'roundEnd'; winner: string; team: number }
+  | { t: 'form'; id: string; form: number; name: string; x: number; y: number }
+  | { t: 'domain'; id: string; name: string; color: number };
 
 interface BotBrain {
   nextThink: number;
@@ -273,6 +314,8 @@ export interface PlayerOpts {
   weapon?: number;
   acc?: number;
   boss?: boolean;
+  /** Player level 1..50 (extra max HP). */
+  level?: number;
 }
 
 export class Sim {
@@ -370,7 +413,10 @@ export class Sim {
       color =
         PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[this.players.size % PLAYER_COLORS.length];
     const boss = opts.boss === true;
-    const maxHp = boss ? Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) : ch.hp;
+    const level = Math.max(1, Math.min(50, Math.floor(opts.level ?? 1)));
+    const maxHp = boss
+      ? Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) * HP_SCALE
+      : Math.round(ch.hp * HP_SCALE * (1 + HP_PER_LEVEL * (level - 1)));
     const team = MODES[this.mode].team ? this.smallerTeam() : 0;
     const spot = this.pickSpawn(undefined, true, MODES[this.mode].team ? team : -1);
     const p: SimPlayer = {
@@ -422,6 +468,15 @@ export class Sim {
       weapon: load.weapon,
       acc: load.acc,
       holdUntil: 0,
+      level,
+      form: 0,
+      armor: 0,
+      dmgMul: 1,
+      stunUntil: 0,
+      silenceUntil: 0,
+      nocdUntil: 0,
+      venomUntil: 0,
+      rageUntil: 0,
     };
     if (boss) p.charId = 'titan';
     this.players.set(id, p);
@@ -513,6 +568,15 @@ export class Sim {
     return list.map((id) => slotFromInstance(neutralInstance(id)));
   }
 
+  /** Sets a player's level (extra max HP) and heals to full. */
+  setLevel(id: string, level: number): void {
+    const p = this.players.get(id);
+    if (!p || p.bot) return;
+    p.level = Math.max(1, Math.min(50, Math.floor(Number(level) || 1)));
+    p.maxHp = Math.round(CHARACTERS[p.charId].hp * HP_SCALE * (1 + HP_PER_LEVEL * (p.level - 1)));
+    p.hp = p.maxHp;
+  }
+
   /** Applies a validated loadout to a human player (used on join). */
   setLoadout(id: string, raw: unknown): void {
     const p = this.players.get(id);
@@ -527,8 +591,8 @@ export class Sim {
     p.bfx = l.bfx;
     p.weapon = l.weapon;
     p.acc = l.acc;
-    p.maxHp = ch.hp;
-    p.hp = ch.hp;
+    p.maxHp = Math.round(ch.hp * HP_SCALE * (1 + HP_PER_LEVEL * (p.level - 1)));
+    p.hp = p.maxHp;
     p.nextRegen = this.time + (ch.regen || 0);
   }
 
@@ -546,6 +610,9 @@ export class Sim {
     if (p.castAt >= 0) m *= 0.5;
     // Bots move a little slower than people so fights feel fair; training dummies barely move.
     if (p.bot && !p.boss) m *= this.cfg.training ? 0.35 : 0.85;
+    if (this.inDomain(p, 'slow')) m *= 0.7;
+    if (this.domainOwner(p) && (this.domain!.effect === 'haste' || this.domain!.effect === 'all')) m *= 1.3;
+    if (this.time < p.rageUntil) m *= 1.5;
     return m;
   }
 
@@ -575,16 +642,27 @@ export class Sim {
       const ch = CHARACTERS[p.charId];
       if (ch.regen > 0 && this.time >= p.nextRegen) {
         p.nextRegen = this.time + ch.regen;
-        if (p.hp < p.maxHp) p.hp += 1;
+        if (p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + HP_SCALE / 2);
       }
-      p.mp = Math.min(p.maxMp, p.mp + MP_REGEN * dt * (this.cfg.training && !p.bot ? 5 : 1));
+      const regen = this.inDomain(p, 'silence') ? 0 : this.domainOwner(p) ? 3 : 1;
+      p.mp = Math.min(p.maxMp, p.mp + MP_REGEN * dt * regen * (this.cfg.training && !p.bot ? 5 : 1));
+      if (this.inDomain(p, 'burn') && this.time >= p.nextDot) {
+        p.nextDot = this.time + 1;
+        this.hurt(p, this.domain!.owner, 0.25);
+        if (!p.alive) continue;
+      }
       if (frozenAll || this.time < p.holdUntil) {
         p.pendingSkill = 0;
         continue;
       }
+      if (this.time < p.stunUntil) {
+        p.pendingSkill = 0;
+        p.castAt = -1;
+        continue;
+      }
       if (this.time < p.dotUntil && this.time >= p.nextDot) {
         p.nextDot = this.time + 1;
-        this.hurt(p, p.dotBy, 1);
+        this.hurt(p, p.dotBy, 0.4);
         if (!p.alive) continue;
       }
       if (p.castAt >= 0 && this.time >= p.castAt) {
@@ -662,7 +740,7 @@ export class Sim {
       freeze: !!this.eff(p, 'freeze'),
       hit: [],
       kind: p.bfx,
-      status: '',
+      status: this.time < p.venomUntil ? 'poison' : '',
       homing: false,
     });
   }
@@ -749,7 +827,10 @@ export class Sim {
       (this.freezeUntil > 0 && this.time < this.freezeUntil + INVULN_TIME)
     )
       return;
-    if (this.cfg.training && !victim.bot && victim.hp - dmg <= 0) {
+    const attacker = this.players.get(by);
+    const rage = attacker && this.time < attacker.rageUntil ? 2 : 1;
+    let amount = Math.max(1, Math.round(dmg * HP_SCALE * (attacker?.dmgMul ?? 1) * rage * (1 - victim.armor)));
+    if (this.cfg.training && !victim.bot && victim.hp - amount <= 0) {
       victim.hp = victim.maxHp;
       return;
     }
@@ -758,9 +839,15 @@ export class Sim {
       this.events.push({ t: 'shield', id: victim.id, x: victim.x, y: victim.y });
       return;
     }
-    victim.hp -= dmg;
+    // A boss never skips a form: one hit takes it at most to the next 25% mark.
+    if (victim.boss && victim.form < 3) {
+      const nextMark = Math.ceil(victim.maxHp * (0.75 - 0.25 * victim.form));
+      if (victim.hp > nextMark && victim.hp - amount < nextMark) amount = victim.hp - nextMark;
+    }
+    victim.hp -= amount;
+    if (victim.boss) this.checkForm(victim);
     if (victim.hp > 0) {
-      this.events.push({ t: 'hit', id: victim.id, by, x: victim.x, y: victim.y });
+      this.events.push({ t: 'hit', id: victim.id, by, x: victim.x, y: victim.y, dmg: amount });
       return;
     }
     victim.hp = 0;
@@ -779,9 +866,62 @@ export class Sim {
       if (this.mode === 'tdm') this.teamScore[killer.team === 0 ? 0 : 1] += 1;
       const vamp = this.eff(killer, 'vampire');
       if (vamp && killer.alive)
-        killer.hp = Math.min(killer.maxHp, killer.hp + Math.max(1, Math.round(vamp.power)));
+        killer.hp = Math.min(killer.maxHp, killer.hp + Math.max(1, Math.round(vamp.power)) * HP_SCALE);
     }
     this.events.push({ t: 'kill', id: victim.id, by, x: victim.x, y: victim.y });
+  }
+
+  /** The active domain expansion, if any. */
+  domain: ActiveDomain | null = null;
+
+  /** Boss form changes at 75%, 50% and 25% HP. Each form hits harder and takes less damage. */
+  private checkForm(b: SimPlayer): void {
+    const frac = b.hp / b.maxHp;
+    const want = frac <= 0.25 ? 3 : frac <= 0.5 ? 2 : frac <= 0.75 ? 1 : 0;
+    if (want <= b.form) return;
+    b.form = want;
+    const fin = this.cfg.bossFinal ?? { armor: 0.6, dmg: 3 };
+    b.armor = want === 3 ? fin.armor : FORM_ARMOR[want];
+    b.dmgMul = want === 3 ? fin.dmg : FORM_DMG[want];
+    b.invulnUntil = this.time + 1.2;
+    b.mp = b.maxMp;
+    for (const s of b.slots) s.cdUntil = 0;
+    b.effects.push({ effect: 'speed', rarity: 3, until: this.time + 9999, power: 0.3 * want });
+    if (want >= 2) b.effects.push({ effect: 'rapid', rarity: 3, until: this.time + 9999, power: 0.4 * (want - 1) });
+    this.events.push({ t: 'form', id: b.id, form: want, name: BOSS_FORMS[want], x: b.x, y: b.y });
+    if (want === 2 && this.cfg.bossDomain) {
+      this.domain = { ...this.cfg.bossDomain, owner: b.id, until: this.time + 9999 };
+      this.events.push({ t: 'domain', id: b.id, name: this.cfg.bossDomain.name, color: this.cfg.bossDomain.color });
+    }
+  }
+  private applySignature(p: SimPlayer, sig: Signature, secs: number): void {
+    const until = this.time + secs;
+    if (sig === 'nocd') {
+      p.nocdUntil = until;
+      for (const sl of p.slots) sl.cdUntil = Math.min(sl.cdUntil, this.time);
+    } else if (sig === 'venom') p.venomUntil = until;
+    else if (sig === 'rage') p.rageUntil = until;
+    else if (sig === 'domain') {
+      this.domain = { name: `${p.name}'s Domain`, color: p.color, effect: 'all', owner: p.id, until };
+      this.events.push({ t: 'domain', id: p.id, name: this.domain.name, color: p.color });
+    } else
+      for (const o of this.players.values()) {
+        if (!o.alive || !this.isEnemy(p, o)) continue;
+        if (sig === 'stun') o.stunUntil = this.time + (o.boss ? secs / 2 : secs);
+        else if (!o.boss) o.silenceUntil = until;
+      }
+  }
+  /** True when `p` suffers the active domain (an enemy of its owner). */
+  private inDomain(p: SimPlayer, effect: DomainDef['effect']): boolean {
+    const d = this.domain;
+    if (!d || this.time > d.until || (d.effect !== effect && d.effect !== 'all')) return false;
+    const owner = this.players.get(d.owner);
+    if (!owner || !owner.alive) return false;
+    return this.isEnemy(owner, p);
+  }
+  private domainOwner(p: SimPlayer): boolean {
+    const d = this.domain;
+    return !!d && d.owner === p.id && this.time <= d.until;
   }
 
   /** Freezes everyone (lobby). Call release() to start the countdown. */
@@ -821,10 +961,13 @@ export class Sim {
   /** Starts casting the skill in a slot. Needs mana, a ready cooldown, and no cast already in progress. */
   private castSlot(p: SimPlayer, slot: number): void {
     const s = p.slots[slot];
-    if (!s || s.kind === 'world' || p.castAt >= 0) return;
+    if (!s || s.kind === 'world' || p.castAt >= 0 || this.time < p.silenceUntil) return;
     if (this.time < s.cdUntil || p.mp < s.stats.mp) return;
     p.mp -= s.stats.mp;
-    s.cdUntil = this.time + s.stats.cooldown * CHARACTERS[p.charId].skillCd;
+    s.cdUntil =
+      this.time < p.nocdUntil
+        ? this.time + 0.25
+        : this.time + s.stats.cooldown * CHARACTERS[p.charId].skillCd * (this.domainOwner(p) ? 0.4 : 1);
     if (s.kind !== 'stealth') p.hiddenUntil = 0;
     this.events.push({ t: 'cast', id: p.id, skill: s.skillId, x: p.x, y: p.y, time: s.stats.cast });
     if (s.stats.cast <= 0.06) this.resolveCast(p, s);
@@ -886,7 +1029,7 @@ export class Sim {
         break;
       }
       case 'leech':
-        if (owner && owner.alive) owner.hp = Math.min(owner.maxHp, owner.hp + 1);
+        if (owner && owner.alive) owner.hp = Math.min(owner.maxHp, owner.hp + HP_SCALE / 2);
         break;
     }
   }
@@ -960,6 +1103,8 @@ export class Sim {
       x: p.x,
       y: p.y,
     });
+    const sig = SIGNATURES[getSkill(s.skillId).name];
+    if (sig && getSkill(s.skillId).unique) this.applySignature(p, sig.sig, sig.secs);
     switch (s.kind) {
       case 'projectile': {
         const n = 1 + st.count;
@@ -1014,7 +1159,7 @@ export class Sim {
         p.invulnUntil = Math.max(p.invulnUntil, this.time + Math.max(1.2, st.duration));
         break;
       case 'heal': {
-        const amount = Math.max(1, Math.round(st.power / 30));
+        const amount = Math.max(1, Math.round(st.power / 30)) * HP_SCALE;
         for (const o of this.players.values()) {
           if (!o.alive || !this.isAlly(p, o)) continue;
           if (o.id !== p.id && Math.hypot(o.x - p.x, o.y - p.y) > 220) continue;
@@ -1216,7 +1361,7 @@ export class Sim {
           z.nextTick += 1;
           for (const o of this.players.values()) {
             const ally = o.alive && (o.id === z.owner || (team && o.team === z.team));
-            if (ally && Math.hypot(o.x - z.x, o.y - z.y) <= z.r) o.hp = Math.min(o.maxHp, o.hp + 1);
+            if (ally && Math.hypot(o.x - z.x, o.y - z.y) <= z.r) o.hp = Math.min(o.maxHp, o.hp + HP_SCALE / 2);
           }
         }
       } else if (z.kind === 'slow') {
@@ -1281,7 +1426,7 @@ export class Sim {
   private applyPowerup(p: SimPlayer, pu: PowerupDef): void {
     const st = powerupStats(pu);
     if (pu.effect === 'heal') {
-      p.hp = Math.min(p.maxHp, p.hp + Math.max(1, Math.round(st.power)));
+      p.hp = Math.min(p.maxHp, p.hp + Math.max(1, Math.round(st.power)) * HP_SCALE);
       return;
     }
     if (pu.effect === 'shield') {
@@ -1478,11 +1623,20 @@ export class Sim {
       p.invulnUntil = this.time + INVULN_TIME;
       p.nextShot = 0;
       p.holdUntil = 0;
+      p.form = 0;
+      p.armor = 0;
+      p.dmgMul = 1;
+      p.stunUntil = 0;
+      p.silenceUntil = 0;
+      p.nocdUntil = 0;
+      p.venomUntil = 0;
+      p.rageUntil = 0;
       const s = this.pickSpawn(p.id, true, MODES[this.mode].team ? p.team : -1);
       p.x = s.x;
       p.y = s.y;
     }
     if (this.cfg.countdown) this.freezeUntil = this.time + this.cfg.countdown;
+    this.domain = null;
     this.events.push({ t: 'roundStart', round: this.round, mode: this.mode, map: this.map.id });
   }
 
@@ -1754,6 +1908,8 @@ export interface PlayerView {
   acc: number;
   /** Seconds until this player may act (lobby, countdown or waiting to confirm). 0 = free. */
   hold: number;
+  /** Boss form 0..3. */
+  form: number;
 }
 
 export function toView(p: SimPlayer, sim: Sim): PlayerView {
@@ -1800,5 +1956,6 @@ export function toView(p: SimPlayer, sim: Sim): PlayerView {
     weapon: p.weapon,
     acc: p.acc,
     hold: Math.max(0, Math.max(sim.freezeUntil, p.holdUntil) - t),
+    form: p.form,
   };
 }

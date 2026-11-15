@@ -44,6 +44,7 @@ export class OfflineSource implements GameSource {
     loadout: Loadout,
     config: Partial<SimConfig> = {},
     instances: SkillInstance[] = [],
+    level = 1,
   ) {
     this.sim = new Sim(Math.random, { countdown: COUNTDOWN_SECONDS, ...config });
     this.sim.addPlayer(this.localId, name, false, {
@@ -55,6 +56,7 @@ export class OfflineSource implements GameSource {
       bfx: loadout.bfx,
       weapon: loadout.weapon,
       acc: loadout.acc,
+      level,
     });
     this.sim.rebalanceBots();
     // Same lobby as online: up to 25 seconds to look at the enemies and confirm, then 3, 2, 1, GO.
@@ -140,6 +142,7 @@ export class OfflineSource implements GameSource {
       teamScore: [s.teamScore[0], s.teamScore[1]],
       hillHolder: s.hillHolder,
       lobby: !this.confirmed ? Math.max(0, s.frozenFor - COUNTDOWN_SECONDS) : 0,
+      domain: s.domain ? { name: s.domain.name, color: s.domain.color, owner: s.domain.owner } : null,
     };
   }
 
@@ -243,6 +246,7 @@ export class OnlineSource implements GameSource {
         weapon: p.weapon ?? 0,
         acc: p.acc ?? 0,
         hold: p.hold ?? 0,
+        form: p.form ?? 0,
       });
     });
     const bullets: Snapshot['bullets'] = [];
@@ -283,6 +287,7 @@ export class OnlineSource implements GameSource {
       teamScore: [state.teamScore0, state.teamScore1],
       hillHolder: state.hillHolder,
       lobby: state.lobby ?? 0,
+      domain: state.domainName ? { name: state.domainName, color: state.domainColor, owner: state.domainOwner } : null,
     };
     this.latestAt = now;
     this.buf.push(now, players);

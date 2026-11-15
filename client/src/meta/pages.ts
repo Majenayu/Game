@@ -17,6 +17,15 @@ import {
   RECIPES,
   TRAILS,
   ACCESSORIES,
+  CHESTS,
+  CHEST_ORDER,
+  LOGIN_CALENDAR,
+  PASSIVE_CAPS,
+  SIGNATURES,
+  classById,
+  isWorldSkill,
+  worldBonusOf,
+  type ChestKind,
   BOSS_FIGHTS,
   BOSS_LEVELS,
   LEVEL_COPIES,
@@ -39,16 +48,19 @@ import {
   type SkillInstance,
 } from '@orb/shared';
 import { ALL_FIGURES, MAJEN, uniqueSvg } from '../art/bestiary';
+import { accIcon, chestIcon, skillIcon, weaponIcon } from '../art/icons';
 import { sfx } from '../audio';
 import { ENABLE_ADS } from '../platform/crazygames';
 import type { Ui } from '../ui/ui';
 import { esc, hex } from '../ui/ui';
 import {
+  CHAMPION_MIN_LEVEL,
   DAILY_POOL,
-  DAILY_REWARDS,
   EXTRA_SPIN_COST,
+  SPINS_PER_DAY,
   WEEKLY_POOL,
-  WHEEL,
+  WHEELS,
+  type WheelKind,
   type Progress,
   type ShopKind,
 } from './economy';
@@ -82,7 +94,9 @@ export type PageName =
   | 'tower'
   | 'ranked'
   | 'market'
-  | 'training';
+  | 'training'
+  | 'profile'
+  | 'chests';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -100,6 +114,8 @@ const TITLES: Record<PageName, string> = {
   ranked: '2v2 Ranked',
   market: 'Market',
   training: 'Training Ground',
+  profile: 'Profile',
+  chests: 'Treasure Chests',
 };
 
 export class Pages {
@@ -107,6 +123,8 @@ export class Pages {
   private mode: ModeId = 'dm';
   private shopTab: ShopKind = 'char';
   private wheelBusy = false;
+  private wheel: WheelKind = 'coins';
+  private chestLog: { name: string; items: string[] } | null = null;
   private spinMsg = '';
   private fuseA = '';
   private fuseB = '';
@@ -171,6 +189,10 @@ export class Pages {
         return this.marketHtml();
       case 'training':
         return this.trainingHtml();
+      case 'profile':
+        return this.profileHtml();
+      case 'chests':
+        return this.chestsHtml();
     }
   }
 
@@ -243,7 +265,7 @@ export class Pages {
       return list
         .filter((c) => ownedIds.includes(c.id))
         .map(
-          (c) => `<div class="card ${cur === c.id ? 'sel' : ''}"><b>${esc(c.name)}</b><div class="d">${esc(c.desc)}</div>
+          (c) => `<div class="card ${cur === c.id ? 'sel' : ''}">${kind === 'weapon' ? weaponIcon(c.id) : accIcon(c.id)}<b>${esc(c.name)}</b><div class="d">${esc(c.desc)}</div>
           <button data-equip="${kind}:${c.id}" ${cur === c.id ? 'disabled' : ''}>${cur === c.id ? 'Equipped' : 'Equip'}</button></div>`,
         )
         .join('');
@@ -267,9 +289,17 @@ export class Pages {
     const el = ELEMENTS[d.element];
     const col = el ? hex(el.color) : hex(rank.color);
     const tags = `${s.bound ? '<span class="tag">Bound</span>' : ''}${d.unique ? '<span class="tag" style="color:#ff4da6;border-color:#ff4da6">Unique</span>' : ''}`;
+    const world = isWorldSkill(s.skillId);
+    const extra = world
+      ? `<div class="d" style="color:#7dff6b">Passive: ${esc(worldBonusOf(s.skillId, s.level).text)} (works automatically)</div>`
+      : d.unique && SIGNATURES[d.name]
+        ? `<div class="d" style="color:#ff9ec7">Signature: ${esc(SIGNATURES[d.name].text)}</div>`
+        : '';
     return `<div class="card skillcard ${cls}" style="border-color:${col}">
       <span class="rb" style="color:${hex(rank.color)}" title="${rank.name}">${d.rank}</span>
+      ${skillIcon(d.kind, el ? el.color : rank.color)}
       <b style="color:${col}">${esc(d.name)}</b>
+      <div class="d">${esc(d.desc)}</div>${extra}
       <div class="d">${esc(d.category)}${el ? ` &middot; ${esc(el.name)}` : ''} &middot; ${esc(d.kind)}<br />
         Lv ${s.level} &middot; ${s.copies} cop${s.copies === 1 ? 'y' : 'ies'} &middot; Mastery ${masteryLevel(s.masteryXp)}<br />
         Cost ${budgetCost(s)} ${tags}</div>${buttons}</div>`;
@@ -437,7 +467,9 @@ export class Pages {
           : locked
             ? `<button disabled>Level ${it.level}</button>`
             : `<button data-buy="${this.shopTab}:${it.id}" ${pr.data.coins < it.price ? 'class="ghost"' : ''}>&#9679; ${it.price}</button>`;
-        return `<div class="card ${locked ? 'locked' : ''}">${it.swatch !== undefined ? `<span class="swatch" style="color:${hex(it.swatch)};background:${hex(it.swatch)}"></span>` : ''}
+        const icon =
+          this.shopTab === 'weapon' ? weaponIcon(Number(it.id)) : this.shopTab === 'acc' ? accIcon(Number(it.id)) : '';
+        return `<div class="card ${locked ? 'locked' : ''}">${icon}${it.swatch !== undefined ? `<span class="swatch" style="color:${hex(it.swatch)};background:${hex(it.swatch)}"></span>` : ''}
           <b>${esc(it.name)}</b><div class="d">${esc(it.desc)}</div>${btn}</div>`;
       })
       .join('');
@@ -446,13 +478,14 @@ export class Pages {
 
   private dailyHtml(): string {
     const st = this.pr.dailyStatus();
-    const days = DAILY_REWARDS.map((c, i) => {
+    const days = LOGIN_CALENDAR.map((c, i) => {
       const day = i + 1;
-      const done = !st.canClaim ? day <= ((this.pr.data.daily.streak - 1) % 7) + 1 : day < st.nextDay;
+      const done = !st.canClaim ? day <= ((this.pr.data.daily.streak - 1) % 30) + 1 : day < st.nextDay;
       const now = st.canClaim && day === st.nextDay;
-      return `<div class="day ${done ? 'done' : ''} ${now ? 'now' : ''}">Day ${day}<b>&#9679; ${c}</b>${done ? '&#10003;' : ''}</div>`;
+      const chest = c.chest ? `<span title="${esc(CHESTS[c.chest].name)}">${chestIcon(CHESTS[c.chest].color)}</span>` : '';
+      return `<div class="day ${done ? 'done' : ''} ${now ? 'now' : ''}">Day ${day}<b>&#9679; ${c.coins}</b>${chest}${done ? '&#10003;' : ''}</div>`;
     }).join('');
-    return `<p class="sub">Log in every day to keep your streak. Day 7 pays the most, then the cycle restarts. Streak: ${st.streak} day(s).</p>
+    return `<p class="sub">A 30 day login calendar. Every day pays coins; days 3, 6, 9... add a Wooden Chest, days 7, 14, 21 a Silver Chest, day 28 a Gold Chest and day 30 a Legend Chest. Then it starts again. Streak: ${st.streak} day(s).</p>
       <div class="days">${days}</div>
       <div style="text-align:center"><button data-claimdaily="1" ${st.canClaim ? '' : 'disabled'}>${st.canClaim ? `Claim day ${st.nextDay}` : 'Come back tomorrow'}</button></div>`;
   }
@@ -476,10 +509,16 @@ export class Pages {
 
   private spinHtml(): string {
     const st = this.pr.spinStatus();
-    return `<div class="wheelbox"><p class="sub">One free spin every day. Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
+    const names: Record<WheelKind, string> = { coins: 'Coins & skins', skills: 'Skills', weapons: 'Weapons', accs: 'Accessories' };
+    const tabs = (Object.keys(WHEELS) as WheelKind[])
+      .map((k) => `<button class="${k === this.wheel ? 'on' : ''}" data-wheel="${k}">${names[k]}</button>`)
+      .join('');
+    const prizes = WHEELS[this.wheel].map((w) => `<span class="tag" style="border-color:${w.color}">${esc(w.label)}</span>`).join(' ');
+    return `<div class="tabs">${tabs}</div><div class="wheelbox"><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all four wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
+      <p>${prizes}</p>
       <div id="wheelwrap"><div id="pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
       <div id="spinresult" style="min-height:26px;color:var(--gold);font-size:18px">${esc(this.spinMsg)}</div>
-      <button data-spin="1">${st.free ? 'Spin (free)' : `Spin (${EXTRA_SPIN_COST} coins)`}</button>
+      <button data-spin="1">${st.free ? `Spin (free, ${st.left} left)` : `Spin (${EXTRA_SPIN_COST} coins)`}</button>
       ${!st.free && ENABLE_ADS ? '<button class="ghost" data-spinad="1">Watch ad for a spin</button>' : ''}</div>`;
   }
 
@@ -491,16 +530,17 @@ export class Pages {
       const stars = this.pr.data.campaign[String(l.id)] ?? 0;
       const st = [1, 2, 3].map((k) => `<span class="star ${k <= stars ? 'on' : ''}">&#9733;</span>`).join('');
       const champ = f.figure === 'majen';
+      const champReason = champ ? this.pr.canChallengeChampion().reason : undefined;
       return `<div class="row ${unlocked ? '' : 'locked'}">
         <div class="towerart">${fig ? uniqueSvg(fig.svg, `tw${i}`) : ''}</div>
         <div class="grow"><b style="color:${hex(f.color)}">Floor ${i + 1}: ${esc(f.name)}</b>${champ ? ' <span class="tag" style="color:#ffc93c;border-color:#ffc93c">CHAMPION</span>' : ''}
           <div class="sub" style="margin:0">${f.hp} HP &middot; ${l.bots - 1} guards &middot; ${esc(MAP_LIST.find((m) => m.id === l.map)?.name ?? l.map)} &middot; ${l.reward} coins</div>
           <div class="sub" style="margin:0">Skills: ${f.kit.map(esc).join(', ')}</div></div>
         <div style="font-size:20px">${st}</div>
-        <button data-tower="${l.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? (champ ? 'Challenge' : 'Fight') : 'Locked'}</button>
+        <button data-tower="${l.id}" ${unlocked ? '' : 'disabled'} title="${esc(champReason ?? '')}">${unlocked ? (champ ? 'Challenge' : 'Fight') : champReason ? esc(champReason) : 'Locked'}</button>
       </div>`;
     }).join('');
-    return `<p class="sub">Climb eight boss floors (they open after campaign level ${TOWER_UNLOCK_LEVEL}). Each boss fights with five unique skills. Majen, the champion, can be challenged by anyone at any time: a 1v1 in an empty arena. Beat him once to win a unique skill.</p>${rows}`;
+    return `<p class="sub">Climb eight boss floors (they open after campaign level ${TOWER_UNLOCK_LEVEL}). Each boss fights with five unique skills, changes form every 25% of HP (stronger attack and defence each time), opens a domain expansion over the whole arena at half HP, and reaches its final form below 25%. The champion Majen can be challenged by anyone level ${CHAMPION_MIN_LEVEL}+: a 1v1 in an empty arena. In his final form his attack and defence go to the maximum. Beat him to take the crown and choose one skill from his kit.</p>${rows}`;
   }
   private rankedHtml(): string {
     const r = this.pr.data.ranked;
@@ -514,6 +554,79 @@ export class Pages {
         <button data-ranked="1">Find 2v2 match</button></div>
       <p class="sub">Two against two, team battle, rotating arenas. Win to gain rating, lose to drop a little. You never lose levels or skills. Empty seats are filled by bots so a match always starts at once. Every fifth win pays a ranked skill drop.</p>
       <h3>Tiers</h3><p>${tiers}</p>`;
+  }
+  private profileHtml(): string {
+    const pr = this.pr;
+    const d = pr.data;
+    const s = d.stats;
+    const lv = pr.level;
+    const cls = classById(d.profile.cls);
+    const rk = d.ranked;
+    const tier = rankedTier(rk.rating);
+    const kd = s.deaths ? (s.kills / s.deaths).toFixed(2) : String(s.kills);
+    const pv = pr.passives;
+    const l = d.loadout;
+    const w = WEAPONS[l.weapon] ?? WEAPONS[0];
+    const skills = pr
+      .loadoutInstances()
+      .map((x) => {
+        const g = getSkill(x.skillId);
+        return `<div class="row" style="padding:4px 8px">${skillIcon(g.kind, ELEMENTS[g.element]?.color ?? RANK_INFO[g.rank].color)}<div class="grow"><b style="color:${hex(RANK_INFO[g.rank].color)}">[${g.rank}]</b> ${esc(g.name)} Lv ${x.level}<div class="sub" style="margin:0">${esc(g.desc)}</div></div></div>`;
+      })
+      .join('');
+    // Rivals are bots on this device; a worldwide ladder needs accounts.
+    const names = ['Zed', 'Echo', 'Dot', 'Spark', 'Bolt', 'Pip', 'Nova', 'Rook', 'Vex'];
+    let seed = 0;
+    for (const ch of d.nick || 'you') seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const rivals = names.map((n, i) => ({ n: n + ' (bot)', r: 900 + (((seed >> i) * 37 + i * 61) % 700), you: false }));
+    const board = [...rivals, { n: d.nick || 'You', r: rk.rating, you: true }]
+      .sort((a, b) => b.r - a.r)
+      .map((x, i) => `<tr class="${x.you ? 'me' : ''}"><td>${i + 1}</td><td>${esc(x.n)}</td><td>${x.r}</td><td>${esc(rankedTier(x.r).name)}</td></tr>`)
+      .join('');
+    const champ = d.champion;
+    return `<div class="row"><div class="grow"><b style="font-size:22px">${esc(d.nick || 'Player')}</b> ${cls ? `<span class="tag">${esc(cls.name)}</span>` : ''} ${champ.isYou ? '<span class="tag" style="color:#ffc93c;border-color:#ffc93c">CHAMPION</span>' : ''}
+        <div class="sub" style="margin:0">Level ${lv.level} &middot; ${lv.into} / ${lv.need} XP &middot; &#9679; ${d.coins} coins</div>
+        <div class="bar"><div style="width:${Math.min(100, (lv.into / lv.need) * 100)}%"></div></div></div></div>
+      <h3>Stats</h3>
+      <div class="cards">
+        <div class="card"><b>${s.matches}</b><div class="d">Matches</div></div>
+        <div class="card"><b>${s.wins}</b><div class="d">Wins</div></div>
+        <div class="card"><b>${s.kills}</b><div class="d">Kills</div></div>
+        <div class="card"><b>${s.deaths}</b><div class="d">Deaths</div></div>
+        <div class="card"><b>${kd}</b><div class="d">K/D</div></div>
+        <div class="card"><b style="color:${hex(tier.color)}">${esc(tier.name)}</b><div class="d">Ranked ${rk.rating} (best ${rk.best}) &middot; ${rk.wins}W ${rk.games - rk.wins}L</div></div>
+        <div class="card"><b>${pr.totalStars()}</b><div class="d">Campaign stars</div></div>
+        <div class="card"><b>${d.skills.length}</b><div class="d">Skills owned</div></div>
+      </div>
+      <h3>Loadout</h3>
+      <div class="row">${weaponIcon(l.weapon)}${accIcon(l.acc)}<div class="grow"><b>${esc(w.name)}</b><div class="sub" style="margin:0">${esc(w.desc)}</div></div><button data-goto="loadout">Edit loadout</button></div>
+      ${skills || '<p class="sub">No battle skills equipped.</p>'}
+      <h3>Passive bonuses (out-of-battle skills)</h3>
+      <p class="sub">+${pv.xp}% XP &middot; +${pv.coins}% coins &middot; ${pv.luck}% chance to upgrade a drop &middot; ${pv.double}% chance to double a drop. Caps: ${PASSIVE_CAPS.xp}% / ${PASSIVE_CAPS.coins}% / ${PASSIVE_CAPS.luck}% / ${PASSIVE_CAPS.double}%. These come from owned Forge, Appraisal, Scout and Gather skills and work automatically.</p>
+      <h3>Champion</h3>
+      <p class="sub">Reigning champion: <b>${esc(champ.name)}</b>${champ.isYou ? ' (you)' : ''}. Challengers must be level ${CHAMPION_MIN_LEVEL}+.</p>
+      <h3>Leaderboard</h3>
+      <p class="sub">Your ranked rating against rival bots on this device. A worldwide leaderboard arrives with accounts.</p>
+      <div id="board"><table><tr><th>#</th><th>Name</th><th>Rating</th><th>Tier</th></tr>${board}</table></div>`;
+  }
+  private chestsHtml(): string {
+    const pr = this.pr;
+    const rows = CHEST_ORDER.map((k) => {
+      const c = CHESTS[k];
+      const n = pr.data.chests[k];
+      const odds = Object.entries(c.odds)
+        .map(([r, p]) => `<span class="tag" style="color:${hex(RANK_INFO[r as keyof typeof RANK_INFO].color)}">${r} ${p}%</span>`)
+        .join(' ');
+      return `<div class="row">${chestIcon(c.color)}<div class="grow"><b style="color:${hex(c.color)}">${esc(c.name)}</b> &times; ${n}
+        <div class="sub" style="margin:0">Contents: ${c.coins[0]}-${c.coins[1]} coins &middot; ${c.skills} skill cards &middot; ${c.weapon}% chance of a new weapon &middot; ${c.acc}% chance of a new accessory</div>
+        <div class="sub" style="margin:0">Skill card odds: ${odds}</div>
+        <div class="sub" style="margin:0">Get it from: ${esc(c.from)}</div></div>
+        <button data-open="${k}" ${n > 0 ? '' : 'disabled'}>${n > 0 ? 'Open' : 'None'}</button></div>`;
+    }).join('');
+    const log = this.chestLog
+      ? `<div class="panel" style="padding:10px 14px;margin-bottom:10px;border:2px solid #ffc93c"><b style="color:#ffc93c">${esc(this.chestLog.name)} opened! You got:</b><ul>${this.chestLog.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>`
+      : '';
+    return `${log}<p class="sub">Every chest lists exactly what can be inside. Open one to see what you got.</p>${rows}`;
   }
   private trainingHtml(): string {
     const lv = LEVEL_COPIES.slice(0, 8)
@@ -618,6 +731,18 @@ export class Pages {
       );
     if (name === 'ranked') on('[data-ranked]', () => this.actions.playRanked());
     if (name === 'training') on('[data-train]', () => this.actions.playTraining());
+    if (name === 'profile') on('[data-goto]', (el) => this.open(el.dataset.goto as PageName));
+    if (name === 'chests')
+      on('[data-open]', (el) => {
+        const k = el.dataset.open as ChestKind;
+        const r = pr.openChest(k);
+        if (r) {
+          sfx.reward();
+          this.chestLog = { name: CHESTS[k].name, items: r.items };
+          note(`${CHESTS[k].name}: ${r.items.length} rewards`, '#ffc93c');
+        }
+        this.render();
+      });
     if (name === 'bestiary') on('[data-challenge]', () => this.actions.challengeChampion());
     if (name === 'market') {
       on('[data-buy]', (el) => {
@@ -721,7 +846,7 @@ export class Pages {
         const r = pr.claimDaily();
         if (r) {
           sfx.reward();
-          note(`Day ${r.day} reward: ${r.coins} coins!`, '#ffc93c');
+          note(`Day ${r.day} reward: ${r.coins} coins${r.chest ? ` and a ${CHESTS[r.chest].name}` : ''}!`, '#ffc93c');
           levelUps(r.levels);
         }
         this.render();
@@ -746,6 +871,7 @@ export class Pages {
 
   private drawWheel(canvas: HTMLCanvasElement): void {
     const ctx = canvas.getContext('2d')!;
+    const WHEEL = WHEELS[this.wheel];
     const n = WHEEL.length;
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
@@ -766,7 +892,7 @@ export class Pages {
       ctx.translate(cx, cy);
       ctx.rotate((a0 + a1) / 2);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 22px Trebuchet MS, sans-serif';
+      ctx.font = `bold ${n > 9 ? 14 : 18}px Trebuchet MS, sans-serif`;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(w.label, r - 16, 0);
@@ -781,14 +907,22 @@ export class Pages {
   private bindSpin(body: HTMLElement, note: (t: string, c?: string) => void): void {
     const canvas = body.querySelector<HTMLCanvasElement>('#wheel')!;
     this.drawWheel(canvas);
+    body.querySelectorAll<HTMLElement>('[data-wheel]').forEach((el) =>
+      el.addEventListener('click', () => {
+        if (this.wheelBusy) return;
+        this.wheel = el.dataset.wheel as WheelKind;
+        this.spinMsg = '';
+        this.render();
+      }),
+    );
     let rotation = 0;
     const result = body.querySelector<HTMLElement>('#spinresult')!;
     const run = () => {
       if (this.wheelBusy) return;
       this.wheelBusy = true;
-      const idx = this.pr.rollSpin();
-      const prize = this.pr.grantPrize(idx);
-      const seg = 360 / WHEEL.length;
+      const idx = this.pr.rollSpin(Math.random, this.wheel);
+      const prize = this.pr.grantPrize(idx, Math.random, this.wheel);
+      const seg = 360 / WHEELS[this.wheel].length;
       const target = 360 - (idx * seg + seg / 2);
       rotation += 360 * 5 + ((target - (rotation % 360) + 360) % 360);
       canvas.style.transform = `rotate(${rotation}deg)`;
