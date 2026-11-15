@@ -485,3 +485,80 @@ Each is a one-of-a-kind skill. Names are placeholders to refine.
 98. Dimensional Lock: no teleports or dashes for anyone nearby.
 99. World Reset: restore the arena and everyone's cooldowns once per match.
 100.  Skill Devourer: take a random skill from a defeated enemy for the rest of the match.
+
+---
+
+## 17. Owner decisions (confirmed) and added systems
+
+### 17.1 Decisions confirmed
+
+1. **Money:** skills are bought, sold and bid on only with in-game money (**Crowns**). Betting also uses Crowns only. No real-money cash-out.
+2. **Starter pack:** no guaranteed S or A. Every new player gets **one skill each of rank B, C, D, E, F** (real, tradable skills).
+   Lucky upgrades on that first pack (each rank slot rolls independently, and only the best result counts):
+   | Result                                                                                 | Chance         |
+   | -------------------------------------------------------------------------------------- | -------------- |
+   | A rank instead of B                                                                    | 1 in 1,000     |
+   | S rank instead of B                                                                    | 1 in 100,000   |
+   | Unique (U) instead of B                                                                | 1 in 1,000,000 |
+   | Rolls happen on the server. The unique can only be won while uniques remain unclaimed. |
+3. **Rank counts:** B 30k, C 30k, D 20k, E 12k, F 12k (about 115k definitions).
+4. **Fusion:** duplicate skills **auto-merge every time**. Manual fusion is **once per week**.
+5. **Art:** original artwork. Direction is neon anime fantasy (see the Figma file).
+6. **Figma:** connected. Designs live in Figma file `4VNOhvP13EGDnxffpeJ0pC` (Orb Arena - Skill World UI).
+7. **Database:** a free hosted Postgres for the beta, upgraded when income arrives.
+8. **Champion:** Majen. Anyone who qualifies can challenge him.
+9. **Order:** the owner left it to me: Phase 2 (skill engine) and Phase 1 (new UI) run side by side, using the Figma designs.
+
+### 17.2 Character stats, levels and penalties
+
+- **Base stats:** HP, MP, ATK, DEF, SPD, MAG (skill power), LUCK (drop and draw luck).
+- **Level up:** each level adds base stats and 3 free points to spend. Level cap 100 at first. EXP comes from kills, assists, objectives, bosses, quests and first-time discoveries.
+- **MP:** every skill costs MP. MP regenerates slowly, faster out of combat. Potions and support skills restore it. The MAG stat scales skill power.
+- **Defeat penalty (never harsh enough to feel bad):**
+  - Ranked: only rating changes.
+  - Casual and story: you lose some progress toward the next level (never a level), and a small amount of EXP boost for the next match.
+  - Open world: you drop a small share of carried coins in a pouch that others can loot for a short time. You never lose skills.
+  - A Revive Token (earned or bought with Crowns) cancels the penalty.
+
+### 17.3 Skill stats (every skill has all of these)
+
+Power, MP cost, **cast time** (activation), **cooldown**, range, area, duration, projectile speed, charges, status chance (burn, freeze, stun, bleed, mark), scaling stat (ATK, MAG, SPD), element, category, rank, level, mastery.
+Skills can have passive effects and combo tags (for example Star + Gravity).
+
+### 17.4 Skill families (all from original designs)
+
+- **Weapons:** swords, guns, bows, hammers, spears, stones, missiles, bombs, drones.
+- **Armies and summons:** zombie hordes, skeleton legions, spirit wolves, golems, drone swarms, dragon whelps, mech squads.
+- **Elements and nature:** fire, water, ice, wind, earth, lightning, light, shadow, poison, metal, plants.
+- **Space, time and mind:** time skip, time stop, rewind, gravity, portals, illusions, telepathy.
+- **Magic:** curses, blessings, runes, summoning circles, barriers, spells of every school.
+- **Myth-inspired god powers** (public-domain mythology): Greek (thunder, sea, underworld, sun chariot), Indian (celestial weapons, storm lord, destroyer's dance, divine bow), Norse (hammer, wolves, rainbow bridge), Egyptian (sun disk, desert sands, judgment scales), Japanese (storm and moon spirits), Chinese (dragon kings, monkey staff), Celtic, Aztec, Slavic and more. Names of gods are free to use. Their powers become original skill designs.
+- **Tech and AI:** robots, mech armor, nanobots, hacking, drones, laser grids.
+- **Hero-style abilities** written as original powers: armored inventor suit, super-soldier boosts, shapeshifting, energy bursts, mutant-style abilities. Original names and looks only.
+- **Companions:** tameable creatures from boss drops (a creature-collecting system with original monsters).
+- **Boosts, support and defence:** every classic RPG buff and shield.
+
+### 17.5 What I will not copy
+
+Pokemon, Marvel, Disney and other franchise characters, names, logos and designs are trademarked and copyrighted. CrazyGames requires original content and I cannot use them. The game gets the same _feelings_ (creature collecting, armored genius, team of heroes, mutant powers) with original names and art. Real mythology, history and public-domain legends are fine.
+
+### 17.6 Sound and music
+
+- Original, free and CC0 sources only, or generated in code (WebAudio). Credits page lists any attribution.
+- **Music:** hub theme, open-world themes per biome, ranked theme, boss themes, champion theme, victory and defeat stings, layered so the music intensifies in fights.
+- **SFX per skill:** each element has a signature sound family (cast, travel, impact). Cast telegraphs have a distinct "charging" sound, so players can hear **activation time** and react. Cooldown-ready ping. UI sounds for every button, reveal and trade.
+- Mute and volume sliders for music, effects and voice cues. Honors the CrazyGames `muteAudio` setting.
+
+### 17.7 The shared world (Plaza)
+
+A big social hub where everyone can show off: practice dummies with damage meters, skill showcase stages, an emote square, duel rings with spectators, the Hall of Uniques, the champion statue and the Auction Hall. Players can display their equipped skills and titles above their heads.
+
+### 17.8 Design files (Figma)
+
+File: https://www.figma.com/design/4VNOhvP13EGDnxffpeJ0pC
+Exports are in `docs/figma/`:
+
+- `style-guide.png`: colors, rank colors, elements, type, buttons, bars.
+- `skill-cards.png`: the Skill Card component with 8 rank variants.
+- `home-hub.png`, `skill-collection.png`, `loadout.png`, `auction-hall.png`, `match-hud.png`.
+  Still to design: ranked lobby and draft, avatar customization and emote wheel, story map, open-world HUD, profile and leaderboards, crews, settings, loading screen.
