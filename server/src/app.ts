@@ -9,6 +9,9 @@ export function createGameServer() {
   const app = express();
   app.set('trust proxy', true);
   app.use(cors());
+  app.get('/', (_req, res) => {
+    res.type('text/plain').send('Orb Arena game server is running.');
+  });
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
   });
