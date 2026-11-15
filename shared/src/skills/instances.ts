@@ -1,7 +1,7 @@
 import { ELEM_COUNT, MOD_COUNT, RANKS, RANK_INFO, type BaseStats, type Rank } from './catalog';
 import type { Rng } from '../util';
 import { getSkill, idFromParts, randomSkillOfRank, rankOf } from './generate';
-import { UniqueRegistry, uniqueIdOf } from './uniques';
+import { UNIQUES, UniqueRegistry, uniqueIdOf } from './uniques';
 
 // ---- owned skill instances ---------------------------------------------------
 
@@ -167,7 +167,18 @@ export interface FusionResult {
  * Fuse two different skills of the same or adjacent rank. The result inherits the archetype of one parent and the
  * element of the other. A chance based on both levels upgrades it one rank (never into Unique).
  */
-export function fuse(a: SkillInstance, b: SkillInstance, rng: Rng): FusionResult {
+/** A random stream fixed by the pair of skill ids (order does not matter). */
+export function pairRng(a: number, b: number): Rng {
+  let s = (Math.imul(Math.min(a, b) + 0x9e3779b9, 2654435761) ^ Math.imul(Math.max(a, b) + 7, 40503)) >>> 0;
+  return () => {
+    s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x6d2b79f5) >>> 0;
+    return s / 4294967296;
+  };
+}
+/** Percent of S + S pairs that create a unique skill. */
+export const UNIQUE_FUSION_PCT = 3;
+export function fuse(a: SkillInstance, b: SkillInstance, _rng?: Rng): FusionResult {
+  const rng = pairRng(a.skillId, b.skillId);
   if (a.uid === b.uid) return { ok: false, reason: 'Pick two different skills' };
   if (a.skillId === b.skillId) return { ok: false, reason: 'Duplicates merge automatically' };
   if (a.level < FUSION_MIN_LEVEL || b.level < FUSION_MIN_LEVEL)
@@ -179,8 +190,13 @@ export function fuse(a: SkillInstance, b: SkillInstance, rng: Rng): FusionResult
   const ib = RANKS.indexOf(db.rank);
   if (Math.abs(ia - ib) > 1) return { ok: false, reason: 'Ranks are too far apart' };
   let rankIdx = Math.max(ia, ib);
-  const chance = Math.min(0.35, 0.05 + 0.01 * (a.level + b.level - 2));
-  const upgraded = rankIdx < RANKS.indexOf('S') && rng() < chance;
+  // Two S skills: a small share of recipes forge a unique skill. Very rare, but it happens.
+  if (ia === RANKS.indexOf('S') && ib === ia && rng() * 100 < UNIQUE_FUSION_PCT) {
+    const u = UNIQUES[Math.floor(rng() * UNIQUES.length)];
+    return { ok: true, skillId: uniqueIdOf(u.n), rank: 'U', upgraded: true };
+  }
+  // Same rank pairs rank up in about 1 of 5 recipes (A + A can give S). Never lower than the best parent.
+  const upgraded = ia === ib && rankIdx < RANKS.indexOf('S') && rng() < 0.2;
   if (upgraded) rankIdx += 1;
   const rank = RANKS[rankIdx];
   const arch = rng() < 0.5 ? da.archetype : db.archetype;

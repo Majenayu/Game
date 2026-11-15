@@ -2,7 +2,7 @@ import { Room, type Client } from '@colyseus/core';
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { Duel, MSG_INPUT, MSG_READY, TICK_MS, fighterView, rankedTier, sanitizeInput, sanitizeNick } from '@orb/shared';
 import { applyRanked } from './api';
-import { type Store, hashToken, validToken } from './store';
+import { Store, hashToken, validToken } from './store';
 
 export class FighterState extends Schema {
   @type('string') name = '';
@@ -64,7 +64,7 @@ export class DuelRoom extends Room<DuelState> {
   private rated = false;
 
   onCreate(options?: { store?: Store }): void {
-    this.store = options?.store ?? null;
+    this.store = options?.store instanceof Store ? options.store : null;
     this.setState(new DuelState());
     this.onMessage(MSG_INPUT, (c, raw) => {
       if (!this.allow(c.sessionId)) return;

@@ -11,6 +11,8 @@ export const MP_REGEN = 14;
 /** Skills cost this share of their listed mana in battle, so all five slots get used. */
 export const MP_COST_SCALE = 0.5;
 export const MAX_PETS = 5;
+/** Skills hit this many times harder than their listed power (skills must matter more than bullets). */
+export const SKILL_DMG_MUL = 2;
 
 /** A skill equipped in one of the five slots during a match. */
 export interface SlotState {
@@ -37,6 +39,12 @@ export interface SimZone {
 }
 
 export interface SimPet {
+  /** Creature id when this pet is the player's summon (see summons.ts). */
+  creature?: number;
+  /** Skill cards attached to the summon and the time of its next card use. */
+  cards?: number[];
+  nextCard?: number;
+  fire?: number;
   id: number;
   owner: string;
   team: number;

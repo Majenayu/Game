@@ -120,7 +120,7 @@ describe('ArenaRoom', () => {
     });
     expect(a.roomId).toBe(c.roomId);
     expect(a.roomId).not.toBe(b.roomId);
-    await until(() => a.state.mode === 'coins' && a.state.mapId === 'maze' && a.state.players?.size === 8);
+    await until(() => a.state.mode === 'coins' && a.state.mapId === 'maze' && a.state.players?.size === MAX_PLAYERS);
     await until(() => b.state.mode === 'hill' && b.state.mapId === 'pillars');
     const me = a.state.players.get(a.sessionId);
     expect(me.char).toBe('titan');
@@ -141,7 +141,7 @@ describe('ArenaRoom', () => {
       map: 'neon',
       loadout: { char: 'god', skillIds: [-4, 99999999], color: -5 },
     });
-    await until(() => r.state.players?.size === 8);
+    await until(() => r.state.players?.size === MAX_PLAYERS);
     const me = r.state.players.get(r.sessionId);
     expect(me.char).toBe('nova');
     expect(me.maxHp).toBe(300);
@@ -155,7 +155,7 @@ describe('ArenaRoom', () => {
       mode: 'dm',
       map: 'neon',
     });
-    await until(() => r.state.players?.size === 8);
+    await until(() => r.state.players?.size === MAX_PLAYERS);
     r.send(MSG_READY);
     await until(() => r.state.players.get(r.sessionId).hold === 0, 6000);
     await new Promise((res) => setTimeout(res, 200));
@@ -175,10 +175,16 @@ it('2v2 ranked rooms hold four orbs in two teams and stay apart from casual room
     expect(teams.filter((t: number) => t === 0).length).toBe(2);
     await Promise.all([a.leave(), b.leave(), c.leave()]);
   });
-  it('ranked is a 1v1 duel: two players, confirm, countdown, fight', async () => {
+  it('ranked 1v1 is a two-seat deathmatch in the arena, apart from 2v2', async () => {
     const url = `ws://localhost:${PORT}`;
-    const a = await new Client(url).joinOrCreate<any>('ranked', { name: 'Duel1' });
-    const b = await new Client(url).joinOrCreate<any>('ranked', { name: 'Duel2' });
+    const r = await new Client(url).joinOrCreate<any>('ranked1v1', { name: 'Solo1' });
+    await until(() => r.state.players?.size === 2 && r.state.mode === 'dm' && r.state.ranked === true);
+    await r.leave();
+  });
+  it('the shadow duel (unranked): two players, confirm, countdown, fight', async () => {
+    const url = `ws://localhost:${PORT}`;
+    const a = await new Client(url).joinOrCreate<any>('shadow', { name: 'Duel1' });
+    const b = await new Client(url).joinOrCreate<any>('shadow', { name: 'Duel2' });
     expect(a.roomId).toBe(b.roomId);
     await until(() => a.state.fighters?.size === 2 && a.state.phase === 'lobby');
     a.send(MSG_READY);

@@ -50,6 +50,41 @@ describe('accounts, world ranking and guilds', () => {
     const me = await post('/me', { token: T1 });
     expect(me.player.rank).toBe(1);
   });
+  it('guilds hold at most 5, have a level and class buffs, and fight a daily raid boss', async () => {
+    const tok = (i: number) => 'g'.repeat(20) + i;
+    for (let i = 0; i < 6; i++) await post('/register', { token: tok(i), name: `Member${i}`, cls: ['warrior', 'mage', 'assassin', 'guardian', 'summoner', 'gunner'][i], level: 10 + i });
+    const g = await post('/guild/create', { token: tok(0), name: 'Five Stars', tag: 'FIVE' });
+    for (let i = 1; i < 5; i++) expect((await post('/guild/join', { token: tok(i), id: g.guild.id })).ok).toBe(true);
+    expect((await post('/guild/join', { token: tok(5), id: g.guild.id })).reason).toBe('Guild is full');
+    const me = await post('/me', { token: tok(0) });
+    expect(me.player.guild.level).toBe(1);
+    expect(me.player.guild.buff.lines.join(' ')).toContain('Harmony');
+    const raid = await post('/raid', { token: tok(0) });
+    expect(raid.raid.hp).toBe(raid.raid.max);
+    const hit = await post('/raid/hit', { token: tok(0), dmg: 9_999_999 });
+    expect(hit.hp).toBe(raid.raid.max - 250_000);
+    for (let i = 0; i < 4; i++) await post('/raid/hit', { token: tok(0), dmg: 1 });
+    expect((await post('/raid/hit', { token: tok(0), dmg: 1 })).status).toBe(400);
+    expect((await post('/raid/claim', { token: tok(0) })).status).toBe(400);
+  });
+  it('leaderboards per mode and tier, and world rank uses the world score', async () => {
+    const lb = await fetch(url('/leaderboard?mode=1v1&tier=Bronze')).then((r) => r.json());
+    expect(lb.mode).toBe('1v1');
+    expect(lb.top.every((p: { tier: string }) => p.tier === 'Bronze')).toBe(true);
+    const w = await fetch(url('/leaderboard?mode=world')).then((r) => r.json());
+    expect(w.brackets[0]).toMatchObject({ top: 10, rank: 'U' });
+  });
+  it('holding a world-rank bracket for 30 days pays a reward', async () => {
+    const id = hashToken(T1);
+    const p = store.db.players[id];
+    const day = 86_400_000;
+    const start = Date.UTC(2030, 0, 1);
+    for (let d = 0; d < 30; d++) store.dailyTick(start + d * day);
+    expect(p.pending?.[0]?.rank).toBe('U');
+    const c = await post('/claim', { token: T1 });
+    expect(c.rewards[0].rank).toBe('U');
+    expect((await post('/claim', { token: T1 })).rewards.length).toBe(0);
+  });
   it('guilds: create, unique names and tags, join, list, leave', async () => {
     expect((await post('/guild/create', { token: T3, name: 'Nope', tag: 'NP' })).status).toBe(404);
     const g = await post('/guild/create', { token: T1, name: 'Star Forge', tag: 'sf' });
@@ -58,7 +93,7 @@ describe('accounts, world ranking and guilds', () => {
     expect((await post('/guild/create', { token: T2, name: 'star forge', tag: 'XX' })).status).toBe(409);
     expect((await post('/guild/join', { token: T2, id: g.guild.id })).ok).toBe(true);
     const list = await fetch(url('/guilds')).then((x) => x.json());
-    expect(list.guilds[0]).toMatchObject({ name: 'Star Forge', members: 2 });
+    expect(list.guilds.find((x: { name: string }) => x.name === 'Star Forge')).toMatchObject({ members: 2 });
     const det = await fetch(url(`/guild/${g.guild.id}`)).then((x) => x.json());
     expect(det.members.map((m: { name: string }) => m.name)).toEqual(['Majenayu', 'Rival_3']);
     expect((await post('/guild/leave', { token: T1 })).ok).toBe(true);

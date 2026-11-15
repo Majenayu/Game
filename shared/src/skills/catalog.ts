@@ -23,7 +23,7 @@ export const RANK_INFO: Record<Rank, RankInfo> = {
   B: { rank: 'B', name: 'Rare', color: 0xb77dff, power: 1.25, count: 30000, budget: 680 },
   A: { rank: 'A', name: 'Epic', color: 0xff8a3c, power: 1.6, count: 10000, budget: 1100 },
   S: { rank: 'S', name: 'Legendary', color: 0xffc93c, power: 2.1, count: 1000, budget: 1800 },
-  U: { rank: 'U', name: 'Unique', color: 0xff4da6, power: 3.0, count: 100, budget: 3000 },
+  U: { rank: 'U', name: 'Unique', color: 0xff4da6, power: 6.0, count: 100, budget: 3000 },
 };
 
 export type Category =

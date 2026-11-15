@@ -38,6 +38,7 @@ import {
   botKit,
   defaultKit,
   SIGNATURES,
+  SKILL_DMG_MUL,
   dmgFromPower,
   elementStatus,
   neutralInstance,
@@ -49,6 +50,9 @@ import {
 } from './battle';
 import { ARCHETYPES, ELEMENTS, RANKS, type Kind } from './skills/catalog';
 import { getSkill } from './skills/generate';
+import type { ArenaEffect } from './worlds';
+import { combatFromSheet, levelSheet, type CombatStats } from './progression';
+import { creatureStats, isCreatureId } from './summons';
 import { ROTATION, getMap, type MapDef } from './maps';
 import type { SkillInstance } from './skills/instances';
 import { findPath, getNav, segmentClear } from './nav';
@@ -87,6 +91,14 @@ export interface SimConfig {
   bossDomain?: DomainDef;
   /** Final form strength (below 25% HP): share of damage ignored and damage multiplier. */
   bossFinal?: { armor: number; dmg: number };
+  /** Arena effect (campaign worlds): snow, fire, storm, toxic, void or dark. */
+  effect?: ArenaEffect;
+  /** Element (ELEMENTS index) that hits 30% harder in this arena. */
+  effectElement?: number;
+  /** Bots get the stats of this player level. */
+  botLevel?: number;
+  /** Bosses fight with unique skills; this scales their skill damage so they stay beatable. */
+  bossSkillScale?: number;
   /** Seconds of "3, 2, 1, GO" freeze at the start of every round. 0 = start at once (tests). */
   countdown?: number;
   /** Training ground: bots are harmless dummies, your mana refills fast and you cannot be knocked out. */
@@ -108,6 +120,8 @@ export interface ActiveDomain extends DomainDef {
 }
 /** Boss forms: every 25% of HP lost the boss changes form and gets stronger. */
 export const BOSS_FORMS = ['Base', 'Awakened', 'Ascended', 'FINAL FORM'];
+/** Seconds the battle pauses while a boss changes form. */
+export const FORM_PAUSE = 2.6;
 const FORM_ARMOR = [0, 0.25, 0.45];
 const FORM_DMG = [1, 1.3, 1.7];
 
@@ -194,6 +208,14 @@ export interface SimPlayer {
   nocdUntil: number;
   venomUntil: number;
   rageUntil: number;
+  /** Combat stats from level, gear and buffs. */
+  atkMul: number;
+  skillMul: number;
+  defPct: number;
+  spdMul: number;
+  reloadMul: number;
+  /** Summon that fights beside this player. */
+  creature: { id: number; level: number; cards: number[] } | null;
 }
 
 export interface SimBullet {
@@ -257,7 +279,9 @@ export type SimEvent =
   | { t: 'boom'; x: number; y: number }
   | { t: 'roundStart'; round: number; mode: ModeId; map: string }
   | { t: 'roundEnd'; winner: string; team: number }
-  | { t: 'form'; id: string; form: number; name: string; x: number; y: number }
+  | { t: 'form'; id: string; form: number; name: string; x: number; y: number; armor: number; dmg: number; speed: number }
+  | { t: 'strike'; x: number; y: number; r: number; effect: string; delay: number }
+  | { t: 'petskill'; id: string; skill: number; x: number; y: number }
   | { t: 'domain'; id: string; name: string; color: number };
 
 interface BotBrain {
@@ -316,6 +340,10 @@ export interface PlayerOpts {
   weapon?: number;
   acc?: number;
   boss?: boolean;
+  /** Combat stats (level, gear, guild). When missing, the level sheet is used. */
+  stats?: CombatStats;
+  /** Summon companion (not used in ranked). */
+  summon?: { id: number; level: number; cards: number[] };
   /** Player level 1..1000 (extra max HP). */
   level?: number;
 }
@@ -416,9 +444,11 @@ export class Sim {
         PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[this.players.size % PLAYER_COLORS.length];
     const boss = opts.boss === true;
     const level = Math.max(1, Math.min(1000, Math.floor(opts.level ?? 1)));
+    const st: CombatStats =
+      opts.stats ?? (bot && this.cfg.botLevel ? combatFromSheet(levelSheet(this.cfg.botLevel)) : combatFromSheet(levelSheet(level)));
     const maxHp = boss
       ? Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) * HP_SCALE
-      : Math.round(ch.hp * HP_SCALE * (1 + HP_PER_LEVEL * (level - 1)));
+      : Math.round((st.maxHp * ch.hp) / 3);
     const team = MODES[this.mode].team ? this.smallerTeam() : 0;
     const spot = this.pickSpawn(undefined, true, MODES[this.mode].team ? team : -1);
     const p: SimPlayer = {
@@ -479,7 +509,15 @@ export class Sim {
       nocdUntil: 0,
       venomUntil: 0,
       rageUntil: 0,
+      atkMul: st.atkMul,
+      skillMul: boss ? (this.cfg.bossSkillScale ?? 0.3) * st.skillMul : st.skillMul,
+      defPct: st.defPct,
+      spdMul: st.spdMul,
+      reloadMul: st.reloadMul,
+      creature: opts.summon && isCreatureId(opts.summon.id) ? { id: opts.summon.id, level: opts.summon.level, cards: opts.summon.cards.slice(0, 2) } : null,
     };
+    p.maxMp = Math.round(st.maxMp);
+    p.mp = p.maxMp;
     if (boss) p.charId = 'titan';
     this.players.set(id, p);
     if (bot) this.brains.set(id, this.newBrain());
@@ -570,7 +608,27 @@ export class Sim {
     return list.map((id) => slotFromInstance(neutralInstance(id)));
   }
 
-  /** Sets a player's level (extra max HP) and heals to full. */
+  /** Applies combat stats (level, gear, guild) to a human player and heals to full. */
+  setStats(id: string, st: CombatStats): void {
+    const p = this.players.get(id);
+    if (!p || p.bot) return;
+    p.maxHp = Math.round((st.maxHp * CHARACTERS[p.charId].hp) / 3);
+    p.hp = p.maxHp;
+    p.maxMp = Math.round(st.maxMp);
+    p.mp = p.maxMp;
+    p.atkMul = st.atkMul;
+    p.skillMul = st.skillMul;
+    p.defPct = st.defPct;
+    p.spdMul = st.spdMul;
+    p.reloadMul = st.reloadMul;
+  }
+  /** Gives a human player a summon companion (not in ranked rooms). */
+  setSummon(id: string, s: { id: number; level: number; cards: number[] } | null): void {
+    const p = this.players.get(id);
+    if (!p || p.bot) return;
+    p.creature = s && isCreatureId(s.id) ? { id: s.id, level: Math.max(1, Math.min(50, Math.floor(s.level))), cards: s.cards.filter((c) => Number.isInteger(c)).slice(0, 2) } : null;
+  }
+  /** Sets a player's level (stats from the level sheet) and heals to full. */
   setLevel(id: string, level: number): void {
     const p = this.players.get(id);
     if (!p || p.bot) return;
@@ -615,6 +673,8 @@ export class Sim {
     if (this.inDomain(p, 'slow')) m *= 0.7;
     if (this.domainOwner(p) && (this.domain!.effect === 'haste' || this.domain!.effect === 'all')) m *= 1.3;
     if (this.time < p.rageUntil) m *= 1.5;
+    m *= p.spdMul;
+    if (this.cfg.effect === 'snow') m *= 0.85;
     return m;
   }
 
@@ -631,7 +691,7 @@ export class Sim {
       if (this.scoreboardLeft <= 0 && this.cfg.autoRestart) this.startRound();
       return;
     }
-    const frozenAll = this.time < this.freezeUntil;
+    const frozenAll = this.time < this.freezeUntil || this.time < this.pauseUntil;
     if (!frozenAll) this.timeLeft -= dt;
 
     for (const p of this.players.values()) {
@@ -707,6 +767,8 @@ export class Sim {
     this.stepMines();
     this.stepZones(dt);
     this.stepPets(dt);
+    this.stepEffects();
+    this.stepCreatures();
     this.stepPickups(dt);
     if (this.mode === 'coins') this.stepCoins(dt);
     if (this.mode === 'hill') this.stepHill(dt);
@@ -725,7 +787,7 @@ export class Sim {
     const dx = Math.cos(angle);
     const dy = Math.sin(angle);
     const w = WEAPONS[p.weapon] ?? WEAPONS[0];
-    const speed = BULLET_SPEED * ch.bulletSpeed * w.speed;
+    const speed = BULLET_SPEED * ch.bulletSpeed * w.speed * (this.cfg.effect === 'void' ? 1.25 : 1);
     this.bullets.push({
       id: this.nextId++,
       owner: p.id,
@@ -736,7 +798,7 @@ export class Sim {
       vy: dy * speed,
       ttl: BULLET_TTL * (ric ? 1.4 : 1) * w.range,
       r: BULLET_RADIUS * (big ? 1.4 + 0.3 * big.power : 1) * w.size,
-      dmg: w.dmg + (od ? 1 : 0),
+      dmg: (w.dmg + (od ? 1 : 0)) * p.atkMul,
       pierce: pierce ? Math.ceil(pierce.power) : 0,
       bounce: ric ? Math.ceil(ric.power) : 0,
       freeze: !!this.eff(p, 'freeze'),
@@ -751,7 +813,7 @@ export class Sim {
     const ch = CHARACTERS[p.charId];
     const rapid = this.eff(p, 'rapid');
     const w = WEAPONS[p.weapon] ?? WEAPONS[0];
-    let interval = FIRE_INTERVAL * ch.fire * w.fire;
+    let interval = (FIRE_INTERVAL * ch.fire * w.fire) / p.reloadMul;
     if (rapid) interval /= 1 + 0.9 * rapid.power;
     if (p.boss) interval *= 0.9;
     else if (p.bot) interval *= 3.2 - this.cfg.botSkill;
@@ -826,12 +888,14 @@ export class Sim {
     if (
       this.time < victim.invulnUntil ||
       this.time < victim.holdUntil ||
-      (this.freezeUntil > 0 && this.time < this.freezeUntil + INVULN_TIME)
+      (this.freezeUntil > 0 && this.time < this.freezeUntil + INVULN_TIME) ||
+      this.time < this.pauseUntil
     )
       return;
     const attacker = this.players.get(by);
     const rage = attacker && this.time < attacker.rageUntil ? 2 : 1;
-    let amount = Math.max(1, Math.round(dmg * HP_SCALE * (attacker?.dmgMul ?? 1) * rage * (1 - victim.armor)));
+    const guard = 1 - (1 - victim.armor) * (1 - victim.defPct);
+    let amount = Math.max(1, Math.round(dmg * HP_SCALE * (attacker?.dmgMul ?? 1) * rage * (1 - guard)));
     if (this.cfg.training && !victim.bot && victim.hp - amount <= 0) {
       victim.hp = victim.maxHp;
       return;
@@ -879,6 +943,94 @@ export class Sim {
 
   /** The active domain expansion, if any. */
   domain: ActiveDomain | null = null;
+  /** The battle is paused (boss form change) until this time. */
+  pauseUntil = 0;
+  private strikes: Array<{ x: number; y: number; r: number; at: number }> = [];
+  private nextStrike = 4;
+
+  /** Summons: one persistent companion per player. It shoots, and uses its attached skill cards. */
+  private stepCreatures(): void {
+    for (const p of this.players.values()) {
+      const c = p.creature;
+      if (!c || !p.alive) continue;
+      let pet = this.pets.find((x) => x.owner === p.id && x.creature !== undefined);
+      if (!pet) {
+        const st = creatureStats(c.id, c.level);
+        pet = {
+          id: this.nextId++,
+          owner: p.id,
+          team: p.team,
+          x: p.x + 30,
+          y: p.y,
+          until: Number.POSITIVE_INFINITY,
+          nextShot: this.time + 1,
+          dmg: st.dmg / HP_SCALE,
+          color: p.color,
+          creature: c.id,
+          cards: c.cards,
+          nextCard: this.time + 4,
+          fire: st.fire,
+        };
+        this.pets.push(pet);
+      }
+      if (pet.cards?.length && this.time >= (pet.nextCard ?? 0)) {
+        const target = this.nearestEnemy(p, 600);
+        if (!target) continue;
+        const id = pet.cards[Math.floor(this.rng() * pet.cards.length)];
+        const sk = getSkill(id);
+        const ang = Math.atan2(target.y - pet.y, target.x - pet.x);
+        pet.nextCard = this.time + 6;
+        this.bullets.push({
+          id: this.nextId++,
+          owner: p.id,
+          team: p.team,
+          x: pet.x,
+          y: pet.y,
+          vx: Math.cos(ang) * 600,
+          vy: Math.sin(ang) * 600,
+          ttl: 1.2,
+          r: 12,
+          dmg: dmgFromPower(sk.base.power) * SKILL_DMG_MUL * 0.6,
+          pierce: 0,
+          bounce: 0,
+          freeze: false,
+          hit: [],
+          kind: p.bfx,
+          status: elementStatus(sk.element),
+          homing: true,
+        });
+        this.events.push({ t: 'petskill', id: p.id, skill: id, x: pet.x, y: pet.y });
+      }
+    }
+  }
+  /** Arena effects: meteors (fire), lightning (storm) and poison clouds (toxic) land after a warning. */
+  private stepEffects(): void {
+    const e = this.cfg.effect;
+    if (e === 'fire' || e === 'storm' || e === 'toxic') {
+      if (this.time >= this.nextStrike) {
+        this.nextStrike = this.time + (e === 'storm' ? 3 : 4);
+        const alive = Array.from(this.players.values()).filter((p) => p.alive);
+        const t = alive[Math.floor(this.rng() * alive.length)];
+        if (t) {
+          const x = Math.max(60, Math.min(WORLD_W - 60, t.x + (this.rng() - 0.5) * 220));
+          const y = Math.max(60, Math.min(WORLD_H - 60, t.y + (this.rng() - 0.5) * 220));
+          const r = e === 'toxic' ? 120 : 90;
+          this.strikes.push({ x, y, r, at: this.time + 1.2 });
+          this.events.push({ t: 'strike', x, y, r, effect: e, delay: 1.2 });
+        }
+      }
+      const status = e === 'fire' ? 'burn' : e === 'toxic' ? 'poison' : 'slow';
+      this.strikes = this.strikes.filter((s) => {
+        if (this.time < s.at) return true;
+        for (const p of this.players.values())
+          if (p.alive && Math.hypot(p.x - s.x, p.y - s.y) <= s.r) {
+            this.hurt(p, '', 0.5);
+            this.applyStatus(p, undefined, status);
+          }
+        return false;
+      });
+    }
+  }
 
   /** Boss form changes at 75%, 50% and 25% HP. Each form hits harder and takes less damage. */
   private checkForm(b: SimPlayer): void {
@@ -894,7 +1046,19 @@ export class Sim {
     for (const s of b.slots) s.cdUntil = 0;
     b.effects.push({ effect: 'speed', rarity: 3, until: this.time + 9999, power: 0.3 * want });
     if (want >= 2) b.effects.push({ effect: 'rapid', rarity: 3, until: this.time + 9999, power: 0.4 * (want - 1) });
-    this.events.push({ t: 'form', id: b.id, form: want, name: BOSS_FORMS[want], x: b.x, y: b.y });
+    // The whole battle pauses while the boss transforms, so everyone sees it.
+    this.pauseUntil = this.time + FORM_PAUSE;
+    this.events.push({
+      t: 'form',
+      id: b.id,
+      form: want,
+      name: BOSS_FORMS[want],
+      x: b.x,
+      y: b.y,
+      armor: Math.round(b.armor * 100),
+      dmg: Math.round(b.dmgMul * 10) / 10,
+      speed: Math.round(30 * want),
+    });
     if (want === 2 && this.cfg.bossDomain) {
       this.domain = { ...this.cfg.bossDomain, owner: b.id, until: this.time + 9999 };
       this.events.push({ t: 'domain', id: b.id, name: this.cfg.bossDomain.name, color: this.cfg.bossDomain.color });
@@ -1093,7 +1257,8 @@ export class Sim {
   private resolveCast(p: SimPlayer, s: SlotState | undefined): void {
     if (!s || !p.alive) return;
     const st = s.stats;
-    const dmg = dmgFromPower(st.power);
+    const elementBonus = this.cfg.effectElement !== undefined && this.cfg.effectElement === s.element ? 1.3 : 1;
+    const dmg = dmgFromPower(st.power) * SKILL_DMG_MUL * p.skillMul * elementBonus;
     const status = elementStatus(s.element);
     const aim = p.aim;
     const ax = Math.cos(aim);
@@ -1402,7 +1567,7 @@ export class Sim {
       if (this.time < pt.nextShot) continue;
       const target = this.nearestEnemy(owner, 520);
       if (!target || segmentBlocked(pt.x, pt.y, target.x, target.y, this.map.obstacles)) continue;
-      pt.nextShot = this.time + 1.3;
+      pt.nextShot = this.time + (pt.fire ?? 1.3);
       const ang = Math.atan2(target.y - pt.y, target.x - pt.x);
       this.bullets.push({
         id: this.nextId++,
@@ -1641,6 +1806,8 @@ export class Sim {
     }
     if (this.cfg.countdown) this.freezeUntil = this.time + this.cfg.countdown;
     this.domain = null;
+    this.pauseUntil = 0;
+    this.strikes = [];
     this.events.push({ t: 'roundStart', round: this.round, mode: this.mode, map: this.map.id });
   }
 
@@ -1781,8 +1948,10 @@ export class Sim {
         }
       }
     } else if (mode === 'hill') {
-      goalX = this.map.hill.x + Math.cos(this.time + p.x) * 40;
-      goalY = this.map.hill.y + Math.sin(this.time + p.y) * 40;
+      // Circle around inside the hill instead of standing still on it.
+      const ha = this.time * 0.9 + (p.id.charCodeAt(p.id.length - 1) % 7);
+      goalX = this.map.hill.x + Math.cos(ha) * this.map.hill.r * 0.6;
+      goalY = this.map.hill.y + Math.sin(ha) * this.map.hill.r * 0.6;
     }
     if (pk && Math.hypot(pk.x - p.x, pk.y - p.y) < 450) {
       goalX = pk.x;
@@ -1914,6 +2083,10 @@ export interface PlayerView {
   hold: number;
   /** Boss form 0..3. */
   form: number;
+  /** Player level, attack stat and defence percent (shown in the lobby). */
+  lv: number;
+  atk: number;
+  def: number;
 }
 
 export function toView(p: SimPlayer, sim: Sim): PlayerView {
@@ -1961,5 +2134,8 @@ export function toView(p: SimPlayer, sim: Sim): PlayerView {
     acc: p.acc,
     hold: Math.max(0, Math.max(sim.freezeUntil, p.holdUntil) - t),
     form: p.form,
+    lv: p.level,
+    atk: Math.round(p.atkMul * 50),
+    def: Math.round(p.defPct * 100),
   };
 }

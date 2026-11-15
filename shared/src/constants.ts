@@ -5,11 +5,11 @@ export const TICK_RATE = 20;
 export const TICK_MS = 1000 / TICK_RATE;
 export const INPUT_RATE = 20;
 
-export const MAX_PLAYERS = 8;
+export const MAX_PLAYERS = 4;
 export const MAX_NICK = 16;
 
 export const PLAYER_RADIUS = 22;
-export const PLAYER_SPEED = 280;
+export const PLAYER_SPEED = 215;
 export const MAX_HP = 3;
 /** Hit points per heart: a 3 heart orb has 300 HP. Damage values in the sim are in hearts and scaled here. */
 export const HP_SCALE = 100;
@@ -17,9 +17,9 @@ export const HP_SCALE = 100;
 export const HP_PER_LEVEL = 0.02;
 
 export const BULLET_RADIUS = 6;
-export const BULLET_SPEED = 720;
-export const BULLET_TTL = 1.1;
-export const FIRE_INTERVAL = 0.35;
+export const BULLET_SPEED = 540;
+export const BULLET_TTL = 1.35;
+export const FIRE_INTERVAL = 0.42;
 export const RAPID_FIRE_INTERVAL = 0.12;
 export const RAPID_DURATION = 5;
 

@@ -521,7 +521,7 @@ describe('bots and skills', () => {
       for (const e of sim.drainEvents())
         if (e.t === 'skill' && e.id.startsWith('bot_')) casts.set(e.id, (casts.get(e.id) ?? 0) + 1);
     }
-    expect(casts.size).toBeGreaterThanOrEqual(5);
+    expect(casts.size).toBeGreaterThanOrEqual(3);
     for (const n of casts.values()) expect(n).toBeGreaterThan(0);
   });
 

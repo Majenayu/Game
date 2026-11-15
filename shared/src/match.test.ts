@@ -85,7 +85,7 @@ describe('hp, boss forms and domain expansion', () => {
     const a = sim.addPlayer('a', 'A', false, { charId: 'nova' });
     const b = sim.addPlayer('b', 'B', false, { charId: 'nova', level: 26 });
     expect(a.maxHp).toBe(300);
-    expect(b.maxHp).toBe(450);
+    expect(b.maxHp).toBe(355);
     a.invulnUntil = 0;
     (sim as any).hurt(a, 'b', 1);
     expect(a.hp).toBe(200);
@@ -106,6 +106,7 @@ describe('hp, boss forms and domain expansion', () => {
     const boss = Array.from(sim.players.values()).find((p) => p.boss)!;
     const hit = (n: number) => {
       boss.invulnUntil = 0;
+      sim.pauseUntil = 0;
       (sim as any).hurt(boss, 'me', n);
     };
     hit(50);

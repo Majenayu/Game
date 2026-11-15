@@ -4,6 +4,11 @@ import {
   MAX_PLAYERS,
   EMOTE_COOLDOWN,
   COUNTDOWN_SECONDS,
+  eloUpdate,
+  guildBuff,
+  guildLevel,
+  playerStats,
+  rankedTier,
   LOBBY_SECONDS,
   MSG_EMOTE,
   MSG_EVENT,
@@ -22,6 +27,7 @@ import {
   type ModeId,
   type PowerupDef,
 } from '@orb/shared';
+import { Store, validToken } from './store';
 import {
   ArenaState,
   BulletState,
@@ -50,6 +56,11 @@ function clientIp(ctx: AuthContext | undefined): string {
 }
 
 interface JoinOptions {
+  /** Set by the server when the room is defined (never from clients). */
+  store?: unknown;
+  token?: unknown;
+  gear?: unknown;
+  summon?: unknown;
   name?: unknown;
   mode?: unknown;
   map?: unknown;
@@ -59,6 +70,7 @@ interface JoinOptions {
 }
 /** 2v2 ranked rooms hold four orbs; empty seats are filled by bots so matches start at once. */
 export const RANKED_SEATS = 4;
+export type RankedMode = '1v1' | '2v2' | 'war' | null;
 
 function pickMode(v: unknown): ModeId | 'mix' {
   return v === 'mix' || isModeId(v) ? v : 'mix';
@@ -82,14 +94,32 @@ export class ArenaRoom extends Room<ArenaState> {
   private lobbyOpen = true;
   /** True for 2v2 ranked rooms (see RankedRoom). Clients cannot choose this through join options. */
   protected readonly isRanked: boolean = false;
+  /** Ranked 1v1, ranked 2v2, guild war, or null for casual rooms. */
+  protected readonly rankedMode: RankedMode = null;
+  protected store: Store | null = null;
+  /** Session id -> registered player id. */
+  protected accounts = new Map<string, string>();
+  /** Guild war: the two guild ids (team 0 and team 1). */
+  protected warGuilds: string[] = [];
 
   onCreate(options?: JoinOptions): void {
     // Instant Multiplayer rooms are private: friends join by room id or invite link.
     if (options?.private === true) void this.setPrivate(true);
-    const ranked = this.isRanked;
-    if (ranked) this.maxClients = RANKED_SEATS;
+    // Only the server passes a real Store; anything a client sends is ignored.
+    const so = (options as { store?: unknown } | undefined)?.store;
+    this.store = so instanceof Store ? so : null;
+    const ranked = this.isRanked || this.rankedMode !== null;
+    const rm = this.rankedMode;
+    const seats = rm === '1v1' ? 2 : rm === 'war' ? 10 : RANKED_SEATS;
+    if (ranked) this.maxClients = seats;
     this.sim = ranked
-      ? new Sim(Math.random, { mode: 'tdm', mapId: 'rotate', seats: RANKED_SEATS, countdown: COUNTDOWN_SECONDS })
+      ? new Sim(Math.random, {
+          mode: rm === '1v1' ? 'dm' : 'tdm',
+          mapId: 'rotate',
+          seats,
+          countdown: COUNTDOWN_SECONDS,
+          roundTime: rm === '1v1' ? 120 : 150,
+        })
       : new Sim(Math.random, {
           mode: pickMode(options?.mode),
           mapId: pickMap(options?.map),
@@ -145,7 +175,10 @@ export class ArenaRoom extends Room<ArenaState> {
       if (this.lobbyOpen && this.sim.frozenFor <= COUNTDOWN_SECONDS) this.lobbyOpen = false;
       if (steps > 0) {
         this.syncState();
-        for (const ev of this.sim.drainEvents()) this.broadcast(MSG_EVENT, ev);
+        for (const ev of this.sim.drainEvents()) {
+          this.broadcast(MSG_EVENT, ev);
+          if (ev.t === 'roundEnd') this.rateRound(ev.team);
+        }
       }
     }, TICK_MS);
   }
@@ -169,9 +202,37 @@ export class ArenaRoom extends Room<ArenaState> {
   }
 
   onJoin(client: Client, options: JoinOptions | undefined): void {
-    this.sim.addPlayer(client.sessionId, options?.name);
+    const reg = validToken(options?.token) ? this.store?.byToken(options.token) : undefined;
+    if (reg) this.accounts.set(client.sessionId, reg.id);
+    this.sim.addPlayer(client.sessionId, reg ? reg.name : options?.name);
     this.sim.setLoadout(client.sessionId, options?.loadout);
     this.sim.setLevel(client.sessionId, Number(options?.level) || 1);
+    // Stats from level, gear, cosmetics and the guild buff (computed here, not trusted from the client).
+    const load = (options?.loadout ?? {}) as { trail?: unknown; bfx?: unknown };
+    const gear = Array.isArray(options?.gear) ? (options!.gear as unknown[]).filter((x): x is number => typeof x === 'number').slice(0, 8) : [];
+    const g = reg?.guild ? this.store?.db.guilds[reg.guild] : undefined;
+    const guildBonus = g ? guildBuff(g.members.map((m) => this.store!.db.players[m]?.cls ?? ''), guildLevel(g.xp ?? 0)).bonus : undefined;
+    const st = playerStats({
+      level: Math.max(1, Math.min(1000, Number(options?.level) || 1)),
+      gear,
+      trail: Number(load.trail) || 0,
+      bfx: Number(load.bfx) || 0,
+      guild: guildBonus,
+    });
+    this.sim.setStats(client.sessionId, st.combat);
+    // Summons fight in casual rooms only.
+    const sm = options?.summon as { id?: unknown; level?: unknown; cards?: unknown } | undefined;
+    if (!this.rankedMode && !this.isRanked && sm && typeof sm.id === 'number')
+      this.sim.setSummon(client.sessionId, {
+        id: sm.id,
+        level: Number(sm.level) || 1,
+        cards: Array.isArray(sm.cards) ? (sm.cards as unknown[]).filter((x): x is number => typeof x === 'number') : [],
+      });
+    // Guild war: members of the same guild share a team.
+    if (this.rankedMode === 'war' && reg?.guild) {
+      const p = this.sim.players.get(client.sessionId);
+      if (p) p.team = Math.max(0, this.warGuilds.indexOf(reg.guild));
+    }
     const colorId = (options?.loadout as { color?: unknown } | undefined)?.color;
     const p = this.sim.players.get(client.sessionId);
     if (p && Number.isInteger(colorId)) p.color = colorHex(colorId as number, p.color);
@@ -204,6 +265,57 @@ export class ArenaRoom extends Room<ArenaState> {
     for (const id of Array.from(this.ipBySession.keys())) this.releaseIp(id);
   }
 
+  /** Applies ranked results (1v1, 2v2) or guild war XP at the end of every round. */
+  private rateRound(winnerTeam: number): void {
+    const store = this.store;
+    if (!store || !this.rankedMode) return;
+    const humans = Array.from(this.sim.players.values()).filter((p) => !p.bot && this.accounts.has(p.id));
+    if (!humans.length) return;
+    const standings = this.sim.standings();
+    const won = (p: { id: string; team: number }) =>
+      this.rankedMode === '1v1' ? standings[0]?.id === p.id && standings[0].score > 0 : winnerTeam >= 0 && p.team === winnerTeam;
+    if (this.rankedMode === 'war') {
+      const wt = winnerTeam >= 0 ? this.warGuilds[winnerTeam] : undefined;
+      for (const gid of this.warGuilds) {
+        const g = store.db.guilds[gid];
+        if (!g) continue;
+        g.xp = (g.xp ?? 0) + (gid === wt ? 300 : 100);
+        if (gid === wt) g.wars = (g.wars ?? 0) + 1;
+      }
+      store.changed();
+      return;
+    }
+    for (const p of humans) {
+      const rec = store.db.players[this.accounts.get(p.id)!];
+      if (!rec) continue;
+      const enemies = Array.from(this.sim.players.values()).filter((o) => o.id !== p.id && (this.rankedMode === '1v1' || o.team !== p.team));
+      const mine = this.rankedMode === '1v1' ? rec.rating : (rec.rating2 ?? 1000);
+      const opp = enemies.length
+        ? enemies.reduce((s, o) => {
+            const r = this.accounts.has(o.id) ? store.db.players[this.accounts.get(o.id)!] : undefined;
+            return s + (r ? (this.rankedMode === '1v1' ? r.rating : (r.rating2 ?? 1000)) : mine);
+          }, 0) / enemies.length
+        : mine;
+      const w = won(p);
+      const next = eloUpdate(mine, opp, w ? 1 : 0);
+      if (this.rankedMode === '1v1') {
+        rec.rating = next;
+        rec.best = Math.max(rec.best, next);
+        rec.games += 1;
+        if (w) rec.wins += 1;
+      } else {
+        rec.rating2 = next;
+        rec.games2 = (rec.games2 ?? 0) + 1;
+        if (w) rec.wins2 = (rec.wins2 ?? 0) + 1;
+      }
+      // Ranked wins also grow the player's guild.
+      const g = rec.guild ? store.db.guilds[rec.guild] : undefined;
+      if (g && w) g.xp = (g.xp ?? 0) + 20;
+      const c = this.clients.find((x) => x.sessionId === p.id);
+      c?.send('rated', { mode: this.rankedMode, rating: next, delta: next - mine, tier: rankedTier(next).name, rank: store.rankOf(rec.id) });
+    }
+    store.changed();
+  }
   private removeHuman(id: string): void {
     this.sim.removePlayer(id);
     this.sim.rebalanceBots();
@@ -411,6 +523,28 @@ export class ArenaRoom extends Room<ArenaState> {
 /** 2v2 ranked: four seats, team battle, rotating maps. */
 export class RankedRoom extends ArenaRoom {
   protected readonly isRanked: boolean = true;
+}
+
+/** Ranked 1v1: two seats, deathmatch with a 2 minute timer. */
+export class Ranked1v1Room extends ArenaRoom {
+  protected readonly rankedMode: RankedMode = '1v1';
+}
+/** Ranked 2v2: four seats, team deathmatch. */
+export class Ranked2v2Room extends ArenaRoom {
+  protected readonly rankedMode: RankedMode = '2v2';
+}
+/** Guild war: 5 against 5, one guild per team. Bots fill empty seats. */
+export class GuildWarRoom extends ArenaRoom {
+  protected readonly rankedMode: RankedMode = 'war';
+  onAuth(client: Client, options: JoinOptions | undefined, context?: AuthContext): boolean {
+    const reg = validToken(options?.token) ? this.store?.byToken(options.token) : undefined;
+    if (!reg || !reg.guild) throw new ServerError(403, 'Join a guild first');
+    if (!this.warGuilds.includes(reg.guild)) {
+      if (this.warGuilds.length >= 2) throw new ServerError(409, 'This war is full');
+      this.warGuilds.push(reg.guild);
+    }
+    return super.onAuth(client, options, context);
+  }
 }
 
 function colorHex(id: number, fallback: number): number {
