@@ -128,6 +128,31 @@ export function randomNick(rng: Rng = Math.random): string {
   return `${a}${b}${Math.floor(rng() * 100)}`;
 }
 
+const NAME_A = ['Kai', 'Ryo', 'Vex', 'Nyx', 'Zane', 'Mira', 'Juno', 'Rex', 'Luna', 'Taro', 'Ivy', 'Axel', 'Sora', 'Kiro', 'Nova', 'Raze', 'Echo', 'Yuki', 'Drax', 'Lyra'];
+const NAME_B = ['storm', 'blade', 'fang', 'shade', 'ryu', 'fox', 'strike', 'wolf', 'byte', 'flame', 'frost', 'hawk', 'nite', 'claw', 'volt'];
+/** A name that looks like a real player's (used for ranked fill opponents). */
+export function playerLikeName(rng: Rng = Math.random): string {
+  const a = NAME_A[Math.floor(rng() * NAME_A.length)];
+  const b = NAME_B[Math.floor(rng() * NAME_B.length)];
+  const style = Math.floor(rng() * 4);
+  const n = Math.floor(rng() * 999);
+  if (style === 0) return `${a}${b[0].toUpperCase()}${b.slice(1)}`;
+  if (style === 1) return `${a.toLowerCase()}_${b}${n % 100}`;
+  if (style === 2) return `${a}${n}`;
+  return `x${a}${b[0].toUpperCase()}${b.slice(1)}x`.slice(0, 16);
+}
+/** Names nobody may register. */
+const RESERVED = ['majen', 'admin', 'moderator', 'crazygames', 'system', 'bot', 'champion', 'orbarena'];
+/** Rules for a unique account name: 3 to 16 letters, digits, _ or -, not offensive, not reserved. */
+export function validName(raw: unknown): { ok: boolean; name: string; reason?: string } {
+  const name = typeof raw === 'string' ? raw.trim() : '';
+  if (name.length < 3 || name.length > 16) return { ok: false, name, reason: 'Use 3 to 16 characters' };
+  if (!/^[A-Za-z0-9_-]+$/.test(name)) return { ok: false, name, reason: 'Only letters, digits, _ and -' };
+  if (containsProfanity(name)) return { ok: false, name, reason: 'Please pick another name' };
+  if (RESERVED.includes(name.toLowerCase())) return { ok: false, name, reason: 'That name is reserved' };
+  return { ok: true, name };
+}
+
 export function containsProfanity(s: string): boolean {
   const flat = s.toLowerCase().replace(/[^a-z]/g, '');
   return BAD_WORDS.some((w) => flat.includes(w));
@@ -156,6 +181,8 @@ export interface PlayerInput {
   seq: number;
   /** Bits 0..4 = skill slots 1..5 (pressed since the last message). */
   skill: number;
+  /** Duel moves pressed since the last message: bit 0 = kick, bit 1 = weapon strike. */
+  moves?: number;
 }
 
 /** Validates untrusted input. Returns null when unusable. */
@@ -173,6 +200,7 @@ export function sanitizeInput(raw: unknown): PlayerInput | null {
     shooting: shooting === true,
     seq,
     skill: typeof r.skill === 'number' && Number.isInteger(r.skill) ? r.skill & 31 : 0,
+    moves: typeof r.moves === 'number' && Number.isInteger(r.moves) ? r.moves & 3 : 0,
   };
 }
 
@@ -184,4 +212,5 @@ export interface InputMessage {
   shooting: boolean;
   seq: number;
   skill?: number;
+  moves?: number;
 }

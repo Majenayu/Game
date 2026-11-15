@@ -8,13 +8,14 @@ function seeded(seed = 1) {
     return s / 4294967296;
   };
 }
-const input = (o: Partial<{ moveX: number; moveY: number; shooting: boolean; skill: number }> = {}) => ({
+const input = (o: Partial<{ moveX: number; moveY: number; shooting: boolean; skill: number; moves: number }> = {}) => ({
   moveX: 0,
   moveY: 0,
   aim: 0,
   shooting: false,
   seq: 1,
   skill: 0,
+  moves: 0,
   ...o,
 });
 const run = (d: Duel, sec: number) => {
@@ -65,6 +66,47 @@ describe('ranked duel', () => {
     d.input('a', input({ shooting: true }));
     run(d, 0.4);
     expect(b.maxHp - b.hp).toBeLessThan(open);
+  });
+  it('has kicks, a flying kick, a low sweep that knocks down, and a weapon strike with a cooldown', () => {
+    const fresh = (weapon = 0) => {
+      const d = new Duel(seeded());
+      const a = d.add('a', { name: 'A', loadout: { weapon } })!;
+      const b = d.add('b', { name: 'B' })!;
+      d.confirm('a');
+      d.confirm('b');
+      run(d, 3.1);
+      a.x = 700;
+      b.x = 800;
+      return { d, a, b };
+    };
+    const k = fresh();
+    k.d.input('a', input({ moves: 1 }));
+    run(k.d, 0.5);
+    expect(k.b.hp).toBeLessThan(k.b.maxHp);
+    const s = fresh();
+    s.d.input('a', input({ moves: 1, moveY: 1 }));
+    run(s.d, 0.25);
+    expect(s.b.act).toBe('down');
+    const w = fresh(4);
+    w.d.input('a', input({ moves: 2 }));
+    run(w.d, 0.7);
+    const afterOne = w.b.hp;
+    expect(afterOne).toBeLessThan(w.b.maxHp);
+    w.d.input('a', input({ moves: 2 }));
+    run(w.d, 0.2);
+    expect(w.a.act).not.toBe('attack');
+    const j = fresh();
+    j.d.input('a', input({ moveY: -1 }));
+    run(j.d, 0.1);
+    j.d.input('a', input({ moves: 1 }));
+    run(j.d, 0.5);
+    expect(j.b.hp).toBeLessThan(j.b.maxHp);
+  });
+  it('fill opponents get names that look like real players', () => {
+    const d = new Duel(seeded(3));
+    const n = d.randomName();
+    expect(n.length).toBeGreaterThan(2);
+    expect(n.toLowerCase()).not.toContain('bot');
   });
   it('plays best of three until a winner, with a bot that fights back', () => {
     const d = new Duel(seeded(9), 0.7);

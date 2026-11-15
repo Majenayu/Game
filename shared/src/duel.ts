@@ -1,6 +1,7 @@
 /**
  * Ranked 1v1 duel engine: a side-view fighting game ("shadow fight" style) used only for ranked matches.
- * Two fighters on a flat stage with gravity. Walk, jump, block, punch and kick combos, plus five skills.
+ * Two fighters on a flat stage with gravity. Walk, jump, block, a three-hit punch combo, kicks (standing,
+ * flying and a low sweep), a strike with your weapon, plus five skills that use their real power.
  * Some skill kinds do not fit a side-view duel and are not allowed here (see DUEL_KINDS).
  * Best of three rounds. Deterministic given the rng, so the server and offline practice run the same code.
  */
@@ -8,9 +9,9 @@ import { HP_SCALE } from './constants';
 import { CHARACTERS, WEAPONS, sanitizeLoadout } from './content';
 import { MP_COST_SCALE, MP_REGEN, MAX_MP, dmgFromPower, neutralInstance, slotFromInstance, type SlotState } from './battle';
 import { getSkill, rankOf, randomSkillOfRank } from './skills/generate';
-import type { Kind, Rank } from './skills/catalog';
+import { RANKS, type Kind, type Rank } from './skills/catalog';
 import type { SkillInstance } from './skills/instances';
-import type { PlayerInput, Rng } from './util';
+import { playerLikeName, type PlayerInput, type Rng } from './util';
 
 export const DUEL_W = 1600;
 export const DUEL_H = 900;
@@ -31,14 +32,55 @@ const WALK = 330;
 const HALF_W = 26;
 /** Hitbox height; matches the drawn fighter (drawn at 1.35x scale). */
 const HEIGHT = 210;
-/** Light attack chain: jab, jab, kick. */
-const COMBO = [
-  { wind: 0.08, active: 0.1, recover: 0.16, range: 95, dmg: 0.35, push: 60, name: 'jab' },
-  { wind: 0.08, active: 0.1, recover: 0.18, range: 100, dmg: 0.4, push: 80, name: 'cross' },
-  { wind: 0.14, active: 0.12, recover: 0.3, range: 125, dmg: 0.7, push: 320, name: 'kick' },
+const WEAPON_CD = 1.1;
+
+export interface Move {
+  name: string;
+  wind: number;
+  active: number;
+  recover: number;
+  range: number;
+  /** Damage in hearts per hit. */
+  dmg: number;
+  push: number;
+  hits: number;
+  /** Knocks the target down. */
+  knock?: boolean;
+  /** Ignores blocking. */
+  unblockable?: boolean;
+}
+const M = (name: string, wind: number, active: number, recover: number, range: number, dmg: number, push: number, extra: Partial<Move> = {}): Move => ({
+  name,
+  wind,
+  active,
+  recover,
+  range,
+  dmg,
+  push,
+  hits: 1,
+  ...extra,
+});
+/** Punch button: jab, cross, uppercut. */
+export const PUNCHES: Move[] = [
+  M('jab', 0.07, 0.09, 0.14, 95, 0.3, 50),
+  M('cross', 0.08, 0.1, 0.17, 100, 0.38, 80),
+  M('uppercut', 0.12, 0.12, 0.3, 105, 0.6, 260, { knock: true }),
+];
+export const KICK = M('kick', 0.11, 0.12, 0.26, 135, 0.55, 240);
+export const FLYING_KICK = M('flying kick', 0.06, 0.2, 0.2, 150, 0.75, 360);
+export const SWEEP = M('sweep', 0.1, 0.14, 0.3, 140, 0.45, 60, { knock: true });
+/** One strike per main weapon (index = weapon id). */
+export const WEAPON_MOVES: Move[] = [
+  M('blade slash', 0.12, 0.14, 0.26, 165, 0.9, 260),
+  M('scatter blast', 0.14, 0.1, 0.32, 190, 1.0, 460),
+  M('rail thrust', 0.24, 0.1, 0.3, 245, 1.2, 300),
+  M('buzz flurry', 0.06, 0.3, 0.2, 125, 0.3, 40, { hits: 3 }),
+  M('mortar slam', 0.34, 0.14, 0.36, 160, 1.4, 420, { knock: true, unblockable: true }),
+  M('twin strike', 0.08, 0.2, 0.22, 135, 0.5, 120, { hits: 2 }),
 ];
 
 export type DuelPhase = 'lobby' | 'countdown' | 'fight' | 'roundEnd' | 'matchEnd';
+export type DuelAct = 'idle' | 'walk' | 'jump' | 'block' | 'attack' | 'cast' | 'hurt' | 'down' | 'ko' | 'dash';
 export interface Fighter {
   id: string;
   name: string;
@@ -56,29 +98,33 @@ export interface Fighter {
   maxHp: number;
   mp: number;
   slots: SlotState[];
-  /** Current action. */
-  act: 'idle' | 'walk' | 'jump' | 'block' | 'attack' | 'cast' | 'hurt' | 'ko' | 'dash';
+  act: DuelAct;
   actT: number;
   actEnd: number;
+  move: Move | null;
   combo: number;
   comboUntil: number;
-  hitDone: boolean;
+  hitsDone: number;
+  weaponCdUntil: number;
   invulnUntil: number;
   buffUntil: number;
   stunUntil: number;
   wins: number;
   ready: boolean;
-  // input
+  /** Last skill cast (for the cast animation). */
+  lastSkill: number;
   moveX: number;
   moveY: number;
   attack: boolean;
   attackHeld: boolean;
   pendingSkill: number;
+  pendingMoves: number;
   seq: number;
 }
 export interface DuelShot {
   id: number;
   owner: string;
+  skill: number;
   x: number;
   y: number;
   vx: number;
@@ -89,8 +135,9 @@ export interface DuelShot {
 }
 export type DuelEvent =
   | { t: 'hit'; id: string; by: string; x: number; y: number; dmg: number; blocked: boolean; move: string }
-  | { t: 'skill'; id: string; skill: number; kind: string; x: number; y: number }
-  | { t: 'beam'; id: string; x: number; y: number; dir: number; len: number }
+  | { t: 'move'; id: string; move: string; x: number; y: number; dir: number }
+  | { t: 'skill'; id: string; skill: number; kind: string; x: number; y: number; dir: number; power: number }
+  | { t: 'beam'; id: string; skill: number; x: number; y: number; dir: number; len: number }
   | { t: 'ko'; id: string; by: string }
   | { t: 'round'; round: number }
   | { t: 'roundEnd'; winner: string; round: number }
@@ -116,10 +163,10 @@ export class Duel {
   winner = '';
   private events: DuelEvent[] = [];
   private nextId = 1;
-  private bot = { nextThink: 0, wantBlock: false, nextSkill: 1 };
+  private bot = { nextThink: 0, nextSkill: 1 };
   constructor(
     private rng: Rng = Math.random,
-    /** 0 (clumsy) to 1 (sharp) for the practice / fill bot. */
+    /** 0 (clumsy) to 1 (sharp) for the fill bot. */
     private botSkill = 0.5,
   ) {}
 
@@ -129,26 +176,31 @@ export class Duel {
     return e;
   }
 
+  /** A random name that looks like a real player (ranked fill opponents). */
+  randomName(): string {
+    return playerLikeName(this.rng);
+  }
+
   add(id: string, o: DuelOpts): Fighter | null {
     if (this.fighters.length >= 2) return null;
     const l = sanitizeLoadout(o.loadout ?? {});
     const ch = CHARACTERS[l.char];
     const level = Math.max(1, Math.min(50, Math.floor(o.level ?? 1)));
     const maxHp = Math.round(ch.hp * HP_SCALE * 1.5 * (1 + 0.02 * (level - 1)));
-    let ids = (o.instances?.length ? o.instances.map((i) => i.skillId) : l.skillIds).filter(duelUsable);
-    if (o.bot || !ids.length) ids = duelKit(this.rng, o.bot ? this.botSkill : 0.3);
-    const slots = o.instances?.length
+    let slots: SlotState[] = o.instances?.length
       ? o.instances.filter((i) => duelUsable(i.skillId)).slice(0, 5).map(slotFromInstance)
-      : ids.slice(0, 5).map((id) => slotFromInstance(neutralInstance(id)));
+      : l.skillIds.filter(duelUsable).slice(0, 5).map((id) => slotFromInstance(neutralInstance(id)));
+    if (o.bot || !slots.length) slots = duelKit(this.rng, o.bot ? this.botSkill : 0.3).map((id) => slotFromInstance(neutralInstance(id)));
     const side = this.fighters.length;
+    const bot = !!o.bot;
     const f: Fighter = {
       id,
       name: o.name.slice(0, 16) || 'Fighter',
-      bot: !!o.bot,
+      bot,
       color: o.color ?? (side === 0 ? 0x4dd2ff : 0xff5e8a),
       charId: l.char,
-      weapon: l.weapon,
-      acc: l.acc,
+      weapon: bot ? Math.floor(this.rng() * WEAPONS.length) : l.weapon,
+      acc: bot ? Math.floor(this.rng() * 9) : l.acc,
       x: side === 0 ? 450 : DUEL_W - 450,
       y: DUEL_FLOOR,
       vx: 0,
@@ -157,23 +209,27 @@ export class Duel {
       hp: maxHp,
       maxHp,
       mp: MAX_MP,
-      slots: slots.length ? slots : duelKit(this.rng, 0.3).map((id) => slotFromInstance(neutralInstance(id))),
+      slots,
       act: 'idle',
       actT: 0,
       actEnd: 0,
+      move: null,
       combo: 0,
       comboUntil: 0,
-      hitDone: false,
+      hitsDone: 0,
+      weaponCdUntil: 0,
       invulnUntil: 0,
       buffUntil: 0,
       stunUntil: 0,
       wins: 0,
-      ready: !!o.bot,
+      ready: bot,
+      lastSkill: -1,
       moveX: 0,
       moveY: 0,
       attack: false,
       attackHeld: false,
       pendingSkill: 0,
+      pendingMoves: 0,
       seq: 0,
     };
     this.fighters.push(f);
@@ -207,6 +263,7 @@ export class Duel {
     f.attack = inp.shooting;
     f.seq = inp.seq;
     f.pendingSkill |= inp.skill & 31;
+    f.pendingMoves |= (inp.moves ?? 0) & 3;
   }
 
   private startCountdown(): void {
@@ -221,8 +278,10 @@ export class Duel {
       f.hp = f.maxHp;
       f.mp = MAX_MP;
       f.act = 'idle';
+      f.move = null;
       f.combo = 0;
-      f.invulnUntil = f.buffUntil = f.stunUntil = 0;
+      f.invulnUntil = f.buffUntil = f.stunUntil = f.weaponCdUntil = 0;
+      f.pendingMoves = f.pendingSkill = 0;
       for (const s of f.slots) s.cdUntil = 0;
     });
     this.shots = [];
@@ -286,37 +345,57 @@ export class Duel {
   }
 
   private dmgMul(f: Fighter): number {
-    const w = WEAPONS[f.weapon] ?? WEAPONS[0];
-    return (this.time < f.buffUntil ? 1.5 : 1) * (0.85 + 0.15 * w.dmg);
+    return this.time < f.buffUntil ? 1.5 : 1;
   }
 
-  private hurt(v: Fighter, by: Fighter, hearts: number, push: number, move: string): void {
-    if (v.hp <= 0 || this.time < v.invulnUntil) return;
-    const blocked = v.act === 'block' && Math.sign(by.x - v.x) === v.facing;
+  private hurt(v: Fighter, by: Fighter, hearts: number, push: number, move: string, knock = false, unblockable = false): void {
+    if (v.hp <= 0 || this.time < v.invulnUntil || v.act === 'down') return;
+    const blocked = !unblockable && v.act === 'block' && Math.sign(by.x - v.x) === v.facing;
     let dmg = Math.round(hearts * HP_SCALE * this.dmgMul(by));
     if (blocked) dmg = Math.round(dmg * 0.2);
     v.hp = Math.max(0, v.hp - Math.max(1, dmg));
     const dir = Math.sign(v.x - by.x) || by.facing;
     v.vx = dir * (blocked ? push * 0.3 : push);
     if (!blocked) {
-      v.act = 'hurt';
-      v.actT = 0;
-      v.actEnd = 0.22;
-      if (push > 200) v.vy = -380;
+      v.move = null;
+      if (knock) {
+        v.act = 'down';
+        v.actT = 0;
+        v.actEnd = 0.75;
+        v.vy = -320;
+      } else {
+        v.act = 'hurt';
+        v.actT = 0;
+        v.actEnd = 0.22;
+        if (push > 250) v.vy = -340;
+      }
     }
     this.events.push({ t: 'hit', id: v.id, by: by.id, x: v.x, y: v.y - HEIGHT * 0.6, dmg, blocked, move });
+  }
+
+  private startMove(f: Fighter, m: Move): void {
+    f.act = 'attack';
+    f.move = m;
+    f.actT = 0;
+    f.actEnd = m.wind + m.active + m.recover;
+    f.hitsDone = 0;
+    this.events.push({ t: 'move', id: f.id, move: m.name, x: f.x, y: f.y - HEIGHT * 0.55, dir: f.facing });
   }
 
   private stepFighter(f: Fighter, o: Fighter, dt: number): void {
     f.mp = Math.min(MAX_MP, f.mp + MP_REGEN * dt);
     const ground = f.y >= DUEL_FLOOR - 0.5;
-    const busy = f.act === 'attack' || f.act === 'cast' || f.act === 'hurt' || f.act === 'dash';
-    if (f.act !== 'attack' && f.act !== 'dash') f.facing = o.x >= f.x ? 1 : -1;
+    if (f.act !== 'attack' && f.act !== 'dash' && f.act !== 'down') f.facing = o.x >= f.x ? 1 : -1;
     f.actT += dt;
-    if (busy && f.actT >= f.actEnd) f.act = 'idle';
+    const busy = f.act === 'attack' || f.act === 'cast' || f.act === 'hurt' || f.act === 'dash' || f.act === 'down';
+    if (busy && f.actT >= f.actEnd) {
+      f.act = 'idle';
+      f.move = null;
+    }
     const stunned = this.time < f.stunUntil;
+    const free = !stunned && (f.act === 'idle' || f.act === 'walk' || f.act === 'jump' || f.act === 'block');
     // skills
-    if (f.pendingSkill && !busy && !stunned) {
+    if (f.pendingSkill && free) {
       for (let s = 0; s < f.slots.length; s++)
         if (f.pendingSkill & (1 << s)) {
           this.cast(f, o, s);
@@ -324,28 +403,35 @@ export class Duel {
         }
     }
     f.pendingSkill = 0;
-    // attack chain
+    // moves: weapon, kick, punch combo
     const pressed = f.attack && !f.attackHeld;
     f.attackHeld = f.attack;
-    if (pressed && !stunned && (f.act === 'idle' || f.act === 'walk' || f.act === 'jump' || f.act === 'block')) {
-      f.combo = this.time < f.comboUntil ? (f.combo + 1) % COMBO.length : 0;
-      const m = COMBO[f.combo];
-      f.act = 'attack';
-      f.actT = 0;
-      f.actEnd = m.wind + m.active + m.recover;
-      f.hitDone = false;
-      f.comboUntil = this.time + f.actEnd + 0.35;
+    if (free && f.act !== 'cast') {
+      if (f.pendingMoves & 2 && this.time >= f.weaponCdUntil) {
+        f.weaponCdUntil = this.time + WEAPON_CD;
+        this.startMove(f, WEAPON_MOVES[f.weapon] ?? WEAPON_MOVES[0]);
+      } else if (f.pendingMoves & 1) {
+        this.startMove(f, !ground ? FLYING_KICK : f.moveY > 0.5 ? SWEEP : KICK);
+      } else if (pressed) {
+        f.combo = this.time < f.comboUntil ? (f.combo + 1) % PUNCHES.length : 0;
+        this.startMove(f, PUNCHES[f.combo]);
+        f.comboUntil = this.time + f.actEnd + 0.35;
+      }
     }
-    if (f.act === 'attack' && !f.hitDone) {
-      const m = COMBO[f.combo];
-      if (f.actT >= m.wind && f.actT <= m.wind + m.active) {
-        const w = WEAPONS[f.weapon] ?? WEAPONS[0];
-        const reach = m.range * (0.9 + 0.1 * w.range);
-        if (Math.abs(o.x - f.x) <= reach + HALF_W && Math.sign(o.x - f.x) === f.facing && Math.abs(o.y - f.y) < HEIGHT) {
-          f.hitDone = true;
-          this.hurt(o, f, m.dmg, m.push, m.name);
+    f.pendingMoves = 0;
+    if (f.act === 'attack' && f.move) {
+      const m = f.move;
+      if (f.actT >= m.wind && f.actT <= m.wind + m.active && f.hitsDone < m.hits) {
+        const slice = m.active / m.hits;
+        const due = Math.min(m.hits, Math.floor((f.actT - m.wind) / slice) + 1);
+        if (due > f.hitsDone) {
+          f.hitsDone = due;
+          const reach = m.range + HALF_W;
+          if (Math.abs(o.x - f.x) <= reach && Math.sign(o.x - f.x || f.facing) === f.facing && Math.abs(o.y - f.y) < HEIGHT)
+            this.hurt(o, f, m.dmg, m.push, m.name, m.knock, m.unblockable);
         }
       }
+      if (m === FLYING_KICK && f.actT < m.wind + m.active) f.vx = f.facing * 520;
     }
     // movement
     const canMove = !stunned && (f.act === 'idle' || f.act === 'walk' || f.act === 'jump' || f.act === 'block');
@@ -363,8 +449,8 @@ export class Duel {
           f.act = 'jump';
         } else if (ground) f.act = Math.abs(f.moveX) > 0.1 ? 'walk' : 'idle';
       }
-    } else if (f.act === 'hurt' || f.act === 'ko') f.vx *= Math.pow(0.02, dt);
-    else if (f.act !== 'dash') f.vx *= Math.pow(0.001, dt);
+    } else if (f.act === 'hurt' || f.act === 'ko' || f.act === 'down') f.vx *= Math.pow(0.02, dt);
+    else if (f.act !== 'dash' && f.move !== FLYING_KICK) f.vx *= Math.pow(0.001, dt);
     f.vy += GRAVITY * dt;
     f.x = Math.max(HALF_W + 10, Math.min(DUEL_W - HALF_W - 10, f.x + f.vx * dt));
     f.y += f.vy * dt;
@@ -393,13 +479,15 @@ export class Duel {
     if (f.mp < cost) return;
     f.mp -= cost;
     s.cdUntil = this.time + s.stats.cooldown;
-    const hearts = dmgFromPower(s.stats.power) * 1.2;
-    const color = getSkill(s.skillId).element >= 0 ? 0xffffff : 0xff4da6;
-    this.events.push({ t: 'skill', id: f.id, skill: s.skillId, kind: s.kind, x: f.x, y: f.y - HEIGHT * 0.6 });
+    // Higher ranks and levels hit harder: damage follows the skill's real power.
+    const rankBoost = 1 + RANKS.indexOf(s.rank) * 0.08;
+    const hearts = dmgFromPower(s.stats.power) * 1.2 * rankBoost;
+    const dir = f.facing;
+    f.lastSkill = s.skillId;
+    this.events.push({ t: 'skill', id: f.id, skill: s.skillId, kind: s.kind, x: f.x, y: f.y - HEIGHT * 0.6, dir, power: s.stats.power });
     f.act = 'cast';
     f.actT = 0;
-    f.actEnd = 0.25;
-    const dir = f.facing;
+    f.actEnd = 0.28;
     switch (s.kind) {
       case 'projectile':
       case 'volley': {
@@ -408,33 +496,34 @@ export class Duel {
           this.shots.push({
             id: this.nextId++,
             owner: f.id,
+            skill: s.skillId,
             x: f.x + dir * 40,
             y: f.y - HEIGHT * (0.62 + 0.1 * (i - (n - 1) / 2)),
             vx: dir * (900 + i * 60),
-            r: 14,
+            r: 12 + RANKS.indexOf(s.rank) * 2,
             dmg: s.kind === 'volley' ? hearts * 0.6 : hearts,
             ttl: Math.min(2, s.stats.range / 700 + 0.6),
-            color,
+            color: 0xffffff,
           });
         break;
       }
       case 'beam': {
         const len = Math.max(400, s.stats.range);
-        this.events.push({ t: 'beam', id: f.id, x: f.x, y: f.y - HEIGHT * 0.55, dir, len });
+        this.events.push({ t: 'beam', id: f.id, skill: s.skillId, x: f.x, y: f.y - HEIGHT * 0.55, dir, len });
         if (Math.sign(o.x - f.x) === dir && Math.abs(o.x - f.x) <= len && Math.abs(o.y - f.y) < HEIGHT) this.hurt(o, f, hearts, 120, 'beam');
         break;
       }
       case 'cleave':
-        if (Math.abs(o.x - f.x) <= 170 && Math.sign(o.x - f.x) === dir) this.hurt(o, f, hearts * 1.3, 420, 'cleave');
+        if (Math.abs(o.x - f.x) <= 190 && Math.sign(o.x - f.x) === dir) this.hurt(o, f, hearts * 1.3, 420, 'cleave', true);
         break;
       case 'nova':
-        if (Math.hypot(o.x - f.x, o.y - f.y) <= 230) this.hurt(o, f, hearts, 360, 'nova');
+        if (Math.hypot(o.x - f.x, o.y - f.y) <= 260) this.hurt(o, f, hearts, 360, 'nova');
         break;
       case 'shield':
         f.invulnUntil = this.time + Math.max(1.2, Math.min(3, s.stats.duration));
         break;
       case 'heal':
-        f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.15));
+        f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * (0.12 + RANKS.indexOf(s.rank) * 0.015)));
         break;
       case 'dash':
         f.act = 'dash';
@@ -462,7 +551,7 @@ export class Duel {
       if (sh.ttl <= 0 || sh.x < 0 || sh.x > DUEL_W) continue;
       const owner = this.get(sh.owner);
       const o = this.fighters.find((f) => f.id !== sh.owner);
-      if (owner && o && Math.abs(o.x - sh.x) < HALF_W + sh.r && sh.y > o.y - HEIGHT && sh.y < o.y + 4) {
+      if (owner && o && o.act !== 'down' && Math.abs(o.x - sh.x) < HALF_W + sh.r && sh.y > o.y - HEIGHT && sh.y < o.y + 4) {
         this.hurt(o, owner, sh.dmg, 160, 'shot');
         continue;
       }
@@ -471,7 +560,7 @@ export class Duel {
     this.shots = keep;
   }
 
-  /** Simple fighting bot: closes in, chains attacks, blocks some incoming hits, uses skills. */
+  /** Fighting bot: closes in, chains punches and kicks, uses its weapon, blocks some hits, casts skills. */
   private think(f: Fighter, o: Fighter): void {
     const br = this.bot;
     const sk = this.botSkill;
@@ -479,11 +568,17 @@ export class Duel {
     br.nextThink = this.time + 0.12 + (1 - sk) * 0.18;
     const d = o.x - f.x;
     const dist = Math.abs(d);
-    const threatened = o.act === 'attack' && dist < 160;
+    const threatened = o.act === 'attack' && dist < 180;
     f.moveY = threatened && this.rng() < 0.25 + sk * 0.4 ? 1 : 0;
-    f.moveX = dist > 110 ? Math.sign(d) : dist < 60 ? -Math.sign(d) * 0.6 : 0;
+    f.moveX = dist > 120 ? Math.sign(d) : dist < 60 ? -Math.sign(d) * 0.6 : 0;
     if (this.rng() < 0.04) f.moveY = -1;
-    f.attack = dist < 130 && f.moveY <= 0 && this.rng() < 0.55 + sk * 0.35;
+    const r = this.rng();
+    f.attack = false;
+    if (dist < 130 && f.moveY <= 0) {
+      if (r < 0.15) f.pendingMoves |= 1;
+      else if (r < 0.25) f.pendingMoves |= 2;
+      else f.attack = r < 0.55 + sk * 0.35;
+    } else if (dist < 240 && r < 0.12) f.pendingMoves |= 2;
     if (this.time >= br.nextSkill) {
       br.nextSkill = this.time + 2.2 + (1 - sk) * 2.5 + this.rng() * 1.5;
       const ready = f.slots.map((s, i) => ({ s, i })).filter(({ s }) => this.time >= s.cdUntil && f.mp >= s.stats.mp * MP_COST_SCALE);
@@ -527,6 +622,8 @@ export interface FighterView {
   mp: number;
   act: string;
   actT: number;
+  /** Name of the move in progress ('' when none). */
+  move: string;
   combo: number;
   wins: number;
   ready: boolean;
@@ -534,6 +631,9 @@ export interface FighterView {
   buff: boolean;
   skills: string;
   cds: string;
+  /** Seconds until the weapon strike is ready. */
+  wcd: number;
+  lastSkill: number;
 }
 export function fighterView(f: Fighter, d: Duel): FighterView {
   return {
@@ -552,6 +652,7 @@ export function fighterView(f: Fighter, d: Duel): FighterView {
     mp: Math.round(f.mp),
     act: f.act,
     actT: f.actT,
+    move: f.move?.name ?? '',
     combo: f.combo,
     wins: f.wins,
     ready: f.ready,
@@ -559,5 +660,7 @@ export function fighterView(f: Fighter, d: Duel): FighterView {
     buff: d.time < f.buffUntil,
     skills: f.slots.map((s) => s.skillId).join(','),
     cds: f.slots.map((s) => `${Math.max(0, s.cdUntil - d.time).toFixed(1)}:${s.stats.cooldown.toFixed(1)}`).join(','),
+    wcd: Math.max(0, Math.round((f.weaponCdUntil - d.time) * 10) / 10),
+    lastSkill: f.lastSkill,
   };
 }

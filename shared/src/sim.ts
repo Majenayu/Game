@@ -869,6 +869,10 @@ export class Sim {
         killer.hp = Math.min(killer.maxHp, killer.hp + Math.max(1, Math.round(vamp.power)) * HP_SCALE);
     }
     this.events.push({ t: 'kill', id: victim.id, by, x: victim.x, y: victim.y });
+    // Pick the respawn spot now: the player sees it (marker) during the respawn countdown; enemies do not.
+    const s = this.pickSpawn(victim.id, true, MODES[this.mode].team ? victim.team : -1);
+    victim.x = s.x;
+    victim.y = s.y;
   }
 
   /** The active domain expansion, if any. */
@@ -943,9 +947,7 @@ export class Sim {
   }
 
   private respawn(p: SimPlayer): void {
-    const s = this.pickSpawn(p.id, true, MODES[this.mode].team ? p.team : -1);
-    p.x = s.x;
-    p.y = s.y;
+    // The spot was chosen at death (see hurt) so the player could see it while waiting.
     p.hp = p.maxHp;
     p.alive = true;
     p.invulnUntil = this.time + INVULN_TIME;
