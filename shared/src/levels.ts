@@ -1,4 +1,5 @@
 import type { ModeId } from './content';
+import { BOSS_FIGHTS, bossKitIds } from './bosses';
 
 export type ObjectiveType = 'kills' | 'coins' | 'hold' | 'survive' | 'boss';
 
@@ -26,7 +27,7 @@ export interface LevelDef {
   reward: number;
 }
 
-export const LEVELS: LevelDef[] = [
+const BASE_LEVELS: LevelDef[] = [
   {
     id: 1,
     name: 'First Blood',
@@ -174,12 +175,66 @@ export const LEVELS: LevelDef[] = [
   },
 ];
 
+const CAMPAIGN_MAPS = [
+  { id: 'neon', name: 'Neon Gate' },
+  { id: 'crossfire', name: 'Crossfire Valley' },
+  { id: 'pillars', name: 'Pillar Expanse' },
+  { id: 'fortress', name: 'Iron Fortress' },
+  { id: 'lava', name: 'Ember Crater' },
+  { id: 'maze', name: 'Moon Maze' },
+  { id: 'crypt', name: 'Frost Crypt' },
+  { id: 'glacier', name: 'Glacier Crown' },
+] as const;
+
+/** Basic campaign progression: ten single-enemy HP encounters, then one map boss. */
+export const LEVELS: LevelDef[] = CAMPAIGN_MAPS.flatMap((map, mapIndex) => {
+  const first = mapIndex * 11 + 1;
+  const encounters = Array.from({ length: 10 }, (_, encounter) => {
+    const base = BASE_LEVELS[Math.min(BASE_LEVELS.length - 1, encounter + mapIndex)];
+    return {
+      id: first + encounter,
+      name: `${map.name} ${encounter + 1}`,
+      mode: 'dm' as const,
+      map: map.id,
+      bots: 1,
+      skill: Math.min(0.95, 0.15 + mapIndex * 0.09 + encounter * 0.035),
+      time: 3600,
+      obj: { type: 'kills' as const, n: 1 },
+      par: 3600,
+      reward: base.reward + mapIndex * 80 + encounter * 20,
+    };
+  });
+  const boss = BOSS_FIGHTS[mapIndex];
+  return [
+    ...encounters,
+    {
+      id: first + 10,
+      name: `${map.name}: ${boss.name}`,
+      mode: 'dm' as const,
+      map: map.id,
+      bots: 1,
+      skill: Math.min(0.98, 0.5 + mapIndex * 0.05),
+      time: 3600,
+      obj: { type: 'boss' as const, n: 1 },
+      par: 3600,
+      boss: true,
+      bossName: boss.name,
+      bossHp: boss.hp,
+      bossColor: boss.color,
+      bossKit: bossKitIds(boss),
+      bossDomain: boss.domain,
+      bossFinal: boss.final,
+      reward: 600 + mapIndex * 200,
+    },
+  ];
+});
+
 export const SURVIVE_MAX_DEATHS = 2;
 
 export function objectiveText(l: LevelDef): string {
   switch (l.obj.type) {
     case 'kills':
-      return `Defeat ${l.obj.n} orbs`;
+      return `Defeat ${l.obj.n === 1 ? 'one enemy' : `${l.obj.n} enemies`}`;
     case 'coins':
       return `Collect ${l.obj.n} coins`;
     case 'hold':

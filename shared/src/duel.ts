@@ -185,7 +185,7 @@ export class Duel {
     if (this.fighters.length >= 2) return null;
     const l = sanitizeLoadout(o.loadout ?? {});
     const ch = CHARACTERS[l.char];
-    const level = Math.max(1, Math.min(50, Math.floor(o.level ?? 1)));
+    const level = Math.max(1, Math.min(1000, Math.floor(o.level ?? 1)));
     const maxHp = Math.round(ch.hp * HP_SCALE * 1.5 * (1 + 0.02 * (level - 1)));
     let slots: SlotState[] = o.instances?.length
       ? o.instances.filter((i) => duelUsable(i.skillId)).slice(0, 5).map(slotFromInstance)

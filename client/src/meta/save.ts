@@ -36,6 +36,8 @@ export interface SaveData {
   spin: { last: string };
   /** Best stars per campaign level id. */
   campaign: Record<string, number>;
+  /** Claimed map-star reward milestones, keyed by map id and milestone bit. */
+  campaignBonuses: Record<string, number>;
   stats: { kills: number; wins: number; matches: number; deaths: number; coinsCollected: number };
   /** Discovered powerup ids. */
   dex: number[];
@@ -53,6 +55,8 @@ export interface SaveData {
   duelSkills: number[];
   /** The reigning champion as seen on this device, and the kit passed down from Majen. */
   champion: { name: string; isYou: boolean; kit: number[]; since: number; defences: number };
+  /** Summons owned by the player and their upgrade levels. */
+  summons: { owned: number[]; levels: Record<string, number> };
 }
 
 /** Bumped to start everyone fresh with the Skill World update. */
@@ -80,6 +84,7 @@ export function defaultSave(): SaveData {
     quests: { day: '', list: [], week: '', weekList: [] },
     spin: { last: '' },
     campaign: {},
+    campaignBonuses: {},
     stats: { kills: 0, wins: 0, matches: 0, deaths: 0, coinsCollected: 0 },
     dex: [],
     ranked: { rating: RANKED_START, best: RANKED_START, games: 0, wins: 0 },
@@ -89,6 +94,7 @@ export function defaultSave(): SaveData {
     profile: { cls: '', created: 0, registered: false, onboarded: false },
     duelSkills: [],
     champion: { name: 'Majen', isYou: false, kit: [], since: 0, defences: 0 },
+    summons: { owned: [], levels: {} },
   };
 }
 
@@ -179,6 +185,11 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
           ([, v]) => typeof v === 'number',
         ),
       ) as Record<string, number>,
+      campaignBonuses: Object.fromEntries(
+        Object.entries((j.campaignBonuses ?? {}) as Record<string, unknown>).filter(
+          ([, v]) => typeof v === 'number',
+        ),
+      ) as Record<string, number>,
       stats: {
         kills: num(j.stats?.kills, 0),
         wins: num(j.stats?.wins, 0),
@@ -217,6 +228,14 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
         kit: nums(j.champion?.kit, []).filter((n) => !!rankOf(n)).slice(0, 5),
         since: num(j.champion?.since, 0),
         defences: Math.max(0, Math.floor(num(j.champion?.defences, 0))),
+      },
+      summons: {
+        owned: Array.from(new Set(nums(j.summons?.owned, []))).filter((n) => n > 0 && n < 1000),
+        levels: Object.fromEntries(
+          Object.entries((j.summons?.levels ?? {}) as Record<string, unknown>)
+            .filter(([k, v]) => /^\d+$/.test(k) && typeof v === 'number')
+            .map(([k, v]) => [k, Math.max(1, Math.min(20, Math.floor(v as number)))]),
+        ),
       },
     };
   } catch {

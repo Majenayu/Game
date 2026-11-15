@@ -398,9 +398,10 @@ async function boot(): Promise<void> {
       {
         mode: level.mode,
         mapId: level.map,
-        seats: level.bots + 1,
-        botSkill: level.skill,
+        seats: 2,
+        noRespawn: true,
         autoRestart: false,
+        botSkill: level.skill,
         boss: level.boss === true,
         roundTime: level.time,
         bossName: level.bossName,
@@ -445,7 +446,8 @@ async function boot(): Promise<void> {
       ui.showOverlayHtml(
         `<h2 style="margin:0;color:${res.won ? '#ffc93c' : '#ff8a9a'}">${res.won ? 'Level complete!' : 'Level failed'}</h2>
          <div>${starHtml}</div>
-         ${reward ? `<div style="color:#ffc93c;margin-top:6px">+${reward.coins} coins &middot; +${reward.xp} XP</div>` : '<div class="sub">Try a different loadout or skills.</div>'}`,
+         ${res.won ? `<div class="sub">Hero HP remaining: ${Math.round(res.hpPercent)}% &middot; ${res.stars === 3 ? 'Perfect health clear!' : res.stars === 2 ? 'Strong clear!' : 'Cleared!'}</div>` : '<div class="sub">Your hero reached 0 HP.</div>'}
+         ${reward ? `<div style="color:#ffc93c;margin-top:6px">+${reward.coins} coins &middot; +${reward.xp} XP${reward.bonus ? ` &middot; Map reward: ${reward.bonus}` : ''}</div>` : '<div class="sub">Try a different loadout or skills.</div>'}`,
         buttons,
       );
       if (reward?.drop) ui.notify(`Skill drop: ${dropText(reward.drop)}`, '#b77dff', 4500);

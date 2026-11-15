@@ -91,6 +91,8 @@ export interface SimConfig {
   countdown?: number;
   /** Training ground: bots are harmless dummies, your mana refills fast and you cannot be knocked out. */
   training?: boolean;
+  /** Campaign encounters are single-life HP fights: defeated players never respawn. */
+  noRespawn?: boolean;
 }
 
 /** A domain expansion: fills the whole arena, boosts its owner and weakens everyone else. */
@@ -314,7 +316,7 @@ export interface PlayerOpts {
   weapon?: number;
   acc?: number;
   boss?: boolean;
-  /** Player level 1..50 (extra max HP). */
+  /** Player level 1..1000 (extra max HP). */
   level?: number;
 }
 
@@ -413,7 +415,7 @@ export class Sim {
       color =
         PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[this.players.size % PLAYER_COLORS.length];
     const boss = opts.boss === true;
-    const level = Math.max(1, Math.min(50, Math.floor(opts.level ?? 1)));
+    const level = Math.max(1, Math.min(1000, Math.floor(opts.level ?? 1)));
     const maxHp = boss
       ? Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) * HP_SCALE
       : Math.round(ch.hp * HP_SCALE * (1 + HP_PER_LEVEL * (level - 1)));
@@ -572,7 +574,7 @@ export class Sim {
   setLevel(id: string, level: number): void {
     const p = this.players.get(id);
     if (!p || p.bot) return;
-    p.level = Math.max(1, Math.min(50, Math.floor(Number(level) || 1)));
+    p.level = Math.max(1, Math.min(1000, Math.floor(Number(level) || 1)));
     p.maxHp = Math.round(CHARACTERS[p.charId].hp * HP_SCALE * (1 + HP_PER_LEVEL * (p.level - 1)));
     p.hp = p.maxHp;
   }
@@ -635,7 +637,7 @@ export class Sim {
     for (const p of this.players.values()) {
       if (p.bot) this.thinkBot(p);
       if (!p.alive) {
-        if (this.time >= p.respawnAt) this.respawn(p);
+        if (!this.cfg.noRespawn && this.time >= p.respawnAt) this.respawn(p);
         continue;
       }
       p.effects = p.effects.filter((e) => e.until > this.time);
@@ -858,7 +860,7 @@ export class Sim {
     victim.dotUntil = 0;
     victim.effects = [];
     victim.shieldHits = 0;
-    victim.respawnAt = this.time + RESPAWN_DELAY;
+    victim.respawnAt = this.cfg.noRespawn ? Number.POSITIVE_INFINITY : this.time + RESPAWN_DELAY;
     const killer = this.players.get(by);
     if (killer && killer.id !== victim.id) {
       killer.kills += 1;

@@ -1,7 +1,5 @@
 /** Data tables for everything unlockable or collectable. Pure data plus a few helpers. */
 import { usableInBattle } from './battle';
-import { RANK_INFO } from './skills/catalog';
-import { rankOf } from './skills/generate';
 
 export type ModeId = 'dm' | 'tdm' | 'coins' | 'hill';
 
@@ -451,7 +449,7 @@ export const WEAPONS: WeaponDef[] = [
   { id: 5, key: 'twin', name: 'Twin Pistols', desc: 'Two parallel shots, a bit slower.', price: 600, level: 5, fire: 1.35, speed: 1, range: 0.85, dmg: 1, pellets: 2, spread: 0.06, size: 0.85 },
 ];
 /** Accessories are looks only: hats and charms drawn on your orb. */
-export const ACCESSORIES: CosmeticDef[] = [
+const BASE_ACCESSORIES: CosmeticDef[] = [
   { id: 0, name: 'None', price: 0, level: 1 },
   { id: 1, name: 'Crown', price: 400, level: 3 },
   { id: 2, name: 'Horns', price: 250, level: 2 },
@@ -461,6 +459,25 @@ export const ACCESSORIES: CosmeticDef[] = [
   { id: 6, name: 'Cat Ears', price: 300, level: 2 },
   { id: 7, name: 'Visor', price: 450, level: 4 },
   { id: 8, name: 'Antenna', price: 200, level: 2 },
+];
+
+const ACCESSORY_SLOTS = ['Hat', 'Gloves', 'Armor', 'Pants', 'Shoes', 'Bag', 'Weapon', 'Vehicle'];
+const ACCESSORY_COLORS = ['Aqua', 'Rose', 'Lime', 'Gold', 'Violet', 'Amber', 'Snow', 'Crimson'];
+
+/** Large deterministic cosmetic catalog; only owned or market-selected entries are rendered at once. */
+export const ACCESSORIES: CosmeticDef[] = [
+  ...BASE_ACCESSORIES,
+  ...Array.from({ length: 10_000 - BASE_ACCESSORIES.length }, (_, i) => {
+    const id = i + BASE_ACCESSORIES.length;
+    const slot = ACCESSORY_SLOTS[i % ACCESSORY_SLOTS.length];
+    const color = ACCESSORY_COLORS[Math.floor(i / ACCESSORY_SLOTS.length) % ACCESSORY_COLORS.length];
+    return {
+      id,
+      name: `${color} ${slot} ${String(i + 1).padStart(4, '0')}`,
+      price: 150 + (i % 20) * 50,
+      level: 1 + (i % 40),
+    };
+  }),
 ];
 
 export interface Loadout {  char: string;
@@ -477,9 +494,6 @@ export interface Loadout {  char: string;
 
 export const DEFAULT_LOADOUT: Loadout = { char: 'nova', skillIds: [], color: 0, trail: 0, bfx: 0, weapon: 0, acc: 0 };
 
-/** Highest total rank budget a casual loadout may use. The server enforces it until accounts verify ownership. */
-export const CASUAL_BUDGET = 5200;
-
 /** Validates untrusted loadout data from a client. Falls back to defaults field by field. */
 export function sanitizeLoadout(raw: unknown): Loadout {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
@@ -488,14 +502,10 @@ export function sanitizeLoadout(raw: unknown): Loadout {
   const char = isCharacterId(r.char) ? r.char : DEFAULT_LOADOUT.char;
   const skillIds: number[] = [];
   if (Array.isArray(r.skillIds)) {
-    let cost = 0;
     for (const v of r.skillIds) {
       if (skillIds.length >= 5) break;
       if (typeof v !== 'number' || !Number.isInteger(v) || skillIds.includes(v) || !usableInBattle(v))
         continue;
-      const c = RANK_INFO[rankOf(v)!].budget;
-      if (cost + c > CASUAL_BUDGET) continue;
-      cost += c;
       skillIds.push(v);
     }
   }

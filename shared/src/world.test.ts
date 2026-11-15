@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BOSS_FIGHTS,
   BOSS_LEVELS,
+  LEVELS,
   EMOTES,
   Sim,
   eloUpdate,
@@ -33,6 +34,19 @@ describe('boss tower', () => {
         expect(usableInBattle(id)).toBe(true);
       }
     }
+  });
+
+  describe('HP campaign progression', () => {
+    it('creates eight maps with ten encounters followed by one boss', () => {
+      expect(LEVELS).toHaveLength(88);
+      for (let map = 0; map < 8; map++) {
+        const start = map * 11;
+        expect(LEVELS[start].bots).toBe(1);
+        expect(LEVELS[start + 9].boss).toBeFalsy();
+        expect(LEVELS[start + 10].boss).toBe(true);
+        expect(LEVELS[start + 10].map).toBe(LEVELS[start].map);
+      }
+    });
   });
   it('spawns the named boss with its HP, colour and kit', () => {
     const l = BOSS_LEVELS[8];

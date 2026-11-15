@@ -9,6 +9,7 @@ export * from './skills/catalog';
 export * from './skills/uniques';
 export * from './skills/generate';
 export * from './skills/instances';
+export * from './summons';
 export * from './battle';
 export * from './bosses';
 export * from './social';

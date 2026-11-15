@@ -2,7 +2,6 @@ import {
   BULLET_FX,
   CHARACTER_LIST,
   COLORS,
-  CASUAL_BUDGET,
   EFFECT_LIST,
   ELEMENTS,
   FUSION_MIN_LEVEL,
@@ -28,6 +27,7 @@ import {
   CHEST_ORDER,
   LOGIN_CALENDAR,
   SIGNATURES,
+  SUMMONS,
   classById,
   isWorldSkill,
   worldBonusOf,
@@ -40,11 +40,9 @@ import {
   uniqueIdOf,
   RANKED_TIERS,
   TOWER_UNLOCK_LEVEL,
-  budgetCost,
   neutralInstance,
   rankedTier,
   getSkill,
-  loadoutCost,
   masteryLevel,
   objectiveText,
   powerupFromId,
@@ -119,7 +117,8 @@ export type PageName =
   | 'training'
   | 'profile'
   | 'chests'
-  | 'guild';
+  | 'guild'
+  | 'summons';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -140,6 +139,7 @@ const TITLES: Record<PageName, string> = {
   profile: 'Profile',
   chests: 'Treasure Chests',
   guild: 'Guilds',
+  summons: 'Summons',
 };
 
 export class Pages {
@@ -158,6 +158,7 @@ export class Pages {
   private fuseA = '';
   private fuseB = '';
   private fuseMsg = '';
+  private skillFilter: 'all' | 'attack' | 'defence' | 'healing' | 'buff' | 'summon' = 'all';
 
   constructor(
     private ui: Ui,
@@ -232,6 +233,8 @@ export class Pages {
         return this.chestsHtml();
       case 'guild':
         return this.guildHtml();
+      case 'summons':
+        return this.summonsHtml();
     }
   }
 
@@ -256,19 +259,26 @@ export class Pages {
   }
 
   private campaignHtml(): string {
-    const rows = LEVELS.map((l) => {
+    const rows = LEVELS.map((l, index) => {
+      const mapLevels = LEVELS.filter((x) => x.map === l.map);
+      const firstInMap = index === 0 || LEVELS[index - 1].map !== l.map;
+      const mapStars = mapLevels.reduce((sum, x) => sum + (this.pr.data.campaign[String(x.id)] ?? 0), 0);
+      const mapMax = mapLevels.length * 3;
+      const mapHeader = firstInMap
+        ? `<div class="row"><div class="grow"><b>${esc(MAP_LIST.find((m) => m.id === l.map)?.name ?? l.map)}</b><div class="sub" style="margin:0">Map stars: ${mapStars} / ${mapMax} &middot; rewards at 10, 20 and 30 stars</div><div class="bar"><div style="width:${Math.min(100, (mapStars / mapMax) * 100)}%"></div></div></div></div>`
+        : '';
       const unlocked = this.pr.levelUnlocked(l);
       const stars = this.pr.data.campaign[String(l.id)] ?? 0;
       const st = [1, 2, 3].map((i) => `<span class="star ${i <= stars ? 'on' : ''}">&#9733;</span>`).join('');
-      return `<div class="row ${unlocked ? '' : 'locked'}">
+      return `${mapHeader}<div class="row ${unlocked ? '' : 'locked'}">
         <div style="width:28px;font-size:18px;color:var(--gold)">${l.id}</div>
         <div class="grow"><b>${esc(l.name)}${l.boss ? ' <span class="tag" style="color:#ff1744;border-color:#ff1744">BOSS</span>' : ''}</b>
-          <div class="sub" style="margin:0">${esc(objectiveText(l))} &middot; ${MODES[l.mode].name} &middot; ${l.bots} enemies</div></div>
+          <div class="sub" style="margin:0">${esc(objectiveText(l))} &middot; ${esc(MAP_LIST.find((m) => m.id === l.map)?.name ?? l.map)} &middot; ${l.boss ? 'Map boss' : 'Single enemy'}</div></div>
         <div style="font-size:20px">${st}</div>
         <button data-lvl="${l.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? 'Play' : 'Locked'}</button>
       </div>`;
     }).join('');
-    return `<p class="sub">Stars earned: ${this.pr.totalStars()} / ${LEVELS.length * 3}. Star 1: clear it. Star 2: beat the par time. Star 3: clear without dying.</p>${rows}`;
+    return `<p class="sub">Stars earned: ${this.pr.totalStars()} / ${LEVELS.length * 3}. Campaign battles are HP-based: defeat one enemy at a time and fail if your hero reaches 0 HP. Stars: 3 above 75% HP, 2 above 50% HP, 1 for any clear.</p>${rows}`;
   }
 
   private loadoutHtml(): string {
@@ -341,7 +351,7 @@ export class Pages {
       <div class="d">${esc(d.desc)}</div>${extra}
       <div class="d">${esc(d.category)}${el ? ` &middot; ${esc(el.name)}` : ''} &middot; ${esc(d.kind)}<br />
         Lv ${s.level} &middot; ${s.copies} cop${s.copies === 1 ? 'y' : 'ies'} &middot; Mastery ${masteryLevel(s.masteryXp)}<br />
-        Cost ${budgetCost(s)} ${tags}</div>${buttons}</div>`;
+        ${tags}</div>${buttons}</div>`;
   }
 
   private sortedSkills(): SkillInstance[] {
@@ -365,6 +375,20 @@ export class Pages {
       ${this.uniquesHtml()}`;
   }
 
+  private summonsHtml(): string {
+    const owned = new Set(this.pr.data.summons.owned);
+    const cards = SUMMONS.map((s) => {
+      const level = this.pr.data.summons.levels[String(s.id)] ?? 1;
+      const have = owned.has(s.id);
+      const upgrade = Math.round(s.price * 0.35 * level);
+      const action = have
+        ? `<button data-summon-upgrade="${s.id}" ${level >= 20 || this.pr.data.coins < upgrade ? 'disabled' : ''}>${level >= 20 ? 'Max level' : `Upgrade &#9679; ${upgrade}`}</button>`
+        : `<button data-summon-buy="${s.id}" ${this.pr.data.coins < s.price ? 'disabled' : ''}>Summon &#9679; ${s.price}</button>`;
+      return `<div class="card ${have ? 'sel' : ''}"><b>${esc(s.name)}</b><div class="d">${esc(s.kind)} &middot; ${esc(s.desc)}<br />Power ${s.power + (level - 1) * 3} &middot; Level ${have ? level : 'Locked'}</div>${action}</div>`;
+    }).join('');
+    return `<p class="sub">Summons are collection companions for normal matches. Equip their skill cards in future upgrades; they are never used in ranked battles.</p><div class="cards">${cards}</div>`;
+  }
+
   /** All 100 unique skills: owned ones are shown in full, the rest show how to get them. */
   private uniquesHtml(): string {
     const owned = UNIQUES.filter((u) => this.pr.skillBySkillId(uniqueIdOf(u.n))).length;
@@ -382,7 +406,6 @@ export class Pages {
     const pr = this.pr;
     const equipped = pr.loadoutInstances();
     const ids = new Set(equipped.map((s) => s.skillId));
-    const cost = loadoutCost(equipped);
     const slots = [0, 1, 2, 3, 4]
       .map((i) => {
         const s = equipped[i];
@@ -392,13 +415,21 @@ export class Pages {
       })
       .join('');
     const pool = this.sortedSkills()
-      .filter((s) => usableInBattle(s.skillId) && !ids.has(s.skillId))
+      .filter(
+        (s) =>
+          usableInBattle(s.skillId) &&
+          !ids.has(s.skillId) &&
+          (this.skillFilter === 'all' || getSkill(s.skillId).category === this.skillFilter),
+      )
       .map((s) => this.skillCard(s, `<button data-equipskill="${s.skillId}">Equip</button>`))
       .join('');
+    const filters = (['all', 'attack', 'defence', 'healing', 'buff', 'summon'] as const)
+      .map((f) => `<button class="${f === this.skillFilter ? 'on' : 'ghost'}" data-skillfilter="${f}">${f[0].toUpperCase()}${f.slice(1)}</button>`)
+      .join('');
     return `<h3>Battle skills (keys 1-5)</h3>
-      <p class="sub">Power budget: ${cost} / ${CASUAL_BUDGET}. Higher ranks and levels cost more. Skills that only work outside battle are not listed.</p>
+      <p class="sub">Equip up to five owned battle skills. There is no power budget; higher-rank skills remain limited by what you obtain.</p>
       <div class="cards">${slots}</div>
-      <h3>Available skills</h3><div class="cards">${pool || '<p class="sub">Nothing else to equip.</p>'}</div>
+      <h3>Available skills</h3><div class="tabs">${filters}</div><div class="cards">${pool || '<p class="sub">Nothing else to equip in this category.</p>'}</div>
       ${this.duelSlotsHtml()}`;
   }
   /** A separate loadout for ranked 1v1 duels. Only duel-legal skills are offered. */
@@ -512,7 +543,7 @@ export class Pages {
     if (this.shopTab === 'weapon')
       items = WEAPONS.map((c) => ({ id: c.id, name: c.name, desc: c.desc, price: c.price, level: c.level }));
     if (this.shopTab === 'acc')
-      items = ACCESSORIES.map((c) => ({
+      items = ACCESSORIES.slice(0, 120).map((c) => ({
         id: c.id,
         name: c.name,
         desc: 'A look for your orb.',
@@ -534,7 +565,7 @@ export class Pages {
           <b>${esc(it.name)}</b><div class="d">${esc(it.desc)}</div>${btn}</div>`;
       })
       .join('');
-    return `<div class="tabs">${tabs}</div><div class="cards">${cards}</div>`;
+    return `<div class="tabs">${tabs}</div><p class="sub">The accessory catalog contains ${ACCESSORIES.length.toLocaleString()} generated designs. Showing a usable shop preview of ${this.shopTab === 'acc' ? 120 : items.length} items.</p><div class="cards">${cards}</div>`;
   }
 
   private dailyHtml(): string {
@@ -582,7 +613,8 @@ export class Pages {
       <p>${prizes}</p>
       <div id="wheelwrap"><div id="pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
       <div id="spinresult" style="min-height:26px;color:var(--gold);font-size:18px">${esc(this.spinMsg)}</div>
-      <button data-spin="1">${st.free ? `Spin (free, ${st.left} left)` : `Spin (${EXTRA_SPIN_COST} coins)`}</button>
+      <div class="row"><button data-spin-count="1">${st.free ? `Spin (free, ${st.left} left)` : `Spin (${EXTRA_SPIN_COST} coins)`}</button>
+      <button class="ghost" data-spin-count="10">10 spins</button><button class="ghost" data-spin-count="100">100 spins</button></div>
       ${!st.free && ENABLE_ADS ? '<button class="ghost" data-spinad="1">Watch ad for a spin</button>' : ''}</div>`;
   }
 
@@ -1006,6 +1038,20 @@ export class Pages {
         this.render();
       });
     }
+    if (name === 'summons') {
+      on('[data-summon-buy]', (el) => {
+        const r = pr.summon(Number(el.dataset.summonBuy));
+        if (!r.ok) note(r.reason ?? 'Cannot summon', '#ff8a9a');
+        else note('Summon added to your collection', '#ffc93c');
+        this.render();
+      });
+      on('[data-summon-upgrade]', (el) => {
+        const r = pr.upgradeSummon(Number(el.dataset.summonUpgrade));
+        if (!r.ok) note(r.reason ?? 'Cannot upgrade summon', '#ff8a9a');
+        else note(`Summon upgraded to level ${r.level}`, '#ffc93c');
+        this.render();
+      });
+    }
     if (name === 'fusion') {
       on('[data-fpick]', (el) => {
         const uid = el.dataset.fpick!;
@@ -1031,6 +1077,10 @@ export class Pages {
       });
     }
     if (name === 'loadout') {
+      on('[data-skillfilter]', (el) => {
+        this.skillFilter = el.dataset.skillfilter as typeof this.skillFilter;
+        this.render();
+      });
       const set = (ids: number[]) => {
         const r = pr.equipSkills(ids);
         if (!r.ok) note(r.reason ?? 'Cannot equip', '#ff8a9a');
@@ -1159,9 +1209,27 @@ export class Pages {
     let rotation = this.wheelRot;
     const result = body.querySelector<HTMLElement>('#spinresult')!;
     let adBusy = false;
-    const run = () => {
+    const run = (count: number) => {
       if (this.wheelBusy || adBusy) return;
       this.wheelBusy = true;
+      if (count > 1) {
+        const batch = this.pr.spinBatch(count, Math.random, this.wheel);
+        if (!batch.ok) {
+          this.wheelBusy = false;
+          note(batch.reason ?? 'Unable to spin', '#ff8a9a');
+          return;
+        }
+        this.spinMsg = 'Spinning...';
+        result.textContent = this.spinMsg;
+        window.setTimeout(() => {
+          sfx.reward();
+          this.spinMsg = batch.prizes.map((p, i) => `${i + 1}. ${p}`).join('  ·  ');
+          note(`Lucky Draw: ${count} rewards`, '#ffc93c');
+          this.wheelBusy = false;
+          this.render();
+        }, 1200);
+        return;
+      }
       const idx = this.pr.rollSpin(Math.random, this.wheel);
       const prize = this.pr.grantPrize(idx, Math.random, this.wheel);
       const seg = 360 / WHEELS[this.wheel].length;
@@ -1182,19 +1250,20 @@ export class Pages {
         this.render();
       }, 4400);
     };
-    body.querySelector('[data-spin]')?.addEventListener('click', () => {
+    body.querySelectorAll<HTMLElement>('[data-spin-count]').forEach((el) => el.addEventListener('click', () => {
       if (this.wheelBusy) return;
-      if (!this.pr.payForSpin()) {
+      const count = Number(el.dataset.spinCount);
+      if (count === 1 && !this.pr.payForSpin()) {
         note('Not enough coins for an extra spin', '#ff8a9a');
         return;
       }
-      run();
-    });
+      run(count);
+    }));
     body.querySelector('[data-spinad]')?.addEventListener('click', async () => {
       if (this.wheelBusy || adBusy) return;
       adBusy = true;
       try {
-        if (await this.actions.watchAd()) run();
+        if (await this.actions.watchAd()) run(1);
         else note('No ad available right now', '#ff8a9a');
       } finally {
         adBusy = false;

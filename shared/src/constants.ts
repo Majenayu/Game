@@ -13,7 +13,7 @@ export const PLAYER_SPEED = 280;
 export const MAX_HP = 3;
 /** Hit points per heart: a 3 heart orb has 300 HP. Damage values in the sim are in hearts and scaled here. */
 export const HP_SCALE = 100;
-/** Extra max HP per player level (2% per level, up to level 50). */
+/** Extra max HP per player level (2% per level, up to level 1000). */
 export const HP_PER_LEVEL = 0.02;
 
 export const BULLET_RADIUS = 6;

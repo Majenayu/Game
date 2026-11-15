@@ -22,7 +22,6 @@ import {
   uniqueIdOf,
   COLORS,
   LEVELS,
-  CASUAL_BUDGET,
   TOWER_FIRST_ID,
   TOWER_UNLOCK_LEVEL,
   eloUpdate,
@@ -40,6 +39,7 @@ import {
   rollDrop,
   rollStarterPack,
   sanitizeLoadout,
+  summonById,
   usableInBattle,
   validateLoadout,
   weekId,
@@ -145,7 +145,7 @@ export const WHEELS: Record<WheelKind, WheelSegment[]> = {
     value: w.id,
     color: WCOL[i % WCOL.length],
   })),
-  accs: ACCESSORIES.slice(1).map((a, i) => ({
+  accs: ACCESSORIES.slice(1, 101).map((a, i) => ({
     label: a.name,
     weight: Math.max(1, 10 - a.level),
     kind: 'acc' as const,
@@ -153,7 +153,7 @@ export const WHEELS: Record<WheelKind, WheelSegment[]> = {
     color: WCOL[i % WCOL.length],
   })),
 };
-export const MAX_LEVEL = 50;
+export const MAX_LEVEL = 1000;
 
 // ---- helpers ----------------------------------------------------------------
 
@@ -237,6 +237,8 @@ export interface Reward {
   chest?: ChestKind;
   /** Skill dropped after the match or level, if any. */
   drop?: SkillDrop;
+  /** Map-star milestone rewards earned by this result. */
+  bonus?: string;
 }
 
 export interface SkillDrop {
@@ -612,7 +614,7 @@ export class Progress {
     return d;
   }
 
-  /** Equips up to five owned skills by skill id. Rejects unowned skills and loadouts over the casual budget. */
+  /** Equips up to five owned skills by skill id. */
   equipSkills(skillIds: number[]): { ok: boolean; reason?: string } {
     const uids: string[] = [];
     for (const id of skillIds) {
@@ -621,7 +623,7 @@ export class Progress {
       if (!usableInBattle(id)) return { ok: false, reason: 'That skill only works outside battle' };
       uids.push(s.uid);
     }
-    const v = validateLoadout(uids, this.data.skills, CASUAL_BUDGET);
+    const v = validateLoadout(uids, this.data.skills);
     if (!v.ok) return v;
     this.data.loadout = sanitizeLoadout({ ...this.data.loadout, skillIds });
     this.commit();
@@ -762,10 +764,37 @@ export class Progress {
       this.commit();
       return true;
     }
+
     if (this.data.coins < EXTRA_SPIN_COST) return false;
     this.addCoins(-EXTRA_SPIN_COST);
     this.commit();
     return true;
+  }
+
+  /** Pays for and grants a batch of draws. Free daily spins are consumed first. */
+  spinBatch(
+    count: number,
+    rng: () => number = Math.random,
+    wheel: WheelKind = 'coins',
+  ): { ok: boolean; prizes: string[]; reason?: string } {
+    const n = Math.max(1, Math.min(100, Math.floor(count)));
+    const status = this.spinStatus();
+    const free = Math.min(n, status.left);
+    const paid = n - free;
+    if (this.data.coins < paid * EXTRA_SPIN_COST) {
+      return { ok: false, prizes: [], reason: 'Not enough coins for that many spins' };
+    }
+    if (free > 0) {
+      const today = dateKey();
+      if (this.data.spins.day !== today) this.data.spins = { day: today, used: 0 };
+      this.data.spins.used += free;
+      this.data.spin.last = today;
+    }
+    if (paid > 0) this.data.coins -= paid * EXTRA_SPIN_COST;
+    const prizes: string[] = [];
+    for (let i = 0; i < n; i++) prizes.push(this.grantPrize(this.rollSpin(rng, wheel), rng, wheel));
+    this.commit();
+    return { ok: true, prizes };
   }
 
   /** Grants the prize of the segment. Returns a text describing it. */
@@ -855,6 +884,25 @@ export class Progress {
     const levelsGained = this.addXp(xp);
     // The champion's reward (a skill of your choice from his kit) is claimed with claimChampion().
     const drop = prev === 0 && level.id !== CHAMPION_LEVEL_ID ? this.dropSkill(tower ? 'boss' : 'story') : undefined;
+    let bonus = '';
+    if (!tower && level.id !== CHAMPION_LEVEL_ID) {
+      const mapLevels = LEVELS.filter((x) => x.map === level.map);
+      const mapStars = mapLevels.reduce((sum, x) => sum + (this.data.campaign[String(x.id)] ?? 0), 0);
+      const claimed = this.data.campaignBonuses[level.map] ?? 0;
+      const milestones = [
+        { stars: 10, bit: 1, reward: 'extra silver chest', grant: () => { this.data.chests.silver += 1; } },
+        { stars: 20, bit: 2, reward: 'bonus skill', grant: () => { this.dropSkill('story'); } },
+        { stars: 30, bit: 4, reward: 'extra gold chest', grant: () => { this.data.chests.gold += 1; } },
+      ];
+      for (const milestone of milestones) {
+        if (mapStars >= milestone.stars && !(claimed & milestone.bit)) {
+          milestone.grant();
+          this.data.campaignBonuses[level.map] = (this.data.campaignBonuses[level.map] ?? 0) | milestone.bit;
+          bonus = bonus ? `${bonus}, ${milestone.reward}` : milestone.reward;
+        }
+
+      }
+    }
     // Every win against a boss or a campaign level pays a chest (better on the first clear).
     let chest: ChestKind | undefined;
     if (level.id === CHAMPION_LEVEL_ID) chest = 'legend';
@@ -862,7 +910,32 @@ export class Progress {
     else chest = prev === 0 ? 'silver' : 'wood';
     if (level.id !== CHAMPION_LEVEL_ID) this.data.chests[chest] += 1;
     this.commit();
-    return { coins, xp, levelsGained, drop, chest };
+    return { coins, xp, levelsGained, drop, chest, bonus: bonus || undefined };
+  }
+
+  summon(id: number): { ok: boolean; reason?: string } {
+    const s = summonById(id);
+    if (!s) return { ok: false, reason: 'Unknown summon' };
+    if (this.data.summons.owned.includes(id)) return { ok: false, reason: 'Already owned' };
+    if (this.data.coins < s.price) return { ok: false, reason: 'Not enough coins' };
+    this.data.coins -= s.price;
+    this.data.summons.owned.push(id);
+    this.data.summons.levels[String(id)] = 1;
+    this.commit();
+    return { ok: true };
+  }
+
+  upgradeSummon(id: number): { ok: boolean; reason?: string; level?: number } {
+    const s = summonById(id);
+    if (!s || !this.data.summons.owned.includes(id)) return { ok: false, reason: 'Summon is not owned' };
+    const level = this.data.summons.levels[String(id)] ?? 1;
+    if (level >= 20) return { ok: false, reason: 'Summon is max level' };
+    const price = Math.round(s.price * 0.35 * level);
+    if (this.data.coins < price) return { ok: false, reason: `Upgrade costs ${price} coins` };
+    this.data.coins -= price;
+    this.data.summons.levels[String(id)] = level + 1;
+    this.commit();
+    return { ok: true, level: level + 1 };
   }
 
   levelUnlocked(level: LevelDef): boolean {

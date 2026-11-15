@@ -149,9 +149,9 @@ describe('content', () => {
     expect(l.skillIds).toEqual([a, b]);
     expect(l.trail).toBe(0);
     expect(sanitizeLoadout({ char: 'hax', skillIds: 'nope' }).skillIds).toEqual([]);
-    // the casual budget stops a client from claiming five legendary skills
+    // Loadouts accept up to five distinct battle skills; excess entries are ignored.
     const legends = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => firstIdOfRank('S') + i).filter(usableInBattle);
-    expect(sanitizeLoadout({ skillIds: legends }).skillIds.length).toBeLessThan(5);
+    expect(sanitizeLoadout({ skillIds: legends }).skillIds.length).toBe(5);
     expect(COLORS.length).toBeGreaterThanOrEqual(16);
   });
   it('has sane maps and levels', () => {
@@ -169,7 +169,7 @@ describe('content', () => {
       expect(MODES[l.mode]).toBeDefined();
       expect(l.bots).toBeGreaterThan(0);
     }
-    expect(LEVELS.length).toBe(12);
+    expect(LEVELS.length).toBe(88);
   });
 });
 

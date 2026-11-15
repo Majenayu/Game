@@ -28,7 +28,6 @@ import {
   idFromParts,
   isValidSkillId,
   levelForCopies,
-  loadoutCost,
   makeInstance,
   masteryLevel,
   mergeDuplicate,
@@ -342,17 +341,15 @@ describe('drops', () => {
   });
 });
 
-describe('loadout and power budget', () => {
-  it('validates five distinct owned skills within the budget', () => {
+describe('loadout validation', () => {
+  it('validates five distinct owned skills without a power budget', () => {
     const inv = RANKS.slice(0, 7).map((r, i) => inst(firstIdOfRank(r) + i, 1));
     const ids = inv.slice(0, 5).map((i) => i.uid);
     expect(validateLoadout(ids, inv).ok).toBe(true);
     expect(validateLoadout([...ids, inv[5].uid], inv).ok).toBe(false);
     expect(validateLoadout([ids[0], ids[0]], inv).ok).toBe(false);
     expect(validateLoadout(['nope'], inv).ok).toBe(false);
-    const cost = loadoutCost(inv.slice(0, 5));
-    expect(validateLoadout(ids, inv, cost).ok).toBe(true);
-    expect(validateLoadout(ids, inv, cost - 1).ok).toBe(false);
+    expect(validateLoadout(ids, inv, 1).ok).toBe(true);
     expect(LOADOUT_SLOTS).toBe(5);
   });
 

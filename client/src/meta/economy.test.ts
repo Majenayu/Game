@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CASUAL_BUDGET,
   LEVELS,
   getSkill,
   makeInstance,
@@ -9,7 +8,17 @@ import {
   type Rank,
 } from '@orb/shared';
 import type { Platform } from '../platform/crazygames';
-import { DAILY_REWARDS, Progress, WHEEL, WHEELS, dateKey, levelFromXp, weekKey, xpToNext } from './economy';
+import {
+  DAILY_REWARDS,
+  EXTRA_SPIN_COST,
+  Progress,
+  WHEEL,
+  WHEELS,
+  dateKey,
+  levelFromXp,
+  weekKey,
+  xpToNext,
+} from './economy';
 import { defaultSave, parseSave } from './save';
 
 // vitest runs in node: provide the browser bits Progress touches
@@ -90,7 +99,7 @@ describe('levels and rewards', () => {
   it('computes levels from xp', () => {
     expect(levelFromXp(0).level).toBe(1);
     expect(levelFromXp(xpToNext(1)).level).toBe(2);
-    expect(levelFromXp(1e9).level).toBe(50);
+    expect(levelFromXp(1e9).level).toBe(1000);
   });
 
   it('level ups pay coins', async () => {
@@ -177,7 +186,7 @@ describe('skill inventory', () => {
     expect(p.skillBySkillId(r.drop!.skillId)).toBeDefined();
   });
 
-  it('equips owned skills and rejects unowned or over-budget loadouts', async () => {
+  it('equips owned skills without a power-budget restriction', async () => {
     const p = await fresh();
     const rng = seeded(11);
     expect(p.equipSkills([123456789]).ok).toBe(false);
@@ -189,11 +198,8 @@ describe('skill inventory', () => {
     }
     expect(p.equipSkills(ids.slice(0, 3))).toEqual({ ok: true });
     expect(p.data.loadout.skillIds).toEqual(ids.slice(0, 3));
-    const over = p.equipSkills(ids);
-    expect(over.ok).toBe(false);
-    expect(over.reason).toMatch(/budget/i);
-    expect(CASUAL_BUDGET).toBe(5200);
-    expect(p.data.loadout.skillIds).toEqual(ids.slice(0, 3));
+    expect(p.equipSkills(ids)).toEqual({ ok: true });
+    expect(p.data.loadout.skillIds).toEqual(ids);
   });
 
   it('allows one fusion per week and consumes the parents', async () => {
@@ -294,6 +300,20 @@ describe('daily reward, quests, lucky draw', () => {
     p.grantPrize(skinIdx);
     expect(p.data.owned.colors.length + p.data.owned.trails.length + p.data.owned.bfx.length).toBe(owned + 1);
   });
+
+  it('grants batched lucky-draw rewards after charging free spins first', async () => {
+    const p = await fresh();
+    const ten = p.spinBatch(10, () => 0, 'coins');
+    expect(ten.ok).toBe(true);
+    expect(ten.prizes).toHaveLength(10);
+    expect(p.spinStatus().left).toBe(0);
+    p.data.coins = 20_000;
+    const before = p.data.coins;
+    const hundred = p.spinBatch(100, () => 0, 'coins');
+    expect(hundred.ok).toBe(true);
+    expect(hundred.prizes).toHaveLength(100);
+    expect(p.data.coins).toBe(before - 100 * EXTRA_SPIN_COST + 100 * 25);
+  });
 });
 
 describe('campaign and collection', () => {
@@ -311,11 +331,32 @@ describe('campaign and collection', () => {
     expect(p.totalStars()).toBe(3);
   });
 
+  it('grants each campaign map star milestone once', async () => {
+    const p = await fresh();
+    const mapLevels = LEVELS.filter((x) => x.map === LEVELS[0].map);
+    for (const level of mapLevels.slice(0, 4)) p.finishLevel(level, 3);
+    expect(p.data.campaignBonuses[LEVELS[0].map]).toBe(1);
+    expect(p.data.chests.silver).toBeGreaterThan(0);
+    const before = p.data.chests.silver;
+    p.finishLevel(mapLevels[0], 3);
+    expect(p.data.chests.silver).toBe(before);
+  });
+
   it('tracks discovered powerups once', async () => {
     const p = await fresh();
     expect(p.discover(5)).toBe(true);
     expect(p.discover(5)).toBe(false);
     expect(p.data.dex).toEqual([5]);
+  });
+
+  it('purchases and upgrades summons persistently', async () => {
+    const p = await fresh();
+    p.data.coins = 10_000;
+    expect(p.summon(1)).toEqual({ ok: true });
+    expect(p.data.summons.owned).toContain(1);
+    expect(p.upgradeSummon(1)).toEqual({ ok: true, level: 2 });
+    expect(p.data.summons.levels['1']).toBe(2);
+    expect(p.summon(1).ok).toBe(false);
   });
 
   it('persists to storage and reloads', async () => {

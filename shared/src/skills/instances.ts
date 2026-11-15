@@ -489,7 +489,7 @@ export function loadoutCost(skills: SkillInstance[]): number {
 export function validateLoadout(
   ids: string[],
   inventory: SkillInstance[],
-  budget?: number,
+  _budget?: number,
 ): { ok: boolean; reason?: string } {
   if (ids.length > LOADOUT_SLOTS) return { ok: false, reason: `At most ${LOADOUT_SLOTS} skills` };
   if (new Set(ids).size !== ids.length) return { ok: false, reason: 'A skill can only be equipped once' };
@@ -499,7 +499,5 @@ export function validateLoadout(
     if (!inst) return { ok: false, reason: 'You do not own that skill' };
     picked.push(inst);
   }
-  if (budget !== undefined && loadoutCost(picked) > budget)
-    return { ok: false, reason: 'Over the power budget' };
   return { ok: true };
 }
