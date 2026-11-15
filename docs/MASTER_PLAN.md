@@ -583,3 +583,24 @@ The first UI was a plain dark panel set. It has been replaced by a custom theme 
 - **Figma:** page "Bestiary (Starforge)" has the theme board (fonts, palette, buttons) and the Bestiary sheet. Exports: `docs/figma/starforge-theme.png` and `docs/figma/starforge-bestiary.png`. Art files: `docs/art/*.svg`.
 
 Not built yet: boss fights themselves (needs the open-world and boss-room phases), the champion duel, and the remaining screens listed in section 17.8.
+
+---
+
+## 19. Skill engine core (built, not yet connected to matches)
+
+Location: `shared/src/skills/`. Pure TypeScript, so the same rules run offline, in the browser and later on the server. 22 tests.
+
+| File           | What it does                                                                                                                                                                                                                                                                                               |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog.ts`   | Ranks F to U, 10 categories, 54 archetypes (the mechanics), 12 elements, 80 modifiers (8 twists x 10 strengths), base stats per behavior kind                                                                                                                                                              |
+| `generate.ts`  | `getSkill(id)` builds any of the 115,000 generated skills from its id. A reversible mapping makes every skill a distinct archetype + element + modifier inside its rank, and lets fusion find an id from parts                                                                                             |
+| `uniques.ts`   | The 100 unique skills as data, the 10 world-changing perks, and `UniqueRegistry` (one owner, trade, reincarnation after 60 inactive days, Hall of Uniques list)                                                                                                                                            |
+| `instances.ts` | Rolled stats per owned copy, automatic duplicate merging (levels 1 to 20), mastery (10 levels), effective stats, weekly fusion (with rank-up chance), 15 secret recipes that create uniques, the starter pack and luck odds, drop tables per source, 5-slot loadout validation and the ranked power budget |
+
+Rank counts: S 1,000, A 10,000, B 30,000, C 30,000, D 20,000, E 12,000, F 12,000 (115,000 generated) plus 100 unique.
+
+Starter pack: one each of B, C, D, E, F. Luck on the first pack: A about 1 in 1,000 (tested), S 1 in 100,000, Unique 1 in 1,000,000 (and only while uniques remain unclaimed).
+
+Names are unique within a rank. The UI always shows the rank badge, so the same adjective-element-mechanic name can appear at two different ranks.
+
+Next step (Phase 2b): connect the engine to the match simulation (one behavior per kind), 5-slot input, bots that carry and use skills, and the Collection and Loadout screens with a local save.

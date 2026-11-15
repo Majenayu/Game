@@ -5,3 +5,7 @@ export * from './maps';
 export * from './levels';
 export * from './sim';
 export * from './nav';
+export * from './skills/catalog';
+export * from './skills/uniques';
+export * from './skills/generate';
+export * from './skills/instances';
