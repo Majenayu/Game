@@ -64,4 +64,18 @@ describe('ArenaRoom', () => {
     expect(a.state.players.size).toBe(MAX_PLAYERS);
     await a.leave();
   });
+
+  it('private rooms are skipped by matchmaking but joinable by id', async () => {
+    const host = await new Client(`ws://localhost:${PORT}`).create<any>('arena', {
+      name: 'Host',
+      private: true,
+    });
+    const friend = await new Client(`ws://localhost:${PORT}`).joinById<any>(host.roomId, { name: 'Friend' });
+    const stranger = await new Client(`ws://localhost:${PORT}`).joinOrCreate<any>('arena', {
+      name: 'Stranger',
+    });
+    expect(friend.roomId).toBe(host.roomId);
+    expect(stranger.roomId).not.toBe(host.roomId);
+    await Promise.all([host.leave(), friend.leave(), stranger.leave()]);
+  });
 });

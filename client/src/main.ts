@@ -252,7 +252,7 @@ async function boot(): Promise<void> {
 
   const invite = inviteTarget(platform);
   if (invite) void startOnline(nick, invite);
-  else if (platform.isInstantMultiplayer) void startOnline(nick);
+  else if (platform.isInstantMultiplayer) void startOnline(nick, { createPrivate: true });
   else ui.showMenu();
 }
 

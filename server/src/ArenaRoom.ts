@@ -35,7 +35,9 @@ export class ArenaRoom extends Room<ArenaState> {
   private ipBySession = new Map<string, string>();
   private rate = new Map<string, { windowStart: number; count: number }>();
 
-  onCreate(): void {
+  onCreate(options?: { private?: unknown }): void {
+    // Instant Multiplayer rooms are private: friends join by room id or invite link.
+    if (options?.private === true) void this.setPrivate(true);
     this.setState(new ArenaState());
     this.sim.rebalanceBots();
     this.syncState();

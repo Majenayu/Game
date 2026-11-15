@@ -55,6 +55,8 @@ export interface JoinTarget {
   roomId?: string;
   /** Index into the server list (from an invite link). */
   serverIndex?: number;
+  /** Create a fresh private room (CrazyGames Instant Multiplayer). */
+  createPrivate?: boolean;
 }
 
 export async function joinArena(
@@ -73,7 +75,9 @@ export async function joinArena(
   const client = new Client(url);
   const room = target.roomId
     ? await client.joinById(target.roomId, { name })
-    : await client.joinOrCreate('arena', { name });
+    : target.createPrivate
+      ? await client.create('arena', { name, private: true })
+      : await client.joinOrCreate('arena', { name });
   return { room, serverIndex };
 }
 
