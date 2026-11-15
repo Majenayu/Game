@@ -25,11 +25,16 @@ const AUTOPILOT = () => {
   const scene = window.__orbGame.scene.getScene('game');
   let flip = 1;
   let lastFlip = 0;
+  let lastSkill = 0;
   scene.readInput = (px, py) => {
     const now = performance.now();
     if (now - lastFlip > 1100) {
       flip = -flip;
       lastFlip = now;
+    }
+    if (now - lastSkill > 2200) {
+      lastSkill = now;
+      scene.queueSkill(Math.random() < 0.5 ? 0 : 1);
     }
     const snap = scene.source.view(now);
     const me = snap && snap.players.find((p) => p.id === scene.source.localId);
@@ -65,7 +70,11 @@ const AUTOPILOT = () => {
   };
 };
 
-const browser = await chromium.launch({ headless: false }); // headed: real GPU, full frame rate
+const browser = await chromium.launch({
+  // headless with the real GPU: full frame rate and no window size limit
+  headless: true,
+  args: ['--use-gl=angle', '--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'],
+});
 for (const c of CLIPS) {
   const ctx = await browser.newContext({
     viewport: { width: c.w, height: c.h },
