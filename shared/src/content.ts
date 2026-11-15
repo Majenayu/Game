@@ -1,4 +1,7 @@
 /** Data tables for everything unlockable or collectable. Pure data plus a few helpers. */
+import { usableInBattle } from './battle';
+import { RANK_INFO } from './skills/catalog';
+import { rankOf } from './skills/generate';
 
 export type ModeId = 'dm' | 'tdm' | 'coins' | 'hill';
 
@@ -424,19 +427,17 @@ export const BULLET_FX: CosmeticDef[] = [
 
 export interface Loadout {
   char: string;
-  skills: [string, string];
+  /** Up to five skill ids (see skills/). Empty means "use the default kit". */
+  skillIds: number[];
   color: number;
   trail: number;
   bfx: number;
 }
 
-export const DEFAULT_LOADOUT: Loadout = {
-  char: 'nova',
-  skills: ['dash', 'shield'],
-  color: 0,
-  trail: 0,
-  bfx: 0,
-};
+export const DEFAULT_LOADOUT: Loadout = { char: 'nova', skillIds: [], color: 0, trail: 0, bfx: 0 };
+
+/** Highest total rank budget a casual loadout may use. The server enforces it until accounts verify ownership. */
+export const CASUAL_BUDGET = 3300;
 
 /** Validates untrusted loadout data from a client. Falls back to defaults field by field. */
 export function sanitizeLoadout(raw: unknown): Loadout {
@@ -444,18 +445,22 @@ export function sanitizeLoadout(raw: unknown): Loadout {
   const int = (v: unknown, max: number, d: number) =>
     Number.isInteger(v) && (v as number) >= 0 && (v as number) < max ? (v as number) : d;
   const char = isCharacterId(r.char) ? r.char : DEFAULT_LOADOUT.char;
-  let skills: [string, string] = [...DEFAULT_LOADOUT.skills];
-  if (
-    Array.isArray(r.skills) &&
-    isSkillId(r.skills[0]) &&
-    isSkillId(r.skills[1]) &&
-    r.skills[0] !== r.skills[1]
-  ) {
-    skills = [r.skills[0], r.skills[1]];
+  const skillIds: number[] = [];
+  if (Array.isArray(r.skillIds)) {
+    let cost = 0;
+    for (const v of r.skillIds) {
+      if (skillIds.length >= 5) break;
+      if (typeof v !== 'number' || !Number.isInteger(v) || skillIds.includes(v) || !usableInBattle(v))
+        continue;
+      const c = RANK_INFO[rankOf(v)!].budget;
+      if (cost + c > CASUAL_BUDGET) continue;
+      cost += c;
+      skillIds.push(v);
+    }
   }
   return {
     char,
-    skills,
+    skillIds,
     color: int(r.color, COLORS.length, 0),
     trail: int(r.trail, TRAILS.length, 0),
     bfx: int(r.bfx, BULLET_FX.length, 0),

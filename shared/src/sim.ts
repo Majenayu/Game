@@ -19,8 +19,6 @@ import {
   CHARACTERS,
   CHARACTER_LIST,
   MODES,
-  SKILLS,
-  SKILL_LIST,
   powerupId,
   powerupStats,
   rollPowerup,
@@ -29,7 +27,24 @@ import {
   type ModeId,
   type PowerupDef,
 } from './content';
+import {
+  BUFF_BY_ARCHETYPE,
+  MAX_MP,
+  MAX_PETS,
+  MP_REGEN,
+  botKit,
+  defaultKit,
+  dmgFromPower,
+  elementStatus,
+  neutralInstance,
+  slotFromInstance,
+  type SimPet,
+  type SimZone,
+  type SlotState,
+} from './battle';
+import { ARCHETYPES, ELEMENTS, RANKS, type Kind } from './skills/catalog';
 import { ROTATION, getMap, type MapDef } from './maps';
+import type { SkillInstance } from './skills/instances';
 import { findPath, getNav, segmentClear } from './nav';
 import {
   circlesOverlap,
@@ -82,8 +97,17 @@ export interface SimPlayer {
   boss: boolean;
   color: number;
   charId: string;
-  skills: [string, string];
-  cd: [number, number];
+  /** Equipped skills (up to five). */
+  slots: SlotState[];
+  mp: number;
+  maxMp: number;
+  /** Sim time when a skill being cast resolves, or -1 when not casting. */
+  castAt: number;
+  castSlot: number;
+  hiddenUntil: number;
+  dotUntil: number;
+  dotBy: string;
+  nextDot: number;
   trail: number;
   bfx: number;
   team: number;
@@ -110,6 +134,7 @@ export interface SimPlayer {
   dashUntil: number;
   dashX: number;
   dashY: number;
+  dashSpeed: number;
   nextRegen: number;
   nextHazard: number;
   holdAcc: number;
@@ -131,6 +156,9 @@ export interface SimBullet {
   freeze: boolean;
   hit: string[];
   kind: number;
+  /** Element status applied on hit (burn, slow, knockback, ...). */
+  status: string;
+  homing: boolean;
 }
 
 export interface SimPickup {
@@ -155,6 +183,8 @@ export interface SimMine {
   y: number;
   armedAt: number;
   expires: number;
+  dmg: number;
+  r: number;
 }
 
 export type SimEvent =
@@ -163,7 +193,10 @@ export type SimEvent =
   | { t: 'respawn'; id: string; x: number; y: number }
   | { t: 'pickup'; id: string; pu: number; x: number; y: number }
   | { t: 'coin'; id: string; v: number; x: number; y: number }
-  | { t: 'skill'; id: string; skill: string; x: number; y: number }
+  | { t: 'cast'; id: string; skill: number; x: number; y: number; time: number }
+  | { t: 'skill'; id: string; skill: number; kind: string; element: number; x: number; y: number }
+  | { t: 'beam'; id: string; x: number; y: number; angle: number; len: number; element: number }
+  | { t: 'swing'; id: string; x: number; y: number; angle: number; r: number; element: number }
   | { t: 'shield'; id: string; x: number; y: number }
   | { t: 'boom'; x: number; y: number }
   | { t: 'roundStart'; round: number; mode: ModeId; map: string }
@@ -185,6 +218,7 @@ interface BotBrain {
   lastY: number;
   lastCheck: number;
   unstuckUntil: number;
+  nextCast: number;
 }
 
 const BOT_NAMES = [
@@ -215,7 +249,10 @@ const MAX_EFFECTS = 4;
 
 export interface PlayerOpts {
   charId?: string;
-  skills?: [string, string];
+  /** Skill ids with neutral stats (bots, online beta). Ignored when `instances` is given. */
+  skillIds?: number[];
+  /** Owned skill instances with real levels, rolls and mastery (offline play). */
+  instances?: SkillInstance[];
   color?: number;
   trail?: number;
   bfx?: number;
@@ -228,6 +265,8 @@ export class Sim {
   pickups: SimPickup[] = [];
   coins: SimCoin[] = [];
   mines: SimMine[] = [];
+  zones: SimZone[] = [];
+  pets: SimPet[] = [];
   phase: Phase = 'play';
   timeLeft = 0;
   round = 1;
@@ -298,7 +337,7 @@ export class Sim {
   addPlayer(id: string, name: unknown, bot = false, opts: PlayerOpts = {}): SimPlayer {
     const load = sanitizeLoadout({
       char: opts.charId,
-      skills: opts.skills,
+      skillIds: opts.skillIds ?? [],
       color: 0,
       trail: opts.trail,
       bfx: opts.bfx,
@@ -320,8 +359,15 @@ export class Sim {
       boss,
       color,
       charId: load.char,
-      skills: load.skills,
-      cd: [0, 0],
+      slots: this.buildSlots(opts, load.skillIds, bot || opts.boss === true),
+      mp: MAX_MP,
+      maxMp: MAX_MP,
+      castAt: -1,
+      castSlot: 0,
+      hiddenUntil: 0,
+      dotUntil: 0,
+      dotBy: '',
+      nextDot: 0,
       trail: load.trail,
       bfx: load.bfx,
       team: MODES[this.mode].team ? this.smallerTeam() : 0,
@@ -348,14 +394,12 @@ export class Sim {
       dashUntil: 0,
       dashX: 0,
       dashY: 0,
+      dashSpeed: DASH_SPEED,
       nextRegen: this.time + (ch.regen || 0),
       nextHazard: 0,
       holdAcc: 0,
     };
-    if (boss) {
-      p.skills = ['shield', 'pulse'];
-      p.charId = 'titan';
-    }
+    if (boss) p.charId = 'titan';
     this.players.set(id, p);
     if (bot) this.brains.set(id, this.newBrain());
     return p;
@@ -413,13 +457,9 @@ export class Sim {
         name = 'Overlord';
       }
       const ch = CHARACTER_LIST[Math.floor(this.rng() * CHARACTER_LIST.length)];
-      const pool = SKILL_LIST.map((s) => s.id);
-      const a = pool[Math.floor(this.rng() * pool.length)];
-      let b = pool[Math.floor(this.rng() * pool.length)];
-      if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length];
       this.addPlayer(`bot_${this.nextId++}`, name, true, {
         charId: ch.id,
-        skills: [a, b],
+        skillIds: botKit(this.rng, this.cfg.botSkill, boss),
         trail: Math.floor(this.rng() * 3),
         bfx: Math.floor(this.rng() * BULLET_FX.length),
         boss,
@@ -436,7 +476,14 @@ export class Sim {
     p.aim = input.aim;
     p.shooting = input.shooting;
     p.seq = input.seq;
-    p.pendingSkill |= input.skill & 3;
+    p.pendingSkill |= input.skill & 31;
+  }
+
+  /** Builds equipped skill slots from instances, ids, or the default kit. Bots and bosses skip sanitizing. */
+  private buildSlots(opts: PlayerOpts, ids: number[], trusted: boolean): SlotState[] {
+    if (opts.instances && opts.instances.length) return opts.instances.slice(0, 5).map(slotFromInstance);
+    const list = trusted && opts.skillIds ? opts.skillIds.slice(0, 5) : ids.length ? ids : defaultKit();
+    return list.map((id) => slotFromInstance(neutralInstance(id)));
   }
 
   /** Applies a validated loadout to a human player (used on join). */
@@ -446,7 +493,9 @@ export class Sim {
     const l = sanitizeLoadout(raw);
     const ch = CHARACTERS[l.char];
     p.charId = l.char;
-    p.skills = l.skills;
+    p.slots = (l.skillIds.length ? l.skillIds : defaultKit()).map((id) =>
+      slotFromInstance(neutralInstance(id)),
+    );
     p.trail = l.trail;
     p.bfx = l.bfx;
     p.maxHp = ch.hp;
@@ -465,6 +514,7 @@ export class Sim {
     const sp = this.eff(p, 'speed');
     if (sp) m *= 1 + 0.35 * sp.power;
     if (this.time < p.slowUntil) m *= 0.6;
+    if (p.castAt >= 0) m *= 0.5;
     return m;
   }
 
@@ -495,13 +545,22 @@ export class Sim {
         p.nextRegen = this.time + ch.regen;
         if (p.hp < p.maxHp) p.hp += 1;
       }
+      p.mp = Math.min(p.maxMp, p.mp + MP_REGEN * dt);
+      if (this.time < p.dotUntil && this.time >= p.nextDot) {
+        p.nextDot = this.time + 1;
+        this.hurt(p, p.dotBy, 1);
+        if (!p.alive) continue;
+      }
+      if (p.castAt >= 0 && this.time >= p.castAt) {
+        p.castAt = -1;
+        this.resolveCast(p, p.slots[p.castSlot]);
+      }
       if (p.pendingSkill) {
-        for (let s = 0; s < 2; s++)
-          if (p.pendingSkill & (1 << s) && this.time >= p.cd[s]) this.useSkill(p, s);
+        for (let s = 0; s < p.slots.length; s++) if (p.pendingSkill & (1 << s)) this.castSlot(p, s);
         p.pendingSkill = 0;
       }
       if (this.time < p.dashUntil) {
-        const m = movePlayer(p.x, p.y, p.dashX, p.dashY, dt, DASH_SPEED, this.map.obstacles);
+        const m = movePlayer(p.x, p.y, p.dashX, p.dashY, dt, p.dashSpeed, this.map.obstacles);
         p.x = m.x;
         p.y = m.y;
       } else {
@@ -530,6 +589,8 @@ export class Sim {
 
     this.stepBullets(dt);
     this.stepMines();
+    this.stepZones(dt);
+    this.stepPets(dt);
     this.stepPickups(dt);
     if (this.mode === 'coins') this.stepCoins(dt);
     if (this.mode === 'hill') this.stepHill(dt);
@@ -564,6 +625,8 @@ export class Sim {
       freeze: !!this.eff(p, 'freeze'),
       hit: [],
       kind: p.bfx,
+      status: '',
+      homing: false,
     });
   }
 
@@ -575,6 +638,7 @@ export class Sim {
     if (p.boss) interval *= 0.8;
     else if (p.bot) interval *= 2.2 - this.cfg.botSkill;
     p.nextShot = this.time + interval;
+    p.hiddenUntil = 0;
     if (this.eff(p, 'triple')) {
       this.shoot(p, p.aim - 0.2);
       this.shoot(p, p.aim);
@@ -588,6 +652,7 @@ export class Sim {
     for (const b of this.bullets) {
       const ox = b.x;
       const oy = b.y;
+      if (b.homing) this.steerBullet(b, dt);
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.ttl -= dt;
@@ -623,6 +688,7 @@ export class Sim {
         if (!circlesOverlap(b.x, b.y, b.r, p.x, p.y, PLAYER_RADIUS)) continue;
         this.hurt(p, b.owner, b.dmg);
         if (b.freeze) p.slowUntil = this.time + 2;
+        if (b.status) this.applyStatus(p, this.players.get(b.owner), b.status);
         if (b.pierce > 0) {
           b.pierce--;
           b.hit.push(p.id);
@@ -654,6 +720,8 @@ export class Sim {
     victim.alive = false;
     victim.deaths += 1;
     victim.shooting = false;
+    victim.castAt = -1;
+    victim.dotUntil = 0;
     victim.effects = [];
     victim.shieldHits = 0;
     victim.respawnAt = this.time + RESPAWN_DELAY;
@@ -676,58 +744,315 @@ export class Sim {
     p.hp = p.maxHp;
     p.alive = true;
     p.invulnUntil = this.time + INVULN_TIME;
-    p.cd = [0, 0];
+    for (const sl of p.slots) sl.cdUntil = 0;
+    p.mp = p.maxMp;
+    p.castAt = -1;
     p.dashUntil = 0;
     this.events.push({ t: 'respawn', id: p.id, x: p.x, y: p.y });
   }
 
   // ---- skills -------------------------------------------------------------
 
-  private useSkill(p: SimPlayer, slot: number): void {
-    const id = p.skills[slot];
-    const def = SKILLS[id];
-    if (!def) return;
-    p.cd[slot] = this.time + def.cd * CHARACTERS[p.charId].skillCd;
-    this.events.push({ t: 'skill', id: p.id, skill: id, x: p.x, y: p.y });
-    switch (id) {
-      case 'dash': {
-        let dx = p.moveX;
-        let dy = p.moveY;
-        if (Math.hypot(dx, dy) < 0.1) {
-          dx = Math.cos(p.aim);
-          dy = Math.sin(p.aim);
+  /** Starts casting the skill in a slot. Needs mana, a ready cooldown, and no cast already in progress. */
+  private castSlot(p: SimPlayer, slot: number): void {
+    const s = p.slots[slot];
+    if (!s || s.kind === 'world' || p.castAt >= 0) return;
+    if (this.time < s.cdUntil || p.mp < s.stats.mp) return;
+    p.mp -= s.stats.mp;
+    s.cdUntil = this.time + s.stats.cooldown * CHARACTERS[p.charId].skillCd;
+    if (s.kind !== 'stealth') p.hiddenUntil = 0;
+    this.events.push({ t: 'cast', id: p.id, skill: s.skillId, x: p.x, y: p.y, time: s.stats.cast });
+    if (s.stats.cast <= 0.06) this.resolveCast(p, s);
+    else {
+      p.castAt = this.time + s.stats.cast;
+      p.castSlot = slot;
+    }
+  }
+
+  private nearestEnemy(p: SimPlayer, maxDist: number): SimPlayer | null {
+    let best: SimPlayer | null = null;
+    let bd = maxDist;
+    for (const o of this.players.values()) {
+      if (!o.alive || !this.isEnemy(p, o)) continue;
+      const d = Math.hypot(o.x - p.x, o.y - p.y);
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    return best;
+  }
+
+  private isAlly(a: SimPlayer, b: SimPlayer): boolean {
+    return a.id === b.id || (MODES[this.mode].team && a.team === b.team);
+  }
+
+  /** Adds an element status to a hit target. */
+  private applyStatus(victim: SimPlayer, owner: SimPlayer | undefined, status: string): void {
+    if (!victim.alive || !status) return;
+    switch (status) {
+      case 'burn':
+      case 'poison':
+        victim.dotUntil = this.time + 3;
+        victim.dotBy = owner?.id ?? '';
+        victim.nextDot = this.time + 1;
+        break;
+      case 'slow':
+        victim.slowUntil = this.time + 2;
+        break;
+      case 'knockback':
+      case 'pull': {
+        if (!owner) break;
+        const dx = victim.x - owner.x;
+        const dy = victim.y - owner.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const sign = status === 'pull' ? -1 : 1;
+        const m = movePlayer(
+          victim.x,
+          victim.y,
+          (sign * dx) / d,
+          (sign * dy) / d,
+          90 / PLAYER_SPEED,
+          PLAYER_SPEED,
+          this.map.obstacles,
+        );
+        victim.x = m.x;
+        victim.y = m.y;
+        break;
+      }
+      case 'leech':
+        if (owner && owner.alive) owner.hp = Math.min(owner.maxHp, owner.hp + 1);
+        break;
+    }
+  }
+
+  private skillBullet(
+    p: SimPlayer,
+    s: SlotState,
+    angle: number,
+    dmg: number,
+    opts: { speed?: number; range?: number; r?: number } = {},
+  ): void {
+    const speed = opts.speed ?? 760;
+    const status = elementStatus(s.element);
+    this.bullets.push({
+      id: this.nextId++,
+      owner: p.id,
+      team: p.team,
+      x: p.x + Math.cos(angle) * (PLAYER_RADIUS + 2),
+      y: p.y + Math.sin(angle) * (PLAYER_RADIUS + 2),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      ttl: Math.min(2.2, (opts.range ?? s.stats.range) / speed),
+      r: opts.r ?? BULLET_RADIUS * 1.2,
+      dmg,
+      pierce: status === 'pierce' || status === 'chain' ? 1 : 0,
+      bounce: status === 'bounce' ? 2 : 0,
+      freeze: false,
+      hit: [],
+      kind: p.bfx,
+      status,
+      homing: status === 'homing',
+    });
+  }
+
+  private refund(p: SimPlayer, s: SlotState): void {
+    s.cdUntil = this.time + 0.4;
+    p.mp = Math.min(p.maxMp, p.mp + s.stats.mp);
+  }
+
+  private addZone(p: SimPlayer, kind: SimZone['kind'], x: number, y: number, r: number, dur: number): void {
+    const mine = this.zones.filter((z) => z.owner === p.id);
+    if (mine.length >= 3) this.zones = this.zones.filter((z) => z !== mine[0]);
+    this.zones.push({
+      id: this.nextId++,
+      owner: p.id,
+      team: p.team,
+      kind,
+      x,
+      y,
+      r,
+      until: this.time + dur,
+      nextTick: this.time + 1,
+    });
+  }
+
+  /** The effect of a skill, run when its cast time is over. One behavior per skill kind. */
+  private resolveCast(p: SimPlayer, s: SlotState | undefined): void {
+    if (!s || !p.alive) return;
+    const st = s.stats;
+    const dmg = dmgFromPower(st.power);
+    const status = elementStatus(s.element);
+    const aim = p.aim;
+    const ax = Math.cos(aim);
+    const ay = Math.sin(aim);
+    this.events.push({
+      t: 'skill',
+      id: p.id,
+      skill: s.skillId,
+      kind: s.kind,
+      element: s.element,
+      x: p.x,
+      y: p.y,
+    });
+    switch (s.kind) {
+      case 'projectile': {
+        const n = 1 + st.count;
+        for (let i = 0; i < n; i++) this.skillBullet(p, s, aim + (i - (n - 1) / 2) * 0.16, dmg);
+        break;
+      }
+      case 'volley': {
+        const n = 3 + st.count + (RANKS.indexOf(s.rank) >= 5 ? 2 : 0);
+        const d = Math.max(1, Math.round(dmg * 0.6));
+        for (let i = 0; i < n; i++) this.skillBullet(p, s, aim + (i - (n - 1) / 2) * 0.2, d, { speed: 700 });
+        break;
+      }
+      case 'nova': {
+        const n = 10 + st.count * 2;
+        const d = Math.max(1, Math.round(dmg * 0.6));
+        for (let i = 0; i < n; i++)
+          this.skillBullet(p, s, (i * Math.PI * 2) / n, d, { speed: 520, range: Math.max(220, st.area) });
+        this.events.push({ t: 'boom', x: p.x, y: p.y });
+        break;
+      }
+      case 'beam': {
+        const len = Math.min(900, st.range);
+        for (const o of this.players.values()) {
+          if (!o.alive || !this.isEnemy(p, o)) continue;
+          const rx = o.x - p.x;
+          const ry = o.y - p.y;
+          const along = rx * ax + ry * ay;
+          if (along < 0 || along > len) continue;
+          if (Math.abs(rx * ay - ry * ax) > PLAYER_RADIUS + 10) continue;
+          if (segmentBlocked(p.x, p.y, o.x, o.y, this.map.obstacles)) continue;
+          this.hurt(o, p.id, dmg);
+          this.applyStatus(o, p, status);
         }
-        const l = Math.hypot(dx, dy) || 1;
-        p.dashX = dx / l;
-        p.dashY = dy / l;
-        p.dashUntil = this.time + DASH_TIME;
+        this.events.push({ t: 'beam', id: p.id, x: p.x, y: p.y, angle: aim, len, element: s.element });
+        break;
+      }
+      case 'cleave': {
+        const r = Math.max(110, st.area + 20);
+        for (const o of this.players.values()) {
+          if (!o.alive || !this.isEnemy(p, o)) continue;
+          const rx = o.x - p.x;
+          const ry = o.y - p.y;
+          if (Math.hypot(rx, ry) > r + PLAYER_RADIUS) continue;
+          if (Math.abs(normalizeAngle(Math.atan2(ry, rx) - aim)) > 1.15) continue;
+          this.hurt(o, p.id, dmg);
+          this.applyStatus(o, p, status || 'knockback');
+        }
+        this.events.push({ t: 'swing', id: p.id, x: p.x, y: p.y, angle: aim, r, element: s.element });
         break;
       }
       case 'shield':
-        p.invulnUntil = Math.max(p.invulnUntil, this.time + 1.8);
+        p.invulnUntil = Math.max(p.invulnUntil, this.time + Math.max(1.2, st.duration));
         break;
-      case 'pulse':
+      case 'heal': {
+        const amount = Math.max(1, Math.round(st.power / 30));
         for (const o of this.players.values()) {
-          if (!o.alive || !this.isEnemy(p, o)) continue;
-          const dx = o.x - p.x;
-          const dy = o.y - p.y;
-          const d = Math.hypot(dx, dy);
-          if (d > 170) continue;
-          const m = movePlayer(
-            o.x,
-            o.y,
-            dx / (d || 1),
-            dy / (d || 1),
-            140 / PLAYER_SPEED,
-            PLAYER_SPEED,
-            this.map.obstacles,
-          );
-          o.x = m.x;
-          o.y = m.y;
-          this.hurt(o, p.id, 1);
+          if (!o.alive || !this.isAlly(p, o)) continue;
+          if (o.id !== p.id && Math.hypot(o.x - p.x, o.y - p.y) > 220) continue;
+          o.hp = Math.min(o.maxHp, o.hp + amount);
         }
-        this.events.push({ t: 'boom', x: p.x, y: p.y });
         break;
+      }
+      case 'barrier':
+        this.addZone(
+          p,
+          'barrier',
+          p.x + ax * 80,
+          p.y + ay * 80,
+          Math.max(80, st.area * 0.7),
+          Math.max(3, st.duration),
+        );
+        break;
+      case 'aura':
+        this.addZone(p, 'heal', p.x, p.y, Math.max(120, st.area), Math.max(4, st.duration));
+        break;
+      case 'slow':
+        this.addZone(
+          p,
+          'slow',
+          p.x + ax * Math.min(st.range, 300) * 0.7,
+          p.y + ay * Math.min(st.range, 300) * 0.7,
+          Math.max(110, st.area * 0.8),
+          Math.max(2.5, st.duration),
+        );
+        break;
+      case 'pull':
+        this.addZone(
+          p,
+          'pull',
+          p.x + ax * Math.min(st.range, 320) * 0.7,
+          p.y + ay * Math.min(st.range, 320) * 0.7,
+          Math.max(120, st.area * 0.8),
+          Math.max(1.4, st.duration),
+        );
+        break;
+      case 'buff': {
+        const key = BUFF_BY_ARCHETYPE[ARCHETYPES[s.archetype]?.name ?? ''] ?? 'rapid';
+        if (key === 'guard') {
+          p.shieldHits = Math.max(p.shieldHits, 1 + Math.floor(st.power / 60));
+          break;
+        }
+        const until = this.time + Math.max(4, st.duration);
+        const power = 1 + st.power / 80;
+        const have = p.effects.find((e) => e.effect === key);
+        if (have) {
+          have.until = Math.max(have.until, until);
+          have.power = Math.max(have.power, power);
+        } else {
+          p.effects.push({ effect: key, rarity: Math.min(3, RANKS.indexOf(s.rank) >> 1), until, power });
+          if (p.effects.length > MAX_EFFECTS) p.effects.shift();
+        }
+        break;
+      }
+      case 'stealth':
+        p.hiddenUntil = this.time + Math.max(2.5, st.duration);
+        break;
+      case 'ambush': {
+        const t = this.nearestEnemy(p, st.range);
+        if (!t) {
+          this.refund(p, s);
+          break;
+        }
+        const m = movePlayer(
+          t.x - Math.cos(t.aim) * (PLAYER_RADIUS * 2 + 4),
+          t.y - Math.sin(t.aim) * (PLAYER_RADIUS * 2 + 4),
+          0,
+          0,
+          0,
+          PLAYER_SPEED,
+          this.map.obstacles,
+        );
+        p.x = m.x;
+        p.y = m.y;
+        p.aim = Math.atan2(t.y - p.y, t.x - p.x);
+        p.hiddenUntil = 0;
+        this.hurt(t, p.id, dmg + 1);
+        this.applyStatus(t, p, status);
+        break;
+      }
+      case 'summon': {
+        const n = Math.min(MAX_PETS, 1 + st.count + (RANKS.indexOf(s.rank) >= 5 ? 1 : 0));
+        for (let i = 0; i < n; i++) {
+          const owned = this.pets.filter((x) => x.owner === p.id);
+          if (owned.length >= MAX_PETS) this.pets.splice(this.pets.indexOf(owned[0]), 1);
+          this.pets.push({
+            id: this.nextId++,
+            owner: p.id,
+            team: p.team,
+            x: p.x + Math.cos(i * 1.7) * 30,
+            y: p.y + Math.sin(i * 1.7) * 30,
+            until: this.time + Math.max(8, st.duration),
+            nextShot: this.time + 0.8,
+            dmg: Math.max(1, Math.round(dmg * 0.5)),
+            color: ELEMENTS[s.element]?.color ?? p.color,
+          });
+        }
+        break;
+      }
       case 'mine': {
         const mine = this.mines.filter((m) => m.owner === p.id);
         if (mine.length >= 3) this.mines = this.mines.filter((m) => m !== mine[0]);
@@ -738,35 +1063,42 @@ export class Sim {
           x: p.x,
           y: p.y,
           armedAt: this.time + 0.8,
-          expires: this.time + 25,
+          expires: this.time + Math.max(15, st.duration),
+          dmg,
+          r: Math.max(70, st.area),
         });
         break;
       }
-      case 'repair':
-        p.hp = Math.min(p.maxHp, p.hp + 1);
+      case 'dash': {
+        let dx = p.moveX;
+        let dy = p.moveY;
+        if (Math.hypot(dx, dy) < 0.1) {
+          dx = ax;
+          dy = ay;
+        }
+        const l = Math.hypot(dx, dy) || 1;
+        p.dashX = dx / l;
+        p.dashY = dy / l;
+        p.dashSpeed = Math.max(500, st.range) / DASH_TIME;
+        p.dashUntil = this.time + DASH_TIME;
         break;
-      case 'blink': {
+      }
+      case 'blink':
+      case 'portal': {
         let x = p.x;
         let y = p.y;
-        for (let i = 0; i < 13; i++) {
-          const m = movePlayer(
-            x,
-            y,
-            Math.cos(p.aim),
-            Math.sin(p.aim),
-            20 / PLAYER_SPEED,
-            PLAYER_SPEED,
-            this.map.obstacles,
-          );
+        const steps = Math.max(4, Math.round(st.range / 20));
+        for (let i = 0; i < steps; i++) {
+          const m = movePlayer(x, y, ax, ay, 20 / PLAYER_SPEED, PLAYER_SPEED, this.map.obstacles);
           x = m.x;
           y = m.y;
         }
         p.x = x;
         p.y = y;
+        if (s.kind === 'portal') p.invulnUntil = Math.max(p.invulnUntil, this.time + 0.8);
         break;
       }
-      case 'burst':
-        for (let i = -2; i <= 2; i++) this.shoot(p, p.aim + i * 0.17);
+      default:
         break;
     }
   }
@@ -791,15 +1123,94 @@ export class Sim {
         continue;
       }
       this.events.push({ t: 'boom', x: m.x, y: m.y });
+      const owner = this.players.get(m.owner);
       for (const p of this.players.values()) {
         if (!p.alive || p.id === m.owner) continue;
         if (MODES[this.mode].team && p.team === m.team) continue;
-        if (Math.hypot(p.x - m.x, p.y - m.y) <= MINE_BLAST) this.hurt(p, m.owner, 1);
+        if (Math.hypot(p.x - m.x, p.y - m.y) <= m.r) {
+          this.hurt(p, m.owner, m.dmg);
+          if (owner) this.applyStatus(p, owner, 'knockback');
+        }
       }
     }
     this.mines = keep;
   }
 
+  private stepZones(dt: number): void {
+    this.zones = this.zones.filter((z) => this.time < z.until);
+    const team = MODES[this.mode].team;
+    for (const z of this.zones) {
+      const enemyOf = (o: SimPlayer) => o.alive && o.id !== z.owner && (!team || o.team !== z.team);
+      if (z.kind === 'barrier') {
+        this.bullets = this.bullets.filter((b) => {
+          if (b.owner === z.owner || (team && b.team === z.team)) return true;
+          return Math.hypot(b.x - z.x, b.y - z.y) > z.r;
+        });
+      } else if (z.kind === 'heal') {
+        if (this.time >= z.nextTick) {
+          z.nextTick += 1;
+          for (const o of this.players.values()) {
+            const ally = o.alive && (o.id === z.owner || (team && o.team === z.team));
+            if (ally && Math.hypot(o.x - z.x, o.y - z.y) <= z.r) o.hp = Math.min(o.maxHp, o.hp + 1);
+          }
+        }
+      } else if (z.kind === 'slow') {
+        for (const o of this.players.values()) {
+          if (enemyOf(o) && Math.hypot(o.x - z.x, o.y - z.y) <= z.r)
+            o.slowUntil = Math.max(o.slowUntil, this.time + 0.35);
+        }
+      } else if (z.kind === 'pull') {
+        for (const o of this.players.values()) {
+          if (!enemyOf(o)) continue;
+          const dx = z.x - o.x;
+          const dy = z.y - o.y;
+          const d = Math.hypot(dx, dy);
+          if (d > z.r || d < 8) continue;
+          const m = movePlayer(o.x, o.y, dx / d, dy / d, dt, 260, this.map.obstacles);
+          o.x = m.x;
+          o.y = m.y;
+        }
+      }
+    }
+  }
+
+  private stepPets(dt: number): void {
+    this.pets = this.pets.filter((pt) => this.time < pt.until && this.players.get(pt.owner)?.alive);
+    const index = new Map<string, number>();
+    for (const pt of this.pets) {
+      const owner = this.players.get(pt.owner);
+      if (!owner) continue;
+      const i = index.get(pt.owner) ?? 0;
+      index.set(pt.owner, i + 1);
+      const a = this.time * 1.6 + i * 1.3;
+      pt.x += (owner.x + Math.cos(a) * 54 - pt.x) * Math.min(1, 7 * dt);
+      pt.y += (owner.y + Math.sin(a) * 54 - pt.y) * Math.min(1, 7 * dt);
+      if (this.time < pt.nextShot) continue;
+      const target = this.nearestEnemy(owner, 520);
+      if (!target || segmentBlocked(pt.x, pt.y, target.x, target.y, this.map.obstacles)) continue;
+      pt.nextShot = this.time + 1.3;
+      const ang = Math.atan2(target.y - pt.y, target.x - pt.x);
+      this.bullets.push({
+        id: this.nextId++,
+        owner: pt.owner,
+        team: pt.team,
+        x: pt.x,
+        y: pt.y,
+        vx: Math.cos(ang) * 640,
+        vy: Math.sin(ang) * 640,
+        ttl: 0.9,
+        r: 7,
+        dmg: pt.dmg,
+        pierce: 0,
+        bounce: 0,
+        freeze: false,
+        hit: [],
+        kind: owner.bfx,
+        status: '',
+        homing: false,
+      });
+    }
+  }
   // ---- powerups, coins, hill ------------------------------------------------
 
   private applyPowerup(p: SimPlayer, pu: PowerupDef): void {
@@ -992,7 +1403,10 @@ export class Sim {
       p.alive = true;
       p.effects = [];
       p.shieldHits = 0;
-      p.cd = [0, 0];
+      for (const sl of p.slots) sl.cdUntil = 0;
+      p.mp = p.maxMp;
+      p.castAt = -1;
+      p.dotUntil = 0;
       p.dashUntil = 0;
       p.slowUntil = 0;
       p.invulnUntil = this.time + INVULN_TIME;
@@ -1023,19 +1437,58 @@ export class Sim {
       lastY: 0,
       lastCheck: 0,
       unstuckUntil: 0,
+      nextCast: 0,
     };
   }
 
-  private botUse(p: SimPlayer, ids: string[]): boolean {
-    for (let s = 0; s < 2; s++) {
-      if (ids.includes(p.skills[s]) && this.time >= p.cd[s]) {
-        this.useSkill(p, s);
-        return true;
-      }
-    }
-    return false;
+  /** Bots cast by skill kind: defend when hurt, attack when the target is in range, set traps and summons when close. */
+  private botCast(p: SimPlayer, brain: BotBrain, target: SimPlayer | null, dist: number): void {
+    if (this.time < brain.nextCast || p.castAt >= 0) return;
+    const skill = p.boss ? 0.9 : this.cfg.botSkill;
+    const ready = p.slots
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => s.kind !== 'world' && this.time >= s.cdUntil && p.mp >= s.stats.mp);
+    if (!ready.length) return;
+    const has = (kinds: Kind[]) => ready.find(({ s }) => kinds.includes(s.kind));
+    const low = p.hp <= Math.max(1, Math.floor(p.maxHp / 3));
+    const visible = !!target && !segmentBlocked(p.x, p.y, target.x, target.y, this.map.obstacles);
+    let pick: { s: SlotState; i: number } | undefined;
+    if (low) pick = has(['heal', 'shield', 'stealth', 'barrier']) ?? has(['dash', 'blink', 'portal']);
+    else if (target && visible) {
+      if (dist < 170) pick = has(['cleave', 'nova', 'pull', 'slow']) ?? has(['shield']);
+      if (!pick && dist < 760) pick = has(['beam', 'projectile', 'volley']);
+      if (pick && ['beam', 'projectile', 'volley'].includes(pick.s.kind) && dist > pick.s.stats.range * 0.95)
+        pick = undefined;
+      if (!pick && dist < 420)
+        pick = has(['summon', 'mine', 'barrier', 'buff', 'ambush', 'slow', 'pull', 'aura']);
+      if (!pick && dist > 400 && this.rng() < 0.4) pick = has(['dash', 'blink', 'portal']);
+    } else if (target && dist < 600) pick = has(['summon', 'buff', 'stealth']);
+    if (!pick) return;
+    if (target) p.aim = normalizeAngle(Math.atan2(target.y - p.y, target.x - p.x) + brain.aimErr);
+    this.castSlot(p, pick.i);
+    brain.nextCast = this.time + 0.5 + (1 - skill) * 1.1 + this.rng() * 0.5;
   }
 
+  private steerBullet(b: SimBullet, dt: number): void {
+    let best: SimPlayer | null = null;
+    let bd = 420;
+    const team = MODES[this.mode].team;
+    for (const o of this.players.values()) {
+      if (!o.alive || o.id === b.owner || (team && o.team === b.team)) continue;
+      const d = Math.hypot(o.x - b.x, o.y - b.y);
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    if (!best) return;
+    const speed = Math.hypot(b.vx, b.vy);
+    const cur = Math.atan2(b.vy, b.vx);
+    const diff = normalizeAngle(Math.atan2(best.y - b.y, best.x - b.x) - cur);
+    const turn = Math.max(-3.5 * dt, Math.min(3.5 * dt, diff));
+    b.vx = Math.cos(cur + turn) * speed;
+    b.vy = Math.sin(cur + turn) * speed;
+  }
   private thinkBot(p: SimPlayer): void {
     const brain = this.brains.get(p.id);
     if (!brain) return;
@@ -1053,6 +1506,7 @@ export class Sim {
       for (const o of this.players.values()) {
         if (!o.alive || !this.isEnemy(p, o)) continue;
         const d = Math.hypot(o.x - p.x, o.y - p.y);
+        if (o.hiddenUntil > this.time && d > 150) continue;
         if (d < best) {
           best = d;
           target = o;
@@ -1064,16 +1518,7 @@ export class Sim {
         brain.wanderY = 80 + this.rng() * (WORLD_H - 160);
         brain.wanderUntil = this.time + 2 + this.rng() * 2;
       }
-      // skills
-      if (this.rng() < 0.25 + skill * 0.5) {
-        if (p.hp <= 1 && p.maxHp > 1) {
-          this.botUse(p, ['shield', 'repair', 'dash', 'blink']);
-        } else if (target && best < 170) {
-          this.botUse(p, ['pulse', 'shield']);
-        } else if (target && best < 380) {
-          this.botUse(p, ['burst', 'mine']);
-        }
-      }
+      this.botCast(p, brain, target, best);
     }
 
     const target = brain.targetId ? this.players.get(brain.targetId) : undefined;
@@ -1211,10 +1656,15 @@ export interface PlayerView {
   bfx: number;
   spd: number;
   seq: number;
-  sk0: string;
-  sk1: string;
-  cd0: number;
-  cd1: number;
+  /** Equipped skill ids, comma separated. */
+  skills: string;
+  /** Per slot cooldown as remaining:total seconds, comma separated. */
+  cds: string;
+  mp: number;
+  maxMp: number;
+  hidden: boolean;
+  /** Seconds left of the cast in progress, 0 when not casting. */
+  casting: number;
 }
 
 export function toView(p: SimPlayer, sim: Sim): PlayerView {
@@ -1247,9 +1697,16 @@ export function toView(p: SimPlayer, sim: Sim): PlayerView {
     bfx: p.bfx,
     spd: sim.speedMul(p),
     seq: p.seq,
-    sk0: p.skills[0],
-    sk1: p.skills[1],
-    cd0: Math.max(0, p.cd[0] - t),
-    cd1: Math.max(0, p.cd[1] - t),
+    skills: p.slots.map((s) => s.skillId).join(','),
+    cds: p.slots
+      .map(
+        (s) =>
+          `${Math.max(0, s.cdUntil - t).toFixed(1)}:${(s.stats.cooldown * CHARACTERS[p.charId].skillCd).toFixed(1)}`,
+      )
+      .join(','),
+    mp: Math.round(p.mp),
+    maxMp: p.maxMp,
+    hidden: t < p.hiddenUntil,
+    casting: p.castAt >= 0 ? Math.max(0, p.castAt - t) : 0,
   };
 }

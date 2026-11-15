@@ -24,10 +24,14 @@ export class PlayerState extends Schema {
   @type('uint8') bfx = 0;
   @type('float32') spd = 1;
   @type('uint32') seq = 0;
-  @type('string') sk0 = '';
-  @type('string') sk1 = '';
-  @type('float32') cd0 = 0;
-  @type('float32') cd1 = 0;
+  /** Skill ids of the slots, comma separated. */
+  @type('string') skills = '';
+  /** "remaining:total" seconds per slot, comma separated. */
+  @type('string') cds = '';
+  @type('float32') mp = 0;
+  @type('uint8') maxMp = 100;
+  @type('boolean') hidden = false;
+  @type('float32') casting = 0;
 }
 
 export class BulletState extends Schema {
@@ -60,12 +64,27 @@ export class MineState extends Schema {
   @type('boolean') armed = false;
 }
 
+export class ZoneState extends Schema {
+  @type('float32') x = 0;
+  @type('float32') y = 0;
+  @type('float32') r = 0;
+  @type('string') kind = '';
+  @type('string') owner = '';
+}
+export class PetState extends Schema {
+  @type('float32') x = 0;
+  @type('float32') y = 0;
+  @type('string') owner = '';
+  @type('uint32') color = 0;
+}
 export class ArenaState extends Schema {
   @type({ map: PlayerState }) players = new MapSchema<PlayerState>();
   @type({ map: BulletState }) bullets = new MapSchema<BulletState>();
   @type({ map: PickupState }) pickups = new MapSchema<PickupState>();
   @type({ map: CoinState }) coins = new MapSchema<CoinState>();
   @type({ map: MineState }) mines = new MapSchema<MineState>();
+  @type({ map: ZoneState }) zones = new MapSchema<ZoneState>();
+  @type({ map: PetState }) pets = new MapSchema<PetState>();
   @type('string') phase = 'play';
   @type('string') mode = 'dm';
   @type('string') mapId = 'neon';

@@ -9,3 +9,4 @@ export * from './skills/catalog';
 export * from './skills/uniques';
 export * from './skills/generate';
 export * from './skills/instances';
+export * from './battle';

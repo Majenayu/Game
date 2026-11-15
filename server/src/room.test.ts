@@ -1,7 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Client } from 'colyseus.js';
-import { MAX_PLAYERS, MSG_INPUT } from '@orb/shared';
+import { MAX_PLAYERS, MSG_INPUT, firstIdOfRank, getSkill, skillCount } from '@orb/shared';
 import { createGameServer } from './app';
+
+function firstOfKind(kind: string): number {
+  const start = firstIdOfRank('C');
+  for (let k = 0; k < skillCount('C'); k++) if (getSkill(start + k).kind === kind) return start + k;
+  throw new Error(kind);
+}
+const SKILL_A = firstOfKind('projectile');
+const SKILL_B = firstOfKind('shield');
 
 const PORT = 2599;
 const server = createGameServer();
@@ -81,7 +89,7 @@ describe('ArenaRoom', () => {
 
   it('separates rooms by mode and map, applies the loadout and syncs mode state', async () => {
     const url = `ws://localhost:${PORT}`;
-    const loadout = { char: 'titan', skills: ['pulse', 'mine'], color: 9, trail: 2, bfx: 1 };
+    const loadout = { char: 'titan', skillIds: [SKILL_A, SKILL_B], color: 9, trail: 2, bfx: 1 };
     const a = await new Client(url).joinOrCreate<any>('arena', {
       name: 'Coiner',
       mode: 'coins',
@@ -105,7 +113,7 @@ describe('ArenaRoom', () => {
     const me = a.state.players.get(a.sessionId);
     expect(me.char).toBe('titan');
     expect(me.maxHp).toBe(5);
-    expect(me.sk0).toBe('pulse');
+    expect(me.skills).toBe(`${SKILL_A},${SKILL_B}`);
     expect(me.color).toBe(0x2979ff);
     await until(() => a.state.coins.size > 0);
     await Promise.all([a.leave(), b.leave(), c.leave()]);
@@ -119,12 +127,13 @@ describe('ArenaRoom', () => {
       name: 'Odd',
       mode: 'dm',
       map: 'neon',
-      loadout: { char: 'god', skills: [1, 2], color: -5 },
+      loadout: { char: 'god', skillIds: [-4, 99999999], color: -5 },
     });
     await until(() => r.state.players?.size === 8);
     const me = r.state.players.get(r.sessionId);
     expect(me.char).toBe('nova');
     expect(me.maxHp).toBe(3);
+    expect(me.skills.split(',').every((x: string) => Number(x) > 0 && Number(x) < 99999999)).toBe(true);
     await r.leave();
   });
 
@@ -136,7 +145,7 @@ describe('ArenaRoom', () => {
     });
     await until(() => r.state.players?.size === 8);
     r.send(MSG_INPUT, { moveX: 0, moveY: 0, aimAngle: 0, shooting: false, seq: 1, skill: 1 });
-    await until(() => r.state.players.get(r.sessionId).cd0 > 0);
+    await until(() => (r.state.players.get(r.sessionId).cds as string).split(',')[0].split(':')[0] > '0');
     await r.leave();
   });
 });

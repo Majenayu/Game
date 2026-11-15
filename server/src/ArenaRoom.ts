@@ -15,7 +15,16 @@ import {
   type ModeId,
   type PowerupDef,
 } from '@orb/shared';
-import { ArenaState, BulletState, CoinState, MineState, PickupState, PlayerState } from './schema';
+import {
+  ArenaState,
+  BulletState,
+  CoinState,
+  MineState,
+  PetState,
+  PickupState,
+  PlayerState,
+  ZoneState,
+} from './schema';
 
 const MAX_CONN_PER_IP = Number(process.env.MAX_CONN_PER_IP ?? 16);
 const MAX_MSGS_PER_SEC = 60;
@@ -211,10 +220,12 @@ export class ArenaRoom extends Room<ArenaState> {
       ps.bfx = v.bfx;
       ps.spd = v.spd;
       ps.seq = v.seq;
-      ps.sk0 = v.sk0;
-      ps.sk1 = v.sk1;
-      ps.cd0 = Math.round(v.cd0 * 10) / 10;
-      ps.cd1 = Math.round(v.cd1 * 10) / 10;
+      ps.skills = v.skills;
+      ps.cds = v.cds;
+      ps.mp = Math.round(v.mp);
+      ps.maxMp = v.maxMp;
+      ps.hidden = v.hidden;
+      ps.casting = Math.round(v.casting * 10) / 10;
     }
 
     syncMap(
@@ -284,6 +295,38 @@ export class ArenaRoom extends Room<ArenaState> {
         return st;
       },
       false,
+    );
+    syncMap(
+      s.zones,
+      sim.zones.map((z) => ({ key: String(z.id), b: z })),
+      () => undefined,
+      (z) => {
+        const st = new ZoneState();
+        st.x = z.x;
+        st.y = z.y;
+        st.r = z.r;
+        st.kind = z.kind;
+        st.owner = z.owner;
+        return st;
+      },
+      false,
+    );
+    syncMap(
+      s.pets,
+      sim.pets.map((pt) => ({ key: String(pt.id), b: pt })),
+      (st: PetState, pt) => {
+        st.x = pt.x;
+        st.y = pt.y;
+      },
+      (pt) => {
+        const st = new PetState();
+        st.x = pt.x;
+        st.y = pt.y;
+        st.owner = pt.owner;
+        st.color = pt.color;
+        return st;
+      },
+      true,
     );
   }
 }

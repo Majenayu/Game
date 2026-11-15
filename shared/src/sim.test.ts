@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  RANKS,
+  type Rank,
+  firstIdOfRank,
+  getSkill,
+  neutralInstance,
+  skillCount,
+  slotFromInstance,
+  usableInBattle,
+  type Kind,
   CHARACTERS,
   COLORS,
   EFFECT_LIST,
@@ -125,14 +134,25 @@ describe('content', () => {
 
   it('sanitizes loadouts', () => {
     expect(sanitizeLoadout(null).char).toBe('nova');
-    const l = sanitizeLoadout({ char: 'titan', skills: ['pulse', 'mine'], color: 5, trail: 99, bfx: 2 });
+    const a = idOfKind('projectile', 'C');
+    const b = idOfKind('shield', 'C');
+    const world = idOfKind('world', 'C');
+    const l = sanitizeLoadout({
+      char: 'titan',
+      skillIds: [a, b, a, world, -4, 'x', 99999999],
+      color: 5,
+      trail: 99,
+      bfx: 2,
+    });
     expect(l.char).toBe('titan');
-    expect(l.skills).toEqual(['pulse', 'mine']);
+    expect(l.skillIds).toEqual([a, b]);
     expect(l.trail).toBe(0);
-    expect(sanitizeLoadout({ char: 'hax', skills: ['dash', 'dash'] }).skills).toEqual(['dash', 'shield']);
+    expect(sanitizeLoadout({ char: 'hax', skillIds: 'nope' }).skillIds).toEqual([]);
+    // the casual budget stops a client from claiming five legendary skills
+    const legends = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => firstIdOfRank('S') + i).filter(usableInBattle);
+    expect(sanitizeLoadout({ skillIds: legends }).skillIds.length).toBeLessThan(5);
     expect(COLORS.length).toBeGreaterThanOrEqual(16);
   });
-
   it('has sane maps and levels', () => {
     for (const m of MAP_LIST) {
       for (const o of [...m.obstacles, ...m.hazards]) {
@@ -268,52 +288,279 @@ describe('powerups', () => {
   });
 });
 
-describe('skills and characters', () => {
-  it('dash moves a player quickly and then goes on cooldown', () => {
-    const sim = new Sim(seeded(), { seats: 1 });
-    const a = sim.addPlayer('a', 'A', false, { skills: ['dash', 'shield'] });
-    a.x = 300;
-    a.y = 800;
-    sim.applyInput('a', input({ moveX: 1, skill: 1 }));
+const kindCache = new Map<string, number>();
+function idOfKind(kind: Kind, rank: Rank = 'C'): number {
+  const key = kind + rank;
+  const hit = kindCache.get(key);
+  if (hit !== undefined) return hit;
+  const start = firstIdOfRank(rank);
+  for (let k = 0; k < skillCount(rank); k++) {
+    if (getSkill(start + k).kind === kind) {
+      kindCache.set(key, start + k);
+      return start + k;
+    }
+  }
+  throw new Error('no skill of kind ' + kind);
+}
+
+/** Two players in the open: a (with the given skills) at the left, b 200 units to the right. */
+function skillDuel(skillIds: number[]) {
+  const sim = new Sim(seeded(), { seats: 2, mapId: 'neon' });
+  const a = sim.addPlayer('a', 'A', false, { skillIds });
+  const b = sim.addPlayer('b', 'B');
+  a.slots = skillIds.map((id) => slotFromInstance(neutralInstance(id)));
+  a.x = 300;
+  a.y = 800;
+  b.x = 500;
+  b.y = 800;
+  a.invulnUntil = 0;
+  b.invulnUntil = 0;
+  b.slots = [];
+  return { sim, a, b };
+}
+
+/** Runs and returns the lowest HP the player reached (respawns reset HP). */
+function lowestHp(sim: Sim, p: { hp: number }, seconds: number): number {
+  let low = p.hp;
+  for (let i = 0; i < seconds * 20; i++) {
     sim.step(0.05);
-    run(sim, 0.3);
-    expect(a.x).toBeGreaterThan(300 + 120);
-    expect(a.cd[0]).toBeGreaterThan(sim.time);
-    const x = a.x;
-    sim.applyInput('a', input({ moveX: 0, skill: 1, seq: 2 }));
-    sim.step(0.05);
-    expect(a.x).toBeCloseTo(x, 0);
+    low = Math.min(low, p.hp);
+  }
+  return low;
+}
+
+function cast(sim: Sim, slot = 0, aim = 0) {
+  sim.applyInput('a', input({ aim, skill: 1 << slot, seq: 1 }));
+}
+
+describe('skills in battle', () => {
+  const ATTACKS: Kind[] = ['projectile', 'beam', 'volley', 'nova', 'cleave', 'ambush'];
+  for (const kind of ATTACKS) {
+    it(`${kind} hurts an enemy in range`, () => {
+      const { sim, b } = skillDuel([idOfKind(kind, 'C')]);
+      if (kind === 'cleave') b.x = 360;
+      cast(sim);
+      expect(lowestHp(sim, b, 1.4)).toBeLessThan(b.maxHp);
+    });
+  }
+
+  it('shield makes you invulnerable and heal restores HP', () => {
+    const s = skillDuel([idOfKind('shield')]);
+    cast(s.sim);
+    run(s.sim, 0.3);
+    expect(s.a.invulnUntil).toBeGreaterThan(s.sim.time);
+    const h = skillDuel([idOfKind('heal')]);
+    h.a.hp = 1;
+    cast(h.sim);
+    run(h.sim, 1);
+    expect(h.a.hp).toBeGreaterThan(1);
   });
 
-  it('bubble blocks damage, mine hurts, repair heals, blink teleports', () => {
-    const d = duel();
-    d.b.skills = ['shield', 'repair'];
-    d.sim.applyInput('b', { ...input(), skill: 1 }); // bots-only guard: humans apply input
-    d.sim.step(0.05);
-    expect(d.b.invulnUntil).toBeGreaterThan(d.sim.time);
-
-    const m = duel();
-    m.a.skills = ['mine', 'dash'];
-    m.sim.applyInput('a', input({ skill: 1 }));
-    m.sim.step(0.05);
-    expect(m.sim.mines.length).toBe(1);
-    m.b.x = m.sim.mines[0].x + 10;
-    m.b.y = m.sim.mines[0].y;
-    run(m.sim, 1.2);
-    expect(m.b.hp).toBeLessThan(m.b.maxHp);
-
-    const r = duel();
-    r.a.skills = ['repair', 'blink'];
-    r.a.hp = 1;
-    r.sim.applyInput('a', input({ skill: 1 }));
-    r.sim.step(0.05);
-    expect(r.a.hp).toBe(2);
-    const x0 = r.a.x;
-    r.sim.applyInput('a', input({ skill: 2, seq: 2 }));
-    r.sim.step(0.05);
-    expect(r.a.x).toBeGreaterThan(x0 + 150);
+  it('barrier, aura, slow and pull create zones', () => {
+    for (const kind of ['barrier', 'aura', 'slow', 'pull'] as Kind[]) {
+      const { sim } = skillDuel([idOfKind(kind)]);
+      cast(sim);
+      run(sim, 1);
+      expect(sim.zones.length).toBe(1);
+    }
   });
 
+  it('a barrier blocks enemy bullets', () => {
+    const { sim, a, b } = skillDuel([idOfKind('barrier')]);
+    b.shooting = true;
+    b.aim = Math.PI;
+    b.x = 700;
+    b.y = 800;
+    b.slots = [];
+    // put the barrier right between them
+    sim.applyInput('a', input({ aim: 0, skill: 1 }));
+    run(sim, 1);
+    expect(sim.zones[0]).toBeDefined();
+    const z = sim.zones[0];
+    z.x = 500;
+    z.y = 800;
+    z.r = 120;
+    z.until = 999;
+    b.shooting = true;
+    sim.bullets = [];
+    run(sim, 1.2);
+    expect(a.hp).toBe(a.maxHp);
+  });
+
+  it('buff adds an effect, stealth hides, summon makes pets, mine places a mine', () => {
+    const buff = skillDuel([idOfKind('buff')]);
+    cast(buff.sim);
+    run(buff.sim, 0.6);
+    expect(buff.a.effects.length + buff.a.shieldHits).toBeGreaterThan(0);
+
+    const st = skillDuel([idOfKind('stealth')]);
+    cast(st.sim);
+    run(st.sim, 0.3);
+    expect(st.a.hiddenUntil).toBeGreaterThan(st.sim.time);
+
+    const su = skillDuel([idOfKind('summon')]);
+    cast(su.sim);
+    run(su.sim, 1);
+    expect(su.sim.pets.length).toBeGreaterThan(0);
+
+    const mi = skillDuel([idOfKind('mine')]);
+    cast(mi.sim);
+    run(mi.sim, 0.3);
+    expect(mi.sim.mines.length).toBe(1);
+  });
+
+  it('pets shoot nearby enemies', () => {
+    const { sim, b } = skillDuel([idOfKind('summon', 'A')]);
+    cast(sim);
+    expect(lowestHp(sim, b, 6)).toBeLessThan(b.maxHp);
+  });
+
+  it('dash, blink and portal move the caster', () => {
+    for (const kind of ['dash', 'blink', 'portal'] as Kind[]) {
+      const { sim, a } = skillDuel([idOfKind(kind)]);
+      b0(sim);
+      const x0 = a.x;
+      cast(sim);
+      run(sim, 1);
+      expect(Math.abs(a.x - x0)).toBeGreaterThan(100);
+    }
+  });
+
+  it('casting costs mana and starts the cooldown, and cannot be repeated until ready', () => {
+    const id = idOfKind('projectile');
+    const { sim, a } = skillDuel([id]);
+    const cost = a.slots[0].stats.mp;
+    cast(sim);
+    run(sim, 0.5);
+    expect(a.mp).toBeLessThan(a.maxMp - cost + 7);
+    expect(a.slots[0].cdUntil).toBeGreaterThan(sim.time);
+    const bullets = sim.bullets.length;
+    cast(sim);
+    sim.step(0.05);
+    expect(sim.bullets.length).toBeLessThanOrEqual(bullets);
+  });
+
+  it('refuses to cast without enough mana', () => {
+    const { sim, a } = skillDuel([idOfKind('projectile')]);
+    a.mp = 0;
+    cast(sim);
+    sim.step(0.05);
+    expect(a.slots[0].cdUntil).toBe(0);
+    expect(sim.bullets.length).toBe(0);
+  });
+
+  it('cast time delays the effect and being killed cancels it', () => {
+    const { sim, a } = skillDuel([idOfKind('heal')]);
+    a.hp = 1;
+    cast(sim);
+    sim.step(0.05);
+    expect(a.castAt).toBeGreaterThan(sim.time);
+    expect(a.hp).toBe(1);
+    run(sim, 1);
+    expect(a.hp).toBeGreaterThan(1);
+
+    const k = skillDuel([idOfKind('heal')]);
+    k.a.hp = 1;
+    cast(k.sim);
+    k.sim.step(0.05);
+    expect(k.a.castAt).toBeGreaterThan(0);
+    k.a.hp = 0;
+    k.a.alive = true;
+    (k.sim as any).hurt(k.a, 'b', 1);
+    expect(k.a.castAt).toBe(-1);
+  });
+
+  it('world skills cannot be cast in battle', () => {
+    const { sim, a } = skillDuel([idOfKind('world')]);
+    cast(sim);
+    run(sim, 0.5);
+    expect(a.slots[0].cdUntil).toBe(0);
+    expect(a.mp).toBeGreaterThan(a.maxMp - 1);
+  });
+
+  it('element status effects apply: burn damages over time, frost slows', () => {
+    const start = firstIdOfRank('C');
+    let burn = -1;
+    let frost = -1;
+    for (let k = 0; k < skillCount('C'); k++) {
+      const d = getSkill(start + k);
+      if (d.kind === 'projectile' && d.element === 0 && burn < 0) burn = start + k;
+      if (d.kind === 'projectile' && d.element === 1 && frost < 0) frost = start + k;
+      if (burn >= 0 && frost >= 0) break;
+    }
+    const f = skillDuel([burn]);
+    cast(f.sim);
+    expect(f.b.maxHp - lowestHp(f.sim, f.b, 5)).toBeGreaterThanOrEqual(2);
+    const i = skillDuel([frost]);
+    cast(i.sim);
+    run(i.sim, 0.9);
+    expect(i.b.slowUntil).toBeGreaterThan(0);
+  });
+});
+
+function b0(sim: Sim) {
+  const b = sim.players.get('b')!;
+  b.x = 1500;
+  b.y = 100;
+}
+
+describe('bots and skills', () => {
+  it('every bot carries five battle skills and uses them', () => {
+    const sim = new Sim(seeded(5), { botSkill: 0.8 });
+    sim.addPlayer('h', 'Human');
+    sim.rebalanceBots();
+    for (const p of sim.players.values()) {
+      if (!p.bot) continue;
+      expect(p.slots.length).toBe(5);
+      for (const s of p.slots) expect(s.kind).not.toBe('world');
+    }
+    const casts = new Map<string, number>();
+    for (let i = 0; i < 20 * 40; i++) {
+      sim.step(0.05);
+      for (const e of sim.drainEvents())
+        if (e.t === 'skill' && e.id.startsWith('bot_')) casts.set(e.id, (casts.get(e.id) ?? 0) + 1);
+    }
+    expect(casts.size).toBeGreaterThanOrEqual(5);
+    for (const n of casts.values()) expect(n).toBeGreaterThan(0);
+  });
+
+  it('sharper bots carry higher ranks', () => {
+    const avg = (skill: number) => {
+      const sim = new Sim(seeded(9), { botSkill: skill });
+      sim.rebalanceBots();
+      let sum = 0;
+      let n = 0;
+      for (const p of sim.players.values()) for (const s of p.slots) ((sum += RANKS.indexOf(s.rank)), n++);
+      return sum / n;
+    };
+    expect(avg(1)).toBeGreaterThan(avg(0.05) + 1);
+  });
+
+  it('the boss carries unique skills', () => {
+    const sim = new Sim(seeded(2), { seats: 3, boss: true, autoRestart: false });
+    sim.addPlayer('h', 'H');
+    sim.rebalanceBots();
+    const boss = Array.from(sim.players.values()).find((p) => p.boss)!;
+    expect(boss.slots.length).toBe(5);
+    expect(boss.slots.every((s) => s.rank === 'U')).toBe(true);
+  });
+
+  it('bots ignore a stealthed player unless they are very close', () => {
+    const sim = new Sim(seeded(4), { seats: 2 });
+    const h = sim.addPlayer('h', 'H');
+    sim.rebalanceBots();
+    const bot = Array.from(sim.players.values()).find((p) => p.bot)!;
+    h.x = 200;
+    h.y = 200;
+    bot.x = 1200;
+    bot.y = 700;
+    h.hiddenUntil = 999;
+    run(sim, 0.6);
+    expect(bot.shooting).toBe(false);
+  });
+});
+
+describe('characters', () => {
   it('characters set max HP and medic regenerates', () => {
     const sim = new Sim(seeded(), { seats: 1 });
     const t = sim.addPlayer('t', 'T', false, { charId: 'titan' });
@@ -327,14 +574,23 @@ describe('skills and characters', () => {
   it('setLoadout applies a validated loadout', () => {
     const sim = new Sim(seeded(), { seats: 1 });
     sim.addPlayer('a', 'A');
-    sim.setLoadout('a', { char: 'bolt', skills: ['pulse', 'burst'], color: 2, trail: 1, bfx: 1 });
+    const ids = [idOfKind('projectile'), idOfKind('shield')];
+    sim.setLoadout('a', { char: 'bolt', skillIds: ids, color: 2, trail: 1, bfx: 1 });
     const a = sim.players.get('a')!;
     expect(a.charId).toBe('bolt');
     expect(a.maxHp).toBe(CHARACTERS.bolt.hp);
-    expect(a.skills).toEqual(['pulse', 'burst']);
+    expect(a.slots.map((s) => s.skillId)).toEqual(ids);
+    sim.setLoadout('a', { skillIds: [] });
+    expect(a.slots.length).toBe(5);
+  });
+
+  it('players without a loadout get a working default kit', () => {
+    const sim = new Sim(seeded(), { seats: 1 });
+    const a = sim.addPlayer('a', 'A');
+    expect(a.slots.length).toBe(5);
+    expect(a.mp).toBe(a.maxMp);
   });
 });
-
 describe('game modes', () => {
   it('every mode and map combination runs a full round with bots', () => {
     for (const mode of MODE_LIST) {
@@ -447,3 +703,4 @@ describe('game modes', () => {
     expect(bosses[0].maxHp).toBeGreaterThan(8);
   });
 });
+
