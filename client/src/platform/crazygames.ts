@@ -27,6 +27,8 @@ export interface Platform {
   getUser(): Promise<PlatformUser | null>;
   updateRoom(info: { roomId?: string; isJoinable?: boolean; inviteParams?: Record<string, string> }): void;
   leftRoom(): void;
+  /** Link a friend can open to join this room, or null when unavailable. */
+  inviteLink(params: Record<string, string>): string | null;
   onJoinRoom(cb: (params: Record<string, string>) => void): void;
   showMidgameAd(): Promise<void>;
   showRewardedAd(): Promise<boolean>;
@@ -83,6 +85,11 @@ class StubPlatform implements Platform {
   }
   updateRoom() {}
   leftRoom() {}
+  inviteLink(params: Record<string, string>) {
+    const u = new URL(location.href);
+    u.search = new URLSearchParams(params).toString();
+    return u.toString();
+  }
   onJoinRoom() {}
   async showMidgameAd() {}
   async showRewardedAd() {
@@ -162,6 +169,15 @@ class CrazyPlatform implements Platform {
   leftRoom() {
     this.safe(() => this.sdk?.game.leftRoom());
   }
+  inviteLink(params: Record<string, string>): string | null {
+    try {
+      const link = this.sdk?.game.inviteLink(params);
+      return link ? String(link) : null;
+    } catch {
+      return null;
+    }
+  }
+
   onJoinRoom(cb: (params: Record<string, string>) => void) {
     this.safe(() => this.sdk?.game.addJoinRoomListener(cb));
   }

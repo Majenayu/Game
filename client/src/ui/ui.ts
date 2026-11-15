@@ -27,6 +27,8 @@ export class Ui {
   onPractice: (name: string) => void = () => {};
   onMuteToggle: () => void = () => {};
   onLeave: () => void = () => {};
+  onInvite: () => void = () => {};
+  private inviteBtn = $<HTMLButtonElement>('invite');
   private leaveBtn = $<HTMLButtonElement>('leave');
 
   constructor() {
@@ -34,6 +36,7 @@ export class Ui {
     $('practice').addEventListener('click', () => this.onPractice(this.nick.value));
     this.muteBtn.addEventListener('click', () => this.onMuteToggle());
     this.leaveBtn.addEventListener('click', () => this.onLeave());
+    this.inviteBtn.addEventListener('click', () => this.onInvite());
     this.nick.addEventListener('keydown', (e) => {
       e.stopPropagation();
       if (e.key === 'Enter') this.onPlay(this.nick.value);
@@ -46,12 +49,17 @@ export class Ui {
     this.nick.value = n;
   }
 
+  setInviteVisible(v: boolean): void {
+    this.inviteBtn.hidden = !v;
+  }
+
   setMuted(m: boolean): void {
     this.muteBtn.textContent = m ? '\u{1F507}' : '\u{1F50A}';
   }
 
   showMenu(): void {
     this.hideHint();
+    this.inviteBtn.hidden = true;
     this.menu.hidden = false;
     this.leaveBtn.hidden = true;
     this.hud.hidden = true;

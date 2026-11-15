@@ -26,6 +26,15 @@ test('two browsers join the same room and see 2 humans', async ({ browser }) => 
   expect(roomA).toBeTruthy();
   expect(roomA).toBe(roomB);
 
+  // invite button produces a link containing the room id, and opening it joins the same room
+  await a.locator('#invite').click();
+  await expect(a.locator('#toast')).toContainText(roomA!);
+  const c = await (await browser.newContext()).newPage();
+  await c.goto('/?roomId=' + roomA + '&server=0');
+  await expect(c.locator('body')).toHaveAttribute('data-room', roomA!, { timeout: 15_000 });
+  await expect(a.locator('body')).toHaveAttribute('data-humans', '3', { timeout: 15_000 });
+  await c.locator('#leave').click();
+
   // Alice moves; both pages keep running without errors and the canvas is visible
   await a.keyboard.down('d');
   await a.waitForTimeout(800);

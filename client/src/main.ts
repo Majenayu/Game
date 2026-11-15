@@ -130,8 +130,21 @@ async function boot(): Promise<void> {
     scene.setSource(new OfflineSource(name));
     document.body.dataset.mode = 'offline';
     ui.showGame();
+    ui.setInviteVisible(false);
     touch.setEnabled(true);
     showHowTo();
+  };
+
+  const shareInvite = async (room: Room, serverIndex: number) => {
+    const link = platform.inviteLink({ roomId: room.roomId, server: String(serverIndex) });
+    if (!link) return ui.toast('Invite link not available');
+    try {
+      await navigator.clipboard.writeText(link);
+      ui.toast('Invite link copied! Send it to a friend.');
+    } catch {
+      ui.toast(link);
+    }
+    window.setTimeout(() => ui.toast(''), 4000);
   };
 
   const runOnline = (room: Room, serverIndex: number, name: string, firstJoin = true) => {
@@ -144,6 +157,8 @@ async function boot(): Promise<void> {
     document.body.dataset.room = room.roomId;
     ui.hideOverlay();
     ui.showGame();
+    ui.setInviteVisible(true);
+    ui.onInvite = () => void shareInvite(room, serverIndex);
     touch.setEnabled(true);
     if (firstJoin) showHowTo();
     platform.updateRoom({
