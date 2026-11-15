@@ -124,6 +124,7 @@ async function boot(): Promise<void> {
   const unlock = () => sfx.unlock();
   window.addEventListener('pointerdown', unlock);
   window.addEventListener('keydown', unlock);
+  window.addEventListener('touchend', unlock, { passive: true });
 
   // ---- gameplay events for the SDK ------------------------------------------
   let playingFlag = false;
@@ -134,6 +135,25 @@ async function boot(): Promise<void> {
     sdkPlaying = want;
     if (want) platform.gameplayStart();
     else platform.gameplayStop();
+  };
+  const adCallbacks = () => {
+    let wasPlaying = false;
+    return {
+      adStarted: () => {
+        wasPlaying = sdkPlaying;
+        if (wasPlaying) platform.gameplayStop();
+        sfx.setPlatformMuted(true);
+      },
+      adFinished: () => {
+        sfx.setPlatformMuted(platform.muteAudio);
+        if (wasPlaying) applyPlaying();
+      },
+      adError: (error?: unknown) => {
+        sfx.setPlatformMuted(platform.muteAudio);
+        if (wasPlaying) applyPlaying();
+        if (error) console.warn('[CrazyGames ad]', error);
+      },
+    };
   };
 
   const dropText = (d?: SkillDrop): string =>
@@ -160,7 +180,7 @@ async function boot(): Promise<void> {
       applyPlaying();
     },
     onRoundEnd: (r: RoundResult) => {
-      void showMidgameAd(platform);
+      void showMidgameAd(platform, adCallbacks());
       flushMastery();
       if (campaignActive || !r.me) return '';
       let rankedHtml = '';
@@ -365,7 +385,7 @@ async function boot(): Promise<void> {
     ui.showGame();
     ui.setInviteVisible(false);
     touch.setEnabled(true);
-    ui.setObjective('Training ground: try every skill on the dummies. Press Q for auto skills. Esc to leave.');
+    ui.setObjective('Training ground: try every skill on the dummies. Press Q for auto skills. Use Leave to exit.');
   };
   const startLevel = async (level: LevelDef) => {
     const name = readNick(ui.nickValue());
@@ -579,7 +599,7 @@ async function boot(): Promise<void> {
       pages.close();
       void startOnline(ui.nickValue(), { ranked: true });
     },
-    watchAd: () => showRewardedAd(platform),
+    watchAd: () => showRewardedAd(platform, adCallbacks()),
   });
   ui.onPage = (name) => pages.open(name as PageName);
   ui.onChampion = () => {

@@ -4,12 +4,20 @@
  * Docs: https://docs.crazygames.com/sdk/intro/ and https://docs.crazygames.com/sdk/game/
  */
 
-export const ENABLE_ADS = import.meta.env.VITE_ENABLE_ADS === 'true';
+/** Basic Launch intentionally does not initialize the CrazyGames SDK or monetization. */
+export const BASIC_IMPLEMENTATION = true;
+export const ENABLE_ADS = false;
 const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
 
 export interface PlatformUser {
   username: string;
   avatar?: string;
+}
+
+export interface AdCallbacks {
+  adStarted: () => void;
+  adFinished: () => void;
+  adError: (error?: unknown) => void;
 }
 
 export interface Platform {
@@ -35,8 +43,8 @@ export interface Platform {
   /** Link a friend can open to join this room, or null when unavailable. */
   inviteLink(params: Record<string, string>): string | null;
   onJoinRoom(cb: (params: Record<string, string>) => void): void;
-  showMidgameAd(): Promise<void>;
-  showRewardedAd(): Promise<boolean>;
+  showMidgameAd(callbacks?: AdCallbacks): Promise<void>;
+  showRewardedAd(callbacks?: AdCallbacks): Promise<boolean>;
 }
 
 function onCrazyGames(): boolean {
@@ -101,8 +109,11 @@ class StubPlatform implements Platform {
     return u.toString();
   }
   onJoinRoom() {}
-  async showMidgameAd() {}
-  async showRewardedAd() {
+  async showMidgameAd(callbacks?: AdCallbacks) {
+    callbacks?.adFinished();
+  }
+  async showRewardedAd(callbacks?: AdCallbacks) {
+    callbacks?.adError(new Error('Ads are unavailable outside CrazyGames'));
     return false;
   }
 }
@@ -208,31 +219,49 @@ class CrazyPlatform implements Platform {
   onJoinRoom(cb: (params: Record<string, string>) => void) {
     this.safe(() => this.sdk?.game.addJoinRoomListener(cb));
   }
-  private requestAd(type: 'midgame' | 'rewarded'): Promise<boolean> {
+  private requestAd(type: 'midgame' | 'rewarded', callbacks?: AdCallbacks): Promise<boolean> {
     return new Promise((resolve) => {
-      if (!this.sdk?.ad?.requestAd) return resolve(false);
+      if (!this.sdk?.ad?.requestAd) {
+        callbacks?.adError(new Error('CrazyGames ad module unavailable'));
+        return resolve(false);
+      }
       let ok = false;
-      this.sdk.ad.requestAd(type, {
-        adStarted: () => {},
-        adFinished: () => {
-          ok = true;
-          resolve(true);
-        },
-        adError: () => resolve(ok),
-      });
+      let settled = false;
+      const finish = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(result);
+      };
+      try {
+        this.sdk.ad.requestAd(type, {
+          adStarted: () => callbacks?.adStarted(),
+          adFinished: () => {
+            ok = true;
+            callbacks?.adFinished();
+            finish(true);
+          },
+          adError: (error: unknown) => {
+            callbacks?.adError(error);
+            finish(ok);
+          },
+        });
+      } catch (error) {
+        callbacks?.adError(error);
+        finish(false);
+      }
     });
   }
-  async showMidgameAd() {
-    await this.requestAd('midgame');
+  async showMidgameAd(callbacks?: AdCallbacks) {
+    await this.requestAd('midgame', callbacks);
   }
-  async showRewardedAd() {
-    return this.requestAd('rewarded');
+  async showRewardedAd(callbacks?: AdCallbacks) {
+    return this.requestAd('rewarded', callbacks);
   }
 }
 
 /** Creates the platform. SDK failures fall back to the stub so the game still runs. */
 export async function createPlatform(): Promise<Platform> {
-  if (!onCrazyGames()) return new StubPlatform();
+  if (BASIC_IMPLEMENTATION || !onCrazyGames()) return new StubPlatform();
   const p = new CrazyPlatform();
   try {
     await p.init();
@@ -244,13 +273,13 @@ export async function createPlatform(): Promise<Platform> {
 }
 
 /** Ad hook: called between rounds. Does nothing unless ENABLE_ADS is true. */
-export async function showMidgameAd(platform: Platform): Promise<void> {
+export async function showMidgameAd(platform: Platform, callbacks?: AdCallbacks): Promise<void> {
   if (!ENABLE_ADS) return;
-  await platform.showMidgameAd();
+  await platform.showMidgameAd(callbacks);
 }
 
 /** Ad hook for rewarded ads (future cosmetics). Does nothing unless ENABLE_ADS is true. */
-export async function showRewardedAd(platform: Platform): Promise<boolean> {
+export async function showRewardedAd(platform: Platform, callbacks?: AdCallbacks): Promise<boolean> {
   if (!ENABLE_ADS) return false;
-  return platform.showRewardedAd();
+  return platform.showRewardedAd(callbacks);
 }

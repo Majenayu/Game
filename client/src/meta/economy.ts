@@ -261,16 +261,17 @@ export class Progress {
   constructor(private platform: Platform) {}
 
   async init(): Promise<void> {
+    const usePlatformData = this.platform.name === 'crazygames';
     let local: SaveData | null = null;
-    try {
-      local = parseSave(localStorage.getItem(SAVE_KEY));
-    } catch {
-      /* storage blocked */
+    if (!usePlatformData) {
+      try {
+        local = parseSave(localStorage.getItem(SAVE_KEY));
+      } catch (error) {
+        console.warn('[Progress] local save unavailable', error);
+      }
     }
     const remote = parseSave(await this.platform.loadData(SAVE_KEY));
-    this.data =
-      [local, remote].filter((x): x is SaveData => !!x).sort((a, b) => b.updated - a.updated)[0] ??
-      defaultSave();
+    this.data = (usePlatformData ? remote : local) ?? defaultSave();
     this.grantStarterIfNeeded();
     this.data.loadout = sanitizeLoadout(this.data.loadout);
     this.ensureQuests();
@@ -290,10 +291,12 @@ export class Progress {
 
   flush(): void {
     const json = JSON.stringify(this.data);
-    try {
-      localStorage.setItem(SAVE_KEY, json);
-    } catch {
-      /* storage blocked */
+    if (this.platform.name !== 'crazygames') {
+      try {
+        localStorage.setItem(SAVE_KEY, json);
+      } catch (error) {
+        console.warn('[Progress] local save unavailable', error);
+      }
     }
     this.platform.saveData(SAVE_KEY, json);
   }

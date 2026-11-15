@@ -1158,8 +1158,9 @@ export class Pages {
     );
     let rotation = this.wheelRot;
     const result = body.querySelector<HTMLElement>('#spinresult')!;
+    let adBusy = false;
     const run = () => {
-      if (this.wheelBusy) return;
+      if (this.wheelBusy || adBusy) return;
       this.wheelBusy = true;
       const idx = this.pr.rollSpin(Math.random, this.wheel);
       const prize = this.pr.grantPrize(idx, Math.random, this.wheel);
@@ -1190,9 +1191,14 @@ export class Pages {
       run();
     });
     body.querySelector('[data-spinad]')?.addEventListener('click', async () => {
-      if (this.wheelBusy) return;
-      if (await this.actions.watchAd()) run();
-      else note('No ad available right now', '#ff8a9a');
+      if (this.wheelBusy || adBusy) return;
+      adBusy = true;
+      try {
+        if (await this.actions.watchAd()) run();
+        else note('No ad available right now', '#ff8a9a');
+      } finally {
+        adBusy = false;
+      }
     });
   }
 }
