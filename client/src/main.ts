@@ -1,3 +1,9 @@
+import '@fontsource/cinzel/latin-700.css';
+import '@fontsource/cinzel/latin-900.css';
+import '@fontsource/rajdhani/latin-500.css';
+import '@fontsource/rajdhani/latin-600.css';
+import '@fontsource/rajdhani/latin-700.css';
+import '@fontsource/bangers/latin-400.css';
 import Phaser from 'phaser';
 import type { Room } from 'colyseus.js';
 import {
@@ -26,6 +32,11 @@ import { Ui } from './ui/ui';
 async function boot(): Promise<void> {
   const platform = await createPlatform();
   platform.loadingStart();
+  await Promise.all([
+    document.fonts.load('700 17px Rajdhani'),
+    document.fonts.load('900 24px Cinzel'),
+    document.fonts.load('400 30px Bangers'),
+  ]).catch(() => {});
 
   const progress = new Progress(platform);
   await progress.init();

@@ -562,3 +562,24 @@ Exports are in `docs/figma/`:
 - `skill-cards.png`: the Skill Card component with 8 rank variants.
 - `home-hub.png`, `skill-collection.png`, `loadout.png`, `auction-hall.png`, `match-hud.png`.
   Still to design: ranked lobby and draft, avatar customization and emote wheel, story map, open-world HUD, profile and leaderboards, crews, settings, loading screen.
+
+---
+
+## 18. Starforge theme, fonts, champion and bosses (built)
+
+The first UI was a plain dark panel set. It has been replaced by a custom theme named **Starforge**:
+
+- **Look:** cosmic indigo backdrop with stars and nebula glow, ornate gold corner frames on every panel, gold-and-cyan beveled buttons, a gold crown-style Quick Play button.
+- **Fonts (all open license, bundled in the game, no external requests):**
+  - **Cinzel** (display): the title, headings, boss and skill names, timer.
+  - **Rajdhani** (UI and numbers): buttons, labels, stats, HUD.
+  - **Bangers** (impact): in-match "HIT!" and "K.O.!" pops and announcements.
+- **Characters have faces:** eyes that follow the aim direction, blinking, a smile, and a worried face at low HP. Every character has an accessory: Nova a halo, Bolt a lightning antenna, Titan a helmet band, Viper horns, Ghost a wavy tail, Medic a red cross, Sniper a scope.
+- **Champion Majen** appears on the main menu in his own card and in the Bestiary: a charming crowned golden orb with a red cape.
+- **Bestiary page** with Majen and eight bosses, each with lore and a hint:
+  Hollow Sovereign (ghost king), Mirror King (crystal monarch), Stormbreaker (storm giant), Eclipse Warden (one-eyed lantern keeper),
+  Hydra of Ten Chains, The Gilded Maw (gold glutton), Echo Twins (dancing sisters) and The Last Star.
+  The art is original vector SVG, authored once in `client/src/art/bestiary.ts` and imported into Figma as editable vectors.
+- **Figma:** page "Bestiary (Starforge)" has the theme board (fonts, palette, buttons) and the Bestiary sheet. Exports: `docs/figma/starforge-theme.png` and `docs/figma/starforge-bestiary.png`. Art files: `docs/art/*.svg`.
+
+Not built yet: boss fights themselves (needs the open-world and boss-room phases), the champion duel, and the remaining screens listed in section 17.8.

@@ -17,6 +17,7 @@ import {
   type LevelDef,
   type ModeId,
 } from '@orb/shared';
+import { ALL_FIGURES, MAJEN, uniqueSvg } from '../art/bestiary';
 import { sfx } from '../audio';
 import { ENABLE_ADS } from '../platform/crazygames';
 import type { Ui } from '../ui/ui';
@@ -39,7 +40,8 @@ export interface PageActions {
   watchAd(): Promise<boolean>;
 }
 
-export type PageName = 'arenas' | 'campaign' | 'loadout' | 'shop' | 'daily' | 'quests' | 'spin' | 'dex';
+export type PageName =
+  'arenas' | 'campaign' | 'loadout' | 'shop' | 'daily' | 'quests' | 'spin' | 'dex' | 'bestiary';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -50,6 +52,7 @@ const TITLES: Record<PageName, string> = {
   quests: 'Quests',
   spin: 'Lucky Draw',
   dex: 'Powerup Collection',
+  bestiary: 'Bestiary',
 };
 
 export class Pages {
@@ -104,6 +107,8 @@ export class Pages {
         return this.spinHtml();
       case 'dex':
         return this.dexHtml();
+      case 'bestiary':
+        return this.bestiaryHtml();
     }
   }
 
@@ -305,6 +310,17 @@ export class Pages {
       <div id="spinresult" style="min-height:26px;color:var(--gold);font-size:18px">${esc(this.spinMsg)}</div>
       <button data-spin="1">${st.free ? 'Spin (free)' : `Spin (${EXTRA_SPIN_COST} coins)`}</button>
       ${!st.free && ENABLE_ADS ? '<button class="ghost" data-spinad="1">Watch ad for a spin</button>' : ''}</div>`;
+  }
+
+  private bestiaryHtml(): string {
+    const card = (f: (typeof ALL_FIGURES)[number]) => `
+      <div class="boss ${f.id === MAJEN.id ? 'champion' : ''}">
+        <div class="art">${uniqueSvg(f.svg, 'dex')}</div>
+        <div><b style="color:${f.color}">${esc(f.name)}</b><div class="tt">${esc(f.title)} &middot; ${esc(f.element)}</div>
+        <div class="lore">${esc(f.lore)}</div><div class="hint">${esc(f.hint)}</div></div>
+      </div>`;
+    return `<p class="sub">Meet the champion and the bosses of the world. Each boss has a secret condition. Find it, and it falls.</p>
+      <div class="bossgrid">${ALL_FIGURES.map(card).join('')}</div>`;
   }
 
   private dexHtml(): string {

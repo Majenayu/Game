@@ -1,0 +1,12 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img">
+<defs><radialGradient id="et-a" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#FFD6EC"/><stop offset="1" stop-color="#FF4DA6"/></radialGradient>
+<radialGradient id="et-b" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#D6F0FF"/><stop offset="1" stop-color="#2F9BFF"/></radialGradient></defs>
+<path d="M52 150 C90 210 150 210 188 150" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 9" opacity=".8"/>
+<path d="M40 70 C50 30 90 30 98 52" fill="none" stroke="#FF4DA6" stroke-width="8" stroke-linecap="round"/><path d="M200 70 C190 30 150 30 142 52" fill="none" stroke="#2F9BFF" stroke-width="8" stroke-linecap="round"/>
+<circle cx="80" cy="128" r="54" fill="url(#et-a)" stroke="#fff" stroke-width="3"/><circle cx="160" cy="128" r="54" fill="url(#et-b)" stroke="#fff" stroke-width="3"/>
+<ellipse cx="62" cy="104" rx="14" ry="8" fill="#fff" opacity=".55" transform="rotate(-25 62 104)"/><ellipse cx="142" cy="104" rx="14" ry="8" fill="#fff" opacity=".55" transform="rotate(-25 142 104)"/>
+<path d="M62 126 Q70 134 78 126 M82 126 Q90 134 98 126" fill="none" stroke="#3A1030" stroke-width="4" stroke-linecap="round"/><path d="M142 126 Q150 134 158 126 M162 126 Q170 134 178 126" fill="none" stroke="#0E2A55" stroke-width="4" stroke-linecap="round"/>
+<path d="M68 148 Q80 160 92 148" fill="none" stroke="#3A1030" stroke-width="4" stroke-linecap="round"/><path d="M148 148 Q160 160 172 148" fill="none" stroke="#0E2A55" stroke-width="4" stroke-linecap="round"/>
+<ellipse cx="56" cy="142" rx="8" ry="5" fill="#fff" opacity=".5"/><ellipse cx="104" cy="142" rx="8" ry="5" fill="#fff" opacity=".5"/><ellipse cx="136" cy="142" rx="8" ry="5" fill="#fff" opacity=".5"/><ellipse cx="184" cy="142" rx="8" ry="5" fill="#fff" opacity=".5"/>
+<path d="M120 56 q10 -22 24 -14 M120 56 v-18" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="116" cy="62" r="7" fill="#fff"/>
+<path transform="translate(34 150) scale(1)" d="M0 -9 L2.6 -2.6 L9 0 L2.6 2.6 L0 9 L-2.6 2.6 L-9 0 L-2.6 -2.6 Z" fill="#fff"/><path transform="translate(208 168) scale(1)" d="M0 -9 L2.6 -2.6 L9 0 L2.6 2.6 L0 9 L-2.6 2.6 L-9 0 L-2.6 -2.6 Z" fill="#fff"/><path transform="translate(120 214) scale(1.1)" d="M0 -9 L2.6 -2.6 L9 0 L2.6 2.6 L0 9 L-2.6 2.6 L-9 0 L-2.6 -2.6 Z" fill="#fff"/></svg>

@@ -1,0 +1,12 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img">
+<defs><linearGradient id="sb-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5A6FB0"/><stop offset="1" stop-color="#1E2A55"/></linearGradient>
+<radialGradient id="sb-g" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFE14D" stop-opacity=".4"/><stop offset="1" stop-color="#FFE14D" stop-opacity="0"/></radialGradient></defs>
+<circle cx="120" cy="115" r="115" fill="url(#sb-g)"/>
+<g fill="url(#sb-a)" stroke="#9FB4FF" stroke-width="3"><circle cx="74" cy="112" r="42"/><circle cx="166" cy="112" r="42"/><circle cx="120" cy="86" r="52"/><circle cx="96" cy="150" r="44"/><circle cx="144" cy="150" r="44"/></g>
+<g fill="url(#sb-a)"><circle cx="74" cy="112" r="40"/><circle cx="166" cy="112" r="40"/><circle cx="120" cy="86" r="50"/><circle cx="96" cy="150" r="42"/><circle cx="144" cy="150" r="42"/></g>
+<path d="M82 98 L110 112 L84 118 Z" fill="#FFE14D"/><path d="M158 98 L130 112 L156 118 Z" fill="#FFE14D"/>
+<path d="M78 90 L112 104 M162 90 L128 104" stroke="#0D1530" stroke-width="6" stroke-linecap="round"/>
+<path d="M92 156 Q120 138 148 156 L140 172 L130 160 L120 174 L110 160 L100 172 Z" fill="#0D1530"/>
+<polygon points="58,176 84,176 74,200 94,200 56,238 66,208 48,208" fill="#FFE14D" stroke="#FFF7A8" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="182,168 204,168 196,190 214,190 180,228 188,198 172,198" fill="#FFE14D" stroke="#FFF7A8" stroke-width="2" stroke-linejoin="round"/>
+<rect x="196" y="40" width="10" height="70" rx="4" fill="#8E97C4" transform="rotate(25 201 75)"/><rect x="184" y="28" width="40" height="26" rx="6" fill="#B8C4D6" stroke="#FFE14D" stroke-width="3" transform="rotate(25 204 41)"/></svg>

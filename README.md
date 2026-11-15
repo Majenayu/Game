@@ -13,6 +13,9 @@ seats, so the game is never empty.
 - **Progression:** coins, XP, levels 1 to 50, shop (characters, skills, colors, trails, bullet styles), loadout page.
 - **Daily reward** (7 day streak), **daily and weekly quests**, **lucky draw** wheel (1 free spin a day, extra spins cost coins).
 - **Campaign:** 12 offline levels vs bots with objectives, stars and a boss (The Overlord).
+- **Starforge theme:** custom fonts (Cinzel, Rajdhani, Bangers), ornate frames, cosmic backdrop, characters with faces and accessories.
+- **Champion Majen and a Bestiary** of eight bosses (original art). See docs/MASTER_PLAN.md section 18.
+- Bots use pathfinding, so they no longer get stuck on walls.
 - Saves use the CrazyGames Data module when available and localStorage otherwise. No external services.
 
 ## Quick start

@@ -6,7 +6,14 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: [['list']],
-  use: { baseURL: 'http://localhost:5173', trace: 'retain-on-failure' },
+  use: {
+    baseURL: 'http://localhost:5173',
+    trace: 'off',
+    // use the real GPU when there is one (much faster than software rendering); falls back safely otherwise
+    launchOptions: {
+      args: ['--use-gl=angle', '--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'],
+    },
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {

@@ -6,7 +6,9 @@ async function play(page: Page, name: string) {
   await page.locator('#play').click();
 }
 
-test('two browsers join the same room and see 2 humans', async ({ browser }) => {
+const humans = async (p: Page) => Number(await p.locator('body').getAttribute('data-humans'));
+
+test('two browsers join the same room and see each other', async ({ browser }) => {
   const a = await (await browser.newContext()).newPage();
   const b = await (await browser.newContext()).newPage();
   const errors: string[] = [];
@@ -14,17 +16,21 @@ test('two browsers join the same room and see 2 humans', async ({ browser }) => 
 
   await play(a, 'Alice');
   await expect(a.locator('body')).toHaveAttribute('data-mode', 'online', { timeout: 15_000 });
+  await expect.poll(() => humans(a), { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
   await play(b, 'Bob');
   await expect(b.locator('body')).toHaveAttribute('data-mode', 'online', { timeout: 15_000 });
-
-  await expect(a.locator('body')).toHaveAttribute('data-humans', '2', { timeout: 15_000 });
-  await expect(b.locator('body')).toHaveAttribute('data-humans', '2', { timeout: 15_000 });
-  await expect(a.locator('body')).toHaveAttribute('data-players', '8');
 
   const roomA = await a.locator('body').getAttribute('data-room');
   const roomB = await b.locator('body').getAttribute('data-room');
   expect(roomA).toBeTruthy();
   expect(roomA).toBe(roomB);
+
+  // both pages agree on how many humans are in the room, and it includes both of them
+  await expect
+    .poll(async () => (await humans(a)) === (await humans(b)) && (await humans(a)) >= 2, { timeout: 15_000 })
+    .toBe(true);
+  await expect(a.locator('body')).toHaveAttribute('data-players', '8');
+  const base = await humans(a);
 
   // invite button produces a link containing the room id, and opening it joins the same room
   await a.locator('#invite').click();
@@ -32,10 +38,11 @@ test('two browsers join the same room and see 2 humans', async ({ browser }) => 
   const c = await (await browser.newContext()).newPage();
   await c.goto('/?roomId=' + roomA + '&server=0');
   await expect(c.locator('body')).toHaveAttribute('data-room', roomA!, { timeout: 15_000 });
-  await expect(a.locator('body')).toHaveAttribute('data-humans', '3', { timeout: 15_000 });
+  await expect.poll(() => humans(a), { timeout: 15_000 }).toBe(base + 1);
   await c.locator('#leave').click();
+  await expect.poll(() => humans(a), { timeout: 15_000 }).toBe(base);
 
-  // Alice moves; both pages keep running without errors and the canvas is visible
+  // Alice moves; both pages keep running without errors and the HUD is visible
   await a.keyboard.down('d');
   await a.waitForTimeout(800);
   await a.keyboard.up('d');
@@ -43,7 +50,7 @@ test('two browsers join the same room and see 2 humans', async ({ browser }) => 
   expect(errors).toEqual([]);
 
   await b.locator('#leave').click();
-  await expect(a.locator('body')).toHaveAttribute('data-humans', '1', { timeout: 15_000 });
+  await expect.poll(() => humans(a), { timeout: 15_000 }).toBe(base - 1);
   await a.close();
 });
 

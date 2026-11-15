@@ -112,6 +112,13 @@ export class GameScene extends Phaser.Scene {
       Phaser.Input.Keyboard.Key
     >;
     kb.addCapture('SPACE,UP,DOWN,LEFT,RIGHT');
+    // event based, so even a very quick tap (down and up inside one frame) always counts
+    const skillKey = (slot: number) => (ev: KeyboardEvent) => {
+      if (!ev.repeat) this.queueSkill(slot);
+    };
+    kb.on('keydown-SPACE', skillKey(0));
+    kb.on('keydown-E', skillKey(1));
+    kb.on('keydown-SHIFT', skillKey(1));
     this.input.mouse?.disableContextMenu();
     this.game.events.on(Phaser.Core.Events.BLUR, () => {
       for (const k of Object.values(this.keys)) k.reset();
@@ -209,6 +216,7 @@ export class GameScene extends Phaser.Scene {
     switch (ev.t) {
       case 'hit':
         this.burst(ev.x, ev.y, 0xff5e8a, 8);
+        if (ev.id === me || ev.by === me) this.pop(ev.x, ev.y - 34, 'HIT!', '#ffffff', 26);
         if (ev.id === me) {
           sfx.hit();
           this.cameras.main.shake(120, 0.006);
@@ -216,6 +224,7 @@ export class GameScene extends Phaser.Scene {
         break;
       case 'kill':
         this.burst(ev.x, ev.y, 0xffffff, 26);
+        this.pop(ev.x, ev.y - 40, 'K.O.!', '#ffe58a', 44);
         if (ev.id === me) {
           sfx.kill();
           this.cameras.main.shake(220, 0.012);
@@ -301,8 +310,6 @@ export class GameScene extends Phaser.Scene {
     let my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
     let aim = this.localAim;
     let shooting = false;
-    if (Phaser.Input.Keyboard.JustDown(k.SPACE)) this.queueSkill(0);
-    if (Phaser.Input.Keyboard.JustDown(k.E) || Phaser.Input.Keyboard.JustDown(k.SHIFT)) this.queueSkill(1);
     if (this.touch.enabled) {
       const t = this.touch.state;
       if (Math.hypot(t.moveX, t.moveY) > 0.12) {
@@ -530,6 +537,104 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Floating comic-style text (hit and K.O. pops). */
+  private pop(x: number, y: number, text: string, color: string, size: number): void {
+    const t = this.add
+      .text(x, y, text, {
+        fontFamily: 'Bangers, Impact, sans-serif',
+        fontSize: `${size}px`,
+        color,
+        stroke: '#1b0a3a',
+        strokeThickness: 6,
+      })
+      .setOrigin(0.5)
+      .setDepth(30);
+    this.tweens.add({
+      targets: t,
+      y: y - 48,
+      alpha: 0,
+      scale: 1.35,
+      duration: 750,
+      ease: 'Cubic.easeOut',
+      onComplete: () => t.destroy(),
+    });
+  }
+
+  /** Eyes that follow the aim, a mouth, and a hurt expression at low HP. */
+  private drawFace(g: Phaser.GameObjects.Graphics, p: PlayerView, blink: number, now: number): void {
+    const lx = Math.cos(p.aim);
+    const ly = Math.sin(p.aim);
+    const fx = p.x + lx * 4;
+    const fy = p.y + ly * 3 + 1;
+    const hurt = p.hp <= 1 && p.maxHp > 1;
+    const blinking = Math.sin(now / 1700 + p.x * 0.01) > 0.985;
+    for (const s of [-1, 1]) {
+      const ex = fx + s * 7.5;
+      const ey = fy - 2;
+      if (blinking) {
+        g.lineStyle(2, 0x1b1030, 1).lineBetween(ex - 4, ey, ex + 4, ey);
+        continue;
+      }
+      g.fillStyle(0xffffff, blink).fillEllipse(ex, ey, 10, hurt ? 9 : 13);
+      g.fillStyle(0x1b1030, 1).fillCircle(ex + lx * 2.4, ey + ly * 3, 3.6);
+      g.fillStyle(0xffffff, 1).fillCircle(ex + lx * 2.4 - 1, ey + ly * 3 - 1.4, 1.2);
+    }
+    g.lineStyle(2, 0x1b1030, 1);
+    g.beginPath();
+    if (hurt) g.arc(fx, fy + 12, 5, Math.PI * 1.1, Math.PI * 1.9, false);
+    else g.arc(fx, fy + 4, 5.5, Math.PI * 0.15, Math.PI * 0.85, false);
+    g.strokePath();
+  }
+
+  /** A small accessory per character so each one reads at a glance. */
+  private drawGear(g: Phaser.GameObjects.Graphics, p: PlayerView): void {
+    const R = PLAYER_RADIUS;
+    const x = p.x;
+    const y = p.y;
+    switch (p.char) {
+      case 'nova':
+        g.lineStyle(3, 0xffe58a, 0.95).strokeEllipse(x, y - R - 3, 22, 7);
+        break;
+      case 'bolt':
+        g.fillStyle(0xffe14d, 1).fillPoints(
+          [
+            { x: x + 2, y: y - R - 14 },
+            { x: x - 5, y: y - R - 2 },
+            { x: x, y: y - R - 3 },
+            { x: x - 3, y: y - R + 4 },
+            { x: x + 6, y: y - R - 8 },
+            { x: x + 1, y: y - R - 8 },
+          ],
+          true,
+        );
+        break;
+      case 'titan':
+        g.lineStyle(5, 0x9aa6c8, 1).beginPath();
+        g.arc(x, y, R - 2, Math.PI * 1.12, Math.PI * 1.88, false);
+        g.strokePath();
+        g.fillStyle(0xffc93c, 1).fillCircle(x, y - R + 2, 3);
+        break;
+      case 'viper':
+        g.fillStyle(0xe0334f, 1).fillTriangle(x - 16, y - R + 8, x - 9, y - R - 10, x - 4, y - R + 2);
+        g.fillTriangle(x + 16, y - R + 8, x + 9, y - R - 10, x + 4, y - R + 2);
+        break;
+      case 'ghost':
+        for (let i = -1; i <= 1; i++) g.fillStyle(p.color, 0.8).fillCircle(x + i * 11, y + R - 1, 7);
+        break;
+      case 'medic':
+        g.fillStyle(0xffffff, 1).fillCircle(x, y - R + 6, 8);
+        g.fillStyle(0xe0334f, 1)
+          .fillRect(x - 5, y - R + 4, 10, 4)
+          .fillRect(x - 2, y - R + 1, 4, 10);
+        break;
+      case 'sniper':
+        g.lineStyle(2, 0x4dd2ff, 1).strokeCircle(x + 8, y - 2, 8);
+        g.lineBetween(x + 14, y + 3, x + 20, y + 11);
+        break;
+      default:
+        break;
+    }
+  }
   private drawTrail(g: Phaser.GameObjects.Graphics, p: PlayerView, now: number): void {
     let pts = this.trails.get(p.id);
     if (!pts) {
@@ -645,7 +750,12 @@ export class GameScene extends Phaser.Scene {
       let label = this.names.get(p.id);
       if (!label) {
         label = this.add
-          .text(0, 0, p.name, { fontFamily: 'Trebuchet MS, sans-serif', fontSize: '15px', color: '#e8ecff' })
+          .text(0, 0, p.name, {
+            fontFamily: 'Rajdhani, Trebuchet MS, sans-serif',
+            fontStyle: 'bold',
+            fontSize: '17px',
+            color: '#f4eeff',
+          })
           .setOrigin(0.5)
           .setDepth(11)
           .setShadow(0, 0, '#000', 4, true, true);
@@ -666,6 +776,8 @@ export class GameScene extends Phaser.Scene {
       );
       g.fillStyle(p.color, blink).fillCircle(p.x, p.y, PLAYER_RADIUS);
       g.fillStyle(0xffffff, 0.5 * blink).fillCircle(p.x - 6, p.y - 6, PLAYER_RADIUS * 0.4);
+      this.drawFace(g, p, blink, now);
+      this.drawGear(g, p);
       if (team)
         g.lineStyle(4, TEAM_COLORS[p.team === 0 ? 0 : 1], 0.95).strokeCircle(p.x, p.y, PLAYER_RADIUS + 8);
       if (p.boss)

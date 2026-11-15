@@ -9,6 +9,7 @@ import {
   type EffectId,
   type PlayerView,
 } from '@orb/shared';
+import { MAJEN, uniqueSvg } from '../art/bestiary';
 import type { Snapshot } from '../game/types';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -32,6 +33,7 @@ export class Ui {
   private board = $('board');
   private overlay = $('overlay');
   private page = $('page');
+  private champ = $('champ');
   private nick = $<HTMLInputElement>('nick');
   private muteBtn = $<HTMLButtonElement>('mute');
   private leaveBtn = $<HTMLButtonElement>('leave');
@@ -50,6 +52,8 @@ export class Ui {
   onPageClose: () => void = () => {};
 
   constructor() {
+    $('champart').innerHTML = uniqueSvg(MAJEN.svg, 'menu');
+    $('champbtn').addEventListener('click', () => this.onPage('bestiary'));
     $('play').addEventListener('click', () => this.onPlay(this.nick.value));
     $('practice').addEventListener('click', () => this.onPractice(this.nick.value));
     this.muteBtn.addEventListener('click', () => this.onMuteToggle());
@@ -105,6 +109,8 @@ export class Ui {
 
   showMenu(): void {
     this.hideHint();
+    document.body.classList.add('in-menu');
+    this.champ.hidden = false;
     this.menu.hidden = false;
     this.leaveBtn.hidden = true;
     this.inviteBtn.hidden = true;
@@ -117,6 +123,8 @@ export class Ui {
   }
 
   showGame(): void {
+    document.body.classList.remove('in-menu');
+    this.champ.hidden = true;
     this.menu.hidden = true;
     this.page.hidden = true;
     this.leaveBtn.hidden = false;
@@ -126,6 +134,8 @@ export class Ui {
 
   /** Opens a full page (shop, loadout...). `body` is raw trusted HTML built by the pages module. */
   showPage(title: string, body: string): HTMLElement {
+    document.body.classList.add('in-menu');
+    this.champ.hidden = true;
     this.menu.hidden = true;
     this.page.hidden = false;
     $('pagetitle').textContent = title;

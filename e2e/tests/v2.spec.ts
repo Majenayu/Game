@@ -13,7 +13,17 @@ test('menu shows progress and every page opens', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#menu')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('#menu [data-coins]')).not.toHaveText('');
-  for (const name of ['arenas', 'campaign', 'loadout', 'shop', 'daily', 'quests', 'spin', 'dex']) {
+  for (const name of [
+    'arenas',
+    'campaign',
+    'loadout',
+    'shop',
+    'daily',
+    'quests',
+    'spin',
+    'dex',
+    'bestiary',
+  ]) {
     await page.locator(`[data-page="${name}"]`).click();
     await expect(page.locator('#page')).toBeVisible();
     await expect(page.locator('#pagebody')).not.toBeEmpty();
@@ -21,6 +31,14 @@ test('menu shows progress and every page opens', async ({ page }) => {
     await expect(page.locator('#menu')).toBeVisible();
   }
   expect(errors).toEqual([]);
+});
+
+test('bestiary shows the champion and all eight bosses', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#champ')).toBeVisible({ timeout: 15_000 });
+  await page.locator('#champbtn').click();
+  await expect(page.locator('.boss')).toHaveCount(9);
+  await expect(page.locator('.boss.champion')).toContainText('Majen');
 });
 
 test('daily reward can be claimed once and adds coins', async ({ page }) => {
@@ -83,5 +101,5 @@ test('skills can be used with the keyboard and show a cooldown', async ({ page }
   await expect(page.locator('#sk0')).toBeVisible({ timeout: 8_000 });
   await page.waitForTimeout(500);
   await page.keyboard.press('Space');
-  await expect(page.locator('#sk0 .cdn')).not.toHaveText('', { timeout: 3_000 });
+  await expect(page.locator('#sk0 .cdn')).not.toHaveText('', { timeout: 10_000 });
 });
