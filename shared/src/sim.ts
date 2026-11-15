@@ -30,6 +30,7 @@ import {
   type PowerupDef,
 } from './content';
 import { ROTATION, getMap, type MapDef } from './maps';
+import { findPath, getNav, segmentClear } from './nav';
 import {
   circlesOverlap,
   movePlayer,
@@ -176,6 +177,14 @@ interface BotBrain {
   strafe: number;
   aimErr: number;
   targetId: string | null;
+  path: Array<{ x: number; y: number }>;
+  pathGoalX: number;
+  pathGoalY: number;
+  repathAt: number;
+  lastX: number;
+  lastY: number;
+  lastCheck: number;
+  unstuckUntil: number;
 }
 
 const BOT_NAMES = [
@@ -1006,6 +1015,14 @@ export class Sim {
       strafe: this.rng() < 0.5 ? -1 : 1,
       aimErr: 0,
       targetId: null,
+      path: [],
+      pathGoalX: -1,
+      pathGoalY: -1,
+      repathAt: 0,
+      lastX: 0,
+      lastY: 0,
+      lastCheck: 0,
+      unstuckUntil: 0,
     };
   }
 
@@ -1109,17 +1126,60 @@ export class Sim {
         goalY = target.y;
       }
     }
-    const gx = goalX - p.x;
-    const gy = goalY - p.y;
-    const gd = Math.hypot(gx, gy);
-    if (gd > 8) {
-      p.moveX = gx / gd;
-      p.moveY = gy / gd;
-    } else {
-      p.moveX = 0;
-      p.moveY = 0;
+    // stuck recovery: if a moving bot barely moved for a second, pick a far wander goal for a while
+    if (this.time - brain.lastCheck >= 1) {
+      const moved = Math.hypot(p.x - brain.lastX, p.y - brain.lastY);
+      if (
+        brain.lastCheck > 0 &&
+        moved < 14 &&
+        (Math.abs(p.moveX) > 0.1 || Math.abs(p.moveY) > 0.1) &&
+        this.time - p.respawnAt > 2.5
+      ) {
+        brain.unstuckUntil = this.time + 1.6;
+        brain.wanderX = 80 + this.rng() * (WORLD_W - 160);
+        brain.wanderY = 80 + this.rng() * (WORLD_H - 160);
+        brain.path = [];
+        brain.strafe = -brain.strafe;
+      }
+      brain.lastX = p.x;
+      brain.lastY = p.y;
+      brain.lastCheck = this.time;
     }
+    if (this.time < brain.unstuckUntil) {
+      goalX = brain.wanderX;
+      goalY = brain.wanderY;
+    }
+    const dir = this.steer(p, brain, goalX, goalY);
+    p.moveX = dir.x;
+    p.moveY = dir.y;
     if (!p.shooting) p.aim = Math.atan2(p.moveY, p.moveX);
+  }
+  /** Direction toward a goal that goes around walls using grid pathfinding. */
+  private steer(p: SimPlayer, brain: BotBrain, goalX: number, goalY: number): { x: number; y: number } {
+    const nav = getNav(this.map);
+    const gx = Math.min(WORLD_W - 30, Math.max(30, goalX));
+    const gy = Math.min(WORLD_H - 30, Math.max(30, goalY));
+    let tx = gx;
+    let ty = gy;
+    if (!segmentClear(nav, p.x, p.y, gx, gy)) {
+      const moved = Math.hypot(brain.pathGoalX - gx, brain.pathGoalY - gy);
+      if (!brain.path.length || moved > 90 || this.time >= brain.repathAt) {
+        brain.path = findPath(nav, p.x, p.y, gx, gy);
+        brain.pathGoalX = gx;
+        brain.pathGoalY = gy;
+        brain.repathAt = this.time + 1.2;
+      }
+      while (brain.path.length && Math.hypot(brain.path[0].x - p.x, brain.path[0].y - p.y) < 26)
+        brain.path.shift();
+      if (brain.path.length) {
+        tx = brain.path[0].x;
+        ty = brain.path[0].y;
+      }
+    } else brain.path = [];
+    const dx = tx - p.x;
+    const dy = ty - p.y;
+    const d = Math.hypot(dx, dy);
+    return d > 8 ? { x: dx / d, y: dy / d } : { x: 0, y: 0 };
   }
 }
 
