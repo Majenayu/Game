@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#0b0e1a" />
+    <title>Orb Arena</title>
+    <style>
+      :root {
+        --bg: #0b0e1a;
+        --panel: rgba(14, 18, 36, 0.9);
+        --text: #e8ecff;
+        --dim: #8e97c4;
+        --accent: #4dd2ff;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+        overscroll-behavior: none;
+      }
+      #game {
+        position: fixed;
+        inset: 0;
+      }
+      #game canvas {
+        display: block;
+        touch-action: none;
+      }
+      #ui {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 2;
+      }
+      #ui > * {
+        pointer-events: auto;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid rgba(120, 140, 255, 0.25);
+        border-radius: 18px;
+        padding: 22px 26px;
+        box-shadow: 0 0 40px rgba(77, 210, 255, 0.15);
+      }
+      .center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        max-width: 92vw;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: clamp(28px, 6vw, 46px);
+        letter-spacing: 6px;
+        color: var(--accent);
+        text-shadow: 0 0 18px var(--accent);
+      }
+      .sub {
+        margin: 0 0 14px;
+        color: var(--dim);
+        font-size: 14px;
+      }
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #33406e;
+        background: #0a0d1c;
+        color: var(--text);
+        font-size: 18px;
+        text-align: center;
+        outline: none;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      input:focus {
+        border-color: var(--accent);
+      }
+      button {
+        cursor: pointer;
+        font: inherit;
+        color: #04101a;
+        background: var(--accent);
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 22px;
+        font-size: 20px;
+        font-weight: 700;
+        margin-top: 12px;
+        box-shadow: 0 0 20px rgba(77, 210, 255, 0.5);
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--dim);
+        box-shadow: none;
+        font-size: 14px;
+        font-weight: 400;
+        border: 1px solid #33406e;
+        padding: 8px 14px;
+      }
+      button:hover {
+        filter: brightness(1.1);
+      }
+      #play {
+        width: 100%;
+      }
+      .controls {
+        margin-top: 14px;
+        color: var(--dim);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      #hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        font-weight: 700;
+        text-shadow: 0 0 6px #000;
+      }
+      #hud > * {
+        position: absolute;
+      }
+      #hpbox {
+        left: 14px;
+        top: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .pip {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #ff5e8a;
+        box-shadow: 0 0 10px #ff5e8a;
+      }
+      .pip.off {
+        background: #2a2f4a;
+        box-shadow: none;
+      }
+      #kills {
+        left: 14px;
+        top: 42px;
+        font-size: 18px;
+      }
+      #timer {
+        left: 50%;
+        top: 8px;
+        transform: translateX(-50%);
+        font-size: 34px;
+        letter-spacing: 2px;
+      }
+      #lb {
+        right: 62px;
+        top: 10px;
+        font-size: 14px;
+        min-width: 150px;
+        background: rgba(8, 10, 24, 0.55);
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+      #lb div {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      #lb .me {
+        color: var(--accent);
+      }
+      #banner {
+        left: 50%;
+        top: 16%;
+        transform: translateX(-50%);
+        font-size: 26px;
+        color: #ffc93c;
+        white-space: nowrap;
+      }
+      #mute {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        margin: 0;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: 18px;
+        border-radius: 50%;
+        background: rgba(8, 10, 24, 0.7);
+        color: var(--text);
+        box-shadow: none;
+        border: 1px solid #33406e;
+      }
+      #board table {
+        border-collapse: collapse;
+        margin: 10px auto 0;
+        min-width: 300px;
+      }
+      #board td,
+      #board th {
+        padding: 5px 14px;
+        text-align: left;
+      }
+      #board th {
+        color: var(--dim);
+        font-weight: 400;
+        font-size: 13px;
+      }
+      #board tr.me td {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      #board h2 {
+        margin: 0;
+        font-size: 28px;
+        color: #ffc93c;
+      }
+      #board .next {
+        color: var(--dim);
+        margin-top: 12px;
+      }
+      #touch {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        touch-action: none;
+        pointer-events: none;
+      }
+      #touch.on {
+        pointer-events: auto;
+      }
+      .stick {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        margin: -60px 0 0 -60px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+      }
+      .knob {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 52px;
+        height: 52px;
+        margin: -26px 0 0 -26px;
+        border-radius: 50%;
+        background: rgba(77, 210, 255, 0.6);
+      }
+      #ovmsg {
+        font-size: 20px;
+        margin: 0 0 6px;
+      }
+      #ovbtns button {
+        margin: 10px 6px 0;
+      }
+      #leave {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        margin: 0;
+        background: rgba(8, 10, 24, 0.7);
+      }
+      #toast {
+        position: absolute;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%);
+        color: var(--dim);
+        font-size: 13px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="ui">
+      <div id="menu" class="panel center" hidden>
+        <h1>ORB ARENA</h1>
+        <p class="sub">Shoot glowing orbs. Most kills in 90 seconds wins.</p>
+        <input id="nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nickname" />
+        <button id="play">Play</button>
+        <div><button id="practice" class="ghost">Practice offline</button></div>
+        <div class="controls" id="controls">
+          WASD / arrows: move &middot; Mouse: aim &middot; Click or hold: shoot<br />Touch: left stick moves,
+          right stick aims and fires
+        </div>
+      </div>
+      <div id="hud" hidden>
+        <div id="hpbox"></div>
+        <div id="kills"></div>
+        <div id="timer"></div>
+        <div id="lb"></div>
+        <div id="banner" hidden></div>
+        <div id="toast"></div>
+      </div>
+      <div id="board" class="panel center" hidden></div>
+      <div id="overlay" class="panel center" hidden>
+        <p id="ovmsg"></p>
+        <div id="ovbtns"></div>
+      </div>
+      <button id="mute" aria-label="Mute" hidden>&#128266;</button>
+      <button id="leave" class="ghost" hidden>Leave</button>
+    </div>
+    <div id="touch"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

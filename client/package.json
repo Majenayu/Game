@@ -1,0 +1,20 @@
+{
+  "name": "@orb/client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc -p . --noEmit && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "dependencies": {
+    "@orb/shared": "*",
+    "colyseus.js": "^0.16.22",
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.0"
+  }
+}

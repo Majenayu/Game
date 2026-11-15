@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: orb-arena-server
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    plan: starter # "free" works for testing but sleeps when idle
+    region: oregon # oregon, ohio, virginia, frankfurt, singapore
+    healthCheckPath: /health
+    autoDeploy: true

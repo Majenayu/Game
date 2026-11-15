@@ -1,0 +1,27 @@
+{
+  "name": "@orb/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "dependencies": {
+    "@colyseus/core": "^0.16.26",
+    "@colyseus/schema": "^3.0.76",
+    "@colyseus/ws-transport": "^0.16.5",
+    "@orb/shared": "*",
+    "colyseus": "^0.16.5",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "tsx": "^4.20.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.19.0",
+    "colyseus.js": "^0.16.22"
+  }
+}
