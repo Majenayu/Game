@@ -85,6 +85,7 @@ export class ArenaState extends Schema {
   @type({ map: MineState }) mines = new MapSchema<MineState>();
   @type({ map: ZoneState }) zones = new MapSchema<ZoneState>();
   @type({ map: PetState }) pets = new MapSchema<PetState>();
+  @type('boolean') ranked = false;
   @type('string') phase = 'play';
   @type('string') mode = 'dm';
   @type('string') mapId = 'neon';

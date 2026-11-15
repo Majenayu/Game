@@ -10,3 +10,5 @@ export * from './skills/uniques';
 export * from './skills/generate';
 export * from './skills/instances';
 export * from './battle';
+export * from './bosses';
+export * from './social';

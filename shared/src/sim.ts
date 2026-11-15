@@ -72,6 +72,11 @@ export interface SimConfig {
   /** Add one boss bot. */
   boss: boolean;
   roundTime?: number;
+  /** Boss name, max HP, colour and skill ids (Boss Tower). Defaults: Overlord, 12 HP, unique boss kit. */
+  bossName?: string;
+  bossHp?: number;
+  bossColor?: number;
+  bossKit?: number[];
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -349,7 +354,7 @@ export class Sim {
       color =
         PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[this.players.size % PLAYER_COLORS.length];
     const boss = opts.boss === true;
-    const maxHp = boss ? 12 : ch.hp;
+    const maxHp = boss ? Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) : ch.hp;
     const spot = this.pickSpawn();
     const p: SimPlayer = {
       id,
@@ -453,16 +458,19 @@ export class Sim {
       const boss = this.cfg.boss && !this.bossMade;
       if (boss) {
         this.bossMade = true;
-        name = 'Overlord';
+        name = this.cfg.bossName ?? 'Overlord';
       }
       const ch = CHARACTER_LIST[Math.floor(this.rng() * CHARACTER_LIST.length)];
-      this.addPlayer(`bot_${this.nextId++}`, name, true, {
+      const made = this.addPlayer(`bot_${this.nextId++}`, name, true, {
         charId: ch.id,
-        skillIds: botKit(this.rng, this.cfg.botSkill, boss),
+        color: boss ? this.cfg.bossColor : undefined,
+        skillIds: boss && this.cfg.bossKit?.length ? this.cfg.bossKit : botKit(this.rng, this.cfg.botSkill, boss),
         trail: Math.floor(this.rng() * 3),
         bfx: Math.floor(this.rng() * BULLET_FX.length),
         boss,
       });
+      // Boss names come from trusted config and may be longer than a player nickname.
+      if (boss) made.name = name;
     }
     this.balanceTeams();
   }

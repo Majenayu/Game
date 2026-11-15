@@ -2,11 +2,14 @@ import { Room, ServerError, type AuthContext, type Client } from '@colyseus/core
 import {
   COLORS,
   MAX_PLAYERS,
+  EMOTE_COOLDOWN,
+  MSG_EMOTE,
   MSG_EVENT,
   MSG_INPUT,
   RECONNECT_SECONDS,
   Sim,
   TICK_MS,
+  isEmoteId,
   isMapId,
   isModeId,
   powerupId,
@@ -49,6 +52,8 @@ interface JoinOptions {
   loadout?: unknown;
   private?: unknown;
 }
+/** 2v2 ranked rooms hold four orbs; empty seats are filled by bots so matches start at once. */
+export const RANKED_SEATS = 4;
 
 function pickMode(v: unknown): ModeId | 'mix' {
   return v === 'mix' || isModeId(v) ? v : 'mix';
@@ -65,12 +70,20 @@ export class ArenaRoom extends Room<ArenaState> {
   private acc = 0;
   private ipBySession = new Map<string, string>();
   private rate = new Map<string, { windowStart: number; count: number }>();
+  private lastEmote = new Map<string, number>();
+  /** True for 2v2 ranked rooms (see RankedRoom). Clients cannot choose this through join options. */
+  protected readonly isRanked: boolean = false;
 
   onCreate(options?: JoinOptions): void {
     // Instant Multiplayer rooms are private: friends join by room id or invite link.
     if (options?.private === true) void this.setPrivate(true);
-    this.sim = new Sim(Math.random, { mode: pickMode(options?.mode), mapId: pickMap(options?.map) });
+    const ranked = this.isRanked;
+    if (ranked) this.maxClients = RANKED_SEATS;
+    this.sim = ranked
+      ? new Sim(Math.random, { mode: 'tdm', mapId: 'rotate', seats: RANKED_SEATS })
+      : new Sim(Math.random, { mode: pickMode(options?.mode), mapId: pickMap(options?.map) });
     this.setState(new ArenaState());
+    this.state.ranked = ranked;
     this.sim.rebalanceBots();
     this.syncState();
 
@@ -78,6 +91,13 @@ export class ArenaRoom extends Room<ArenaState> {
       if (!this.allowMessage(client.sessionId)) return;
       const input = sanitizeInput(raw);
       if (input) this.sim.applyInput(client.sessionId, input);
+    });
+    this.onMessage(MSG_EMOTE, (client, raw) => {
+      if (!this.allowMessage(client.sessionId) || !isEmoteId(raw)) return;
+      const now = Date.now();
+      if (now - (this.lastEmote.get(client.sessionId) ?? 0) < EMOTE_COOLDOWN * 1000) return;
+      this.lastEmote.set(client.sessionId, now);
+      this.broadcast(MSG_EMOTE, { id: client.sessionId, e: raw });
     });
 
     this.setSimulationInterval((deltaMs) => {
@@ -120,7 +140,7 @@ export class ArenaRoom extends Room<ArenaState> {
     const p = this.sim.players.get(client.sessionId);
     if (p && Number.isInteger(colorId)) p.color = colorHex(colorId as number, p.color);
     this.sim.rebalanceBots();
-    if (this.sim.humanCount >= MAX_PLAYERS) void this.lock();
+    if (this.sim.humanCount >= this.maxClients) void this.lock();
     this.syncState();
   }
 
@@ -150,8 +170,9 @@ export class ArenaRoom extends Room<ArenaState> {
     this.sim.removePlayer(id);
     this.sim.rebalanceBots();
     this.rate.delete(id);
+    this.lastEmote.delete(id);
     this.releaseIp(id);
-    if (this.sim.humanCount < MAX_PLAYERS) void this.unlock();
+    if (this.sim.humanCount < this.maxClients) void this.unlock();
     this.syncState();
   }
 
@@ -329,6 +350,11 @@ export class ArenaRoom extends Room<ArenaState> {
       true,
     );
   }
+}
+
+/** 2v2 ranked: four seats, team battle, rotating maps. */
+export class RankedRoom extends ArenaRoom {
+  protected readonly isRanked: boolean = true;
 }
 
 function colorHex(id: number, fallback: number): number {

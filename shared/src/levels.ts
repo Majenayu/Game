@@ -16,6 +16,11 @@ export interface LevelDef {
   /** Finish within this many seconds for the second star. */
   par: number;
   boss?: boolean;
+  /** Boss Tower only: shown name, max HP, colour and unique skill ids of the boss. */
+  bossName?: string;
+  bossHp?: number;
+  bossColor?: number;
+  bossKit?: number[];
   reward: number;
 }
 
@@ -180,6 +185,6 @@ export function objectiveText(l: LevelDef): string {
     case 'survive':
       return `Survive ${l.obj.n} seconds (max ${SURVIVE_MAX_DEATHS} deaths)`;
     case 'boss':
-      return 'Defeat the Overlord';
+      return `Defeat ${l.bossName ?? 'the Overlord'}`;
   }
 }

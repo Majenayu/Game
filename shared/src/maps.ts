@@ -1,5 +1,6 @@
 import type { Rect } from './constants';
 import type { ModeId } from './content';
+import { EXTRA_MAPS } from './mapsExtra';
 
 export interface MapTheme {
   bg: number;
@@ -22,7 +23,7 @@ export interface MapDef {
 
 const HILL = { x: 800, y: 450, r: 110 };
 
-export const MAPS: Record<string, MapDef> = {
+const CORE_MAPS: Record<string, MapDef> = {
   neon: {
     id: 'neon',
     name: 'Neon Core',
@@ -166,6 +167,7 @@ export const MAPS: Record<string, MapDef> = {
   },
 };
 
+export const MAPS: Record<string, MapDef> = { ...CORE_MAPS, ...EXTRA_MAPS };
 export const MAP_LIST = Object.values(MAPS);
 
 export function isMapId(v: unknown): v is string {

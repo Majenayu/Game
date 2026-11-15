@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Client } from 'colyseus.js';
-import { MAX_PLAYERS, MSG_INPUT, firstIdOfRank, getSkill, skillCount } from '@orb/shared';
+import { MAX_PLAYERS, MSG_EMOTE, MSG_INPUT, firstIdOfRank, getSkill, skillCount } from '@orb/shared';
 import { createGameServer } from './app';
 
 function firstOfKind(kind: string): number {
@@ -147,5 +147,32 @@ describe('ArenaRoom', () => {
     r.send(MSG_INPUT, { moveX: 0, moveY: 0, aimAngle: 0, shooting: false, seq: 1, skill: 1 });
     await until(() => (r.state.players.get(r.sessionId).cds as string).split(',')[0].split(':')[0] > '0');
     await r.leave();
+  });
+it('2v2 ranked rooms hold four orbs in two teams and stay apart from casual rooms', async () => {
+    const url = `ws://localhost:${PORT}`;
+    const a = await new Client(url).joinOrCreate<any>('ranked', { name: 'Rank1', ranked: false });
+    const b = await new Client(url).joinOrCreate<any>('ranked', { name: 'Rank2' });
+    const c = await new Client(url).joinOrCreate<any>('arena', { name: 'Casual', mode: 'tdm', map: 'rotate' });
+    expect(a.roomId).toBe(b.roomId);
+    expect(c.roomId).not.toBe(a.roomId);
+    await until(() => a.state.ranked === true && a.state.players?.size === 4 && a.state.mode === 'tdm');
+    const teams = Array.from(a.state.players.values()).map((p: any) => p.team);
+    expect(teams.filter((t: number) => t === 0).length).toBe(2);
+    await Promise.all([a.leave(), b.leave(), c.leave()]);
+  });
+  it('broadcasts preset emotes, rejects bad ones and rate limits spam', async () => {
+    const url = `ws://localhost:${PORT}`;
+    const a = await new Client(url).joinOrCreate<any>('arena', { name: 'Emo', mode: 'hill', map: 'neon' });
+    const b = await new Client(url).joinOrCreate<any>('arena', { name: 'Emo2', mode: 'hill', map: 'neon' });
+    const got: Array<{ id: string; e: number }> = [];
+    b.onMessage(MSG_EMOTE, (m: { id: string; e: number }) => got.push(m));
+    a.send(MSG_EMOTE, 99);
+    a.send(MSG_EMOTE, 'hi');
+    a.send(MSG_EMOTE, 1);
+    a.send(MSG_EMOTE, 2);
+    await until(() => got.length > 0);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(got).toEqual([{ id: a.sessionId, e: 1 }]);
+    await Promise.all([a.leave(), b.leave()]);
   });
 });

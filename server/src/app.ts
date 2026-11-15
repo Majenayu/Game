@@ -3,7 +3,7 @@ import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { ArenaRoom } from './ArenaRoom';
+import { ArenaRoom, RankedRoom } from './ArenaRoom';
 
 export function createGameServer() {
   const app = express();
@@ -25,5 +25,7 @@ export function createGameServer() {
     transport: new WebSocketTransport({ server: httpServer, pingInterval: 5000, pingMaxRetries: 3 }),
   });
   gameServer.define('arena', ArenaRoom).filterBy(['mode', 'map']);
+  // 2v2 ranked has its own room name so casual players can never land in a ranked match.
+  gameServer.define('ranked', RankedRoom);
   return gameServer;
 }
