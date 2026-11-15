@@ -282,6 +282,104 @@
         margin: 0;
         background: rgba(8, 10, 24, 0.7);
       }
+      #hint {
+        position: absolute;
+        left: 50%;
+        bottom: 12%;
+        transform: translateX(-50%);
+        text-align: center;
+        background: rgba(8, 10, 24, 0.78);
+        border: 1px solid rgba(77, 210, 255, 0.5);
+        border-radius: 14px;
+        padding: 12px 20px;
+        font-size: clamp(14px, 2.4vw, 22px);
+        line-height: 1.5;
+        pointer-events: none;
+        transition: opacity 0.6s;
+        max-width: 92vw;
+      }
+      #hint b {
+        color: var(--accent);
+      }
+      #rotate {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: #0b0e1a;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 22px;
+        padding: 30px;
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate {
+          display: flex;
+        }
+      }
+      html,
+      body {
+        touch-action: none;
+      }
+      @media (max-height: 520px) {
+        #timer {
+          font-size: 22px;
+          top: 4px;
+        }
+        #lb {
+          font-size: 10px;
+          min-width: 110px;
+          padding: 4px 6px;
+          right: 52px;
+          top: 6px;
+        }
+        #kills {
+          font-size: 12px;
+          top: 28px;
+        }
+        .pip {
+          width: 12px;
+          height: 12px;
+        }
+        #hpbox {
+          top: 8px;
+          left: 10px;
+          gap: 5px;
+        }
+        #hint {
+          bottom: auto;
+          top: 14%;
+          font-size: 12px;
+          padding: 6px 12px;
+        }
+        #mute {
+          width: 32px;
+          height: 32px;
+          font-size: 14px;
+          top: 6px;
+          right: 8px;
+        }
+        #leave {
+          font-size: 11px;
+          padding: 5px 10px;
+          bottom: 8px;
+          left: 8px;
+        }
+        #banner {
+          font-size: 16px;
+        }
+        .stick {
+          width: 100px;
+          height: 100px;
+          margin: -50px 0 0 -50px;
+        }
+        .knob {
+          width: 44px;
+          height: 44px;
+          margin: -22px 0 0 -22px;
+        }
+      }
       #toast {
         position: absolute;
         left: 50%;
@@ -297,7 +395,7 @@
     <div id="game"></div>
     <div id="ui">
       <div id="menu" class="panel center" hidden>
-        <h1>ORB ARENA</h1>
+        <h1>Orb Arena</h1>
         <p class="sub">Shoot glowing orbs. Most kills in 90 seconds wins.</p>
         <input id="nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nickname" />
         <button id="play">Play</button>
@@ -314,6 +412,7 @@
         <div id="lb"></div>
         <div id="banner" hidden></div>
         <div id="toast"></div>
+        <div id="hint" hidden></div>
       </div>
       <div id="board" class="panel center" hidden></div>
       <div id="overlay" class="panel center" hidden>
@@ -324,6 +423,7 @@
       <button id="leave" class="ghost" hidden>Leave</button>
     </div>
     <div id="touch"></div>
+    <div id="rotate">Please rotate your phone to landscape<br />to play Orb Arena</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

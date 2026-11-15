@@ -21,6 +21,7 @@ export class Ui {
   private nick = $<HTMLInputElement>('nick');
   private muteBtn = $<HTMLButtonElement>('mute');
   private lastHud = 0;
+  private hintTimer = 0;
 
   onPlay: (name: string) => void = () => {};
   onPractice: (name: string) => void = () => {};
@@ -50,6 +51,7 @@ export class Ui {
   }
 
   showMenu(): void {
+    this.hideHint();
     this.menu.hidden = false;
     this.leaveBtn.hidden = true;
     this.hud.hidden = true;
@@ -87,6 +89,24 @@ export class Ui {
 
   toast(msg: string): void {
     $('toast').textContent = msg;
+  }
+
+  /** Shows a short how-to-play hint, then fades it out. */
+  showHint(html: string, ms = 9000): void {
+    const h = $('hint');
+    window.clearTimeout(this.hintTimer);
+    h.innerHTML = html;
+    h.style.opacity = '1';
+    h.hidden = false;
+    this.hintTimer = window.setTimeout(() => {
+      h.style.opacity = '0';
+      this.hintTimer = window.setTimeout(() => (h.hidden = true), 700);
+    }, ms);
+  }
+
+  hideHint(): void {
+    window.clearTimeout(this.hintTimer);
+    $('hint').hidden = true;
   }
 
   banner(msg: string | null): void {

@@ -6,7 +6,7 @@ import { GameScene } from './game/GameScene';
 import { OfflineSource, OnlineSource } from './game/sources';
 import { joinArena, reconnect, serverUrls, type JoinTarget } from './net';
 import { createPlatform, showMidgameAd, type Platform } from './platform/crazygames';
-import { TouchControls } from './ui/touch';
+import { TouchControls, isTouchDevice } from './ui/touch';
 import { Ui } from './ui/ui';
 
 const NICK_KEY = 'orb.nick';
@@ -116,6 +116,14 @@ async function boot(): Promise<void> {
     ui.showMenu();
   };
 
+  const showHowTo = () =>
+    ui.showHint(
+      (isTouchDevice()
+        ? '<b>Left stick</b> to move &middot; <b>Right stick</b> to aim and shoot'
+        : '<b>WASD</b> to move &middot; <b>Mouse</b> to aim &middot; <b>Click</b> to shoot') +
+        '<br />Most kills in 90 seconds wins!',
+    );
+
   const startOffline = async (rawName: string) => {
     const name = readNick(rawName);
     await endSession();
@@ -123,9 +131,10 @@ async function boot(): Promise<void> {
     document.body.dataset.mode = 'offline';
     ui.showGame();
     touch.setEnabled(true);
+    showHowTo();
   };
 
-  const runOnline = (room: Room, serverIndex: number, name: string) => {
+  const runOnline = (room: Room, serverIndex: number, name: string, firstJoin = true) => {
     const mySession = sessionId;
     current = room;
     intentionalLeave = false;
@@ -136,6 +145,7 @@ async function boot(): Promise<void> {
     ui.hideOverlay();
     ui.showGame();
     touch.setEnabled(true);
+    if (firstJoin) showHowTo();
     platform.updateRoom({
       roomId: room.roomId,
       isJoinable: true,
@@ -160,7 +170,7 @@ async function boot(): Promise<void> {
       return;
     }
     if (back) {
-      runOnline(back, serverIndex, name);
+      runOnline(back, serverIndex, name, false);
       return;
     }
     current = null;
