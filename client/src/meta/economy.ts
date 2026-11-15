@@ -3,11 +3,26 @@ import {
   CHARACTERS,
   COLORS,
   LEVELS,
-  SKILLS,
+  CASUAL_BUDGET,
   TRAILS,
+  UniqueRegistry,
+  addToInventory,
+  fuse,
+  fusionsLeft,
+  makeInstance,
+  randomSkillOfRank,
+  rankOf,
+  rollDrop,
+  rollStarterPack,
   sanitizeLoadout,
+  usableInBattle,
+  validateLoadout,
+  weekId,
   type CosmeticDef,
+  type DropSource,
   type LevelDef,
+  type Rank,
+  type SkillInstance,
 } from '@orb/shared';
 import type { Platform } from '../platform/crazygames';
 import { SAVE_KEY, defaultSave, parseSave, type QuestState, type SaveData } from './save';
@@ -133,7 +148,7 @@ export function levelFromXp(xp: number): LevelInfo {
   return { level, into: level >= MAX_LEVEL ? 0 : left, need: level >= MAX_LEVEL ? 1 : xpToNext(level) };
 }
 
-export type ShopKind = 'char' | 'skill' | 'color' | 'trail' | 'bfx';
+export type ShopKind = 'char' | 'color' | 'trail' | 'bfx';
 
 export interface MatchResult {
   mode: string;
@@ -147,6 +162,15 @@ export interface Reward {
   coins: number;
   xp: number;
   levelsGained: number[];
+  /** Skill dropped after the match or level, if any. */
+  drop?: SkillDrop;
+}
+
+export interface SkillDrop {
+  skillId: number;
+  rank: Rank;
+  merged: boolean;
+  level: number;
 }
 
 // ---- progress store -----------------------------------------------------------
@@ -169,6 +193,7 @@ export class Progress {
     this.data =
       [local, remote].filter((x): x is SaveData => !!x).sort((a, b) => b.updated - a.updated)[0] ??
       defaultSave();
+    this.grantStarterIfNeeded();
     this.data.loadout = sanitizeLoadout(this.data.loadout);
     this.ensureQuests();
     this.commit();
@@ -222,8 +247,6 @@ export class Progress {
     switch (kind) {
       case 'char':
         return CHARACTERS[id as string] ?? null;
-      case 'skill':
-        return SKILLS[id as string] ?? null;
       case 'color':
         return COLORS[id as number] ?? null;
       case 'trail':
@@ -235,13 +258,13 @@ export class Progress {
 
   owns(kind: ShopKind, id: string | number): boolean {
     const o = this.data.owned as unknown as Record<string, Array<string | number>>;
-    const key = { char: 'chars', skill: 'skills', color: 'colors', trail: 'trails', bfx: 'bfx' }[kind];
+    const key = { char: 'chars', color: 'colors', trail: 'trails', bfx: 'bfx' }[kind];
     return o[key].includes(id);
   }
 
   private grant(kind: ShopKind, id: string | number): void {
     const o = this.data.owned as unknown as Record<string, Array<string | number>>;
-    const key = { char: 'chars', skill: 'skills', color: 'colors', trail: 'trails', bfx: 'bfx' }[kind];
+    const key = { char: 'chars', color: 'colors', trail: 'trails', bfx: 'bfx' }[kind];
     if (!o[key].includes(id)) o[key].push(id);
   }
 
@@ -257,21 +280,142 @@ export class Progress {
     return { ok: true };
   }
 
-  equip(kind: ShopKind, id: string | number, slot = 0): boolean {
+  equip(kind: ShopKind, id: string | number): boolean {
     if (!this.owns(kind, id)) return false;
     const l = this.data.loadout;
     if (kind === 'char') l.char = id as string;
     else if (kind === 'color') l.color = id as number;
     else if (kind === 'trail') l.trail = id as number;
     else if (kind === 'bfx') l.bfx = id as number;
-    else if (kind === 'skill') {
-      const other = l.skills[slot === 0 ? 1 : 0];
-      if (other === id) l.skills[slot === 0 ? 1 : 0] = l.skills[slot];
-      l.skills[slot] = id as string;
-    }
     this.data.loadout = sanitizeLoadout(l);
     this.commit();
     return true;
+  }
+
+  // ---- skill inventory --------------------------------------------------------
+
+  private uidSeq = 0;
+
+  newUid(): string {
+    this.uidSeq += 1;
+    return `L${Date.now().toString(36)}${this.uidSeq.toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`;
+  }
+
+  /** Adds a skill, merging with a copy you already own. Returns the merged result. */
+  addSkill(inst: SkillInstance): SkillDrop {
+    const r = addToInventory(this.data.skills, inst);
+    this.data.skills = r.inv;
+    return {
+      skillId: r.result.skillId,
+      rank: rankOfId(r.result.skillId),
+      merged: r.merged,
+      level: r.result.level,
+    };
+  }
+
+  skillBySkillId(skillId: number): SkillInstance | undefined {
+    return this.data.skills.find((s) => s.skillId === skillId);
+  }
+
+  /** The equipped skill instances in slot order. Empty when nothing is equipped. */
+  loadoutInstances(): SkillInstance[] {
+    const out: SkillInstance[] = [];
+    for (const id of this.data.loadout.skillIds) {
+      const s = this.skillBySkillId(id);
+      if (s) out.push(s);
+    }
+    return out;
+  }
+
+  /** First run: grants the starter pack (one each of B, C, D, E, F) and equips it. Returns the pack when granted. */
+  grantStarterIfNeeded(): SkillInstance[] | null {
+    const meta = this.data.skillMeta;
+    if (meta.starterGiven) return null;
+    meta.starterGiven = true;
+    const pack = rollStarterPack(Math.random, this.newUid(), 'local', new UniqueRegistry());
+    for (const s of pack.skills) this.addSkill({ ...s, uid: this.newUid(), bound: true });
+    const ids = pack.skills.map((s) => s.skillId).filter((id) => usableInBattle(id));
+    this.data.loadout.skillIds = this.data.skills.length ? ids.slice(0, 5) : [];
+    this.starterPack = pack.skills;
+    return pack.skills;
+  }
+
+  /** Set once when the starter pack was just granted, so the UI can show it. */
+  starterPack: SkillInstance[] | null = null;
+
+  dailySkillStatus(): { canClaim: boolean } {
+    return { canClaim: this.data.skillMeta.dropDay !== dateKey() };
+  }
+
+  /** One free skill drop per day. */
+  claimDailySkill(rng: () => number = Math.random): SkillDrop | null {
+    if (!this.dailySkillStatus().canClaim) return null;
+    this.data.skillMeta.dropDay = dateKey();
+    const drop = this.dropSkill('daily', rng);
+    this.commit();
+    return drop;
+  }
+
+  private dropSkill(source: DropSource, rng: () => number = Math.random): SkillDrop {
+    const rank = rollDrop(source, rng);
+    const id = randomSkillOfRank(rank, rng);
+    return this.addSkill(makeInstance(id, rng, this.newUid()));
+  }
+
+  /** Equips up to five owned skills by skill id. Rejects unowned skills and loadouts over the casual budget. */
+  equipSkills(skillIds: number[]): { ok: boolean; reason?: string } {
+    const uids: string[] = [];
+    for (const id of skillIds) {
+      const s = this.skillBySkillId(id);
+      if (!s) return { ok: false, reason: 'You do not own that skill' };
+      if (!usableInBattle(id)) return { ok: false, reason: 'That skill only works outside battle' };
+      uids.push(s.uid);
+    }
+    const v = validateLoadout(uids, this.data.skills, CASUAL_BUDGET);
+    if (!v.ok) return v;
+    this.data.loadout = sanitizeLoadout({ ...this.data.loadout, skillIds });
+    this.commit();
+    return { ok: true };
+  }
+
+  fusionStatus(): { left: number; week: string } {
+    const week = weekId(new Date());
+    const m = this.data.skillMeta;
+    if (m.fusionWeek !== week) {
+      m.fusionWeek = week;
+      m.fusionsUsed = 0;
+    }
+    return { left: fusionsLeft(m.fusionsUsed), week };
+  }
+
+  /** Fuses two owned skills (once per week). The parents are consumed. */
+  fuseSkills(
+    uidA: string,
+    uidB: string,
+    rng: () => number = Math.random,
+  ): { ok: boolean; reason?: string; drop?: SkillDrop; upgraded?: boolean } {
+    if (this.fusionStatus().left <= 0) return { ok: false, reason: 'You already fused this week' };
+    const a = this.data.skills.find((s) => s.uid === uidA);
+    const b = this.data.skills.find((s) => s.uid === uidB);
+    if (!a || !b) return { ok: false, reason: 'Pick two skills you own' };
+    const r = fuse(a, b, rng);
+    if (!r.ok || r.skillId === undefined) return { ok: false, reason: r.reason };
+    this.data.skills = this.data.skills.filter((s) => s.uid !== a.uid && s.uid !== b.uid);
+    this.data.loadout.skillIds = this.data.loadout.skillIds.filter(
+      (id) => id !== a.skillId && id !== b.skillId,
+    );
+    this.data.skillMeta.fusionsUsed += 1;
+    const drop = this.addSkill(makeInstance(r.skillId, rng, this.newUid()));
+    this.commit();
+    return { ok: true, drop, upgraded: r.upgraded };
+  }
+
+  /** Mastery experience for skills used in a match. */
+  addMastery(uses: Map<number, number>): void {
+    for (const [id, n] of uses) {
+      const s = this.skillBySkillId(id);
+      if (s) s.masteryXp += n * 5;
+    }
   }
 
   // ---- daily reward ---------------------------------------------------------
@@ -410,8 +554,9 @@ export class Progress {
     if (r.mode === 'hill') this.track('hold', r.score);
     this.addCoins(coins);
     const levelsGained = this.addXp(xp);
+    const drop = this.dropSkill(r.mode === 'tdm' ? 'team' : 'solo');
     this.commit();
-    return { coins, xp, levelsGained };
+    return { coins, xp, levelsGained, drop };
   }
 
   /** Applies a campaign result. Returns coins paid (full on first clear, 20% on replays). */
@@ -425,8 +570,9 @@ export class Progress {
     this.addCoins(coins);
     const xp = prev === 0 ? 80 + level.id * 10 : 20;
     const levelsGained = this.addXp(xp);
+    const drop = prev === 0 ? this.dropSkill('story') : undefined;
     this.commit();
-    return { coins, xp, levelsGained };
+    return { coins, xp, levelsGained, drop };
   }
 
   levelUnlocked(level: LevelDef): boolean {
@@ -447,6 +593,10 @@ export class Progress {
 
 export function cosmeticList(kind: 'color' | 'trail' | 'bfx'): CosmeticDef[] {
   return kind === 'color' ? COLORS : kind === 'trail' ? TRAILS : BULLET_FX;
+}
+
+function rankOfId(id: number): Rank {
+  return rankOf(id) ?? 'F';
 }
 
 export const LEVEL_COUNT = LEVELS.length;

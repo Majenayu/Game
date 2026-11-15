@@ -2,20 +2,30 @@ import {
   BULLET_FX,
   CHARACTER_LIST,
   COLORS,
+  CASUAL_BUDGET,
   EFFECT_LIST,
+  ELEMENTS,
+  FUSION_MIN_LEVEL,
   LEVELS,
   MAP_LIST,
   MODES,
   MODE_LIST,
   MODS,
   POWERUP_TOTAL,
+  RANK_INFO,
   RARITIES,
-  SKILL_LIST,
+  RECIPES,
   TRAILS,
+  budgetCost,
+  getSkill,
+  loadoutCost,
+  masteryLevel,
   objectiveText,
   powerupFromId,
+  usableInBattle,
   type LevelDef,
   type ModeId,
+  type SkillInstance,
 } from '@orb/shared';
 import { ALL_FIGURES, MAJEN, uniqueSvg } from '../art/bestiary';
 import { sfx } from '../audio';
@@ -41,12 +51,24 @@ export interface PageActions {
 }
 
 export type PageName =
-  'arenas' | 'campaign' | 'loadout' | 'shop' | 'daily' | 'quests' | 'spin' | 'dex' | 'bestiary';
+  | 'arenas'
+  | 'campaign'
+  | 'loadout'
+  | 'collection'
+  | 'fusion'
+  | 'shop'
+  | 'daily'
+  | 'quests'
+  | 'spin'
+  | 'dex'
+  | 'bestiary';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
   campaign: 'Campaign',
   loadout: 'Loadout',
+  collection: 'Skill Collection',
+  fusion: 'Fusion Lab',
   shop: 'Shop',
   daily: 'Daily Reward',
   quests: 'Quests',
@@ -61,6 +83,9 @@ export class Pages {
   private shopTab: ShopKind = 'char';
   private wheelBusy = false;
   private spinMsg = '';
+  private fuseA = '';
+  private fuseB = '';
+  private fuseMsg = '';
 
   constructor(
     private ui: Ui,
@@ -97,6 +122,10 @@ export class Pages {
         return this.campaignHtml();
       case 'loadout':
         return this.loadoutHtml();
+      case 'collection':
+        return this.collectionHtml();
+      case 'fusion':
+        return this.fusionHtml();
       case 'shop':
         return this.shopHtml();
       case 'daily':
@@ -159,15 +188,6 @@ export class Pages {
         <button data-equip="char:${c.id}" ${l.char === c.id ? 'disabled' : ''}>${l.char === c.id ? 'Equipped' : 'Equip'}</button></div>`,
       )
       .join('');
-    const skillCard = (slot: number) =>
-      SKILL_LIST.filter((s) => owned.skills.includes(s.id))
-        .map(
-          (
-            s,
-          ) => `<div class="card ${l.skills[slot] === s.id ? 'sel' : ''}"><b style="color:${hex(s.color)}">${esc(s.name)}</b><div class="d">${esc(s.desc)} (${s.cd}s)</div>
-          <button data-equip="skill:${s.id}:${slot}" ${l.skills[slot] === s.id ? 'disabled' : ''}>${l.skills[slot] === s.id ? 'Equipped' : 'Equip'}</button></div>`,
-        )
-        .join('');
     const cos = (kind: 'color' | 'trail' | 'bfx') => {
       const list = kind === 'color' ? COLORS : kind === 'trail' ? TRAILS : BULLET_FX;
       const key = kind === 'color' ? 'colors' : kind === 'trail' ? 'trails' : 'bfx';
@@ -182,13 +202,101 @@ export class Pages {
         )
         .join('');
     };
-    return `<p class="sub">Your loadout is used in every online match, arena and campaign level. Buy more in the Shop.</p>
+    return `<p class="sub">Your loadout is used in every online match, arena and campaign level. Buy more characters and cosmetics in the Shop.</p>
       <h3>Character</h3><div class="cards">${chars}</div>
-      <h3>Skill 1 (Space)</h3><div class="cards">${skillCard(0)}</div>
-      <h3>Skill 2 (E)</h3><div class="cards">${skillCard(1)}</div>
+      ${this.skillSlotsHtml()}
       <h3>Orb color</h3><div class="cards">${cos('color')}</div>
       <h3>Trail</h3><div class="cards">${cos('trail')}</div>
       <h3>Bullets</h3><div class="cards">${cos('bfx')}</div>`;
+  }
+
+  // ---- skills -----------------------------------------------------------------
+
+  /** One skill card: rank badge, element colour, level, copies and mastery. */
+  private skillCard(s: SkillInstance, buttons = '', cls = ''): string {
+    const d = getSkill(s.skillId);
+    const rank = RANK_INFO[d.rank];
+    const el = ELEMENTS[d.element];
+    const col = el ? hex(el.color) : hex(rank.color);
+    const tags = `${s.bound ? '<span class="tag">Bound</span>' : ''}${d.unique ? '<span class="tag" style="color:#ff4da6;border-color:#ff4da6">Unique</span>' : ''}`;
+    return `<div class="card skillcard ${cls}" style="border-color:${col}">
+      <span class="rb" style="color:${hex(rank.color)}" title="${rank.name}">${d.rank}</span>
+      <b style="color:${col}">${esc(d.name)}</b>
+      <div class="d">${esc(d.category)}${el ? ` &middot; ${esc(el.name)}` : ''} &middot; ${esc(d.kind)}<br />
+        Lv ${s.level} &middot; ${s.copies} cop${s.copies === 1 ? 'y' : 'ies'} &middot; Mastery ${masteryLevel(s.masteryXp)}<br />
+        Cost ${budgetCost(s)} ${tags}</div>${buttons}</div>`;
+  }
+
+  private sortedSkills(): SkillInstance[] {
+    const order = Object.keys(RANK_INFO);
+    return [...this.pr.data.skills].sort(
+      (a, b) =>
+        order.indexOf(getSkill(b.skillId).rank) - order.indexOf(getSkill(a.skillId).rank) ||
+        b.level - a.level ||
+        a.skillId - b.skillId,
+    );
+  }
+
+  private collectionHtml(): string {
+    const skills = this.sortedSkills();
+    const drop = this.pr.dailySkillStatus().canClaim;
+    const cards = skills.map((s) => this.skillCard(s)).join('');
+    return `<p class="sub">You own ${skills.length} skill(s). Duplicates merge into the skill you already have and raise its level automatically. Win matches and clear levels to find more.</p>
+      <div class="row"><div class="grow"><b>Daily skill drop</b><div class="sub" style="margin:0">One free skill every day.</div></div>
+      <button data-dailydrop="1" ${drop ? '' : 'disabled'}>${drop ? 'Claim' : 'Come back tomorrow'}</button></div>
+      <h3>Your skills</h3><div class="cards">${cards || '<p class="sub">No skills yet.</p>'}</div>`;
+  }
+
+  private skillSlotsHtml(): string {
+    const pr = this.pr;
+    const equipped = pr.loadoutInstances();
+    const ids = new Set(equipped.map((s) => s.skillId));
+    const cost = loadoutCost(equipped);
+    const slots = [0, 1, 2, 3, 4]
+      .map((i) => {
+        const s = equipped[i];
+        return s
+          ? this.skillCard(s, `<button class="ghost" data-unequip="${s.skillId}">Remove</button>`, 'sel')
+          : `<div class="card locked"><b>Slot ${i + 1}</b><div class="d">Empty. Key ${i + 1}</div></div>`;
+      })
+      .join('');
+    const pool = this.sortedSkills()
+      .filter((s) => usableInBattle(s.skillId) && !ids.has(s.skillId))
+      .map((s) => this.skillCard(s, `<button data-equipskill="${s.skillId}">Equip</button>`))
+      .join('');
+    return `<h3>Battle skills (keys 1-5)</h3>
+      <p class="sub">Power budget: ${cost} / ${CASUAL_BUDGET}. Higher ranks and levels cost more. Skills that only work outside battle are not listed.</p>
+      <div class="cards">${slots}</div>
+      <h3>Available skills</h3><div class="cards">${pool || '<p class="sub">Nothing else to equip.</p>'}</div>`;
+  }
+
+  private fusionHtml(): string {
+    const pr = this.pr;
+    const st = pr.fusionStatus();
+    const pick = (uid: string) => (pr.data.skills.some((s) => s.uid === uid) ? uid : '');
+    this.fuseA = pick(this.fuseA);
+    this.fuseB = pick(this.fuseB);
+    const cards = this.sortedSkills()
+      .filter((s) => !getSkill(s.skillId).unique)
+      .map((s) => {
+        const sel = s.uid === this.fuseA || s.uid === this.fuseB;
+        return this.skillCard(
+          s,
+          `<button class="${sel ? '' : 'ghost'}" data-fpick="${s.uid}">${sel ? 'Selected' : 'Pick'}</button>`,
+          sel ? 'sel' : s.level < FUSION_MIN_LEVEL ? 'locked' : '',
+        );
+      })
+      .join('');
+    const recipes = RECIPES.map(
+      (r) =>
+        `<div class="row"><div class="grow"><b>${esc(r.name)}</b><div class="sub" style="margin:0">${esc(r.hint)}</div></div><span class="tag">Secret recipe</span></div>`,
+    ).join('');
+    const ready = !!this.fuseA && !!this.fuseB && st.left > 0;
+    return `<p class="sub">Fuse two different skills of the same or neighbouring rank (both at level ${FUSION_MIN_LEVEL}+) into a new one. The two parents are used up. Fusions left this week: ${st.left}.</p>
+      <div style="text-align:center"><button data-fuse="1" ${ready ? '' : 'disabled'}>Fuse</button>
+      <div class="sub" style="min-height:22px;color:var(--gold)">${esc(this.fuseMsg)}</div></div>
+      <h3>Pick two skills</h3><div class="cards">${cards || '<p class="sub">No skills to fuse.</p>'}</div>
+      <h3>Unique recipes</h3><p class="sub">Unique skills can be crafted from rare, high level skills. The first player to craft one owns it. Hints only.</p>${recipes}`;
   }
 
   private shopHtml(): string {
@@ -197,7 +305,6 @@ export class Pages {
     const tabs = (
       [
         ['char', 'Characters'],
-        ['skill', 'Skills'],
         ['color', 'Colors'],
         ['trail', 'Trails'],
         ['bfx', 'Bullets'],
@@ -212,7 +319,6 @@ export class Pages {
       price: number;
       level: number;
       swatch?: number;
-      color?: number;
     };
     let items: Item[] = [];
     if (this.shopTab === 'char')
@@ -222,15 +328,6 @@ export class Pages {
         desc: `${c.desc} HP ${c.hp}`,
         price: c.price,
         level: c.level,
-      }));
-    if (this.shopTab === 'skill')
-      items = SKILL_LIST.map((s) => ({
-        id: s.id,
-        name: s.name,
-        desc: s.desc,
-        price: s.price,
-        level: s.level,
-        color: s.color,
       }));
     if (this.shopTab === 'color')
       items = COLORS.map((c) => ({
@@ -267,7 +364,7 @@ export class Pages {
             ? `<button disabled>Level ${it.level}</button>`
             : `<button data-buy="${this.shopTab}:${it.id}" ${pr.data.coins < it.price ? 'class="ghost"' : ''}>&#9679; ${it.price}</button>`;
         return `<div class="card ${locked ? 'locked' : ''}">${it.swatch !== undefined ? `<span class="swatch" style="color:${hex(it.swatch)};background:${hex(it.swatch)}"></span>` : ''}
-          <b ${it.color ? `style="color:${hex(it.color)}"` : ''}>${esc(it.name)}</b><div class="d">${esc(it.desc)}</div>${btn}</div>`;
+          <b>${esc(it.name)}</b><div class="d">${esc(it.desc)}</div>${btn}</div>`;
       })
       .join('');
     return `<div class="tabs">${tabs}</div><div class="cards">${cards}</div>`;
@@ -374,11 +471,66 @@ export class Pages {
       );
     if (name === 'loadout') {
       on('[data-equip]', (el) => {
-        const [kind, id, slot] = el.dataset.equip!.split(':');
+        const [kind, id] = el.dataset.equip!.split(':');
         const key: ShopKind = kind as ShopKind;
-        pr.equip(key, key === 'char' || key === 'skill' ? id : Number(id), Number(slot ?? 0));
+        pr.equip(key, key === 'char' ? id : Number(id));
         this.render();
       });
+    }
+    if (name === 'collection') {
+      on('[data-dailydrop]', () => {
+        const d = pr.claimDailySkill();
+        if (d) {
+          sfx.reward();
+          note(
+            `Daily drop: ${getSkill(d.skillId).name} (${d.rank})${d.merged ? ` merged, now level ${d.level}` : ''}`,
+            '#ffc93c',
+          );
+        }
+        this.render();
+      });
+    }
+    if (name === 'fusion') {
+      on('[data-fpick]', (el) => {
+        const uid = el.dataset.fpick!;
+        if (uid === this.fuseA) this.fuseA = '';
+        else if (uid === this.fuseB) this.fuseB = '';
+        else if (!this.fuseA) this.fuseA = uid;
+        else this.fuseB = uid;
+        this.render();
+      });
+      on('[data-fuse]', () => {
+        const r = pr.fuseSkills(this.fuseA, this.fuseB);
+        if (r.ok && r.drop) {
+          sfx.reward();
+          this.fuseA = '';
+          this.fuseB = '';
+          this.fuseMsg = `Created ${getSkill(r.drop.skillId).name} (${r.drop.rank})${r.upgraded ? ', rank up!' : ''}`;
+          note(this.fuseMsg, '#ffc93c');
+        } else {
+          this.fuseMsg = r.reason ?? 'Fusion failed';
+          note(this.fuseMsg, '#ff8a9a');
+        }
+        this.render();
+      });
+    }
+    if (name === 'loadout') {
+      const set = (ids: number[]) => {
+        const r = pr.equipSkills(ids);
+        if (!r.ok) note(r.reason ?? 'Cannot equip', '#ff8a9a');
+        this.render();
+      };
+      on('[data-equipskill]', (el) => {
+        const cur = pr.data.loadout.skillIds;
+        if (cur.length >= 5) {
+          note('All five slots are full. Remove a skill first.', '#ff8a9a');
+          return;
+        }
+        set([...cur, Number(el.dataset.equipskill)]);
+      });
+      on('[data-unequip]', (el) =>
+        set(pr.data.loadout.skillIds.filter((id) => id !== Number(el.dataset.unequip))),
+      );
     }
     if (name === 'shop') {
       on('[data-shoptab]', (el) => {
@@ -388,11 +540,11 @@ export class Pages {
       on('[data-buy]', (el) => {
         const [kind, id] = el.dataset.buy!.split(':');
         const k = kind as ShopKind;
-        const res = pr.buy(k, k === 'char' || k === 'skill' ? id : Number(id));
+        const res = pr.buy(k, k === 'char' ? id : Number(id));
         if (res.ok) {
           sfx.reward();
           note('Purchased!', '#7dff6b');
-          pr.equip(k, k === 'char' || k === 'skill' ? id : Number(id), k === 'skill' ? 1 : 0);
+          pr.equip(k, k === 'char' ? id : Number(id));
         } else note(res.reason ?? 'Cannot buy', '#ff8a9a');
         this.render();
       });

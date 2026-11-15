@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import {
   EFFECTS,
+  ELEMENTS,
   MODES,
   PICKUP_RADIUS,
   PLAYER_RADIUS,
   RARITIES,
   RESPAWN_DELAY,
   SCOREBOARD_TIME,
-  SKILLS,
   TEAM_COLORS,
   WORLD_H,
   WORLD_W,
@@ -38,6 +38,18 @@ interface Particle {
   size: number;
 }
 
+/** A short lived visual from a beam or swing event. */
+interface Fx {
+  kind: 'beam' | 'swing' | 'ring';
+  x: number;
+  y: number;
+  angle: number;
+  size: number;
+  color: number;
+  born: number;
+  ms: number;
+}
+
 interface TrailPoint {
   x: number;
   y: number;
@@ -65,6 +77,12 @@ export interface SceneHooks {
 }
 
 const TRAIL_MS = 450;
+const ZONE_COLOR: Record<string, number> = {
+  barrier: 0x4dd2ff,
+  heal: 0x7dff6b,
+  slow: 0xb77dff,
+  pull: 0xff5e8a,
+};
 
 export class GameScene extends Phaser.Scene {
   ui!: Ui;
@@ -78,6 +96,7 @@ export class GameScene extends Phaser.Scene {
   private map!: MapDef;
   private names = new Map<string, Phaser.GameObjects.Text>();
   private particles: Particle[] = [];
+  private fxs: Fx[] = [];
   private trails = new Map<string, TrailPoint[]>();
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private seq = 0;
@@ -119,13 +138,18 @@ export class GameScene extends Phaser.Scene {
     kb.on('keydown-SPACE', skillKey(0));
     kb.on('keydown-E', skillKey(1));
     kb.on('keydown-SHIFT', skillKey(1));
+    kb.on('keydown-ONE', skillKey(0));
+    kb.on('keydown-TWO', skillKey(1));
+    kb.on('keydown-THREE', skillKey(2));
+    kb.on('keydown-FOUR', skillKey(3));
+    kb.on('keydown-FIVE', skillKey(4));
     this.input.mouse?.disableContextMenu();
     this.game.events.on(Phaser.Core.Events.BLUR, () => {
       for (const k of Object.values(this.keys)) k.reset();
     });
   }
 
-  /** Queue a skill press (0 or 1). Sent with the next input message. */
+  /** Queue a skill press (slot 0 to 4). Sent with the next input message. */
   queueSkill(slot: number): void {
     this.skillBits |= 1 << slot;
   }
@@ -138,6 +162,7 @@ export class GameScene extends Phaser.Scene {
     this.prevRound = 0;
     this.knownBullets.clear();
     this.particles = [];
+    this.fxs = [];
     this.trails.clear();
     this.predictor = new Predictor();
     this.seq = 0;
@@ -248,16 +273,55 @@ export class GameScene extends Phaser.Scene {
         this.burst(ev.x, ev.y, 0xffd54f, 5);
         if (ev.id === me) sfx.coin();
         break;
+      case 'cast': {
+        this.burst(ev.x, ev.y, 0xffffff, 4);
+        if (ev.id === me) sfx.skill('cast');
+        break;
+      }
       case 'skill': {
-        const col = SKILLS[ev.skill]?.color ?? 0xffffff;
-        this.burst(ev.x, ev.y, col, 10);
-        if (ev.id === me) sfx.skill(ev.skill);
+        const col = ELEMENTS[ev.element]?.color ?? 0xffffff;
+        this.burst(ev.x, ev.y, col, 14);
+        this.fxs.push({
+          kind: 'ring',
+          x: ev.x,
+          y: ev.y,
+          angle: 0,
+          size: 90,
+          color: col,
+          born: performance.now(),
+          ms: 350,
+        });
+        if (ev.id === me) sfx.skill(ev.kind);
         else if (performance.now() - this.lastOtherSkill > 150) {
           this.lastOtherSkill = performance.now();
-          sfx.skill(ev.skill);
+          sfx.skill(ev.kind);
         }
         break;
       }
+      case 'beam':
+        this.fxs.push({
+          kind: 'beam',
+          x: ev.x,
+          y: ev.y,
+          angle: ev.angle,
+          size: ev.len,
+          color: ELEMENTS[ev.element]?.color ?? 0xffffff,
+          born: performance.now(),
+          ms: 260,
+        });
+        break;
+      case 'swing':
+        this.fxs.push({
+          kind: 'swing',
+          x: ev.x,
+          y: ev.y,
+          angle: ev.angle,
+          size: ev.r,
+          color: ELEMENTS[ev.element]?.color ?? 0xffffff,
+          born: performance.now(),
+          ms: 220,
+        });
+        break;
       case 'shield':
         this.burst(ev.x, ev.y, 0x7dff6b, 10);
         sfx.shieldBreak();
@@ -735,6 +799,28 @@ export class GameScene extends Phaser.Scene {
       g.lineStyle(2, c, 1).strokeCircle(m.x, m.y, 14);
     }
 
+    // zones
+    for (const z of snap.zones) {
+      const zc = ZONE_COLOR[z.kind] ?? 0xffffff;
+      const wob = 0.5 + 0.5 * Math.sin(now / 280);
+      g.fillStyle(zc, 0.1 + 0.06 * wob).fillCircle(z.x, z.y, z.r);
+      g.lineStyle(3, zc, 0.8).strokeCircle(z.x, z.y, z.r);
+      if (z.kind === 'pull')
+        g.lineStyle(2, zc, 0.5).strokeCircle(z.x, z.y, z.r * (1 - 0.7 * ((now / 700) % 1)));
+      else if (z.kind === 'heal')
+        g.lineStyle(2, zc, 0.5).strokeCircle(z.x, z.y, z.r * (0.3 + 0.7 * ((now / 900) % 1)));
+      else if (z.kind === 'barrier') g.lineStyle(2, 0xffffff, 0.35).strokeCircle(z.x, z.y, z.r - 6);
+    }
+    // pets
+    for (const q of snap.pets) {
+      const bob = Math.sin(now / 200 + q.x * 0.01) * 3;
+      g.fillStyle(q.color, 0.25).fillCircle(q.x, q.y + bob, 16);
+      g.fillStyle(q.color, 1).fillCircle(q.x, q.y + bob, 9);
+      g.fillStyle(0x1b1030, 1)
+        .fillCircle(q.x - 3, q.y + bob - 2, 1.8)
+        .fillCircle(q.x + 3, q.y + bob - 2, 1.8);
+    }
+
     // trails below players
     const aliveIds = new Set(players.map((p) => p.id));
     for (const p of players) this.drawTrail(g, p, now);
@@ -761,11 +847,12 @@ export class GameScene extends Phaser.Scene {
           .setShadow(0, 0, '#000', 4, true, true);
         this.names.set(p.id, label);
       }
-      label.setVisible(p.alive);
+      const ghost = p.hidden && p.id !== meId;
+      label.setVisible(p.alive).setAlpha(ghost ? 0.25 : 1);
       if (!p.alive) continue;
       label.setText(p.boss ? `${p.name} (boss)` : p.name).setPosition(p.x, p.y + PLAYER_RADIUS + 16);
       if (team) label.setColor(p.team === 0 ? '#80b4ff' : '#ff8a9a');
-      const blink = p.invuln ? 0.45 + 0.35 * Math.sin(now / 70) : 1;
+      const blink = (p.invuln ? 0.45 + 0.35 * Math.sin(now / 70) : 1) * (ghost ? 0.25 : 1);
       g.fillStyle(p.color, 0.08 * blink).fillCircle(p.x, p.y, PLAYER_RADIUS * 2.4);
       g.fillStyle(p.color, 0.18 * blink).fillCircle(p.x, p.y, PLAYER_RADIUS * 1.6);
       g.lineStyle(5, p.color, blink).lineBetween(
@@ -778,6 +865,12 @@ export class GameScene extends Phaser.Scene {
       g.fillStyle(0xffffff, 0.5 * blink).fillCircle(p.x - 6, p.y - 6, PLAYER_RADIUS * 0.4);
       this.drawFace(g, p, blink, now);
       this.drawGear(g, p);
+      if (p.casting > 0) {
+        const cc = 0xffe58a;
+        const k = (now / 120) % 1;
+        g.lineStyle(3, cc, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 10 + k * 22);
+        g.lineStyle(2, cc, 0.5).strokeCircle(p.x, p.y, PLAYER_RADIUS + 28 - k * 16);
+      }
       if (team)
         g.lineStyle(4, TEAM_COLORS[p.team === 0 ? 0 : 1], 0.95).strokeCircle(p.x, p.y, PLAYER_RADIUS + 8);
       if (p.boss)
@@ -820,6 +913,24 @@ export class GameScene extends Phaser.Scene {
       if (!alive.has(id)) {
         tx.destroy();
         this.names.delete(id);
+      }
+    }
+
+    // beams, swings and rings
+    this.fxs = this.fxs.filter((f) => now - f.born < f.ms);
+    for (const f of this.fxs) {
+      const k = (now - f.born) / f.ms;
+      if (f.kind === 'beam') {
+        const ex = f.x + Math.cos(f.angle) * f.size;
+        const ey = f.y + Math.sin(f.angle) * f.size;
+        g.lineStyle(14 * (1 - k) + 2, f.color, 0.35 * (1 - k)).lineBetween(f.x, f.y, ex, ey);
+        g.lineStyle(5 * (1 - k) + 1, 0xffffff, 1 - k).lineBetween(f.x, f.y, ex, ey);
+      } else if (f.kind === 'swing') {
+        g.lineStyle(10 * (1 - k) + 2, f.color, 1 - k).beginPath();
+        g.arc(f.x, f.y, f.size * (0.6 + 0.4 * k), f.angle - 1.1, f.angle + 1.1, false);
+        g.strokePath();
+      } else {
+        g.lineStyle(4 * (1 - k) + 1, f.color, 1 - k).strokeCircle(f.x, f.y, f.size * (0.3 + 0.7 * k));
       }
     }
 

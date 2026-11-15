@@ -1,11 +1,13 @@
 import {
-  CHARACTERS,
   EFFECTS,
+  ELEMENTS,
   MAX_NICK,
   MODES,
+  RANK_INFO,
   RARITIES,
-  SKILLS,
   TEAM_NAMES,
+  getSkill,
+  rankOf,
   type EffectId,
   type PlayerView,
 } from '@orb/shared';
@@ -38,7 +40,7 @@ export class Ui {
   private muteBtn = $<HTMLButtonElement>('mute');
   private leaveBtn = $<HTMLButtonElement>('leave');
   private inviteBtn = $<HTMLButtonElement>('invite');
-  private skillBtns = [$<HTMLButtonElement>('sk0'), $<HTMLButtonElement>('sk1')];
+  private skillBtns = [0, 1, 2, 3, 4].map((i) => $<HTMLButtonElement>('sk' + i));
   private lastHud = 0;
   private hintTimer = 0;
 
@@ -289,22 +291,33 @@ export class Ui {
       $('fxbar').innerHTML +=
         `<span class="chip" style="border-color:#7dff6b;color:#7dff6b">Guard x${me.shield}</span>`;
 
-    // skills
-    const cds = [me.cd0, me.cd1];
-    [me.sk0, me.sk1].forEach((id, i) => {
-      const def = SKILLS[id];
-      const b = this.skillBtns[i];
-      if (!def) {
+    // skills and mana
+    const ids = me.skills ? me.skills.split(',').map(Number) : [];
+    const cds = me.cds ? me.cds.split(',') : [];
+    const mpFrac = me.maxMp > 0 ? Math.max(0, Math.min(1, me.mp / me.maxMp)) : 0;
+    $('mpfill').style.width = `${mpFrac * 100}%`;
+    $('mptxt').textContent = `${Math.floor(me.mp)} / ${me.maxMp}`;
+    this.skillBtns.forEach((b, i) => {
+      const id = ids[i];
+      const rank = id === undefined ? null : rankOf(id);
+      if (!rank) {
         b.hidden = true;
         return;
       }
+      const def = getSkill(id);
+      const [remS, totS] = (cds[i] ?? '0:1').split(':');
+      const rem = Math.max(0, Number(remS) || 0);
+      const tot = Math.max(0.001, Number(totS) || 1);
+      const col = hex(RANK_INFO[rank].color);
+      const elCol = ELEMENTS[def.element] ? hex(ELEMENTS[def.element].color) : col;
       b.hidden = false;
-      const max = def.cd * (CHARACTERS[me.char]?.skillCd ?? 1);
-      const frac = Math.min(1, cds[i] / max);
-      b.style.setProperty('--cd', `${frac * 100}%`);
-      b.style.borderColor = hex(def.color);
-      b.classList.toggle('ready', cds[i] <= 0 && me.alive);
-      b.innerHTML = `<span class="skn">${esc(def.name)}</span><span class="key">${i === 0 ? 'Space' : 'E'}</span><span class="cdn">${cds[i] > 0 ? Math.ceil(cds[i]) : ''}</span>`;
+      b.style.setProperty('--cd', `${Math.min(1, rem / tot) * 100}%`);
+      b.style.borderColor = elCol;
+      b.style.color = elCol;
+      b.classList.toggle('ready', rem <= 0 && me.alive && me.mp >= def.base.mp);
+      b.classList.toggle('nomp', me.mp < def.base.mp);
+      const key = i === 0 ? 'Space / 1' : i === 1 ? 'E / 2' : String(i + 1);
+      b.innerHTML = `<span class="rk" style="color:${col}">${rank}</span><span class="skn" style="color:var(--text)">${esc(def.name)}</span><span class="key">${key}</span><span class="cdn">${rem > 0 ? Math.ceil(rem) : ''}</span><span class="el" style="background:${elCol}"></span>`;
     });
   }
 

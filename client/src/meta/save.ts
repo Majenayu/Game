@@ -1,4 +1,4 @@
-import { DEFAULT_LOADOUT, type Loadout } from '@orb/shared';
+import { DEFAULT_LOADOUT, rankOf, type Loadout, type SkillInstance } from '@orb/shared';
 
 export interface QuestState {
   id: string;
@@ -13,7 +13,10 @@ export interface SaveData {
   coins: number;
   xp: number;
   loadout: Loadout;
-  owned: { chars: string[]; skills: string[]; colors: number[]; trails: number[]; bfx: number[] };
+  owned: { chars: string[]; colors: number[]; trails: number[]; bfx: number[] };
+  /** Owned skill instances, one per skill id (duplicates merge automatically). */
+  skills: SkillInstance[];
+  skillMeta: { dropDay: string; fusionWeek: string; fusionsUsed: number; starterGiven: boolean };
   daily: { last: string; streak: number };
   quests: { day: string; list: QuestState[]; week: string; weekList: QuestState[] };
   spin: { last: string };
@@ -33,14 +36,15 @@ export function defaultSave(): SaveData {
     nick: '',
     coins: 100,
     xp: 0,
-    loadout: { ...DEFAULT_LOADOUT, skills: [...DEFAULT_LOADOUT.skills] },
+    loadout: { ...DEFAULT_LOADOUT, skillIds: [] },
     owned: {
       chars: ['nova'],
-      skills: ['dash', 'shield'],
       colors: [0, 1, 2, 3, 4, 5, 6, 7],
       trails: [0],
       bfx: [0],
     },
+    skills: [],
+    skillMeta: { dropDay: '', fusionWeek: '', fusionsUsed: 0, starterGiven: false },
     daily: { last: '', streak: 0 },
     quests: { day: '', list: [], week: '', weekList: [] },
     spin: { last: '' },
@@ -67,6 +71,33 @@ function quests(v: unknown): QuestState[] {
     }));
 }
 
+/** Keeps only well-formed skill instances, one per skill id. */
+function instances(v: unknown): SkillInstance[] {
+  if (!Array.isArray(v)) return [];
+  const seen = new Set<number>();
+  const out: SkillInstance[] = [];
+  for (const s of v) {
+    if (!s || typeof s !== 'object' || typeof s.uid !== 'string' || !Number.isInteger(s.skillId)) continue;
+    if (!rankOf(s.skillId) || seen.has(s.skillId)) continue;
+    const r = s.rolls ?? {};
+    seen.add(s.skillId);
+    out.push({
+      uid: s.uid.slice(0, 40),
+      skillId: s.skillId,
+      level: Math.min(20, Math.max(1, Math.floor(num(s.level, 1)))),
+      copies: Math.max(1, Math.floor(num(s.copies, 1))),
+      rolls: {
+        power: num(r.power, 1),
+        cooldown: num(r.cooldown, 1),
+        mp: num(r.mp, 1),
+        range: num(r.range, 1),
+      },
+      masteryXp: Math.max(0, num(s.masteryXp, 0)),
+      bound: s.bound === true,
+    });
+  }
+  return out;
+}
 /** Merges untrusted stored JSON onto the defaults so missing or damaged fields never crash the game. */
 export function parseSave(raw: string | null | undefined): SaveData | null {
   if (!raw) return null;
@@ -81,13 +112,19 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
       nick: typeof j.nick === 'string' ? j.nick.slice(0, 16) : '',
       coins: Math.max(0, Math.floor(num(j.coins, d.coins))),
       xp: Math.max(0, Math.floor(num(j.xp, 0))),
-      loadout: { ...d.loadout, ...(j.loadout ?? {}) },
+      loadout: { ...d.loadout, ...(j.loadout ?? {}), skillIds: nums(j.loadout?.skillIds, []).slice(0, 5) },
       owned: {
         chars: Array.from(new Set([...d.owned.chars, ...strs(owned.chars, [])])),
-        skills: Array.from(new Set([...d.owned.skills, ...strs(owned.skills, [])])),
         colors: Array.from(new Set([...d.owned.colors, ...nums(owned.colors, [])])),
         trails: Array.from(new Set([...d.owned.trails, ...nums(owned.trails, [])])),
         bfx: Array.from(new Set([...d.owned.bfx, ...nums(owned.bfx, [])])),
+      },
+      skills: instances(j.skills),
+      skillMeta: {
+        dropDay: String(j.skillMeta?.dropDay ?? ''),
+        fusionWeek: String(j.skillMeta?.fusionWeek ?? ''),
+        fusionsUsed: Math.max(0, Math.floor(num(j.skillMeta?.fusionsUsed, 0))),
+        starterGiven: j.skillMeta?.starterGiven === true,
       },
       daily: { last: String(j.daily?.last ?? ''), streak: Math.max(0, num(j.daily?.streak, 0)) },
       quests: {

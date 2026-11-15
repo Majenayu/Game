@@ -241,7 +241,6 @@ export const TEAM_COLORS = [0x2979ff, 0xff1744];
 const COIN_TARGET = 22;
 const COIN_RADIUS = 12;
 const MINE_TRIGGER = 38;
-const MINE_BLAST = 85;
 const HAZARD_INTERVAL = 1.5;
 const DASH_TIME = 0.18;
 const DASH_SPEED = 900;

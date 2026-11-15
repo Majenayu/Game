@@ -530,7 +530,11 @@ describe('bots and skills', () => {
       sim.rebalanceBots();
       let sum = 0;
       let n = 0;
-      for (const p of sim.players.values()) for (const s of p.slots) ((sum += RANKS.indexOf(s.rank)), n++);
+      for (const p of sim.players.values())
+        for (const s of p.slots) {
+          sum += RANKS.indexOf(s.rank);
+          n++;
+        }
       return sum / n;
     };
     expect(avg(1)).toBeGreaterThan(avg(0.05) + 1);
@@ -703,4 +707,3 @@ describe('game modes', () => {
     expect(bosses[0].maxHp).toBeGreaterThan(8);
   });
 });
-

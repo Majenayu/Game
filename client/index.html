@@ -561,6 +561,46 @@
         display: flex;
         gap: 12px;
       }
+      .skillcard {
+        position: relative;
+      }
+      .skillcard .rb {
+        position: absolute;
+        right: 8px;
+        top: 6px;
+        font-family: var(--f-title, inherit);
+        font-size: 20px;
+        font-weight: 800;
+        border: 2px solid currentColor;
+        border-radius: 8px;
+        padding: 0 7px;
+        background: rgba(8, 10, 24, 0.7);
+      }
+      #mpbar {
+        position: absolute;
+        left: 50%;
+        bottom: 84px;
+        transform: translateX(-50%);
+        width: 300px;
+        height: 12px;
+        background: #1b2140;
+        border: 1px solid #33406e;
+        border-radius: 8px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      #mpfill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #2979ff, #4dd2ff);
+      }
+      #mptxt {
+        position: absolute;
+        inset: 0;
+        text-align: center;
+        font-size: 10px;
+        line-height: 12px;
+      }
       .skill {
         position: relative;
         margin: 0;
@@ -588,6 +628,28 @@
       }
       .skill.ready {
         box-shadow: 0 0 14px currentColor;
+      }
+      .skill.nomp {
+        opacity: 0.55;
+      }
+      .skill .rk {
+        position: absolute;
+        left: 4px;
+        top: 3px;
+        z-index: 1;
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid currentColor;
+        border-radius: 6px;
+        padding: 0 4px;
+        background: rgba(8, 10, 24, 0.8);
+      }
+      .skill .el {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 4px;
       }
       .skill .skn {
         display: block;
@@ -752,15 +814,40 @@
       @media (pointer: coarse) {
         #skills {
           left: auto;
-          right: 18px;
-          bottom: 150px;
+          right: 8px;
+          top: 56px;
+          bottom: auto;
           transform: none;
           flex-direction: column;
-          gap: 8px;
+          gap: 5px;
+        }
+        .skillcard {
+          position: relative;
+        }
+        .skillcard .rb {
+          position: absolute;
+          right: 8px;
+          top: 6px;
+          font-family: var(--f-title, inherit);
+          font-size: 20px;
+          font-weight: 800;
+          border: 2px solid currentColor;
+          border-radius: 8px;
+          padding: 0 7px;
+          background: rgba(8, 10, 24, 0.7);
+        }
+        #mpbar {
+          bottom: auto;
+          top: 8px;
+          left: 14px;
+          transform: none;
+          width: 130px;
         }
         .skill {
-          width: 74px;
-          height: 50px;
+          width: 58px;
+          height: 40px;
+          padding: 2px;
+          font-size: 10px;
         }
         .skill .key {
           display: none;
@@ -1314,12 +1401,14 @@
           <button class="tile" data-page="spin">
             <span class="ic">&#127922;</span>Lucky Draw<i class="dot"></i>
           </button>
-          <button class="tile" data-page="dex"><span class="ic">&#128218;</span>Collection</button>
+          <button class="tile" data-page="collection"><span class="ic">&#128220;</span>Skills</button>
+          <button class="tile" data-page="fusion"><span class="ic">&#9878;</span>Fusion Lab</button>
+          <button class="tile" data-page="dex"><span class="ic">&#128218;</span>Powerups</button>
           <button class="tile" data-page="bestiary"><span class="ic">&#128009;</span>Bestiary</button>
         </div>
         <button id="practice" class="ghost">Practice offline</button>
         <div class="controls" id="controls">
-          WASD / arrows: move &middot; Mouse: aim &middot; Click: shoot &middot; Space / E: skills<br />Touch:
+          WASD / arrows: move &middot; Mouse: aim &middot; Click: shoot &middot; 1-5 (or Space / E): skills<br />Touch:
           left stick moves, right stick aims and fires, buttons use skills
         </div>
       </div>
@@ -1346,6 +1435,10 @@
         <div id="objective" hidden></div>
         <div id="toast"></div>
         <div id="hint" hidden></div>
+        <div id="mpbar">
+          <div id="mpfill"></div>
+          <span id="mptxt"></span>
+        </div>
       </div>
       <div id="board" class="panel center" hidden></div>
       <div id="overlay" class="panel center" hidden>
@@ -1355,6 +1448,9 @@
       <div id="skills">
         <button id="sk0" class="skill" hidden></button>
         <button id="sk1" class="skill" hidden></button>
+        <button id="sk2" class="skill" hidden></button>
+        <button id="sk3" class="skill" hidden></button>
+        <button id="sk4" class="skill" hidden></button>
       </div>
       <button id="mute" aria-label="Mute" hidden>&#128266;</button>
       <button id="leave" class="ghost" hidden>Leave</button>

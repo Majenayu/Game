@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { LEVELS } from '@orb/shared';
+import {
+  CASUAL_BUDGET,
+  LEVELS,
+  getSkill,
+  makeInstance,
+  randomSkillOfRank,
+  usableInBattle,
+  type Rank,
+} from '@orb/shared';
 import type { Platform } from '../platform/crazygames';
 import { DAILY_REWARDS, Progress, WHEEL, dateKey, levelFromXp, weekKey, xpToNext } from './economy';
 import { defaultSave, parseSave } from './save';
@@ -39,7 +47,42 @@ describe('save parsing', () => {
     expect(s.owned.chars).toContain('titan');
     expect(s.owned.colors).toContain(3);
     expect(s.dex.sort()).toEqual([1, 7]);
-    expect(defaultSave().owned.skills).toEqual(['dash', 'shield']);
+    expect(defaultSave().skills).toEqual([]);
+    expect(s.skills).toEqual([]);
+    expect(s.skillMeta.starterGiven).toBe(false);
+  });
+});
+
+describe('old saves', () => {
+  it('loads an old-shaped save and grants the starter pack', async () => {
+    store.clear();
+    store.set(
+      'orb.save2',
+      JSON.stringify({
+        v: 2,
+        updated: 5,
+        coins: 321,
+        loadout: { char: 'bolt', skills: ['dash', 'pulse'], color: 2, trail: 0, bfx: 0 },
+        owned: { chars: ['nova', 'bolt'], skills: ['dash', 'shield', 'pulse'], colors: [0, 1, 2] },
+      }),
+    );
+    const p = new Progress(fakePlatform);
+    await p.init();
+    expect(p.data.coins).toBe(321);
+    expect(p.data.loadout.char).toBe('bolt');
+    expect(p.data.skills.length).toBe(5);
+    expect(p.data.skillMeta.starterGiven).toBe(true);
+  });
+
+  it('drops malformed stored skills and duplicates', () => {
+    const good = makeInstance(0, () => 0.5, 'u1');
+    const s = parseSave(
+      JSON.stringify({
+        skills: [good, { ...good, uid: 'u2' }, { uid: 'x', skillId: -4 }, 'junk', null],
+      }),
+    )!;
+    expect(s.skills.length).toBe(1);
+    expect(s.skills[0].uid).toBe('u1');
   });
 });
 
@@ -79,12 +122,107 @@ describe('shop', () => {
     expect(p.equip('char', 'titan')).toBe(true);
     expect(p.data.loadout.char).toBe('titan');
     expect(p.equip('char', 'sniper')).toBe(false);
-    expect(p.buy('skill', 'pulse').ok).toBe(true);
-    p.equip('skill', 'pulse', 1);
-    expect(p.data.loadout.skills).toEqual(['dash', 'pulse']);
-    p.equip('skill', 'pulse', 0);
-    expect(new Set(p.data.loadout.skills).size).toBe(2);
     expect(p.buy('char', 'nope' as any).ok).toBe(false);
+  });
+});
+
+describe('skill inventory', () => {
+  const seeded = (seed: number) => {
+    let s = seed;
+    return () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  };
+  const battleSkill = (rank: Rank, rng: () => number, not: number[] = []): number => {
+    for (;;) {
+      const id = randomSkillOfRank(rank, rng);
+      if (usableInBattle(id) && !not.includes(id)) return id;
+    }
+  };
+
+  it('grants five bound starter skills once and equips them', async () => {
+    const p = await fresh();
+    expect(p.data.skills.length).toBe(5);
+    expect(p.data.skills.every((s) => s.bound)).toBe(true);
+    const ranks = p.data.skills.map((s) => getSkill(s.skillId).rank);
+    expect(ranks.length).toBe(5);
+    expect(p.data.loadout.skillIds.length).toBeGreaterThan(0);
+    expect(p.loadoutInstances().length).toBe(p.data.loadout.skillIds.length);
+    expect(p.grantStarterIfNeeded()).toBeNull();
+    expect(p.data.skills.length).toBe(5);
+  });
+
+  it('merges duplicates automatically', async () => {
+    const p = await fresh();
+    const first = p.data.skills[0];
+    const r = p.addSkill(makeInstance(first.skillId, seeded(1), p.newUid()));
+    expect(r.merged).toBe(true);
+    expect(p.data.skills.length).toBe(5);
+    expect(p.skillBySkillId(first.skillId)!.copies).toBe(first.copies + 1);
+  });
+
+  it('gives one daily skill drop per day', async () => {
+    const p = await fresh();
+    expect(p.dailySkillStatus().canClaim).toBe(true);
+    const d = p.claimDailySkill(seeded(7));
+    expect(d).not.toBeNull();
+    expect(p.claimDailySkill(seeded(7))).toBeNull();
+    expect(p.dailySkillStatus().canClaim).toBe(false);
+    p.data.skillMeta.dropDay = '2000-01-01';
+    expect(p.dailySkillStatus().canClaim).toBe(true);
+  });
+
+  it('drops a skill after a match', async () => {
+    const p = await fresh();
+    const r = p.recordMatch({ mode: 'dm', kills: 1, deaths: 0, score: 1, won: false });
+    expect(r.drop).toBeDefined();
+    expect(p.skillBySkillId(r.drop!.skillId)).toBeDefined();
+  });
+
+  it('equips owned skills and rejects unowned or over-budget loadouts', async () => {
+    const p = await fresh();
+    const rng = seeded(11);
+    expect(p.equipSkills([123456789]).ok).toBe(false);
+    const ids: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      const id = battleSkill('A', rng, ids);
+      ids.push(id);
+      p.addSkill(makeInstance(id, rng, p.newUid()));
+    }
+    expect(p.equipSkills(ids.slice(0, 3))).toEqual({ ok: true });
+    expect(p.data.loadout.skillIds).toEqual(ids.slice(0, 3));
+    const over = p.equipSkills(ids);
+    expect(over.ok).toBe(false);
+    expect(over.reason).toMatch(/budget/i);
+    expect(CASUAL_BUDGET).toBe(3300);
+    expect(p.data.loadout.skillIds).toEqual(ids.slice(0, 3));
+  });
+
+  it('allows one fusion per week and consumes the parents', async () => {
+    const p = await fresh();
+    const rng = seeded(5);
+    const a = makeInstance(battleSkill('C', rng), rng, p.newUid());
+    const b = makeInstance(battleSkill('C', rng, [a.skillId]), rng, p.newUid());
+    a.level = 3;
+    b.level = 3;
+    p.data.skills.push(a, b);
+    const total = p.data.skills.length;
+    expect(p.fusionStatus().left).toBe(1);
+    const r = p.fuseSkills(a.uid, b.uid, rng);
+    expect(r).toMatchObject({ ok: true });
+    expect(p.skillBySkillId(a.skillId)?.uid).not.toBe(a.uid);
+    expect(p.data.skills.length).toBeLessThanOrEqual(total - 1);
+    expect(p.fusionStatus().left).toBe(0);
+    const again = p.fuseSkills(a.uid, b.uid, rng);
+    expect(again.ok).toBe(false);
+    expect(again.reason).toMatch(/week/);
+    p.data.skillMeta.fusionWeek = '2000-W01';
+    expect(p.fusionStatus().left).toBe(1);
+  });
+
+  it('refuses to fuse low level skills', async () => {
+    const p = await fresh();
+    const [a, b] = p.data.skills;
+    expect(p.fuseSkills(a.uid, b.uid).ok).toBe(false);
+    expect(p.data.skills.length).toBe(5);
   });
 });
 

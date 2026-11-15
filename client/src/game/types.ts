@@ -34,12 +34,31 @@ export interface MineView {
   armed: boolean;
 }
 
+export interface ZoneView {
+  id: string;
+  x: number;
+  y: number;
+  r: number;
+  kind: string;
+  owner: string;
+}
+
+export interface PetView {
+  id: string;
+  x: number;
+  y: number;
+  owner: string;
+  color: number;
+}
+
 export interface Snapshot {
   players: PlayerView[];
   bullets: BulletView[];
   pickups: PickupView[];
   coins: CoinView[];
   mines: MineView[];
+  zones: ZoneView[];
+  pets: PetView[];
   phase: 'play' | 'scoreboard';
   mode: ModeId;
   mapId: string;

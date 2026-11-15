@@ -12,6 +12,7 @@ import {
   type PlayerView,
   type SimConfig,
   type SimEvent,
+  type SkillInstance,
 } from '@orb/shared';
 import { INTERP_DELAY_MS, SnapshotBuffer } from './interp';
 import type { GameSource, Snapshot } from './types';
@@ -25,11 +26,17 @@ export class OfflineSource implements GameSource {
   /** Freezes the simulation (used when a campaign level ends). */
   paused = false;
 
-  constructor(name: string, loadout: Loadout, config: Partial<SimConfig> = {}) {
+  constructor(
+    name: string,
+    loadout: Loadout,
+    config: Partial<SimConfig> = {},
+    instances: SkillInstance[] = [],
+  ) {
     this.sim = new Sim(Math.random, config);
     this.sim.addPlayer(this.localId, name, false, {
       charId: loadout.char,
-      skills: loadout.skills,
+      skillIds: loadout.skillIds,
+      instances,
       color: COLORS[loadout.color]?.hex,
       trail: loadout.trail,
       bfx: loadout.bfx,
@@ -71,6 +78,8 @@ export class OfflineSource implements GameSource {
         owner: m.owner,
         armed: s.time >= m.armedAt,
       })),
+      zones: s.zones.map((z) => ({ id: String(z.id), x: z.x, y: z.y, r: z.r, kind: z.kind, owner: z.owner })),
+      pets: s.pets.map((q) => ({ id: String(q.id), x: q.x, y: q.y, owner: q.owner, color: q.color })),
       phase: s.phase,
       mode: s.mode,
       mapId: s.map.id,
@@ -145,10 +154,12 @@ export class OnlineSource implements GameSource {
         bfx: p.bfx,
         spd: p.spd,
         seq: p.seq,
-        sk0: p.sk0,
-        sk1: p.sk1,
-        cd0: p.cd0,
-        cd1: p.cd1,
+        skills: p.skills,
+        cds: p.cds,
+        mp: p.mp,
+        maxMp: p.maxMp,
+        hidden: p.hidden,
+        casting: p.casting,
       });
     });
     const bullets: Snapshot['bullets'] = [];
@@ -163,12 +174,22 @@ export class OnlineSource implements GameSource {
     state.mines.forEach((m: any, id: string) =>
       mines.push({ id, x: m.x, y: m.y, owner: m.owner, armed: m.armed }),
     );
+    const zones: Snapshot['zones'] = [];
+    state.zones?.forEach((z: any, id: string) =>
+      zones.push({ id, x: z.x, y: z.y, r: z.r, kind: z.kind, owner: z.owner }),
+    );
+    const pets: Snapshot['pets'] = [];
+    state.pets?.forEach((q: any, id: string) =>
+      pets.push({ id, x: q.x, y: q.y, owner: q.owner, color: q.color }),
+    );
     this.latest = {
       players,
       bullets,
       pickups,
       coins,
       mines,
+      zones,
+      pets,
       phase: state.phase === 'scoreboard' ? 'scoreboard' : 'play',
       mode: state.mode as ModeId,
       mapId: state.mapId,

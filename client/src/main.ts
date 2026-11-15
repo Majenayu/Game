@@ -11,6 +11,7 @@ import {
   RECONNECT_SECONDS,
   WORLD_H,
   WORLD_W,
+  getSkill,
   powerupFromId,
   powerupName,
   randomNick,
@@ -22,7 +23,7 @@ import { sfx } from './audio';
 import { GameScene, type RoundResult } from './game/GameScene';
 import { OfflineSource, OnlineSource } from './game/sources';
 import { LevelRunner } from './meta/campaign';
-import { Progress } from './meta/economy';
+import { Progress, type SkillDrop } from './meta/economy';
 import { Pages, type PageName } from './meta/pages';
 import { joinArena, reconnect, serverUrls, type JoinTarget } from './net';
 import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './platform/crazygames';
@@ -121,6 +122,17 @@ async function boot(): Promise<void> {
     else platform.gameplayStop();
   };
 
+  const dropText = (d?: SkillDrop): string =>
+    d
+      ? `${getSkill(d.skillId).name} (${d.rank})${d.merged ? `, merged to level ${d.level}` : ' found!'}`
+      : '';
+  /** Skills the local player used in the running match, for mastery. */
+  const uses = new Map<number, number>();
+  const flushMastery = () => {
+    if (uses.size) progress.addMastery(uses);
+    uses.clear();
+  };
+
   let campaignActive = false;
   let offlinePractice = false;
 
@@ -131,6 +143,7 @@ async function boot(): Promise<void> {
     },
     onRoundEnd: (r: RoundResult) => {
       void showMidgameAd(platform);
+      flushMastery();
       if (campaignActive || !r.me) return '';
       const res = progress.recordMatch(
         { mode: r.mode, kills: r.me.kills, deaths: r.me.deaths, score: r.me.score, won: r.won },
@@ -138,9 +151,11 @@ async function boot(): Promise<void> {
       );
       res.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
       if (r.won) ui.notify('Victory!', '#ffc93c', 4000);
+      if (res.drop) ui.notify(`Skill drop: ${dropText(res.drop)}`, '#b77dff', 4500);
       return `<div class="reward">+${res.coins} coins &middot; +${res.xp} XP${r.won ? ' &middot; Victory bonus!' : ''}${offlinePractice ? ' (practice rewards are halved)' : ''}</div>`;
     },
     onEvent: (ev, me) => {
+      if (ev.t === 'skill' && ev.id === me) uses.set(ev.skill, (uses.get(ev.skill) ?? 0) + 1);
       if (campaignActive) return;
       if (ev.t === 'kill' && ev.by === me && ev.id !== me) progress.track('kills', 1);
       else if (ev.t === 'skill' && ev.id === me) progress.track('skills', 1);
@@ -171,7 +186,7 @@ async function boot(): Promise<void> {
     ui.showHint(
       (isTouchDevice()
         ? '<b>Left stick</b> to move &middot; <b>Right stick</b> to aim and shoot &middot; buttons for skills'
-        : '<b>WASD</b> move &middot; <b>Mouse</b> aim &middot; <b>Click</b> shoot &middot; <b>Space / E</b> skills') +
+        : '<b>WASD</b> move &middot; <b>Mouse</b> aim &middot; <b>Click</b> shoot &middot; <b>1-5</b> skills') +
         '<br />Grab glowing powerups. Highest score wins!',
     );
 
@@ -212,7 +227,7 @@ async function boot(): Promise<void> {
     const name = readNick(rawName);
     await endSession();
     offlinePractice = true;
-    scene.setSource(new OfflineSource(name, loadoutOf(), { mode, mapId }));
+    scene.setSource(new OfflineSource(name, loadoutOf(), { mode, mapId }, progress.loadoutInstances()));
     document.body.dataset.mode = 'offline';
     ui.showGame();
     ui.setInviteVisible(false);
@@ -225,15 +240,20 @@ async function boot(): Promise<void> {
     await endSession();
     campaignActive = true;
     scene.suppressBoard = true;
-    const src = new OfflineSource(name, loadoutOf(), {
-      mode: level.mode,
-      mapId: level.map,
-      seats: level.bots + 1,
-      botSkill: level.skill,
-      autoRestart: false,
-      boss: level.boss === true,
-      roundTime: level.time,
-    });
+    const src = new OfflineSource(
+      name,
+      loadoutOf(),
+      {
+        mode: level.mode,
+        mapId: level.map,
+        seats: level.bots + 1,
+        botSkill: level.skill,
+        autoRestart: false,
+        boss: level.boss === true,
+        roundTime: level.time,
+      },
+      progress.loadoutInstances(),
+    );
     scene.setSource(src);
     document.body.dataset.mode = 'campaign';
     ui.showGame();
@@ -241,6 +261,7 @@ async function boot(): Promise<void> {
     touch.setEnabled(true);
     ui.notify(`Level ${level.id}: ${level.name}`, '#4dd2ff', 3500);
     runner = new LevelRunner(level, src, ui, (res) => {
+      flushMastery();
       const reward = res.won ? progress.finishLevel(level, res.stars) : null;
       if (res.won) sfx.reward();
       const starHtml = [1, 2, 3]
@@ -263,6 +284,7 @@ async function boot(): Promise<void> {
          ${reward ? `<div style="color:#ffc93c;margin-top:6px">+${reward.coins} coins &middot; +${reward.xp} XP</div>` : '<div class="sub">Try a different loadout or skills.</div>'}`,
         buttons,
       );
+      if (reward?.drop) ui.notify(`Skill drop: ${dropText(reward.drop)}`, '#b77dff', 4500);
       reward?.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
     });
     runner.start();
@@ -423,6 +445,8 @@ async function boot(): Promise<void> {
   else if (platform.isInstantMultiplayer) void startOnline(nick, { createPrivate: true });
   else {
     ui.showMenu();
+    if (progress.starterPack)
+      ui.notify('Welcome! You received 5 starter skills. Check Loadout.', '#b77dff', 5000);
     if (progress.dailyStatus().canClaim) ui.notify('Your daily reward is ready!', '#ffc93c', 4000);
   }
   nick = nick || '';

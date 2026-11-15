@@ -17,6 +17,8 @@ test('menu shows progress and every page opens', async ({ page }) => {
     'arenas',
     'campaign',
     'loadout',
+    'collection',
+    'fusion',
     'shop',
     'daily',
     'quests',
@@ -60,6 +62,15 @@ test('shop purchase spends coins and unlocks an item', async ({ page }) => {
   expect(after).toBeLessThan(before);
 });
 
+test('new players own five starter skills and can claim a daily skill drop', async ({ page }) => {
+  await openPage(page, 'collection');
+  await expect(page.locator('#pagebody .skillcard')).toHaveCount(5);
+  await page.locator('[data-dailydrop]').click();
+  await expect(page.locator('[data-dailydrop]')).toBeDisabled();
+  await page.locator('#pageclose').click();
+  await page.locator('[data-page="loadout"]').click();
+  await expect(page.locator('#pagebody')).toContainText('Power budget');
+});
 test('lucky draw spins and grants a prize', async ({ page }) => {
   await openPage(page, 'spin');
   await page.locator('[data-spin]').click();
@@ -100,6 +111,6 @@ test('skills can be used with the keyboard and show a cooldown', async ({ page }
   await page.locator('#practice').click();
   await expect(page.locator('#sk0')).toBeVisible({ timeout: 8_000 });
   await page.waitForTimeout(500);
-  await page.keyboard.press('Space');
+  await page.keyboard.press('Digit1');
   await expect(page.locator('#sk0 .cdn')).not.toHaveText('', { timeout: 10_000 });
 });

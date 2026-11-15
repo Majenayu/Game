@@ -27,11 +27,13 @@ const pv = (id: string, x: number, y: number, aim = 0): PlayerView => ({
   trail: 0,
   bfx: 0,
   spd: 1,
-  sk0: 'dash',
-  sk1: 'shield',
-  cd0: 0,
-  cd1: 0,
   seq: 0,
+  skills: '',
+  cds: '',
+  mp: 100,
+  maxMp: 100,
+  hidden: false,
+  casting: 0,
 });
 
 describe('SnapshotBuffer', () => {
