@@ -17,10 +17,16 @@ import {
   RECIPES,
   TRAILS,
   ACCESSORIES,
+  KIND_HELP,
+  MP_COST_SCALE,
+  RANKED_START,
+  dmgFromPower,
+  duelUsable,
+  effectiveStats,
+  validName,
   CHESTS,
   CHEST_ORDER,
   LOGIN_CALENDAR,
-  PASSIVE_CAPS,
   SIGNATURES,
   classById,
   isWorldSkill,
@@ -49,6 +55,18 @@ import {
 } from '@orb/shared';
 import { ALL_FIGURES, MAJEN, uniqueSvg } from '../art/bestiary';
 import { accIcon, chestIcon, skillIcon, weaponIcon } from '../art/icons';
+import {
+  createGuild,
+  fetchGuild,
+  fetchGuilds,
+  fetchLeaderboard,
+  fetchMe,
+  joinGuild,
+  leaveGuild,
+  type GuildSummary,
+  type PublicPlayer,
+} from '../account';
+import { claimName } from './onboarding';
 import { sfx } from '../audio';
 import { ENABLE_ADS } from '../platform/crazygames';
 import type { Ui } from '../ui/ui';
@@ -100,7 +118,8 @@ export type PageName =
   | 'market'
   | 'training'
   | 'profile'
-  | 'chests';
+  | 'chests'
+  | 'guild';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -120,6 +139,7 @@ const TITLES: Record<PageName, string> = {
   training: 'Training Ground',
   profile: 'Profile',
   chests: 'Treasure Chests',
+  guild: 'Guilds',
 };
 
 export class Pages {
@@ -129,6 +149,11 @@ export class Pages {
   private wheelBusy = false;
   private wheel: WheelKind = 'coins';
   private chestLog: { name: string; items: string[] } | null = null;
+  private wheelRot = 0;
+  private world: { offline: boolean; total: number; top: PublicPlayer[]; me: PublicPlayer | null } | null = null;
+  private worldLoading = false;
+  private guilds: { offline: boolean; guilds: GuildSummary[] } | null = null;
+  private guildDetail: { guild: GuildSummary; members: Array<{ name: string; rating: number; tier: string; owner: boolean }> } | null = null;
   private spinMsg = '';
   private fuseA = '';
   private fuseB = '';
@@ -142,6 +167,14 @@ export class Pages {
 
   open(name: PageName): void {
     this.current = name;
+    if (name === 'profile' || name === 'ranked') {
+      this.world = null;
+      this.loadWorld();
+    }
+    if (name === 'guild') {
+      this.guilds = null;
+      this.loadGuilds();
+    }
     this.render();
   }
 
@@ -197,6 +230,8 @@ export class Pages {
         return this.profileHtml();
       case 'chests':
         return this.chestsHtml();
+      case 'guild':
+        return this.guildHtml();
     }
   }
 
@@ -299,7 +334,7 @@ export class Pages {
       : d.unique && SIGNATURES[d.name]
         ? `<div class="d" style="color:#ff9ec7">Signature: ${esc(SIGNATURES[d.name].text)}</div>`
         : '';
-    return `<div class="card skillcard ${cls}" style="border-color:${col}">
+    return `<div class="card skillcard ${cls}" data-skill="${s.skillId}" title="Tap for full stats" style="border-color:${col}">
       <span class="rb" style="color:${hex(rank.color)}" title="${rank.name}">${d.rank}</span>
       ${skillIcon(d.kind, el ? el.color : rank.color)}
       <b style="color:${col}">${esc(d.name)}</b>
@@ -363,7 +398,29 @@ export class Pages {
     return `<h3>Battle skills (keys 1-5)</h3>
       <p class="sub">Power budget: ${cost} / ${CASUAL_BUDGET}. Higher ranks and levels cost more. Skills that only work outside battle are not listed.</p>
       <div class="cards">${slots}</div>
-      <h3>Available skills</h3><div class="cards">${pool || '<p class="sub">Nothing else to equip.</p>'}</div>`;
+      <h3>Available skills</h3><div class="cards">${pool || '<p class="sub">Nothing else to equip.</p>'}</div>
+      ${this.duelSlotsHtml()}`;
+  }
+  /** A separate loadout for ranked 1v1 duels. Only duel-legal skills are offered. */
+  private duelSlotsHtml(): string {
+    const pr = this.pr;
+    const ids = pr.duelSkillIds();
+    const slots = [0, 1, 2, 3, 4]
+      .map((i) => {
+        const s = ids[i] !== undefined ? pr.skillBySkillId(ids[i]) : undefined;
+        return s
+          ? this.skillCard(s, `<button class="ghost" data-dunequip="${s.skillId}">Remove</button>`, 'sel')
+          : `<div class="card locked"><b>Duel slot ${i + 1}</b><div class="d">Empty</div></div>`;
+      })
+      .join('');
+    const pool = this.sortedSkills()
+      .filter((s) => duelUsable(s.skillId) && !ids.includes(s.skillId))
+      .map((s) => this.skillCard(s, `<button data-dequip="${s.skillId}">Use in duels</button>`))
+      .join('');
+    return `<h3>Ranked duel skills (1v1)</h3>
+      <p class="sub">Your separate loadout for ranked duels. Only skills that work in a side-view duel are listed: shots, beams, volleys, swings, novas, shields, heals, dashes, blinks and buffs.</p>
+      <div class="cards">${slots}</div>
+      <h3>Duel-legal skills you own</h3><div class="cards">${pool || '<p class="sub">No other duel-legal skills yet.</p>'}</div>`;
   }
 
   private fusionHtml(): string {
@@ -517,7 +574,10 @@ export class Pages {
     const tabs = (Object.keys(WHEELS) as WheelKind[])
       .map((k) => `<button class="${k === this.wheel ? 'on' : ''}" data-wheel="${k}">${names[k]}</button>`)
       .join('');
-    const prizes = WHEELS[this.wheel].map((w) => `<span class="tag" style="border-color:${w.color}">${esc(w.label)}</span>`).join(' ');
+    const total = WHEELS[this.wheel].reduce((a, w) => a + w.weight, 0);
+    const prizes = WHEELS[this.wheel]
+      .map((w) => `<span class="tag" style="border-color:${w.color}">${esc(w.label)} ${((w.weight / total) * 100).toFixed(w.weight / total < 0.01 ? 1 : 0)}%</span>`)
+      .join(' ');
     return `<div class="tabs">${tabs}</div><div class="wheelbox"><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all four wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
       <p>${prizes}</p>
       <div id="wheelwrap"><div id="pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
@@ -573,47 +633,147 @@ export class Pages {
     const pv = pr.passives;
     const l = d.loadout;
     const w = WEAPONS[l.weapon] ?? WEAPONS[0];
-    const skills = pr
-      .loadoutInstances()
-      .map((x) => {
-        const g = getSkill(x.skillId);
-        return `<div class="row" style="padding:4px 8px">${skillIcon(g.kind, ELEMENTS[g.element]?.color ?? RANK_INFO[g.rank].color)}<div class="grow"><b style="color:${hex(RANK_INFO[g.rank].color)}">[${g.rank}]</b> ${esc(g.name)} Lv ${x.level}<div class="sub" style="margin:0">${esc(g.desc)}</div></div></div>`;
-      })
-      .join('');
-    // Rivals are bots on this device; a worldwide ladder needs accounts.
-    const names = ['Zed', 'Echo', 'Dot', 'Spark', 'Bolt', 'Pip', 'Nova', 'Rook', 'Vex'];
-    let seed = 0;
-    for (const ch of d.nick || 'you') seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-    const rivals = names.map((n, i) => ({ n: n + ' (bot)', r: 900 + (((seed >> i) * 37 + i * 61) % 700), you: false }));
-    const board = [...rivals, { n: d.nick || 'You', r: rk.rating, you: true }]
-      .sort((a, b) => b.r - a.r)
-      .map((x, i) => `<tr class="${x.you ? 'me' : ''}"><td>${i + 1}</td><td>${esc(x.n)}</td><td>${x.r}</td><td>${esc(rankedTier(x.r).name)}</td></tr>`)
-      .join('');
-    const champ = d.champion;
-    return `<div class="row"><div class="grow"><b style="font-size:22px">${esc(d.nick || 'Player')}</b> ${cls ? `<span class="tag">${esc(cls.name)}</span>` : ''} ${champ.isYou ? '<span class="tag" style="color:#ffc93c;border-color:#ffc93c">CHAMPION</span>' : ''}
-        <div class="sub" style="margin:0">Level ${lv.level} &middot; ${lv.into} / ${lv.need} XP &middot; &#9679; ${d.coins} coins</div>
-        <div class="bar"><div style="width:${Math.min(100, (lv.into / lv.need) * 100)}%"></div></div></div></div>
+    const world = this.world;
+    const stat = (v: string | number, label: string, color = '') =>
+      `<div class="card"><b${color ? ` style="color:${color}"` : ''}>${v}</b><div class="d">${label}</div></div>`;
+    const all = this.sortedSkills();
+    const equipped = new Set(l.skillIds);
+    const duel = new Set(pr.duelSkillIds());
+    const group = (title: string, list: SkillInstance[], note: string) =>
+      list.length
+        ? `<h3>${title} (${list.length})</h3><p class="sub">${note}</p><div class="cards">${list
+            .map((x) => this.skillCard(x, `${equipped.has(x.skillId) ? '<span class="tag">Battle</span>' : ''}${duel.has(x.skillId) ? '<span class="tag">Duel</span>' : ''}`))
+            .join('')}</div>`
+        : '';
+    const starter = all.filter((x) => x.bound);
+    const battle = all.filter((x) => !x.bound && !isWorldSkill(x.skillId));
+    const passive = all.filter((x) => !x.bound && isWorldSkill(x.skillId));
+    const worldBox = world
+      ? world.offline
+        ? '<p class="sub">World ranking is offline right now.</p>'
+        : `<div id="board"><table><tr><th>#</th><th>Player</th><th>Guild</th><th>Rating</th><th>Tier</th><th>W / G</th></tr>${
+            world.top
+              .map(
+                (x) =>
+                  `<tr class="${x.name === d.nick ? 'me' : ''}"><td>${x.rank}</td><td>${esc(x.name)}</td><td>${x.guild ? `[${esc(x.guild.tag)}]` : ''}</td><td>${x.rating}</td><td>${esc(x.tier)}</td><td>${x.wins} / ${x.games}</td></tr>`,
+              )
+              .join('') || '<tr><td colspan="6">No ranked duels played yet. Be the first!</td></tr>'
+          }</table></div><p class="sub">${world.total} ranked players worldwide.${world.me ? ` You are #${world.me.rank} with ${world.me.rating}.` : ''}</p>`
+      : '<p class="sub">Loading world ranking...</p>';
+    const tiers = RANKED_TIERS.map(
+      (t) => `<span class="tag" style="color:${hex(t.color)};border-color:${hex(t.color)}">${esc(t.name)} ${t.min}+</span>`,
+    ).join(' ');
+    return `<div class="row"><div class="grow"><b style="font-size:22px">${esc(d.nick || 'Player')}</b> ${cls ? `<span class="tag">${esc(cls.name)}</span>` : ''} ${d.champion.isYou ? '<span class="tag" style="color:#ffc93c;border-color:#ffc93c">CHAMPION</span>' : ''} ${world?.me?.guild ? `<span class="tag">[${esc(world.me.guild.tag)}] ${esc(world.me.guild.name)}</span>` : ''}
+        <div class="sub" style="margin:0">Level ${lv.level} &middot; ${lv.into} / ${lv.need} XP &middot; &#9679; ${d.coins} coins &middot; ${d.profile.registered ? 'name reserved' : 'name not reserved yet (offline)'}</div>
+        <div class="bar"><div style="width:${Math.min(100, (lv.into / lv.need) * 100)}%"></div></div></div>
+        <button class="ghost" data-rename="1">Change name</button></div>
       <h3>Stats</h3>
       <div class="cards">
-        <div class="card"><b>${s.matches}</b><div class="d">Matches</div></div>
-        <div class="card"><b>${s.wins}</b><div class="d">Wins</div></div>
-        <div class="card"><b>${s.kills}</b><div class="d">Kills</div></div>
-        <div class="card"><b>${s.deaths}</b><div class="d">Deaths</div></div>
-        <div class="card"><b>${kd}</b><div class="d">K/D</div></div>
-        <div class="card"><b style="color:${hex(tier.color)}">${esc(tier.name)}</b><div class="d">Ranked ${rk.rating} (best ${rk.best}) &middot; ${rk.wins}W ${rk.games - rk.wins}L</div></div>
-        <div class="card"><b>${pr.totalStars()}</b><div class="d">Campaign stars</div></div>
-        <div class="card"><b>${d.skills.length}</b><div class="d">Skills owned</div></div>
+        ${stat(s.matches, 'Matches')}${stat(s.wins, 'Wins')}${stat(s.kills, 'Kills')}${stat(s.deaths, 'Deaths')}${stat(kd, 'K/D')}
+        ${stat(esc(tier.name), `Ranked ${rk.rating} (best ${rk.best}) &middot; ${rk.wins}W ${rk.games - rk.wins}L`, hex(tier.color))}
+        ${stat(world?.me ? `#${world.me.rank}` : '-', 'World rank')}${stat(pr.totalStars(), 'Campaign stars')}${stat(d.skills.length, 'Skills owned')}
+        ${stat(Object.values(d.chests).reduce((a, b) => a + b, 0), 'Chests to open')}
       </div>
       <h3>Loadout</h3>
       <div class="row">${weaponIcon(l.weapon)}${accIcon(l.acc)}<div class="grow"><b>${esc(w.name)}</b><div class="sub" style="margin:0">${esc(w.desc)}</div></div><button data-goto="loadout">Edit loadout</button></div>
-      ${skills || '<p class="sub">No battle skills equipped.</p>'}
-      <h3>Passive bonuses (out-of-battle skills)</h3>
-      <p class="sub">+${pv.xp}% XP &middot; +${pv.coins}% coins &middot; ${pv.luck}% chance to upgrade a drop &middot; ${pv.double}% chance to double a drop. Caps: ${PASSIVE_CAPS.xp}% / ${PASSIVE_CAPS.coins}% / ${PASSIVE_CAPS.luck}% / ${PASSIVE_CAPS.double}%. These come from owned Forge, Appraisal, Scout and Gather skills and work automatically.</p>
-      <h3>Champion</h3>
-      <p class="sub">Reigning champion: <b>${esc(champ.name)}</b>${champ.isYou ? ' (you)' : ''}. Challengers must be level ${CHAMPION_MIN_LEVEL}+.</p>
-      <h3>Leaderboard</h3>
-      <p class="sub">Your ranked rating against rival bots on this device. A worldwide leaderboard arrives with accounts.</p>
-      <div id="board"><table><tr><th>#</th><th>Name</th><th>Rating</th><th>Tier</th></tr>${board}</table></div>`;
+      <p class="sub">Passive bonuses from out-of-battle skills (automatic): +${pv.xp}% XP &middot; +${pv.coins}% coins &middot; ${pv.luck}% luckier drops &middot; ${pv.double}% double drops.</p>
+      <h3>World ranking (ranked duels)</h3>
+      ${worldBox}
+      <h3>How ranking works</h3>
+      <p class="sub">Everyone starts at ${RANKED_START} points. Each ranked duel moves your points with the Elo system: beating an equal opponent gives +16 and losing gives -16; beating a stronger player gives more, losing to a weaker player costs more. Only ranked duels count. You never lose levels, skills or items.</p>
+      <p>${tiers}</p>
+      ${group('Starter skills', starter, 'Your class kit. Bound: they cannot be sold.')}
+      ${group('Battle skills', battle, 'Earned from matches, chests, the lucky draw, the market and fusion. Tap any skill to see its full stats.')}
+      ${group('Out-of-battle skills', passive, 'They work automatically and boost your rewards.')}
+      <h3>Danger zone</h3>
+      <div class="row"><div class="grow"><b>Reset progress</b><div class="sub" style="margin:0">Deletes all local progress on this device and starts over. Your name stays yours.</div></div><button class="ghost" data-reset="1">Reset</button></div>`;
+  }
+  /** Loads world ranking data for the profile and ranked pages. */
+  private loadWorld(): void {
+    if (this.worldLoading) return;
+    this.worldLoading = true;
+    void Promise.all([fetchLeaderboard(), fetchMe()]).then(([lb, me]) => {
+      this.worldLoading = false;
+      this.world = lb.ok
+        ? { offline: false, total: lb.total, top: lb.top, me: me.ok ? me.player : null }
+        : { offline: true, total: 0, top: [], me: null };
+      if (me.ok) {
+        this.pr.data.ranked.rating = me.player.rating;
+        this.pr.data.ranked.best = Math.max(this.pr.data.ranked.best, me.player.best);
+      }
+      if (this.current === 'profile' || this.current === 'ranked' || this.current === 'guild') this.render();
+    });
+  }
+  private guildHtml(): string {
+    const g = this.guilds;
+    const me = this.world?.me;
+    if (!g) return '<p class="sub">Loading guilds...</p>';
+    if (g.offline) return '<p class="sub">Guilds need the game server, which cannot be reached right now.</p>';
+    const mine = me?.guild;
+    const det = this.guildDetail;
+    const myBox = mine
+      ? `<div class="row"><div class="grow"><b style="font-size:20px">[${esc(mine.tag)}] ${esc(mine.name)}</b><div class="sub" style="margin:0">Your guild${det ? ` &middot; ${det.members.length} members &middot; power ${det.guild.power}` : ''}</div></div><button class="ghost" data-gleave="1">Leave</button></div>
+        ${det ? `<div id="board"><table><tr><th>Member</th><th>Rating</th><th>Tier</th></tr>${det.members.map((m) => `<tr><td>${esc(m.name)}${m.owner ? ' &#9813;' : ''}</td><td>${m.rating}</td><td>${esc(m.tier)}</td></tr>`).join('')}</table></div>` : ''}`
+      : `<h3>Create a guild</h3><div class="row"><input id="gname" maxlength="20" placeholder="Guild name" /><input id="gtag" maxlength="4" placeholder="TAG" style="width:80px" /><button data-gcreate="1">Create</button></div>
+        <div id="gmsg" class="sub"></div>`;
+    const list = g.guilds
+      .map(
+        (x, i) =>
+          `<tr><td>${i + 1}</td><td>[${esc(x.tag)}] ${esc(x.name)}</td><td>${x.members}/30</td><td>${x.power}</td><td>${mine ? '' : `<button class="ghost" data-gjoin="${esc(x.id)}">Join</button>`}</td></tr>`,
+      )
+      .join('');
+    return `<p class="sub">Guilds are teams of up to 30 players. Guild power is the total ranked points of all members, so every ranked win helps your guild climb the world guild ranking.</p>
+      ${me ? '' : '<p class="sub" style="color:#ff8a9a">Reserve your name first (Profile) to create or join a guild.</p>'}
+      ${myBox}
+      <h3>World guild ranking</h3>
+      <div id="board"><table><tr><th>#</th><th>Guild</th><th>Members</th><th>Power</th><th></th></tr>${list || '<tr><td colspan="5">No guilds yet. Create the first one!</td></tr>'}</table></div>`;
+  }
+  private loadGuilds(): void {
+    void Promise.all([fetchGuilds(), this.world ? Promise.resolve(null) : fetchMe()]).then(async ([gl, me]) => {
+      if (me && me.ok) this.world = { offline: false, total: 0, top: [], me: me.player, ...(this.world ?? {}) };
+      this.guilds = gl.ok ? { offline: false, guilds: gl.guilds } : { offline: true, guilds: [] };
+      const mine = this.world?.me?.guild;
+      if (mine) {
+        const det = await fetchGuild(mine.id);
+        this.guildDetail = det.ok ? { guild: det.guild, members: det.members } : null;
+      } else this.guildDetail = null;
+      if (this.current === 'guild') this.render();
+    });
+  }
+  /** Full stats of one skill in a pop-up window. */
+  showSkill(skillId: number): void {
+    const own = this.pr.skillBySkillId(skillId);
+    const inst = own ?? neutralInstance(skillId);
+    const d = getSkill(skillId);
+    const rank = RANK_INFO[d.rank];
+    const el = ELEMENTS[d.element];
+    const col = el ? el.color : rank.color;
+    const st = effectiveStats(inst);
+    const cell = (label: string, v: string) => `<div><span class="sub">${label}</span><b>${v}</b></div>`;
+    const world = isWorldSkill(skillId);
+    const sig = d.unique ? SIGNATURES[d.name] : undefined;
+    const next = LEVEL_COPIES[inst.level];
+    const stats = world
+      ? `<p style="color:#7dff6b">Passive: ${esc(worldBonusOf(skillId, inst.level).text)}. Works automatically, no slot needed.</p>`
+      : `<div class="stats">
+          ${cell('Damage', `${Math.round(dmgFromPower(st.power) * 100)} HP`)}${cell('Power', String(Math.round(st.power)))}${cell('Cooldown', `${st.cooldown.toFixed(1)} s`)}
+          ${cell('Mana', String(Math.round(st.mp * MP_COST_SCALE)))}${cell('Cast time', `${st.cast.toFixed(2)} s`)}${cell('Range', String(Math.round(st.range)))}
+          ${cell('Area', String(Math.round(st.area)))}${cell('Duration', `${st.duration.toFixed(1)} s`)}${cell('Extra hits', String(st.count))}
+        </div>`;
+    this.ui.modal(`<div class="row" style="border:none">${skillIcon(d.kind, col)}<div class="grow"><b style="font-size:22px;color:${hex(col)}">${esc(d.name)}</b>
+        <div class="sub" style="margin:0"><b style="color:${hex(rank.color)}">Rank ${d.rank} (${esc(rank.name)})</b> &middot; ${esc(d.category)} &middot; ${esc(d.kind)}${el ? ` &middot; ${esc(el.name)}` : ''}</div></div></div>
+      <p>${esc(d.desc)}</p>
+      ${sig ? `<p style="color:#ff9ec7">Signature: ${esc(sig.text)}</p>` : ''}
+      ${stats}
+      <p class="sub">What it does: ${esc(KIND_HELP[d.kind] ?? '')}</p>
+      <p class="sub">${usableInBattle(skillId) ? 'Works in arena battles.' : 'Out of battle only.'} ${duelUsable(skillId) ? 'Works in ranked duels.' : 'Does not work in ranked duels.'}</p>
+      ${
+        own
+          ? `<h3>Your copy</h3><p>Level ${own.level} &middot; ${own.copies} cop${own.copies === 1 ? 'y' : 'ies'}${next ? ` &middot; ${next - own.copies} more for level ${own.level + 1}` : ' &middot; max level'} &middot; mastery ${masteryLevel(own.masteryXp)}</p>
+             <div class="bar"><div style="width:${next ? Math.min(100, (own.copies / next) * 100) : 100}%"></div></div>
+             <p class="sub">Rolls: power x${own.rolls.power.toFixed(2)}, cooldown x${own.rolls.cooldown.toFixed(2)}, mana x${own.rolls.mp.toFixed(2)}, range x${own.rolls.range.toFixed(2)}. Each merged copy nudges the rolls toward the best.</p>`
+          : '<p class="sub">You do not own this skill.</p>'
+      }`);
   }
   private chestsHtml(): string {
     const pr = this.pr;
@@ -717,6 +877,13 @@ export class Pages {
     const pr = this.pr;
     const note = (t: string, c = '#e8ecff') => this.ui.notify(t, c);
     const levelUps = (ls: number[]) => ls.forEach((l) => note(`Level up! You reached level ${l}`, '#ffc93c'));
+    // Tap any skill card (not its buttons) to see the full stats.
+    body.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('button')) return;
+      const card = t.closest<HTMLElement>('[data-skill]');
+      if (card) this.showSkill(Number(card.dataset.skill));
+    });
 
     if (name === 'arenas') {
       on('[data-mode]', (el) => {
@@ -741,7 +908,56 @@ export class Pages {
       on('[data-team2]', () => this.actions.playTeam2v2());
     }
     if (name === 'training') on('[data-train]', () => this.actions.playTraining());
-    if (name === 'profile') on('[data-goto]', (el) => this.open(el.dataset.goto as PageName));
+    if (name === 'profile') {
+      on('[data-goto]', (el) => this.open(el.dataset.goto as PageName));
+      on('[data-reset]', () => {
+        if (!window.confirm('Delete ALL progress on this device and start over?')) return;
+        pr.resetProgress();
+        location.reload();
+      });
+      on('[data-rename]', () => {
+        const box = this.ui.modal(`<h2>Change name</h2><p class="sub">3 to 16 letters, digits, _ or -. Names are unique worldwide.</p>
+          <input id="rnick" maxlength="16" value="${esc(pr.data.nick)}" /><div id="rmsg" class="sub"></div><button data-rsave="1">Save</button>`);
+        const input = box.querySelector<HTMLInputElement>('#rnick')!;
+        input.addEventListener('keydown', (e) => e.stopPropagation());
+        box.querySelector('[data-rsave]')!.addEventListener('click', async () => {
+          const msg = box.querySelector<HTMLElement>('#rmsg')!;
+          const v = validName(input.value);
+          if (!v.ok) {
+            msg.textContent = v.reason ?? '';
+            return;
+          }
+          msg.textContent = 'Saving...';
+          const err = await claimName(pr, v.name);
+          if (err) {
+            msg.textContent = err;
+            return;
+          }
+          this.ui.closeModal();
+          this.ui.setNick(pr.data.nick);
+          note(`You are now ${pr.data.nick}`, '#7dff6b');
+          this.world = null;
+          this.loadWorld();
+          this.render();
+        });
+      });
+    }
+    if (name === 'guild') {
+      const done = (r: { ok: boolean; reason?: string }) => {
+        if (!r.ok) note(r.reason ?? 'Failed', '#ff8a9a');
+        this.world = null;
+        this.loadWorld();
+        window.setTimeout(() => this.loadGuilds(), 400);
+      };
+      on('[data-gcreate]', () => {
+        const n = body.querySelector<HTMLInputElement>('#gname')!.value;
+        const t = body.querySelector<HTMLInputElement>('#gtag')!.value;
+        void createGuild(n, t).then(done);
+      });
+      on('[data-gjoin]', (el) => void joinGuild(el.dataset.gjoin!).then(done));
+      on('[data-gleave]', () => void leaveGuild().then(done));
+      body.querySelectorAll('input').forEach((i) => i.addEventListener('keydown', (e) => e.stopPropagation()));
+    }
     if (name === 'chests')
       on('[data-open]', (el) => {
         const k = el.dataset.open as ChestKind;
@@ -833,6 +1049,17 @@ export class Pages {
       on('[data-unequip]', (el) =>
         set(pr.data.loadout.skillIds.filter((id) => id !== Number(el.dataset.unequip))),
       );
+      const dset = (ids: number[]) => {
+        const r = pr.equipDuelSkills(ids);
+        if (!r.ok) note(r.reason ?? 'Cannot equip', '#ff8a9a');
+        this.render();
+      };
+      on('[data-dequip]', (el) => {
+        const cur = pr.duelSkillIds();
+        const id = Number(el.dataset.dequip);
+        dset(cur.length >= 5 ? [...cur.slice(0, 4), id] : [...cur, id]);
+      });
+      on('[data-dunequip]', (el) => dset(pr.duelSkillIds().filter((id) => id !== Number(el.dataset.dunequip))));
     }
     if (name === 'shop') {
       on('[data-shoptab]', (el) => {
@@ -917,15 +1144,19 @@ export class Pages {
   private bindSpin(body: HTMLElement, note: (t: string, c?: string) => void): void {
     const canvas = body.querySelector<HTMLCanvasElement>('#wheel')!;
     this.drawWheel(canvas);
+    // Keep the wheel where it stopped, so the pointer shows the prize you won.
+    canvas.style.transition = 'none';
+    canvas.style.transform = `rotate(${this.wheelRot}deg)`;
     body.querySelectorAll<HTMLElement>('[data-wheel]').forEach((el) =>
       el.addEventListener('click', () => {
         if (this.wheelBusy) return;
         this.wheel = el.dataset.wheel as WheelKind;
+        this.wheelRot = 0;
         this.spinMsg = '';
         this.render();
       }),
     );
-    let rotation = 0;
+    let rotation = this.wheelRot;
     const result = body.querySelector<HTMLElement>('#spinresult')!;
     const run = () => {
       if (this.wheelBusy) return;
@@ -935,6 +1166,9 @@ export class Pages {
       const seg = 360 / WHEELS[this.wheel].length;
       const target = 360 - (idx * seg + seg / 2);
       rotation += 360 * 5 + ((target - (rotation % 360) + 360) % 360);
+      this.wheelRot = rotation % 360;
+      canvas.style.transition = '';
+      void canvas.offsetWidth;
       canvas.style.transform = `rotate(${rotation}deg)`;
       this.spinMsg = 'Spinning...';
       result.textContent = this.spinMsg;

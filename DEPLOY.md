@@ -68,3 +68,13 @@ curl http://localhost:2567/health
 ```
 
 Rooms live in memory. A deploy or restart drops running matches; clients show "Connection lost" and can rejoin.
+
+## Saving names, world ranking and guilds
+
+The server stores unique player names, ranked ratings and guilds. Without a database it writes `./data/orb-db.json`, which Render's free plan wipes on every redeploy or restart. To keep the data:
+
+1. Create a free Postgres database (Render: New > Postgres > Free, or Neon.tech free tier).
+2. Copy its connection string (Internal Database URL on Render).
+3. In the `orb-arena-server` service on Render: Environment > Add `DATABASE_URL` = that string. Save; Render redeploys.
+
+The server creates its table (`orb_kv`) by itself.

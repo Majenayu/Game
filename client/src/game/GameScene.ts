@@ -143,7 +143,8 @@ export class GameScene extends Phaser.Scene {
     this.g = this.add.graphics().setDepth(10);
     this.applyMap('neon');
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,SPACE,E,SHIFT') as Record<
+    // W A S D and Z Q S D (AZERTY) both move.
+    this.keys = kb.addKeys('W,A,S,D,Z,Q,UP,DOWN,LEFT,RIGHT,SPACE,E,SHIFT') as Record<
       string,
       Phaser.Input.Keyboard.Key
     >;
@@ -491,8 +492,8 @@ export class GameScene extends Phaser.Scene {
     py: number,
   ): { moveX: number; moveY: number; aim: number; shooting: boolean } {
     const k = this.keys;
-    let mx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0);
-    let my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
+    let mx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.Q.isDown || k.LEFT.isDown ? 1 : 0);
+    let my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.Z.isDown || k.UP.isDown ? 1 : 0);
     let aim = this.localAim;
     let shooting = false;
     if (this.touch.enabled) {
@@ -1087,6 +1088,15 @@ export class GameScene extends Phaser.Scene {
       }
       const ghost = p.hidden && p.id !== meId;
       label.setVisible(p.alive).setAlpha(ghost ? 0.25 : 1);
+      if (!p.alive && p.id === meId && snap.phase === 'play') {
+        // Only you see where you will respawn; enemies see nothing until you are back.
+        const k = (now % 900) / 900;
+        g.lineStyle(4, p.color, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 6);
+        g.lineStyle(3, 0xffffff, 1 - k).strokeCircle(p.x, p.y, PLAYER_RADIUS + 6 + k * 40);
+        g.fillStyle(p.color, 0.25).fillCircle(p.x, p.y, PLAYER_RADIUS);
+        g.lineStyle(2, 0xffffff, 0.8).lineBetween(p.x - 12, p.y, p.x + 12, p.y).lineBetween(p.x, p.y - 12, p.x, p.y + 12);
+        label.setVisible(true).setAlpha(1).setText('YOU RESPAWN HERE').setPosition(p.x, p.y + PLAYER_RADIUS + 20);
+      }
       if (!p.alive) continue;
       label.setText(p.boss ? `${p.name} (boss)` : p.name).setPosition(p.x, p.y + PLAYER_RADIUS + 16);
       const bubble = this.bubbles.get(p.id);

@@ -19,8 +19,14 @@ interface Stick {
   knob: HTMLDivElement;
 }
 
+let deviceOverride: boolean | null = null;
+/** Uses the platform's device detection when available (CrazyGames asks not to guess from touch support). */
+export function setTouchDevice(v: boolean | null): void {
+  deviceOverride = v;
+  document.body.classList.toggle('touchdev', v === true);
+}
 export function isTouchDevice(): boolean {
-  return matchMedia('(pointer: coarse)').matches;
+  return deviceOverride ?? matchMedia('(pointer: coarse)').matches;
 }
 
 export class TouchControls {

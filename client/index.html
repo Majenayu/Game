@@ -683,6 +683,195 @@
         box-shadow: none;
         border: 1px solid #33406e;
       }
+      body.ingame #game {
+        bottom: 96px;
+      }
+      body.ingame #skills {
+        bottom: 8px;
+      }
+      body.ingame #mpbar {
+        bottom: 76px;
+      }
+      @media (max-height: 560px) {
+        body.ingame #game {
+          bottom: 66px;
+        }
+        body.ingame .skill {
+          height: 50px;
+          width: 74px;
+          font-size: 11px;
+        }
+        body.ingame #skills {
+          bottom: 4px;
+        }
+        body.ingame #mpbar {
+          bottom: 56px;
+          height: 8px;
+        }
+      }
+      @media (pointer: coarse) {
+        body.ingame #game {
+          bottom: 0;
+          right: 78px;
+        }
+      }
+      body.touchdev.ingame #game {
+        bottom: 0;
+        right: 78px;
+      }
+      #modal {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(4, 2, 12, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+      }
+      #modal[hidden],
+      #mergefx[hidden] {
+        display: none;
+      }
+      #modal .box {
+        position: relative;
+        width: min(640px, 94vw);
+        max-height: 86vh;
+        overflow: auto;
+        padding: 16px 18px;
+      }
+      #modal .mclose {
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        margin: 0;
+      }
+      #modal .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin: 8px 0;
+      }
+      #modal .stats div {
+        border: 1px solid #33406e;
+        border-radius: 8px;
+        padding: 6px 8px;
+        background: rgba(8, 10, 24, 0.6);
+      }
+      #modal .stats b {
+        display: block;
+        font-size: 18px;
+      }
+      #mergefx {
+        position: fixed;
+        top: 14%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 85;
+        pointer-events: none;
+      }
+      .mfx {
+        min-width: 280px;
+        text-align: center;
+        padding: 12px 18px;
+        border: 3px solid #ffc93c;
+        border-radius: 16px;
+        background: radial-gradient(circle at 50% 30%, #3a1d6e, #120a26);
+        box-shadow: 0 0 40px rgba(255, 201, 60, 0.45);
+        animation: mfxin 0.35s ease-out;
+      }
+      .mfx .mtitle {
+        font-family: Bangers, Impact, sans-serif;
+        font-size: 32px;
+        letter-spacing: 1px;
+        color: #ffe58a;
+      }
+      .mfx .mrow {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        margin: 6px 0;
+      }
+      .mfx .ico {
+        width: 64px;
+        height: 64px;
+        margin: 0;
+      }
+      .mfx .ghostcard {
+        animation: mfxfly 0.8s ease-in 0.3s forwards;
+      }
+      .mfx .plus {
+        font-size: 28px;
+        color: #ffe58a;
+        animation: mfxfade 0.8s 0.3s forwards;
+      }
+      .mfx .maincard {
+        animation: mfxpulse 0.9s 0.9s;
+      }
+      .mfx .lvup {
+        font-family: Bangers, Impact, sans-serif;
+        font-size: 30px;
+        color: #7dff6b;
+        animation: mfxpulse 0.9s 1s 2;
+      }
+      .mfx .bar {
+        height: 10px;
+        margin-top: 6px;
+      }
+      .mfx .bar > div {
+        transition: width 1.1s ease-out 0.5s;
+        background: linear-gradient(90deg, #ffc93c, #7dff6b);
+      }
+      @keyframes mfxin {
+        from {
+          transform: scale(0.6);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes mfxfly {
+        to {
+          transform: translateX(60px) scale(0.3);
+          opacity: 0;
+        }
+      }
+      @keyframes mfxfade {
+        to {
+          opacity: 0;
+        }
+      }
+      @keyframes mfxpulse {
+        50% {
+          transform: scale(1.25);
+          filter: brightness(1.6);
+        }
+      }
+      .kc {
+        display: inline-block;
+        padding: 3px 6px;
+        margin: 2px;
+        border: 2px solid #ffd36e;
+        border-bottom-width: 4px;
+        border-radius: 6px;
+        font-weight: 800;
+        text-align: center;
+        background: rgba(8, 10, 24, 0.85);
+      }
+      .kcrow {
+        margin: 4px 0;
+        text-align: center;
+      }
+      .kcrow span:not(.kc) {
+        margin: 0 6px;
+        opacity: 0.85;
+      }
+      .skillcard {
+        cursor: pointer;
+      }
       #onboard {
         position: absolute;
         left: 50%;
@@ -1567,6 +1756,7 @@
           <button class="tile" data-page="ranked"><span class="ic">&#127942;</span>Ranked Duel</button>
           <button class="tile" data-page="profile"><span class="ic">&#128100;</span>Profile</button>
           <button class="tile" data-page="chests"><span class="ic">&#128230;</span>Chests</button>
+          <button class="tile" data-page="guild"><span class="ic">&#128737;</span>Guilds</button>
           <button class="tile" data-page="training"><span class="ic">&#127919;</span>Training</button>
           <button class="tile" data-page="market"><span class="ic">&#128176;</span>Market</button>
         </div>
@@ -1615,7 +1805,7 @@
         <button id="sk2" class="skill" hidden></button>
         <button id="sk3" class="skill" hidden></button>
         <button id="sk4" class="skill" hidden></button>
-        <button id="autobtn" class="skill auto" hidden title="Auto skills (Q): casts attack and defence skills and aims them for you">AUTO</button>
+        <button id="autobtn" class="skill auto" hidden title="Auto skills (X): casts attack and defence skills and aims them for you">AUTO</button>
       </div>
       <button id="mute" aria-label="Mute" hidden>&#128266;</button>
       <button id="leave" class="ghost" hidden>Leave</button>
@@ -1623,6 +1813,8 @@
     <button id="emotebtn" class="ghost" hidden aria-label="Quick chat (T)">&#128172;</button>
     <div id="emotes" hidden></div>
     <div id="countdown" hidden></div>
+    <div id="modal" hidden></div>
+    <div id="mergefx" hidden></div>
     <div id="onboard" class="panel" hidden></div>
     <div id="lobby" class="panel" hidden></div>
     </div>

@@ -14,6 +14,7 @@ import {
   type PlayerView,
 } from '@orb/shared';
 import { MAJEN, uniqueSvg } from '../art/bestiary';
+import { skillIcon } from '../art/icons';
 import type { Snapshot } from '../game/types';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -128,6 +129,79 @@ export class Ui {
     this.autoBtn.classList.toggle('on', on);
     this.autoBtn.textContent = on ? 'AUTO ON' : 'AUTO';
   }
+  // ---- modal ----------------------------------------------------------------
+  /** Opens a centred window above everything. `html` is trusted markup built by the game. */
+  modal(html: string): HTMLElement {
+    const m = $('modal');
+    m.innerHTML = `<div class="box panel"><button class="ghost mclose" data-mclose="1">Close</button>${html}</div>`;
+    m.hidden = false;
+    m.querySelector('[data-mclose]')!.addEventListener('click', () => this.closeModal());
+    m.onclick = (e) => {
+      if (e.target === m) this.closeModal();
+    };
+    return m.querySelector<HTMLElement>('.box')!;
+  }
+  closeModal(): void {
+    const m = $('modal');
+    m.hidden = true;
+    m.innerHTML = '';
+  }
+  // ---- skill gain / merge animation -----------------------------------------------
+  private mergeQueue: Array<{ skillId: number; merged: boolean; level: number; prevLevel: number; copies: number; nextAt: number }> = [];
+  private mergeBusy = false;
+  /** Shows a card for a new or merged skill: copies bar fills up, "LEVEL UP" when the level rises. */
+  showSkillGain(d: { skillId: number; merged: boolean; level: number; prevLevel: number; copies: number; nextAt: number }): void {
+    if (this.mergeQueue.length > 6) return;
+    this.mergeQueue.push(d);
+    if (!this.mergeBusy) this.nextMerge();
+  }
+  private nextMerge(): void {
+    const d = this.mergeQueue.shift();
+    const box = $('mergefx');
+    if (!d) {
+      this.mergeBusy = false;
+      box.hidden = true;
+      return;
+    }
+    this.mergeBusy = true;
+    const s = getSkill(d.skillId);
+    const rank = RANK_INFO[s.rank];
+    const col = '#' + rank.color.toString(16).padStart(6, '0');
+    const up = d.level > d.prevLevel;
+    const prevFrac = d.nextAt ? Math.max(0, Math.min(1, (d.copies - 1) / d.nextAt)) : 1;
+    const frac = d.nextAt ? Math.min(1, d.copies / d.nextAt) : 1;
+    box.innerHTML = `<div class="mfx ${d.merged ? 'merge' : 'new'}" style="border-color:${col}">
+      <div class="mtitle">${d.merged ? (up ? 'MERGE &middot; LEVEL UP!' : 'MERGE!') : 'NEW SKILL!'}</div>
+      <div class="mrow">${d.merged ? `<div class="ghostcard">${skillIcon(s.kind, rank.color)}</div><div class="plus">+</div>` : ''}<div class="maincard">${skillIcon(s.kind, rank.color)}</div></div>
+      <b style="color:${col}">[${s.rank}] ${esc(s.name)}</b>
+      <div class="sub" style="margin:2px 0">${d.merged ? `Copies ${d.copies}${d.nextAt ? ` / ${d.nextAt} for level ${d.level + 1}` : ' (max level)'}` : 'Added to your collection'}</div>
+      ${up ? `<div class="lvup">Lv ${d.prevLevel} &rarr; Lv ${d.level}</div>` : `<div class="sub" style="margin:0">Level ${d.level}</div>`}
+      <div class="bar"><div style="width:${prevFrac * 100}%"></div></div></div>`;
+    box.hidden = false;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const bar = box.querySelector<HTMLElement>('.bar > div');
+        if (bar) bar.style.width = `${frac * 100}%`;
+      }),
+    );
+    window.setTimeout(() => this.nextMerge(), up ? 2300 : 1600);
+  }
+  /** Reserves a strip at the bottom (desktop) or the right (touch) for buttons, so they never cover the arena. */
+  setInGame(on: boolean): void {
+    if (document.body.classList.contains('ingame') === on) return;
+    document.body.classList.toggle('ingame', on);
+    window.dispatchEvent(new Event('resize'));
+  }
+  /** Keyboard picture for the how-to overlay (adapts the labels to AZERTY keyboards). */
+  static keycaps(): string {
+    const az = (navigator.language || '').toLowerCase().startsWith('fr');
+    const k = (t: string, w = 1) => `<span class="kc" style="min-width:${22 * w}px">${t}</span>`;
+    const up = az ? 'Z' : 'W';
+    const left = az ? 'Q' : 'A';
+    return `<div class="kcrow">${k(up)}<br/>${k(left)}${k('S')}${k('D')} <span>move</span></div>
+      <div class="kcrow">${k('&#128433;', 1.6)} <span>aim + click to shoot</span></div>
+      <div class="kcrow">${k('1')}${k('2')}${k('3')}${k('4')}${k('5')} <span>skills</span> ${k('X')} <span>auto</span> ${k('P')} <span>pause</span></div>`;
+  }
   /** Updates the champion panel on the menu. */
   setChampion(name: string, isYou: boolean): void {
     const nm = document.querySelector<HTMLElement>('#champ .nm');
@@ -159,6 +233,7 @@ export class Ui {
   /** Duel view: the Phaser duel scene draws its own HUD. */
   showDuel(): void {
     this.showGame();
+    this.setInGame(false);
     this.hud.hidden = true;
     this.skillBtns.forEach((b) => (b.hidden = true));
     this.autoBtn.hidden = true;
@@ -194,6 +269,7 @@ export class Ui {
     this.inviteBtn.hidden = true;
     this.setEmoteVisible(false);
     this.autoBtn.hidden = true;
+    this.setInGame(false);
     this.countdown(null);
     this.hideLobby();
     this.skillBtns.forEach((b) => (b.hidden = true));
@@ -214,6 +290,7 @@ export class Ui {
     this.overlay.hidden = true;
     this.setEmoteVisible(true);
     this.autoBtn.hidden = false;
+    this.setInGame(true);
   }
 
   /** Opens a full page (shop, loadout...). `body` is raw trusted HTML built by the pages module. */

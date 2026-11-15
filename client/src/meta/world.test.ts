@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BOSS_LEVELS, LEVELS, RANKED_START, makeInstance, randomSkillOfRank } from '@orb/shared';
+
 import type { Platform } from '../platform/crazygames';
 import { Progress } from './economy';
 import { parseSave } from './save';
@@ -34,11 +35,9 @@ describe('boss tower progress', () => {
 });
 
 describe('champion, weapons and accessories', () => {
-  it('challenging the champion needs level 10; the winner picks a skill from his kit and takes the crown', async () => {
+  it('anyone can challenge the champion from level 1; the winner picks a skill from his kit and takes the crown', async () => {
     const p = await fresh();
     const majen = BOSS_LEVELS[8];
-    expect(p.levelUnlocked(majen)).toBe(false);
-    p.data.xp = 100000;
     expect(p.levelUnlocked(majen)).toBe(true);
     p.finishLevel(majen, 1);
     const kit = p.championKit();
@@ -88,6 +87,58 @@ describe('champion, weapons and accessories', () => {
     expect(p.equip('acc', 1)).toBe(true);
     expect(p.data.loadout.acc).toBe(1);
     expect(p.equip('weapon', 4)).toBe(false);
+  });
+});
+
+describe('chests, merging and duel loadout', () => {
+  it('every won round and every won level pays a chest', async () => {
+    const p = await fresh();
+    const r = p.recordMatch({ mode: 'dm', kills: 3, deaths: 0, score: 3, won: true });
+    expect(r.chest).toBe('wood');
+    expect(p.data.chests.wood).toBe(1);
+    expect(p.recordMatch({ mode: 'dm', kills: 0, deaths: 3, score: 0, won: false }).chest).toBeUndefined();
+    const l = p.finishLevel(LEVELS[0], 1);
+    expect(l.chest).toBe('silver');
+    expect(p.finishLevel(LEVELS[0], 1).chest).toBe('wood');
+    p.data.campaign['6'] = 1;
+    expect(p.finishLevel(BOSS_LEVELS[0], 1).chest).toBe('gold');
+    expect(p.finishLevel(BOSS_LEVELS[0], 1).chest).toBe('silver');
+  });
+  it('a duplicate merges and reports the copies and levels for the animation', async () => {
+    const p = await fresh();
+    const id = randomSkillOfRank('C', Math.random);
+    const seen: Array<{ merged: boolean; level: number; prevLevel: number; copies: number }> = [];
+    p.onSkill((d) => seen.push(d));
+    p.addSkill(makeInstance(id, Math.random, 'm1'));
+    p.addSkill(makeInstance(id, Math.random, 'm2'));
+    expect(seen[0]).toMatchObject({ merged: false, copies: 1, level: 1 });
+    expect(seen[1]).toMatchObject({ merged: true, copies: 2, level: 2, prevLevel: 1 });
+  });
+  it('the duel loadout only takes owned duel-legal skills', async () => {
+    const p = await fresh();
+    const { getSkill, firstIdOfRank, skillCount, duelUsable } = await import('@orb/shared');
+    const st = firstIdOfRank('D');
+    let legal = -1;
+    let illegal = -1;
+    for (let k = 0; k < skillCount('D') && (legal < 0 || illegal < 0); k++) {
+      const s = getSkill(st + k);
+      if (legal < 0 && duelUsable(s.id)) legal = s.id;
+      if (illegal < 0 && s.kind === 'summon') illegal = s.id;
+    }
+    p.addSkill(makeInstance(legal, Math.random, 'd1'));
+    p.addSkill(makeInstance(illegal, Math.random, 'd2'));
+    expect(p.equipDuelSkills([illegal]).ok).toBe(false);
+    expect(p.equipDuelSkills([legal]).ok).toBe(true);
+    expect(p.duelSkillIds()).toEqual([legal]);
+    expect(p.duelInstances()[0].skillId).toBe(legal);
+  });
+  it('reset wipes progress but keeps the name', async () => {
+    const p = await fresh();
+    p.data.nick = 'Majenayu';
+    p.data.coins = 99999;
+    p.resetProgress();
+    expect(p.data.coins).toBe(100);
+    expect(p.data.nick).toBe('Majenayu');
   });
 });
 

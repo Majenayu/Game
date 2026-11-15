@@ -57,7 +57,7 @@ describe('old saves', () => {
   it('loads an old-shaped save and grants the starter pack', async () => {
     store.clear();
     store.set(
-      'orb.save2',
+      'orb.save3',
       JSON.stringify({
         v: 2,
         updated: 5,

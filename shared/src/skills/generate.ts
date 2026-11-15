@@ -73,6 +73,63 @@ export interface GeneratedSkill {
   unique: boolean;
 }
 
+const KIND_TEXT: Record<string, string> = {
+  projectile: 'Fires a fast {e} shot where you aim',
+  beam: 'Shoots a {e} laser that hits everything in a line',
+  volley: 'Sprays a fan of {e} shots',
+  nova: 'Blasts a {e} shockwave all around you',
+  cleave: 'Swings a heavy {e} strike in front of you',
+  shield: 'Wraps you in a {e} shield so nothing can hurt you for a moment',
+  barrier: 'Raises a {e} wall that blocks enemy bullets',
+  heal: 'Heals you and nearby allies with {e} energy',
+  aura: 'Opens a {e} healing circle on the ground',
+  buff: 'Charges you with {e} power for a while',
+  stealth: 'Hides you in {e} mist',
+  ambush: 'Teleports behind the nearest enemy and strikes with {e}',
+  summon: 'Calls {e} companions that orbit you and shoot',
+  mine: 'Drops a hidden {e} mine',
+  pull: 'Opens a {e} vortex that drags enemies in',
+  slow: 'Creates a {e} field that slows enemies',
+  dash: 'Dashes forward in a burst of {e}',
+  blink: 'Teleports you a short distance in a flash of {e}',
+  portal: 'Opens a {e} portal that carries you across the arena',
+  world: 'Passive {e} skill that boosts your rewards outside battle',
+};
+const STATUS_TEXT: Record<string, string> = {
+  burn: 'sets enemies on fire',
+  slow: 'freezes enemies so they move slower',
+  chain: 'arcs to nearby enemies',
+  pierce: 'goes through enemies',
+  heal: 'heals you a little on hit',
+  hide: 'briefly hides you',
+  poison: 'poisons enemies over time',
+  bounce: 'bounces off walls',
+  knockback: 'knocks enemies back',
+  leech: 'drains HP back to you',
+  homing: 'curves toward enemies',
+  pull: 'pulls enemies closer',
+};
+const TWIST_TEXT: Record<string, [string, string, string]> = {
+  power: ['is slightly stronger', 'is stronger', 'is much stronger'],
+  cooldown: ['recharges a bit faster', 'recharges faster', 'recharges much faster'],
+  range: ['reaches a bit further', 'reaches further', 'reaches much further'],
+  area: ['covers a bit more area', 'covers more area', 'covers a huge area'],
+  duration: ['lasts a bit longer', 'lasts longer', 'lasts much longer'],
+  count: ['adds an extra hit', 'adds extra hits', 'adds many extra hits'],
+  mp: ['costs a little less mana', 'costs less mana', 'costs much less mana'],
+  cast: ['casts a bit quicker', 'casts quicker', 'casts almost instantly'],
+};
+/** A readable one-line description built from the skill's parts. */
+function describe(kind: string, element: string, status: string, twist: string, strength: number): string {
+  const base = (KIND_TEXT[kind] ?? 'Unleashes {e} power').replace('{e}', element.toLowerCase());
+  const st = STATUS_TEXT[status];
+  const tw = TWIST_TEXT[twist]?.[strength <= 3 ? 0 : strength <= 7 ? 1 : 2] ?? '';
+  const joiner = base.includes(' that ') || base.includes(' so ') ? ', and it ' : ' that ';
+  const parts = [base + (st && kind !== 'world' ? joiner + st : '') + '.'];
+  if (tw) parts.push(`This version ${tw}.`);
+  return parts.join(' ');
+}
+
 export function rankOf(id: number): Rank | null {
   if (id > UNIQUE_BASE_ID && id <= UNIQUE_BASE_ID + UNIQUE_COUNT) return 'U';
   if (!Number.isInteger(id) || id < 0 || id >= GENERATED_TOTAL) return null;
@@ -177,7 +234,7 @@ export function getSkill(id: number): GeneratedSkill {
       archetype: a,
       element: e,
       modifier: m,
-      desc: `${elem.status} ${arch.kind}. ${mod.twist} twist ${mod.strength}/10.`,
+      desc: describe(arch.kind, elem.name, elem.status, mod.twist, mod.strength),
       base: stats,
       count,
       unique: false,

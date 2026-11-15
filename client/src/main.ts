@@ -15,6 +15,7 @@ import {
   rankedTier,
   WORLD_H,
   WORLD_W,
+  CHESTS,
   getSkill,
   powerupFromId,
   powerupName,
@@ -28,13 +29,15 @@ import { GameScene, type RoundResult } from './game/GameScene';
 import { OfflineSource, OnlineSource } from './game/sources';
 import { LobbyPanel } from './game/lobby';
 import { LevelRunner } from './meta/campaign';
-import { showOnboarding } from './meta/onboarding';
+import { claimName, showOnboarding } from './meta/onboarding';
+import { accountToken } from './account';
+import { Ui as UiClass } from './ui/ui';
 import { Progress, type SkillDrop } from './meta/economy';
 import { Pages, type PageName } from './meta/pages';
 import { joinArena, joinDuel, reconnect, serverUrls, type JoinTarget } from './net';
 import { DuelScene, OfflineDuel, OnlineDuel, type DuelSource } from './game/duel';
 import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './platform/crazygames';
-import { TouchControls, isTouchDevice } from './ui/touch';
+import { TouchControls, isTouchDevice, setTouchDevice } from './ui/touch';
 import { Ui } from './ui/ui';
 
 async function boot(): Promise<void> {
@@ -46,6 +49,7 @@ async function boot(): Promise<void> {
     document.fonts.load('400 30px Bangers'),
   ]).catch(() => {});
 
+  if (platform.device) setTouchDevice(platform.device !== 'desktop');
   const progress = new Progress(platform);
   await progress.init();
 
@@ -173,7 +177,8 @@ async function boot(): Promise<void> {
       res.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
       if (r.won) ui.notify('Victory!', '#ffc93c', 4000);
       if (res.drop) ui.notify(`Skill drop: ${dropText(res.drop)}`, '#b77dff', 4500);
-      return `<div class="reward">+${res.coins} coins &middot; +${res.xp} XP${r.won ? ' &middot; Victory bonus!' : ''}${offlinePractice ? ' (practice rewards are halved)' : ''}</div>${rankedHtml}`;
+      if (res.chest) ui.notify(`${CHESTS[res.chest].name} earned! Open it in Chests.`, '#ffc93c', 4500);
+      return `<div class="reward">+${res.coins} coins &middot; +${res.xp} XP${res.chest ? ` &middot; ${CHESTS[res.chest].name}` : ''}${r.won ? ' &middot; Victory bonus!' : ''}${offlinePractice ? ' (practice rewards are halved)' : ''}</div>${rankedHtml}`;
     },
     onEvent: (ev, me) => {
       if (ev.t === 'skill' && ev.id === me) uses.set(ev.skill, (uses.get(ev.skill) ?? 0) + 1);
@@ -207,8 +212,7 @@ async function boot(): Promise<void> {
     ui.showHint(
       (isTouchDevice()
         ? '<b>Left stick</b> to move &middot; <b>Right stick</b> to aim and shoot &middot; buttons for skills'
-        : '<b>WASD</b> move &middot; <b>Mouse</b> aim &middot; <b>Click</b> shoot &middot; <b>1-5</b> skills') +
-        '<br />Grab glowing powerups. Highest score wins!',
+        : UiClass.keycaps()) + '<br />Grab glowing powerups. Highest score wins!',
     );
 
   const endSession = async () => {
@@ -219,6 +223,8 @@ async function boot(): Promise<void> {
     campaignActive = false;
     offlinePractice = false;
     rankedActive = false;
+    paused = false;
+    duelScene.paused = false;
     scene.suppressBoard = false;
     ui.setObjective('');
     const r = current;
@@ -252,7 +258,7 @@ async function boot(): Promise<void> {
       ui.showGame();
       ui.showOverlay('Finding a ranked opponent...');
       try {
-        room = (await joinDuel(name, loadoutOf(), progress.level.level)).room;
+        room = (await joinDuel(name, { ...loadoutOf(), skillIds: progress.duelSkillIds() }, progress.level.level, accountToken())).room;
       } catch (e) {
         console.warn('duel join failed', e);
         ui.showOverlay('Could not reach the game server.', [
@@ -269,7 +275,7 @@ async function boot(): Promise<void> {
       intentionalLeave = false;
       src = new OnlineDuel(room);
     } else {
-      src = new OfflineDuel(name, loadoutOf(), progress.loadoutInstances(), progress.level.level, 0.45);
+      src = new OfflineDuel(name, loadoutOf(), progress.duelInstances(), progress.level.level, 0.45);
     }
     ui.hideOverlay();
     game.scene.sleep('game');
@@ -277,17 +283,29 @@ async function boot(): Promise<void> {
     else game.scene.run('duel');
     duelScene.setSource(src);
     duelScene.onMatchEnd = (won) => {
-      let line = '';
+      let extraChest = false;
       if (online) {
         const rk = progress.recordRanked(won);
-        line = `Ranked: ${rk.delta >= 0 ? '+' : ''}${rk.delta} &middot; ${rk.rating} (${rankedTier(rk.rating).name})`;
         if (rk.drop) ui.notify(`Ranked drop: ${dropText(rk.drop)}`, '#b77dff', 4500);
-        if (won) progress.data.chests.silver += 1;
+        if (won) {
+          progress.data.chests.silver += 1;
+          extraChest = true;
+        }
       }
       const res = progress.recordMatch({ mode: 'duel', kills: won ? 1 : 0, deaths: won ? 0 : 1, score: won ? 1 : 0, won }, online ? 1 : 0.5);
       window.setTimeout(() => {
+        // The server's world rating wins over the local estimate.
+        let line = '';
+        const rated = src instanceof OnlineDuel ? src.rated : null;
+        if (rated) {
+          progress.data.ranked.rating = rated.rating;
+          progress.data.ranked.best = Math.max(progress.data.ranked.best, rated.rating);
+          progress.commit();
+          line = `World rating ${rated.delta >= 0 ? '+' : ''}${rated.delta} &middot; ${rated.rating} (${rated.tier}) &middot; world #${rated.rank}`;
+        } else if (online) line = `Rating ${progress.data.ranked.rating} (${rankedTier(progress.data.ranked.rating).name}) &middot; reserve your name to enter the world ranking`;
+        const chests = [res.chest ? CHESTS[res.chest].name : '', extraChest ? 'Silver Chest' : ''].filter(Boolean).join(' + ');
         ui.showOverlayHtml(
-          `<h2 style="margin:0;color:${won ? '#ffc93c' : '#ff8a9a'}">${won ? 'Victory!' : 'Defeat'}</h2><div class="reward">+${res.coins} coins &middot; +${res.xp} XP${online && won ? ' &middot; Silver Chest' : ''}</div>${line ? `<div class="reward">${line}</div>` : ''}`,
+          `<h2 style="margin:0;color:${won ? '#ffc93c' : '#ff8a9a'}">${won ? 'Victory!' : 'Defeat'}</h2><div class="reward">+${res.coins} coins &middot; +${res.xp} XP${chests ? ` &middot; ${chests}` : ''}</div>${line ? `<div class="reward">${line}</div>` : ''}`,
           [
             { label: online ? 'Next ranked duel' : 'Duel again', onClick: () => void startDuel(online) },
             { label: 'Menu', ghost: true, onClick: () => void toMenu().then(() => ui.hideOverlay()) },
@@ -302,6 +320,12 @@ async function boot(): Promise<void> {
 
   const toMenu = async () => {
     await endSession();
+    if (!progress.data.profile.onboarded && progress.data.profile.cls) {
+      // After the first tutorial: name, class and look.
+      ui.showMenu();
+      await showOnboarding(progress, progress.data.nick);
+      ui.setNick(progress.data.nick);
+    }
     ui.showMenu();
     refreshStatus();
   };
@@ -405,6 +429,7 @@ async function boot(): Promise<void> {
         buttons,
       );
       if (reward?.drop) ui.notify(`Skill drop: ${dropText(reward.drop)}`, '#b77dff', 4500);
+      if (reward?.chest) ui.notify(`${CHESTS[reward.chest].name} earned! Open it in Chests.`, '#ffc93c', 4500);
       reward?.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
       if (res.won && level.id === CHAMPION_LEVEL_ID) {
         // The new champion chooses one skill from the champion's kit.
@@ -585,14 +610,26 @@ async function boot(): Promise<void> {
       ui.toggleEmotes();
       return;
     }
-    if ((e.key === 'q' || e.key === 'Q') && scene.hasSource && !pages.current) {
+    // X toggles auto skills (same place on QWERTY and AZERTY). Escape is left to the browser (fullscreen).
+    if (e.code === 'KeyX' && scene.hasSource && !pages.current) {
       ui.setAuto(scene.toggleAuto());
       return;
     }
-    if (e.key !== 'Escape') return;
-    if (pages.current) ui.onPageClose();
-    else if (scene.hasSource || duelScene.active) void toMenu();
+    if (e.code === 'KeyP' && (scene.hasSource || duelScene.active) && !pages.current) togglePause();
   });
+  let paused = false;
+  const togglePause = () => {
+    paused = !paused;
+    const src = scene.activeSource;
+    if (src instanceof OfflineSource && !runner) src.paused = paused;
+    duelScene.paused = paused;
+    if (paused)
+      ui.showOverlay('Paused', [
+        { label: 'Resume', onClick: () => togglePause() },
+        { label: 'Leave match', ghost: true, onClick: () => void toMenu().then(() => ui.hideOverlay()) },
+      ]);
+    else ui.hideOverlay();
+  };
   window.addEventListener('pagehide', () => progress.flush());
 
   const inviteTarget = (params: Pick<Platform, 'getInviteParam'>): JoinTarget | null => {
@@ -619,12 +656,27 @@ async function boot(): Promise<void> {
   if (invite) void startOnline(nick, invite);
   else if (platform.isInstantMultiplayer) void startOnline(nick, { createPrivate: true });
   else {
+    progress.onSkill((d) => ui.showSkillGain(d));
     if (progress.needsProfile) {
+      // CrazyGames: new players land in gameplay immediately. Start the tutorial right away with a
+      // default kit; the "create your fighter" screen opens when they leave it.
+      const first = (user?.username ?? nick).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
+      progress.createProfile('warrior', { nick: first.length >= 3 ? first : nick, char: 'titan', color: 0, acc: 0 });
+      void claimName(progress, progress.data.nick).then((err) => {
+        if (err) void claimName(progress, (progress.data.nick + Math.floor(Math.random() * 999)).slice(0, 16));
+      });
+      void startTraining().then(() => {
+        ui.showHint(UiClass.keycaps() + '<br />Try your skills on the dummies! Press <b>Leave</b> when you are ready.', 15000);
+      });
+      return;
+    }
+    if (!progress.data.profile.onboarded) {
       await showOnboarding(progress, nick);
       nick = sanitizeNick(progress.data.nick);
       ui.setNick(nick);
-      ui.notify('Welcome! Your class skills are equipped. Try them in Training.', '#b77dff', 5000);
     }
+    // Reserve the name now if it could not be checked earlier (offline).
+    if (!progress.data.profile.registered && progress.data.nick) void claimName(progress, progress.data.nick);
     ui.showMenu();
     refreshStatus();
     ui.setChampion(progress.data.champion.name, progress.data.champion.isYou);

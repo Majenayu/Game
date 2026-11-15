@@ -26,8 +26,12 @@ export class FighterState extends Schema {
   @type('boolean') buff = false;
   @type('string') skills = '';
   @type('string') cds = '';
+  @type('string') move = '';
+  @type('float32') wcd = 0;
+  @type('uint32') lastSkill = 0;
 }
 export class ShotState extends Schema {
+  @type('uint32') skill = 0;
   @type('float32') x = 0;
   @type('float32') y = 0;
   @type('float32') vx = 0;
@@ -166,6 +170,7 @@ export class DuelRoom extends Room<DuelState> {
       st.y = sh.y;
       st.vx = sh.vx;
       st.color = sh.color;
+      st.skill = sh.skill;
     }
   }
 }

@@ -22,10 +22,11 @@ import { sfx } from '../audio';
 import type { TouchControls } from '../ui/touch';
 import type { Ui } from '../ui/ui';
 import { esc, hex } from '../ui/ui';
+import { drawBurst, drawShot, lookOf, type SkillLook } from '../art/skillfx';
 
 export interface DuelSnap {
   fighters: FighterView[];
-  shots: Array<{ x: number; y: number; vx: number; color: number }>;
+  shots: Array<{ x: number; y: number; vx: number; color: number; skill: number }>;
   phase: string;
   timer: number;
   round: number;
@@ -52,7 +53,7 @@ export class OfflineDuel implements DuelSource {
   constructor(name: string, loadout: unknown, instances: SkillInstance[], level: number, botSkill = 0.5) {
     this.duel = new Duel(Math.random, botSkill);
     this.duel.add('me', { name, loadout, instances, level });
-    this.duel.add('bot', { name: 'Shadow Bot', bot: true, level });
+    this.duel.add('bot', { name: 'Practice Shadow', bot: true, level });
   }
   update(dt: number): void {
     this.duel.step(Math.min(dt, 0.05));
@@ -62,7 +63,7 @@ export class OfflineDuel implements DuelSource {
     const d = this.duel;
     return {
       fighters: d.fighters.map((f) => fighterView(f, d)),
-      shots: d.shots.map((s) => ({ x: s.x, y: s.y, vx: s.vx, color: s.color })),
+      shots: d.shots.map((s) => ({ x: s.x, y: s.y, vx: s.vx, color: s.color, skill: s.skill })),
       phase: d.phase,
       timer: Math.max(0, d.timer),
       round: d.round,
@@ -71,7 +72,7 @@ export class OfflineDuel implements DuelSource {
     };
   }
   send(i: InputMessage): void {
-    this.duel.input('me', { moveX: i.moveX, moveY: i.moveY, aim: 0, shooting: i.shooting, seq: i.seq, skill: i.skill ?? 0 });
+    this.duel.input('me', { moveX: i.moveX, moveY: i.moveY, aim: 0, shooting: i.shooting, seq: i.seq, skill: i.skill ?? 0, moves: i.moves ?? 0 });
   }
   confirm(): void {
     this.duel.confirm('me');
@@ -86,8 +87,11 @@ export class OnlineDuel implements DuelSource {
   readonly online = true;
   onEvent: (e: DuelEvent) => void = () => {};
   private snap: DuelSnap | null = null;
+  /** World rating result sent by the server when the match ends. */
+  rated: { rating: number; delta: number; rank: number; tier: string } | null = null;
   constructor(private room: Room) {
     room.onMessage('duel', (e: DuelEvent) => this.onEvent(e));
+    room.onMessage('rated', (r: { rating: number; delta: number; rank: number; tier: string }) => (this.rated = r));
     room.onStateChange((s: any) => this.ingest(s));
     if ((room.state as any)?.fighters) this.ingest(room.state);
   }
@@ -98,7 +102,7 @@ export class OnlineDuel implements DuelSource {
     const fighters: FighterView[] = [];
     s.fighters.forEach((f: any, id: string) => fighters.push({ ...f.toJSON(), id }));
     const shots: DuelSnap['shots'] = [];
-    s.shots.forEach((x: any) => shots.push({ x: x.x, y: x.y, vx: x.vx, color: x.color }));
+    s.shots.forEach((x: any) => shots.push({ x: x.x, y: x.y, vx: x.vx, color: x.color, skill: x.skill }));
     this.snap = { fighters, shots, phase: s.phase, timer: s.timer, round: s.round, winner: s.winner, waiting: s.waiting };
   }
   update(): void {}
@@ -125,7 +129,8 @@ export class OnlineDuel implements DuelSource {
 }
 
 interface Fx {
-  kind: 'spark' | 'beam' | 'text';
+  kind: 'spark' | 'beam' | 'text' | 'burst' | 'swoosh';
+  look?: SkillLook;
   x: number;
   y: number;
   dir: number;
@@ -150,12 +155,18 @@ export class DuelScene extends Phaser.Scene {
   private fxs: Fx[] = [];
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private skillBits = 0;
+  private moveBits = 0;
+  private moveZones: Array<{ x: number; y: number; bit: number; label: string }> = [];
+  private moveTexts: Phaser.GameObjects.Text[] = [];
   private seq = 0;
   private lastSend = 0;
   private ended = false;
   private confirmed = false;
   private lastCount = 0;
   private skillZones: Phaser.GameObjects.Zone[] = [];
+  /** Offline practice can be paused. */
+  paused = false;
+  private punchTap = false;
   private skillTexts: Phaser.GameObjects.Text[] = [];
   /** One graphics object per fighter, drawn around the feet and scaled up. */
   private bodies: Phaser.GameObjects.Graphics[] = [];
@@ -175,12 +186,36 @@ export class DuelScene extends Phaser.Scene {
           .setDepth(30),
       );
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,J,K,UP,DOWN,LEFT,RIGHT,SPACE') as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('W,A,S,D,Z,Q,J,K,L,UP,DOWN,LEFT,RIGHT,SPACE') as Record<string, Phaser.Input.Keyboard.Key>;
     const sk = (s: number) => (e: KeyboardEvent) => {
       if (!e.repeat) this.skillBits |= 1 << s;
     };
     ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].forEach((k, i) => kb.on(`keydown-${k}`, sk(i)));
-    kb.on('keydown-K', sk(0));
+    const mv = (b: number) => (e: KeyboardEvent) => {
+      if (!e.repeat) this.moveBits |= b;
+    };
+    kb.on('keydown-K', mv(1));
+    kb.on('keydown-L', mv(2));
+    // On-screen move buttons (also for touch): punch, kick, weapon.
+    const mz = [
+      { x: DUEL_W - 330, y: DUEL_H - 175, bit: 0, label: 'PUNCH\nJ' },
+      { x: DUEL_W - 215, y: DUEL_H - 175, bit: 1, label: 'KICK\nK' },
+      { x: DUEL_W - 100, y: DUEL_H - 175, bit: 2, label: 'WEAPON\nL' },
+    ];
+    for (const m of mz) {
+      const z = this.add.zone(m.x, m.y, 100, 70).setInteractive().setDepth(31);
+      z.on('pointerdown', () => {
+        if (m.bit === 0) this.punchTap = true;
+        else this.moveBits |= m.bit;
+      });
+      this.moveZones.push(m);
+      this.moveTexts.push(
+        this.add
+          .text(m.x, m.y, m.label, { fontFamily: 'Bangers, Impact, sans-serif', fontSize: '22px', color: '#ffe9a8', align: 'center' })
+          .setOrigin(0.5)
+          .setDepth(32),
+      );
+    }
     for (let i = 0; i < 5; i++) {
       const z = this.add.zone(DUEL_W / 2 - 300 + i * 150, DUEL_H - 55, 140, 80).setInteractive().setDepth(31);
       z.on('pointerdown', () => (this.skillBits |= 1 << i));
@@ -249,12 +284,20 @@ export class DuelScene extends Phaser.Scene {
       sfx.hit();
     } else if (e.t === 'skill') {
       const s = getSkill(e.skill);
-      const col = ELEMENTS[s.element]?.color ?? 0xff4da6;
-      this.fxs.push({ kind: 'spark', x: e.x, y: e.y, dir: 0, len: 140, color: col, born: now, ms: 500 });
-      this.popText(e.x, e.y - 90, s.name.toUpperCase(), '#' + col.toString(16).padStart(6, '0'));
+      const look = lookOf(e.skill, e.power);
+      const big = ['nova', 'cleave', 'heal', 'shield', 'buff'].includes(e.kind);
+      this.fxs.push({ kind: 'burst', x: e.x + (e.kind === 'cleave' ? e.dir * 90 : 0), y: e.y, dir: e.dir, len: big ? 170 : 90, color: look.color, born: now, ms: 700, look });
+      this.fxs.push({ kind: 'burst', x: e.x, y: e.y, dir: e.dir, len: 60, color: look.accent, born: now + 120, ms: 600, look: { ...look, style: (look.style + 3) % 6 } });
+      this.popText(e.x, e.y - 100, s.name.toUpperCase(), '#' + look.color.toString(16).padStart(6, '0'));
+      if (e.id === this.src?.localId) this.cameras.main.flash(90, (look.color >> 16) & 255, (look.color >> 8) & 255, look.color & 255, false);
       sfx.skill(e.kind);
     } else if (e.t === 'beam') {
-      this.fxs.push({ kind: 'beam', x: e.x, y: e.y, dir: e.dir, len: e.len, color: 0xfff0c0, born: now, ms: 450 });
+      const look = lookOf(e.skill);
+      this.fxs.push({ kind: 'beam', x: e.x, y: e.y, dir: e.dir, len: e.len, color: look.color, born: now, ms: 520, look });
+    } else if (e.t === 'move') {
+      const heavy = /slam|thrust|blast|uppercut|flying|sweep|slash/.test(e.move);
+      this.fxs.push({ kind: 'swoosh', x: e.x, y: e.move === 'sweep' ? e.y + 110 : e.y, dir: e.dir, len: heavy ? 140 : 90, color: heavy ? 0xffe58a : 0xffffff, born: now + 60, ms: 260 });
+      if (heavy) this.popText(e.x + e.dir * 60, e.y - 60, e.move.toUpperCase(), '#ffe9a8');
     } else if (e.t === 'ko') {
       this.big.setText('K.O.!');
       this.cameras.main.shake(400, 0.015);
@@ -281,17 +324,19 @@ export class DuelScene extends Phaser.Scene {
     if (!src) return;
     const dt = Math.min(deltaMs / 1000, 0.05);
     const now = performance.now();
-    src.update(dt);
+    if (!(this.paused && !src.online)) src.update(dt);
     const snap = src.view();
     if (!snap) return;
     const me = snap.fighters.find((f) => f.id === src.localId);
     const foe = snap.fighters.find((f) => f.id !== src.localId);
     // input
     const k = this.keys;
-    let mx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0);
-    let my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown || k.SPACE.isDown ? 1 : 0);
+    let mx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.Q.isDown || k.LEFT.isDown ? 1 : 0);
+    let my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.Z.isDown || k.UP.isDown || k.SPACE.isDown ? 1 : 0);
     const p = this.input.activePointer;
-    let attack = k.J.isDown || (p.isDown && p.leftButtonDown() && p.y < DUEL_H - 100);
+    const onButtons = p.y > DUEL_H - 220 && (p.y > DUEL_H - 100 || p.x > DUEL_W - 390);
+    let attack = k.J.isDown || this.punchTap || (p.isDown && p.leftButtonDown() && !onButtons);
+    this.punchTap = false;
     if (this.touch?.enabled) {
       const t = this.touch.state;
       if (Math.hypot(t.moveX, t.moveY) > 0.25) {
@@ -311,14 +356,18 @@ export class DuelScene extends Phaser.Scene {
         shooting: fighting && attack,
         seq: this.seq,
         skill: fighting ? this.skillBits : 0,
+        moves: fighting ? this.moveBits : 0,
       });
       this.skillBits = 0;
+      this.moveBits = 0;
     }
     // world
-    for (const s of snap.shots) {
-      g.fillStyle(s.color, 0.35).fillCircle(s.x, s.y, 24);
-      g.fillStyle(0xffffff, 1).fillCircle(s.x, s.y, 10);
-      g.lineStyle(4, s.color, 0.6).lineBetween(s.x - Math.sign(s.vx) * 40, s.y, s.x, s.y);
+    for (const s of snap.shots) drawShot(g, s.x, s.y, s.vx, lookOf(s.skill), now);
+    // move buttons
+    for (const m of this.moveZones) {
+      const ready = m.bit !== 2 || !me || me.wcd <= 0;
+      g.fillStyle(0x000000, 0.55).fillRoundedRect(m.x - 50, m.y - 35, 100, 70, 14);
+      g.lineStyle(3, ready ? 0xffc93c : 0x555555, 1).strokeRoundedRect(m.x - 50, m.y - 35, 100, 70, 14);
     }
     snap.fighters.forEach((f, i) => {
       let b = this.bodies[i];
@@ -334,9 +383,29 @@ export class DuelScene extends Phaser.Scene {
     this.fxs = this.fxs.filter((f) => now - f.born < f.ms);
     for (const f of this.fxs) {
       const q = (now - f.born) / f.ms;
+      if (q < 0) continue;
+      if (f.kind === 'burst' && f.look) {
+        drawBurst(g, f.x, f.y, f.len, q, f.look);
+        continue;
+      }
+      if (f.kind === 'swoosh') {
+        g.lineStyle(10 * (1 - q) + 2, f.color, 0.9 * (1 - q)).beginPath();
+        g.arc(f.x, f.y, f.len, f.dir > 0 ? -1.2 : Math.PI - 1.2 + 2.4 * 0, f.dir > 0 ? 1.2 : Math.PI + 1.2, false);
+        g.strokePath();
+        continue;
+      }
       if (f.kind === 'beam') {
-        g.lineStyle(50 * (1 - q) + 6, f.color, 0.5 * (1 - q)).lineBetween(f.x, f.y, f.x + f.dir * f.len, f.y);
-        g.lineStyle(12 * (1 - q) + 2, 0xffffff, 1 - q).lineBetween(f.x, f.y, f.x + f.dir * f.len, f.y);
+        const sc = f.look?.scale ?? 1;
+        const zig = f.look && f.look.style % 2 === 1;
+        g.lineStyle((50 * (1 - q) + 6) * sc, f.color, 0.5 * (1 - q)).lineBetween(f.x, f.y, f.x + f.dir * f.len, f.y);
+        if (zig) {
+          const seg = 12;
+          g.lineStyle(5, 0xffffff, 1 - q).beginPath();
+          g.moveTo(f.x, f.y);
+          for (let i = 1; i <= seg; i++) g.lineTo(f.x + (f.dir * f.len * i) / seg, f.y + (i % 2 ? -14 : 14) * sc);
+          g.strokePath();
+        } else g.lineStyle((12 * (1 - q) + 2) * sc, 0xffffff, 1 - q).lineBetween(f.x, f.y, f.x + f.dir * f.len, f.y);
+        continue;
       } else {
         g.lineStyle(6 * (1 - q) + 2, f.color, 1 - q).strokeCircle(f.x, f.y, f.len * (0.3 + q));
         for (let i = 0; i < 8; i++) {
@@ -387,7 +456,7 @@ export class DuelScene extends Phaser.Scene {
           return `<div class="lsk"><b style="color:${hex(RANK_INFO[s.rank].color)}">[${s.rank}]</b> <b>${esc(s.name)}</b> <i>${esc(s.kind)}</i><br /><i>${esc(s.desc)}</i></div>`;
         })
         .join('');
-      return `<div class="lp" style="border-color:${hex(f.color)}"><b style="color:${hex(f.color)}">${esc(f.name)}</b>${f.bot ? ' <span class="tag">Bot</span>' : ''} ${f.ready ? '<span class="tag">Ready</span>' : ''}<div>${f.maxHp} HP</div>${skills}</div>`;
+      return `<div class="lp" style="border-color:${hex(f.color)}"><b style="color:${hex(f.color)}">${esc(f.name)}</b>${f.bot && !this.src?.online ? ' <span class="tag">Practice</span>' : ''} ${f.ready ? '<span class="tag">Ready</span>' : ''}<div>${f.maxHp} HP</div>${skills}</div>`;
     };
     const key = `${me.ready}|${foe?.id ?? ''}|${foe?.ready ?? ''}`;
     if (!this.ui.lobbyVisible || this.ui.lobbyKey !== key) {
@@ -395,7 +464,7 @@ export class DuelScene extends Phaser.Scene {
         <div class="sub">1v1, best of ${DUEL_ROUNDS_TO_WIN * 2 - 1} rounds. Starts when both confirm or in <b id="lobbytime">25</b>s. Summons, mines, stealth, portals, zones and out-of-battle skills do not work in duels.</div>
         <div class="lbar"><button data-lconfirm="1">Confirm</button></div>
         <div class="lteam">${card(me, 'You')}${card(foe, 'Opponent')}</div>
-        <p class="sub">A / D move &middot; W or Space jump &middot; S block &middot; J or click to punch (press again for a combo) &middot; 1-5 skills</p>`);
+        <p class="sub"><span class="kc">A</span><span class="kc">D</span> move &middot; <span class="kc">W</span>/<span class="kc">Space</span> jump &middot; <span class="kc">S</span> block &middot; <span class="kc">J</span>/click punch (x3 combo) &middot; <span class="kc">K</span> kick (in the air: flying kick, with S: sweep) &middot; <span class="kc">L</span> weapon strike &middot; <span class="kc">1</span>-<span class="kc">5</span> skills &middot; <span class="kc">P</span> pause</p>`);
       this.ui.lobbyKey = key;
       body.querySelector('[data-lconfirm]')?.addEventListener('click', () => {
         this.confirmed = true;
@@ -464,11 +533,15 @@ export class DuelScene extends Phaser.Scene {
     let hipY = y - 70 + bob;
     if (f.act === 'block') hipY += 10;
     if (f.act === 'hurt') lean = -0.25;
-    if (f.act === 'ko') {
+    if (f.act === 'ko' || f.act === 'down') {
       g.fillStyle(ink, 1).fillEllipse(x, y - 12, 150, 26);
       g.fillCircle(x - s * 80, y - 16, 16);
+      g.lineStyle(2, rim, 0.6).strokeEllipse(x, y - 12, 150, 26);
       return;
     }
+    const mv = f.act === 'attack' ? f.move : '';
+    if (mv === 'sweep') hipY += 40;
+    if (mv === 'uppercut') lean = 0.2;
     const neck = { x: x + s * lean * 40, y: hipY - 55 };
     const head = { x: neck.x + s * 4, y: neck.y - 22 };
     // aura when buffed or shielded
@@ -476,8 +549,9 @@ export class DuelScene extends Phaser.Scene {
     if (f.buff) g.fillStyle(0xff5e3a, 0.15 + 0.1 * Math.sin(now / 70)).fillEllipse(x, y - 80, 150, 210);
     // legs
     const legLen = 70;
-    const kick = f.act === 'attack' && f.combo === 2 && t > 0.1 && t < 0.3;
-    const legA = kick ? { x: x + s * 85, y: hipY - 15 } : { x: x + s * (14 + walk * 22), y: y };
+    const kick = (mv === 'kick' || mv === 'flying kick') && t > 0.06 && t < 0.32;
+    let legA = kick ? { x: x + s * 92, y: hipY - (mv === 'flying kick' ? 5 : 25) } : { x: x + s * (14 + walk * 22), y: y };
+    if (mv === 'sweep' && t > 0.08 && t < 0.3) legA = { x: x + s * 105, y: y - 4 };
     const legB = { x: x - s * (14 + walk * 22), y: y };
     if (f.act === 'jump') {
       legA.y = hipY + 30;
@@ -490,12 +564,23 @@ export class DuelScene extends Phaser.Scene {
     // torso
     g.lineStyle(26, ink, 1).lineBetween(x, hipY, neck.x, neck.y);
     // arms
-    const punch = f.act === 'attack' && f.combo < 2 && t > 0.07 && t < 0.2;
+    const punch = (mv === 'jab' || mv === 'cross') && t > 0.06 && t < 0.2;
+    const upper = mv === 'uppercut' && t > 0.1 && t < 0.28;
+    const strike = !!mv && !['jab', 'cross', 'uppercut', 'kick', 'flying kick', 'sweep'].includes(mv) && t > 0.08;
     const cast = f.act === 'cast';
     const shoulder = { x: neck.x, y: neck.y + 10 };
     let handF = { x: shoulder.x + s * 30, y: shoulder.y + 30 };
     let handB = { x: shoulder.x - s * 20, y: shoulder.y + 34 };
     if (punch) handF = { x: shoulder.x + s * 80, y: shoulder.y };
+    if (upper) handF = { x: shoulder.x + s * 40, y: shoulder.y - 70 };
+    if (strike) {
+      const k = Math.min(1, (t - 0.08) / 0.2);
+      const ang = -1.4 + k * 2;
+      handF = { x: shoulder.x + s * Math.cos(ang) * 80, y: shoulder.y + Math.sin(ang) * 80 };
+      g.lineStyle(4, rim, 0.5 * (1 - k)).beginPath();
+      g.arc(shoulder.x, shoulder.y, 110, s > 0 ? -1.4 : Math.PI - 0.6, s > 0 ? 0.6 : Math.PI + 1.4, false);
+      g.strokePath();
+    }
     if (cast) handF = { x: shoulder.x + s * 70, y: shoulder.y - 20 };
     if (f.act === 'block') {
       handF = { x: shoulder.x + s * 22, y: shoulder.y - 22 };

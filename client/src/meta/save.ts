@@ -47,13 +47,16 @@ export interface SaveData {
   chests: Record<ChestKind, number>;
   /** Spins used today (10 a day across all wheels). */
   spins: { day: string; used: number };
-  /** First-run profile: chosen class (empty until chosen). */
-  profile: { cls: string; created: number };
+  /** First-run profile: chosen class (empty until chosen); `registered` = the name is reserved on the server. */
+  profile: { cls: string; created: number; registered: boolean; onboarded: boolean };
+  /** Separate loadout for ranked 1v1 duels (duel-legal skills only). */
+  duelSkills: number[];
   /** The reigning champion as seen on this device, and the kit passed down from Majen. */
   champion: { name: string; isYou: boolean; kit: number[]; since: number; defences: number };
 }
 
-export const SAVE_KEY = 'orb.save2';
+/** Bumped to start everyone fresh with the Skill World update. */
+export const SAVE_KEY = 'orb.save3';
 
 export function defaultSave(): SaveData {
   return {
@@ -83,7 +86,8 @@ export function defaultSave(): SaveData {
     market: { day: 0, bought: [] },
     chests: { wood: 0, silver: 0, gold: 0, legend: 0 },
     spins: { day: '', used: 0 },
-    profile: { cls: '', created: 0 },
+    profile: { cls: '', created: 0, registered: false, onboarded: false },
+    duelSkills: [],
     champion: { name: 'Majen', isYou: false, kit: [], since: 0, defences: 0 },
   };
 }
@@ -203,7 +207,10 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
       profile: {
         cls: typeof j.profile?.cls === 'string' ? j.profile.cls.slice(0, 16) : '',
         created: num(j.profile?.created, 0),
+        registered: j.profile?.registered === true,
+        onboarded: j.profile?.onboarded === true,
       },
+      duelSkills: nums(j.duelSkills, []).slice(0, 5),
       champion: {
         name: typeof j.champion?.name === 'string' ? j.champion.name.slice(0, 16) : 'Majen',
         isYou: j.champion?.isYou === true,

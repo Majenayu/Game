@@ -114,6 +114,30 @@ export const SIGNATURES: Record<string, { sig: Signature; secs: number; text: st
   'Berserker Core': { sig: 'rage', secs: 8, text: 'Double damage and speed for 8 seconds.' },
 };
 
+/** Plain explanation of what each skill kind does in a match. */
+export const KIND_HELP: Record<string, string> = {
+  projectile: 'Fires one or more fast shots where you aim.',
+  beam: 'A straight laser that hits everything in line instantly.',
+  volley: 'A fan of shots in a wide cone.',
+  nova: 'A burst around you that hits every enemy close by.',
+  cleave: 'A heavy close-range swing in front of you that knocks enemies back.',
+  shield: 'You cannot be hurt for a few seconds.',
+  barrier: 'Places a wall zone that blocks enemy bullets.',
+  heal: 'Restores HP to you and allies nearby.',
+  aura: 'A zone that heals allies standing in it.',
+  buff: 'Boosts you for a while (damage, speed, fire rate or piercing).',
+  stealth: 'You turn almost invisible; enemies lose track of you.',
+  ambush: 'Teleports behind the nearest enemy and strikes.',
+  summon: 'Calls pets that orbit you and shoot enemies.',
+  mine: 'Drops a hidden mine that explodes when an enemy steps on it.',
+  pull: 'A zone that drags enemies toward its centre.',
+  slow: 'A zone that slows enemies inside it.',
+  dash: 'A very fast burst of movement where you aim.',
+  blink: 'Teleports you a short distance where you aim.',
+  portal: 'Opens a portal that moves you across the arena.',
+  world: 'Out-of-battle skill: gives a passive bonus automatically.',
+};
+
 /** Which timed effect a boost archetype grants. */
 export const BUFF_BY_ARCHETYPE: Record<string, EffectId | 'guard'> = {
   Surge: 'overdrive',

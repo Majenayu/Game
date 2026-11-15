@@ -16,6 +16,8 @@ import {
   RANKS,
   UNIQUES,
   WEAPONS,
+  LEVEL_COPIES,
+  duelUsable,
   getSkill,
   uniqueIdOf,
   COLORS,
@@ -97,8 +99,8 @@ export const DAILY_REWARDS = LOGIN_CALENDAR.map((d) => d.coins);
 export const SPINS_PER_DAY = 10;
 /** Accessories you may pick for free when you create your profile. */
 export const FREE_ACCS = [0, 2, 5, 6, 8];
-/** Level needed to challenge the champion. */
-export const CHAMPION_MIN_LEVEL = 10;
+/** Level needed to challenge the champion (1 = anyone). */
+export const CHAMPION_MIN_LEVEL = 1;
 
 export interface WheelSegment {
   label: string;
@@ -110,18 +112,14 @@ export interface WheelSegment {
 
 /** Skill prizes use `value` as an index into RANKS (F=0 ... S=6). */
 export const WHEEL: WheelSegment[] = [
-  { label: '25', weight: 20, kind: 'coins', value: 25, color: '#2a3a7a' },
-  { label: 'Skill D', weight: 14, kind: 'skill', value: 2, color: '#1f4f9f' },
-  { label: '50', weight: 18, kind: 'coins', value: 50, color: '#1f5f8f' },
-  { label: 'Skin', weight: 7, kind: 'cosmetic', value: 0, color: '#7a2a6a' },
-  { label: 'Skill C', weight: 10, kind: 'skill', value: 3, color: '#1f7a6a' },
-  { label: '100', weight: 12, kind: 'coins', value: 100, color: '#2a3a7a' },
-  { label: 'Skill B', weight: 6, kind: 'skill', value: 4, color: '#5a2a9a' },
-  { label: '250', weight: 6, kind: 'coins', value: 250, color: '#2f7a4a' },
-  { label: 'Skill A', weight: 2, kind: 'skill', value: 5, color: '#a0521f' },
-  { label: '500', weight: 3, kind: 'coins', value: 500, color: '#8a6a1f' },
-  { label: 'UNIQUE', weight: 0.3, kind: 'unique', value: 7, color: '#c0206a' },
-  { label: '1000', weight: 1, kind: 'coins', value: 1000, color: '#a02a2a' },
+  { label: 'Skill F', weight: 22, kind: 'skill', value: 0, color: '#4a5070' },
+  { label: 'Skill E', weight: 20, kind: 'skill', value: 1, color: '#2f7a4a' },
+  { label: 'Skill D', weight: 18, kind: 'skill', value: 2, color: '#1f4f9f' },
+  { label: 'Skill C', weight: 14, kind: 'skill', value: 3, color: '#1f7a6a' },
+  { label: 'Skill B', weight: 8, kind: 'skill', value: 4, color: '#5a2a9a' },
+  { label: 'Skill A', weight: 2.5, kind: 'skill', value: 5, color: '#a0521f' },
+  { label: 'Skill S', weight: 0.5, kind: 'skill', value: 6, color: '#a08a1f' },
+  { label: 'UNIQUE', weight: 0.2, kind: 'unique', value: 7, color: '#c0206a' },
 ];
 
 export const EXTRA_SPIN_COST = 150;
@@ -235,6 +233,8 @@ export interface Reward {
   coins: number;
   xp: number;
   levelsGained: number[];
+  /** Chest earned by this result, if any. */
+  chest?: ChestKind;
   /** Skill dropped after the match or level, if any. */
   drop?: SkillDrop;
 }
@@ -244,6 +244,11 @@ export interface SkillDrop {
   rank: Rank;
   merged: boolean;
   level: number;
+  /** Level before this copy (equal to level when nothing changed). */
+  prevLevel: number;
+  copies: number;
+  /** Copies needed for the next level (0 at max level). */
+  nextAt: number;
 }
 
 // ---- progress store -----------------------------------------------------------
@@ -380,14 +385,66 @@ export class Progress {
 
   /** Adds a skill, merging with a copy you already own. Returns the merged result. */
   addSkill(inst: SkillInstance): SkillDrop {
+    const prev = this.skillBySkillId(inst.skillId);
     const r = addToInventory(this.data.skills, inst);
     this.data.skills = r.inv;
-    return {
+    const lvl = r.result.level;
+    const d: SkillDrop = {
       skillId: r.result.skillId,
       rank: rankOfId(r.result.skillId),
       merged: r.merged,
-      level: r.result.level,
+      level: lvl,
+      prevLevel: prev ? prev.level : lvl,
+      copies: r.result.copies,
+      nextAt: LEVEL_COPIES[lvl] ?? 0,
     };
+    this.skillListeners.forEach((l) => l(d));
+    return d;
+  }
+  private skillListeners: Array<(d: SkillDrop) => void> = [];
+  /** Called for every skill gained (new or merged), e.g. to play the merge animation. */
+  onSkill(fn: (d: SkillDrop) => void): void {
+    this.skillListeners.push(fn);
+  }
+  /**
+   * A skill id for a drop: 35% of the time a copy of a skill you already own (so merging happens often),
+   * otherwise a random skill of the rank.
+   */
+  private pickDropId(rank: Rank, rng: () => number): number {
+    const owned = this.data.skills.filter((s) => s.skillId < 1_000_000);
+    if (owned.length && rng() < 0.35) return owned[Math.floor(rng() * owned.length)].skillId;
+    return randomSkillOfRank(rank, rng);
+  }
+  /** The duel loadout, or the battle loadout filtered to duel-legal skills when none was set. */
+  duelSkillIds(): number[] {
+    const own = (id: number) => !!this.skillBySkillId(id) && duelUsable(id);
+    const set = this.data.duelSkills.filter(own);
+    return set.length ? set : this.data.loadout.skillIds.filter(own).slice(0, 5);
+  }
+  duelInstances(): SkillInstance[] {
+    return this.duelSkillIds()
+      .map((id) => this.skillBySkillId(id))
+      .filter((s): s is SkillInstance => !!s);
+  }
+  equipDuelSkills(ids: number[]): { ok: boolean; reason?: string } {
+    const clean = Array.from(new Set(ids)).slice(0, 5);
+    for (const id of clean) {
+      if (!this.skillBySkillId(id)) return { ok: false, reason: 'You do not own that skill' };
+      if (!duelUsable(id)) return { ok: false, reason: 'That skill does not work in duels' };
+    }
+    this.data.duelSkills = clean;
+    this.commit();
+    return { ok: true };
+  }
+  /** Wipes all local progress and starts over (the account name stays reserved for you). */
+  resetProgress(): void {
+    const keepName = this.data.nick;
+    this.data = defaultSave();
+    this.data.nick = keepName;
+    this.grantStarterIfNeeded();
+    this.ensureQuests();
+    this.commit();
+    this.flush();
   }
 
   skillBySkillId(skillId: number): SkillInstance | undefined {
@@ -435,7 +492,10 @@ export class Progress {
 
   /** A random skill of one rank (lucky draw prizes). */
   grantSkillOfRank(rank: Rank, rng: () => number = Math.random): SkillDrop {
-    return this.addSkill(makeInstance(randomSkillOfRank(rank, rng), rng, this.newUid()));
+    // Lucky draw and chest prizes: a fresh skill of the rank, or sometimes a copy of one you own of that rank.
+    const same = this.data.skills.filter((s) => s.skillId < 1_000_000 && rankOfId(s.skillId) === rank);
+    const id = same.length && rng() < 0.35 ? same[Math.floor(rng() * same.length)].skillId : randomSkillOfRank(rank, rng);
+    return this.addSkill(makeInstance(id, rng, this.newUid()));
   }
   /** A unique skill you do not own yet (or any unique when you own them all). */
   grantUnique(rng: () => number = Math.random): SkillDrop {
@@ -451,7 +511,7 @@ export class Progress {
   private dropSkill(source: DropSource, rng: () => number = Math.random): SkillDrop {
     const pv = this.passives;
     const rank = luckyRank(rollDrop(source, rng), pv.luck, rng);
-    const id = randomSkillOfRank(rank, rng);
+    const id = this.pickDropId(rank, rng);
     const first = this.addSkill(makeInstance(id, rng, this.newUid()));
     if (rng() * 100 < pv.double) return this.addSkill(makeInstance(id, rng, this.newUid()));
     return first;
@@ -501,7 +561,7 @@ export class Progress {
   createProfile(clsId: string, look: { nick: string; char: string; color: number; acc: number }, rng: () => number = Math.random): boolean {
     const cls = classById(clsId);
     if (!cls) return false;
-    this.data.profile = { cls: cls.id, created: Date.now() };
+    this.data.profile = { ...this.data.profile, cls: cls.id, created: this.data.profile.created || Date.now() };
     this.data.nick = look.nick.slice(0, 16);
     this.data.skills = this.data.skills.filter((s) => !s.bound);
     const ranks: Rank[] = ['B', 'C', 'D', 'E', 'F'];
@@ -765,12 +825,17 @@ export class Progress {
     this.track('rounds', 1);
     if (r.won) this.track('wins', 1);
     if (r.mode === 'hill') this.track('hold', r.score);
-    if (r.won && s.wins % 3 === 0) this.data.chests.wood += 1;
+    // Every won round pays a chest: Wooden, and a Silver one every 5th win.
+    let chest: ChestKind | undefined;
+    if (r.won) {
+      chest = s.wins % 5 === 0 ? 'silver' : 'wood';
+      this.data.chests[chest] += 1;
+    }
     this.addCoins(coins);
     const levelsGained = this.addXp(xp);
     const drop = this.dropSkill(r.mode === 'tdm' ? 'team' : 'solo');
     this.commit();
-    return { coins, xp, levelsGained, drop };
+    return { coins, xp, levelsGained, drop, chest };
   }
 
   /** Applies a campaign result. Returns coins paid (full on first clear, 20% on replays). */
@@ -787,9 +852,14 @@ export class Progress {
     const levelsGained = this.addXp(xp);
     // The champion's reward (a skill of your choice from his kit) is claimed with claimChampion().
     const drop = prev === 0 && level.id !== CHAMPION_LEVEL_ID ? this.dropSkill(tower ? 'boss' : 'story') : undefined;
-    if (prev === 0 && level.id !== CHAMPION_LEVEL_ID) this.data.chests[tower ? 'gold' : 'silver'] += 1;
+    // Every win against a boss or a campaign level pays a chest (better on the first clear).
+    let chest: ChestKind | undefined;
+    if (level.id === CHAMPION_LEVEL_ID) chest = 'legend';
+    else if (tower) chest = prev === 0 ? 'gold' : 'silver';
+    else chest = prev === 0 ? 'silver' : 'wood';
+    if (level.id !== CHAMPION_LEVEL_ID) this.data.chests[chest] += 1;
     this.commit();
-    return { coins, xp, levelsGained, drop };
+    return { coins, xp, levelsGained, drop, chest };
   }
 
   levelUnlocked(level: LevelDef): boolean {

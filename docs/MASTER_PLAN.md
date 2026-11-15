@@ -627,3 +627,31 @@ Still needs a backend (accounts and a database), so it is not built yet:
 - Unique skills owned by only one player in the world.
 
 CrazyGames rules do not allow a separate login. The backend must use the CrazyGames user account (their SDK gives a user token) and a free database such as Postgres on a free tier.
+
+## 21. Fixes and CrazyGames compliance (built)
+
+- **Chests:** every won round pays a Wooden Chest (Silver every 5th win). Every campaign win pays a chest (Silver on the first clear, Wooden on replays). Every Boss Tower win pays one too (Gold first, Silver on replays). Majen pays a Legend Chest. A ranked duel win adds a Silver Chest.
+- **Champion:** anyone can challenge Majen from level 1.
+- **Fresh start:** the save key changed, so all local progress started over. The Profile page also has a Reset button.
+- **Unique names:** the server checks names live while you type (3 to 16 letters, digits, _ or -, case-insensitive, offensive and reserved names are refused). Renaming is in Profile.
+- **Skill details:** tap any skill card for damage, power, cooldown, mana, cast time, range, area, duration, your copies and level progress, the rolls, and whether it works in arena battles and duels.
+- **Profile:** stats, loadout, passive bonuses, world rank, the world ranking table, how points work, and every skill you own grouped as starter, battle and out-of-battle.
+- **Merging:** about 35% of drops are now copies of skills you own, so merging happens often. Each new or merged skill shows an animated card with the copies bar filling up and "LEVEL UP" when the level rises.
+- **Layout:** in matches the skill buttons sit in a bar below the arena (on touch devices, a strip on the right), so they never cover the fight.
+- **Respawn:** while you wait you see your respawn spot ("YOU RESPAWN HERE"). Enemies see nothing until you are back. You are protected for a moment after respawning.
+- **Ranked duel:** fill opponents have normal player names. There is a separate duel loadout with duel-legal skills only, and your real owned skills are used.
+  - Moves: a three-hit punch combo (jab, cross, uppercut), kick, flying kick in the air, low sweep that knocks down, and a strike for each weapon: blade slash, scatter blast, rail thrust, buzz flurry, unblockable mortar slam, twin strike.
+  - Skills hit according to their real power and rank. Each skill has its own look (6 styles, varied points and spin, element colour) and grows with rank and power.
+- **World ranking:** real players only. The server keeps the Elo ratings, updates them after every ranked duel and sends you your new rating and world rank.
+- **Guilds:** create (name plus 2 to 4 letter tag), join and leave, up to 30 members. Guild power is the total of the members' ratings, and there is a world guild ranking.
+- **Lucky Draw:** the wheel now stops on the prize you won. The Skills wheel has only skill prizes, and every wheel lists its odds.
+- **CrazyGames rules:**
+  - New players land straight in a tutorial match, with zero clicks.
+  - "Create your fighter" comes after the tutorial and has a Quick start.
+  - The controls are shown as keyboard keys.
+  - Escape is not used (it closes fullscreen). P pauses and X toggles auto.
+  - AZERTY (ZQSD) works.
+  - Touch controls use the CrazyGames device type.
+  - The bottom bar is smaller on small screens.
+  - A privacy note explains the stored name and rating.
+- **Skill descriptions:** they are readable sentences now, for example "Shoots a toxin laser that hits everything in a line that poisons enemies over time."

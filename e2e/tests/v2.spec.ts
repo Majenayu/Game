@@ -109,7 +109,7 @@ test('every game mode starts offline and runs without errors', async ({ page }) 
     });
     await page.keyboard.press('Space');
     await page.waitForTimeout(700);
-    await page.keyboard.press('Escape');
+    await page.locator('#leave').click();
     await expect(page.locator('#menu')).toBeVisible();
   }
   expect(errors).toEqual([]);
@@ -141,19 +141,13 @@ test('lobby shows every orb with skills, waits for confirm, then counts down 3 2
   await expect(page.locator('#countdown')).toHaveText(/^[123]$/);
   await expect(page.locator('#countdown')).toHaveText('GO!', { timeout: 5_000 });
 });
-test('champion needs level 10; at level 10 Majen fights 1v1; training starts at once; auto toggles', async ({ page }) => {
+test('anyone can challenge Majen 1v1; training starts at once; auto toggles', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#menu')).toBeVisible({ timeout: 15_000 });
   await page.locator('#champfight').click();
-  await expect(page.locator('#notes')).toContainText('level 10');
-  await page.evaluate(() => {
-    const p = (window as any).__orbProgress;
-    p.data.xp = 100000;
-  });
-  await page.locator('#champfight').click();
   await expect(page.locator('body')).toHaveAttribute('data-players', '2', { timeout: 8_000 });
   await expect(page.locator('#lobby')).toContainText('Majen');
-  await page.keyboard.press('Escape');
+  await page.locator('#leave').click();
   await expect(page.locator('#menu')).toBeVisible();
   await page.locator('[data-page="training"]').click();
   await page.locator('[data-train]').click();
@@ -162,7 +156,7 @@ test('champion needs level 10; at level 10 Majen fights 1v1; training starts at 
   await expect(page.locator('#autobtn')).toBeVisible();
   await page.locator('#autobtn').dispatchEvent('pointerdown');
   await expect(page.locator('#autobtn')).toHaveText('AUTO ON');
-  await page.keyboard.press('q');
+  await page.keyboard.press('x');
   await expect(page.locator('#autobtn')).toHaveText('AUTO');
 });
 test('ranked duel: lobby shows both fighters, confirm, countdown, fight', async ({ page }) => {
@@ -187,7 +181,7 @@ test('ranked duel: lobby shows both fighters, confirm, countdown, fight', async 
   await page.keyboard.up('d');
   await page.keyboard.press('j');
   await page.keyboard.press('Digit3');
-  await page.keyboard.press('Escape');
+  await page.locator('#leave').click();
   await expect(page.locator('#menu')).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -200,10 +194,10 @@ test('online ranked duel finds a match on the server', async ({ page }) => {
 });
 test('chests list their contents and opening one shows what you got', async ({ page }) => {
   await page.addInitScript(() => {
-    const s = JSON.parse(localStorage.getItem('orb.save2') || '{}');
+    const s = JSON.parse(localStorage.getItem('orb.save3') || '{}');
     if (!s.chests) {
       s.chests = { wood: 1, silver: 0, gold: 0, legend: 0 };
-      localStorage.setItem('orb.save2', JSON.stringify(s));
+      localStorage.setItem('orb.save3', JSON.stringify(s));
     }
   });
   await openPage(page, 'chests');
@@ -222,14 +216,14 @@ test('lucky draw has four wheels and 10 free spins', async ({ page }) => {
 test('profile shows stats, loadout and leaderboard', async ({ page }) => {
   await openPage(page, 'profile');
   await expect(page.locator('#pagebody')).toContainText('Matches');
-  await expect(page.locator('#pagebody')).toContainText('Leaderboard');
+  await expect(page.locator('#pagebody')).toContainText('World ranking');
   await expect(page.locator('#pagebody .ico').first()).toBeVisible();
 });
 test('boss tower lists nine floors and starts locked', async ({ page }) => {
   await openPage(page, 'tower');
   await expect(page.locator('[data-tower]')).toHaveCount(9);
   await expect(page.locator('[data-tower="101"]')).toBeDisabled();
-  await expect(page.locator('[data-tower="109"]')).toBeDisabled();
+  await expect(page.locator('[data-tower="109"]')).toBeEnabled();
   await expect(page.locator('#pagebody')).toContainText('Majen');
 });
 test('market sells a skill for coins and marks it sold', async ({ page }) => {

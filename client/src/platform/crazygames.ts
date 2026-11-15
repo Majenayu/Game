@@ -23,6 +23,8 @@ export interface Platform {
   readonly disableChat: boolean;
   onSettingsChange(cb: () => void): void;
   readonly isInstantMultiplayer: boolean;
+  /** Device type from the platform (CrazyGames system info), or null when unknown. */
+  readonly device: 'desktop' | 'tablet' | 'mobile' | null;
   getInviteParam(key: string): string | null;
   getUser(): Promise<PlatformUser | null>;
   updateRoom(info: { roomId?: string; isJoinable?: boolean; inviteParams?: Record<string, string> }): void;
@@ -74,6 +76,7 @@ class StubPlatform implements Platform {
   muteAudio = new URLSearchParams(location.search).get('muteAudio') === 'true';
   disableChat = new URLSearchParams(location.search).get('disableChat') === 'true';
   isInstantMultiplayer = false;
+  device: 'desktop' | 'tablet' | 'mobile' | null = null;
   async init() {}
   loadingStart() {}
   loadingStop() {}
@@ -111,7 +114,7 @@ class CrazyPlatform implements Platform {
   muteAudio = false;
   disableChat = false;
   isInstantMultiplayer = false;
-
+  device: 'desktop' | 'tablet' | 'mobile' | null = null;
   async init() {
     await loadScript(SDK_URL);
     const cg = (window as any).CrazyGames;
@@ -128,6 +131,12 @@ class CrazyPlatform implements Platform {
       this.listeners.forEach((l) => l());
     });
     this.isInstantMultiplayer = !!this.sdk.game?.isInstantMultiplayer;
+    try {
+      const t = this.sdk.user?.systemInfo?.device?.type;
+      if (t === 'desktop' || t === 'tablet' || t === 'mobile') this.device = t;
+    } catch {
+      /* no system info */
+    }
   }
   private safe(fn: () => void) {
     try {

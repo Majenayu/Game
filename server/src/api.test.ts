@@ -5,7 +5,7 @@ import { Store, hashToken } from './store';
 
 const PORT = 2571;
 const url = (p: string) => `http://localhost:${PORT}/api${p}`;
-const post = (p: string, body: unknown) =>
+const post = (p: string, body: unknown): Promise<Record<string, any>> =>
   fetch(url(p), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(
     async (r) => ({ status: r.status, ...((await r.json()) as Record<string, any>) }),
   );
