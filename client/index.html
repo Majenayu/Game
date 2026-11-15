@@ -12,10 +12,11 @@
     <style>
       :root {
         --bg: #0b0e1a;
-        --panel: rgba(14, 18, 36, 0.9);
+        --panel: rgba(14, 18, 36, 0.94);
         --text: #e8ecff;
         --dim: #8e97c4;
         --accent: #4dd2ff;
+        --gold: #ffc93c;
       }
       * {
         box-sizing: border-box;
@@ -32,6 +33,7 @@
         user-select: none;
         -webkit-user-select: none;
         overscroll-behavior: none;
+        touch-action: none;
       }
       #game {
         position: fixed;
@@ -57,7 +59,7 @@
         background: var(--panel);
         border: 1px solid rgba(120, 140, 255, 0.25);
         border-radius: 18px;
-        padding: 22px 26px;
+        padding: 20px 24px;
         box-shadow: 0 0 40px rgba(77, 210, 255, 0.15);
       }
       .center {
@@ -66,23 +68,32 @@
         top: 50%;
         transform: translate(-50%, -50%);
         text-align: center;
-        max-width: 92vw;
+        max-width: 94vw;
+        max-height: 96vh;
+        overflow: auto;
       }
       h1 {
-        margin: 0 0 4px;
-        font-size: clamp(28px, 6vw, 46px);
-        letter-spacing: 6px;
+        margin: 0 0 2px;
+        font-size: clamp(26px, 5vw, 42px);
+        letter-spacing: 3px;
         color: var(--accent);
         text-shadow: 0 0 18px var(--accent);
       }
+      h3 {
+        margin: 14px 0 6px;
+        font-size: 15px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
       .sub {
-        margin: 0 0 14px;
+        margin: 0 0 10px;
         color: var(--dim);
         font-size: 14px;
       }
       input {
         width: 100%;
-        padding: 12px 14px;
+        padding: 11px 14px;
         border-radius: 12px;
         border: 1px solid #33406e;
         background: #0a0d1c;
@@ -103,10 +114,10 @@
         background: var(--accent);
         border: 0;
         border-radius: 12px;
-        padding: 12px 22px;
-        font-size: 20px;
+        padding: 11px 20px;
+        font-size: 18px;
         font-weight: 700;
-        margin-top: 12px;
+        margin-top: 10px;
         box-shadow: 0 0 20px rgba(77, 210, 255, 0.5);
       }
       button.ghost {
@@ -121,15 +132,293 @@
       button:hover {
         filter: brightness(1.1);
       }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+        filter: none;
+      }
       #play {
         width: 100%;
+        font-size: 22px;
+        padding: 14px;
       }
       .controls {
-        margin-top: 14px;
+        margin-top: 10px;
         color: var(--dim);
         font-size: 12px;
         line-height: 1.6;
       }
+      /* status bar */
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 4px 0 10px;
+        font-size: 14px;
+      }
+      .status .lvl {
+        background: #1b2247;
+        border: 1px solid #33406e;
+        border-radius: 10px;
+        padding: 3px 10px;
+        white-space: nowrap;
+      }
+      .status .xp {
+        flex: 1;
+        height: 8px;
+        background: #1b2247;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .status .xp div {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #4dd2ff, #b77dff);
+      }
+      .status .coins {
+        color: var(--gold);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      /* menu tiles */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin: 10px 0 4px;
+      }
+      .tile {
+        margin: 0;
+        padding: 10px 6px;
+        font-size: 14px;
+        background: #1b2247;
+        color: var(--text);
+        box-shadow: none;
+        border: 1px solid #33406e;
+        position: relative;
+      }
+      .tile .ic {
+        display: block;
+        font-size: 22px;
+        margin-bottom: 2px;
+      }
+      .dot {
+        display: none;
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ff1744;
+        box-shadow: 0 0 8px #ff1744;
+      }
+      .dot.on {
+        display: block;
+      }
+      /* pages */
+      #page {
+        width: min(980px, 96vw);
+        height: min(640px, 94vh);
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+        overflow: hidden;
+      }
+      #pagehead {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      #pagehead h2 {
+        margin: 0;
+        flex: 1;
+        color: var(--accent);
+        font-size: 22px;
+      }
+      #pagehead button {
+        margin: 0;
+        padding: 6px 14px;
+        font-size: 14px;
+      }
+      #pagebody {
+        flex: 1;
+        overflow: auto;
+        padding-right: 4px;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+      }
+      .card {
+        background: #121936;
+        border: 1px solid #2a3566;
+        border-radius: 12px;
+        padding: 10px;
+        text-align: center;
+        font-size: 13px;
+        position: relative;
+      }
+      .card b {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 2px;
+      }
+      .card .d {
+        color: var(--dim);
+        font-size: 12px;
+        min-height: 30px;
+      }
+      .card.sel {
+        border-color: var(--accent);
+        box-shadow: 0 0 14px rgba(77, 210, 255, 0.4);
+      }
+      .card.locked {
+        opacity: 0.6;
+      }
+      .card button {
+        margin-top: 6px;
+        padding: 5px 10px;
+        font-size: 13px;
+        width: 100%;
+      }
+      .swatch {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        margin-bottom: 4px;
+        box-shadow: 0 0 10px currentColor;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #121936;
+        border: 1px solid #2a3566;
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+      }
+      .row .grow {
+        flex: 1;
+      }
+      .row button {
+        margin: 0;
+        padding: 7px 14px;
+        font-size: 14px;
+      }
+      .bar {
+        height: 8px;
+        background: #1b2247;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 5px;
+      }
+      .bar > div {
+        height: 100%;
+        background: var(--accent);
+      }
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      .tabs button {
+        margin: 0;
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+      .tabs button.on {
+        background: var(--accent);
+        color: #04101a;
+      }
+      .star {
+        color: #44496b;
+      }
+      .star.on {
+        color: var(--gold);
+      }
+      .days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        margin: 10px 0;
+      }
+      .day {
+        background: #121936;
+        border: 1px solid #2a3566;
+        border-radius: 10px;
+        padding: 8px 2px;
+        text-align: center;
+        font-size: 12px;
+      }
+      .day.done {
+        opacity: 0.5;
+      }
+      .day.now {
+        border-color: var(--gold);
+        box-shadow: 0 0 14px rgba(255, 201, 60, 0.5);
+      }
+      .day b {
+        display: block;
+        color: var(--gold);
+        font-size: 15px;
+      }
+      .wheelbox {
+        text-align: center;
+      }
+      #wheelwrap {
+        position: relative;
+        width: 300px;
+        height: 300px;
+        margin: 6px auto;
+      }
+      #wheel {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 4px solid var(--gold);
+        transition: transform 4.2s cubic-bezier(0.15, 0.7, 0.1, 1);
+        box-shadow: 0 0 30px rgba(255, 201, 60, 0.4);
+      }
+      #pointer {
+        position: absolute;
+        left: 50%;
+        top: -10px;
+        width: 0;
+        height: 0;
+        margin-left: -12px;
+        border-left: 12px solid transparent;
+        border-right: 12px solid transparent;
+        border-top: 26px solid #ff1744;
+        z-index: 2;
+      }
+      .dexgrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
+        gap: 3px;
+        margin: 6px 0 10px;
+      }
+      .dexgrid i {
+        height: 26px;
+        border-radius: 6px;
+        background: #1b2247;
+        border: 1px solid #2a3566;
+        display: block;
+      }
+      .tag {
+        display: inline-block;
+        border: 1px solid;
+        border-radius: 8px;
+        padding: 1px 7px;
+        font-size: 11px;
+        margin: 1px;
+      }
+      /* HUD */
       #hud {
         position: absolute;
         inset: 0;
@@ -158,10 +447,24 @@
         background: #2a2f4a;
         box-shadow: none;
       }
+      .hpbar {
+        width: 120px;
+        height: 14px;
+        background: #2a2f4a;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .hpbar div {
+        height: 100%;
+        background: #ff5e8a;
+      }
+      .hpnum {
+        font-size: 14px;
+      }
       #kills {
         left: 14px;
         top: 42px;
-        font-size: 18px;
+        font-size: 16px;
       }
       #timer {
         left: 50%;
@@ -169,6 +472,29 @@
         transform: translateX(-50%);
         font-size: 34px;
         letter-spacing: 2px;
+      }
+      #modeinfo {
+        left: 50%;
+        top: 50px;
+        transform: translateX(-50%);
+        font-size: 14px;
+        color: var(--dim);
+        white-space: nowrap;
+      }
+      #fxbar {
+        left: 14px;
+        top: 68px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        align-items: flex-start;
+      }
+      .chip {
+        border: 1px solid;
+        border-radius: 8px;
+        padding: 1px 8px;
+        font-size: 12px;
+        background: rgba(8, 10, 24, 0.6);
       }
       #lb {
         right: 62px;
@@ -192,8 +518,93 @@
         top: 16%;
         transform: translateX(-50%);
         font-size: 26px;
-        color: #ffc93c;
+        color: var(--gold);
         white-space: nowrap;
+      }
+      #objective {
+        left: 50%;
+        bottom: 12px;
+        transform: translateX(-50%);
+        font-size: 15px;
+        background: rgba(8, 10, 24, 0.7);
+        border: 1px solid #33406e;
+        border-radius: 10px;
+        padding: 4px 12px;
+        white-space: nowrap;
+      }
+      #notes {
+        left: 50%;
+        top: 84px;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .note {
+        background: rgba(8, 10, 24, 0.78);
+        border: 1px solid #33406e;
+        border-radius: 10px;
+        padding: 4px 14px;
+        font-size: 16px;
+        transition: opacity 0.5s;
+        white-space: nowrap;
+      }
+      .note.out {
+        opacity: 0;
+      }
+      #skills {
+        position: absolute;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px;
+      }
+      .skill {
+        position: relative;
+        margin: 0;
+        width: 84px;
+        height: 62px;
+        padding: 4px;
+        background: rgba(8, 10, 24, 0.78);
+        color: var(--text);
+        border: 2px solid #33406e;
+        border-radius: 14px;
+        box-shadow: none;
+        font-size: 13px;
+        overflow: hidden;
+        touch-action: none;
+      }
+      .skill::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: var(--cd, 0%);
+        background: rgba(0, 0, 0, 0.62);
+        pointer-events: none;
+      }
+      .skill.ready {
+        box-shadow: 0 0 14px currentColor;
+      }
+      .skill .skn {
+        display: block;
+        font-weight: 700;
+      }
+      .skill .key {
+        display: block;
+        font-size: 10px;
+        color: var(--dim);
+      }
+      .skill .cdn {
+        position: absolute;
+        right: 6px;
+        top: 2px;
+        z-index: 1;
+        font-size: 16px;
+        color: var(--gold);
       }
       #mute {
         position: absolute;
@@ -210,14 +621,27 @@
         box-shadow: none;
         border: 1px solid #33406e;
       }
+      #leave,
+      #invite {
+        position: absolute;
+        bottom: 12px;
+        margin: 0;
+        background: rgba(8, 10, 24, 0.7);
+      }
+      #leave {
+        left: 12px;
+      }
+      #invite {
+        left: 86px;
+      }
       #board table {
         border-collapse: collapse;
         margin: 10px auto 0;
-        min-width: 300px;
+        min-width: 320px;
       }
       #board td,
       #board th {
-        padding: 5px 14px;
+        padding: 4px 12px;
         text-align: left;
       }
       #board th {
@@ -232,11 +656,16 @@
       #board h2 {
         margin: 0;
         font-size: 28px;
-        color: #ffc93c;
+        color: var(--gold);
       }
       #board .next {
         color: var(--dim);
-        margin-top: 12px;
+        margin-top: 10px;
+      }
+      #board .reward {
+        margin-top: 10px;
+        color: var(--gold);
+        font-size: 16px;
       }
       #touch {
         position: fixed;
@@ -275,17 +704,10 @@
       #ovbtns button {
         margin: 10px 6px 0;
       }
-      #leave {
-        position: absolute;
-        left: 12px;
-        bottom: 12px;
-        margin: 0;
-        background: rgba(8, 10, 24, 0.7);
-      }
       #hint {
         position: absolute;
         left: 50%;
-        bottom: 12%;
+        bottom: 22%;
         transform: translateX(-50%);
         text-align: center;
         background: rgba(8, 10, 24, 0.78);
@@ -318,14 +740,71 @@
           display: flex;
         }
       }
-      html,
-      body {
-        touch-action: none;
+      #toast {
+        position: absolute;
+        left: 50%;
+        bottom: 74px;
+        transform: translateX(-50%);
+        color: var(--dim);
+        font-size: 13px;
+        pointer-events: none;
+      }
+      @media (pointer: coarse) {
+        #skills {
+          left: auto;
+          right: 18px;
+          bottom: 150px;
+          transform: none;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .skill {
+          width: 74px;
+          height: 50px;
+        }
+        .skill .key {
+          display: none;
+        }
       }
       @media (max-height: 520px) {
+        .panel {
+          padding: 10px 14px;
+        }
+        h1 {
+          font-size: 22px;
+        }
+        .grid {
+          grid-template-columns: repeat(8, 1fr);
+        }
+        .tile {
+          font-size: 11px;
+          padding: 6px 2px;
+        }
+        .tile .ic {
+          font-size: 16px;
+        }
+        button {
+          padding: 7px 14px;
+          font-size: 14px;
+        }
+        #play {
+          font-size: 16px;
+          padding: 8px;
+        }
+        input {
+          padding: 6px;
+          font-size: 14px;
+        }
+        .controls {
+          display: none;
+        }
         #timer {
           font-size: 22px;
           top: 4px;
+        }
+        #modeinfo {
+          top: 32px;
+          font-size: 11px;
         }
         #lb {
           font-size: 10px;
@@ -347,6 +826,20 @@
           left: 10px;
           gap: 5px;
         }
+        #fxbar {
+          top: 48px;
+          left: 10px;
+        }
+        .chip {
+          font-size: 10px;
+        }
+        #notes {
+          top: 54px;
+        }
+        .note {
+          font-size: 12px;
+          padding: 2px 8px;
+        }
         #hint {
           bottom: auto;
           top: 14%;
@@ -360,11 +853,17 @@
           top: 6px;
           right: 8px;
         }
-        #leave {
+        #leave,
+        #invite {
           font-size: 11px;
           padding: 5px 10px;
           bottom: 8px;
+        }
+        #leave {
           left: 8px;
+        }
+        #invite {
+          left: 66px;
         }
         #banner {
           font-size: 16px;
@@ -379,22 +878,18 @@
           height: 44px;
           margin: -22px 0 0 -22px;
         }
-      }
-      #invite {
-        position: absolute;
-        left: 86px;
-        bottom: 12px;
-        margin: 0;
-        background: rgba(8, 10, 24, 0.7);
-      }
-      #toast {
-        position: absolute;
-        left: 50%;
-        bottom: 14px;
-        transform: translateX(-50%);
-        color: var(--dim);
-        font-size: 13px;
-        pointer-events: none;
+        #page {
+          height: 96vh;
+        }
+        #wheelwrap {
+          width: 200px;
+          height: 200px;
+        }
+        #objective {
+          font-size: 11px;
+          bottom: 6px;
+          padding: 2px 8px;
+        }
       }
     </style>
   </head>
@@ -403,21 +898,57 @@
     <div id="ui">
       <div id="menu" class="panel center" hidden>
         <h1>Orb Arena</h1>
-        <p class="sub">Shoot glowing orbs. Most kills in 90 seconds wins.</p>
-        <input id="nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nickname" />
-        <button id="play">Play</button>
-        <div><button id="practice" class="ghost">Practice offline</button></div>
-        <div class="controls" id="controls">
-          WASD / arrows: move &middot; Mouse: aim &middot; Click or hold: shoot<br />Touch: left stick moves,
-          right stick aims and fires
+        <p class="sub">Shoot glowing orbs. Collect powerups. Rule the arena.</p>
+        <div class="status">
+          <span class="lvl">Lv <b data-level>1</b></span>
+          <div class="xp"><div data-xpbar></div></div>
+          <span class="coins">&#9679; <b data-coins>0</b></span>
         </div>
+        <input id="nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nickname" />
+        <button id="play">Quick Play</button>
+        <div class="grid">
+          <button class="tile" data-page="arenas"><span class="ic">&#9876;</span>Arenas</button>
+          <button class="tile" data-page="campaign"><span class="ic">&#9733;</span>Campaign</button>
+          <button class="tile" data-page="loadout"><span class="ic">&#9881;</span>Loadout</button>
+          <button class="tile" data-page="shop"><span class="ic">&#128722;</span>Shop</button>
+          <button class="tile" data-page="daily">
+            <span class="ic">&#127873;</span>Daily<i class="dot"></i>
+          </button>
+          <button class="tile" data-page="quests">
+            <span class="ic">&#128220;</span>Quests<i class="dot"></i>
+          </button>
+          <button class="tile" data-page="spin">
+            <span class="ic">&#127922;</span>Lucky Draw<i class="dot"></i>
+          </button>
+          <button class="tile" data-page="dex"><span class="ic">&#128218;</span>Collection</button>
+        </div>
+        <button id="practice" class="ghost">Practice offline</button>
+        <div class="controls" id="controls">
+          WASD / arrows: move &middot; Mouse: aim &middot; Click: shoot &middot; Space / E: skills<br />Touch:
+          left stick moves, right stick aims and fires, buttons use skills
+        </div>
+      </div>
+      <div id="page" class="panel center" hidden>
+        <div id="pagehead">
+          <h2 id="pagetitle"></h2>
+          <span class="status"
+            ><span class="lvl">Lv <b data-level>1</b></span
+            ><span class="coins">&#9679; <b data-coins>0</b></span></span
+          >
+          <button id="pageclose" class="ghost">Back</button>
+        </div>
+        <div id="pagebody"></div>
       </div>
       <div id="hud" hidden>
         <div id="hpbox"></div>
         <div id="kills"></div>
         <div id="timer"></div>
+        <div id="modeinfo"></div>
+        <div id="fxbar"></div>
         <div id="lb"></div>
         <div id="banner" hidden></div>
+        <div id="notes"></div>
+        <div id="objective" hidden></div>
         <div id="toast"></div>
         <div id="hint" hidden></div>
       </div>
@@ -425,6 +956,10 @@
       <div id="overlay" class="panel center" hidden>
         <p id="ovmsg"></p>
         <div id="ovbtns"></div>
+      </div>
+      <div id="skills">
+        <button id="sk0" class="skill" hidden></button>
+        <button id="sk1" class="skill" hidden></button>
       </div>
       <button id="mute" aria-label="Mute" hidden>&#128266;</button>
       <button id="leave" class="ghost" hidden>Leave</button>

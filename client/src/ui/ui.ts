@@ -1,25 +1,42 @@
-import { MAX_HP, MAX_NICK, type PlayerView } from '@orb/shared';
+import {
+  CHARACTERS,
+  EFFECTS,
+  MAX_NICK,
+  MODES,
+  RARITIES,
+  SKILLS,
+  TEAM_NAMES,
+  type EffectId,
+  type PlayerView,
+} from '@orb/shared';
+import type { Snapshot } from '../game/types';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-function hex(c: number): string {
+export function hex(c: number): string {
   return `#${c.toString(16).padStart(6, '0')}`;
 }
 
-function esc(s: string): string {
+export function esc(s: string): string {
   return s.replace(
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   );
 }
 
+const SCORE_LABEL: Record<string, string> = { dm: 'Kills', tdm: 'Kills', coins: 'Coins', hill: 'Hill s' };
+
 export class Ui {
   private menu = $('menu');
   private hud = $('hud');
   private board = $('board');
   private overlay = $('overlay');
+  private page = $('page');
   private nick = $<HTMLInputElement>('nick');
   private muteBtn = $<HTMLButtonElement>('mute');
+  private leaveBtn = $<HTMLButtonElement>('leave');
+  private inviteBtn = $<HTMLButtonElement>('invite');
+  private skillBtns = [$<HTMLButtonElement>('sk0'), $<HTMLButtonElement>('sk1')];
   private lastHud = 0;
   private hintTimer = 0;
 
@@ -28,8 +45,9 @@ export class Ui {
   onMuteToggle: () => void = () => {};
   onLeave: () => void = () => {};
   onInvite: () => void = () => {};
-  private inviteBtn = $<HTMLButtonElement>('invite');
-  private leaveBtn = $<HTMLButtonElement>('leave');
+  onSkill: (slot: number) => void = () => {};
+  onPage: (name: string) => void = () => {};
+  onPageClose: () => void = () => {};
 
   constructor() {
     $('play').addEventListener('click', () => this.onPlay(this.nick.value));
@@ -37,6 +55,17 @@ export class Ui {
     this.muteBtn.addEventListener('click', () => this.onMuteToggle());
     this.leaveBtn.addEventListener('click', () => this.onLeave());
     this.inviteBtn.addEventListener('click', () => this.onInvite());
+    $('pageclose').addEventListener('click', () => this.onPageClose());
+    this.menu
+      .querySelectorAll<HTMLButtonElement>('[data-page]')
+      .forEach((b) => b.addEventListener('click', () => this.onPage(b.dataset.page!)));
+    this.skillBtns.forEach((b, i) => {
+      const fire = (e: Event) => {
+        e.preventDefault();
+        this.onSkill(i);
+      };
+      b.addEventListener('pointerdown', fire);
+    });
     this.nick.addEventListener('keydown', (e) => {
       e.stopPropagation();
       if (e.key === 'Enter') this.onPlay(this.nick.value);
@@ -49,29 +78,68 @@ export class Ui {
     this.nick.value = n;
   }
 
-  setInviteVisible(v: boolean): void {
-    this.inviteBtn.hidden = !v;
+  nickValue(): string {
+    return this.nick.value;
   }
 
   setMuted(m: boolean): void {
     this.muteBtn.textContent = m ? '\u{1F507}' : '\u{1F50A}';
   }
 
+  setInviteVisible(v: boolean): void {
+    this.inviteBtn.hidden = !v;
+  }
+
+  /** Updates the coins, level and xp displays (menu and page header). */
+  setStatus(level: number, into: number, need: number, coins: number): void {
+    document.querySelectorAll<HTMLElement>('[data-coins]').forEach((e) => (e.textContent = String(coins)));
+    document.querySelectorAll<HTMLElement>('[data-level]').forEach((e) => (e.textContent = String(level)));
+    document
+      .querySelectorAll<HTMLElement>('[data-xpbar]')
+      .forEach((e) => (e.style.width = `${Math.min(100, (into / need) * 100)}%`));
+  }
+
+  setBadge(page: string, on: boolean): void {
+    this.menu.querySelector<HTMLElement>(`[data-page="${page}"] .dot`)?.classList.toggle('on', on);
+  }
+
   showMenu(): void {
     this.hideHint();
-    this.inviteBtn.hidden = true;
     this.menu.hidden = false;
     this.leaveBtn.hidden = true;
+    this.inviteBtn.hidden = true;
+    this.skillBtns.forEach((b) => (b.hidden = true));
     this.hud.hidden = true;
     this.board.hidden = true;
     this.overlay.hidden = true;
+    this.page.hidden = true;
+    this.setObjective('');
   }
 
   showGame(): void {
     this.menu.hidden = true;
+    this.page.hidden = true;
     this.leaveBtn.hidden = false;
     this.hud.hidden = false;
     this.overlay.hidden = true;
+  }
+
+  /** Opens a full page (shop, loadout...). `body` is raw trusted HTML built by the pages module. */
+  showPage(title: string, body: string): HTMLElement {
+    this.menu.hidden = true;
+    this.page.hidden = false;
+    $('pagetitle').textContent = title;
+    const el = $('pagebody');
+    el.innerHTML = body;
+    return el;
+  }
+
+  get pageBody(): HTMLElement {
+    return $('pagebody');
+  }
+
+  hidePage(): void {
+    this.page.hidden = true;
   }
 
   showOverlay(
@@ -79,7 +147,7 @@ export class Ui {
     buttons: Array<{ label: string; ghost?: boolean; onClick: () => void }> = [],
   ): void {
     this.overlay.hidden = false;
-    $('ovmsg').textContent = msg;
+    $('ovmsg').innerHTML = esc(msg).replace(/\n/g, '<br />');
     const box = $('ovbtns');
     box.innerHTML = '';
     for (const b of buttons) {
@@ -89,6 +157,15 @@ export class Ui {
       el.addEventListener('click', b.onClick);
       box.appendChild(el);
     }
+  }
+
+  /** Same as showOverlay but with trusted HTML for the message. */
+  showOverlayHtml(
+    html: string,
+    buttons: Array<{ label: string; ghost?: boolean; onClick: () => void }> = [],
+  ): void {
+    this.showOverlay('', buttons);
+    $('ovmsg').innerHTML = html;
   }
 
   hideOverlay(): void {
@@ -117,6 +194,25 @@ export class Ui {
     $('hint').hidden = true;
   }
 
+  /** Stacked notification in the top centre. */
+  notify(text: string, color = '#e8ecff', ms = 2600): void {
+    const box = $('notes');
+    const el = document.createElement('div');
+    el.className = 'note';
+    el.style.color = color;
+    el.textContent = text;
+    box.appendChild(el);
+    while (box.children.length > 4) box.firstElementChild?.remove();
+    window.setTimeout(() => el.classList.add('out'), ms);
+    window.setTimeout(() => el.remove(), ms + 500);
+  }
+
+  setObjective(text: string): void {
+    const o = $('objective');
+    o.hidden = !text;
+    o.textContent = text;
+  }
+
   banner(msg: string | null): void {
     const b = $('banner');
     b.hidden = !msg;
@@ -124,39 +220,108 @@ export class Ui {
   }
 
   /** Updates the HUD about 10 times per second. */
-  updateHud(now: number, me: PlayerView | undefined, players: PlayerView[], timeLeft: number): void {
+  updateHud(now: number, me: PlayerView, players: PlayerView[], snap: Snapshot): void {
     if (now - this.lastHud < 100) return;
     this.lastHud = now;
     document.body.dataset.humans = String(players.filter((p) => !p.bot).length);
     document.body.dataset.players = String(players.length);
-    if (me) {
-      let pips = '';
-      for (let i = 0; i < MAX_HP; i++) pips += `<div class="pip${i < me.hp ? '' : ' off'}"></div>`;
-      $('hpbox').innerHTML = pips;
-      $('kills').textContent = `Kills ${me.kills}`;
+    document.body.dataset.mode = document.body.dataset.mode ?? '';
+    document.body.dataset.arena = `${snap.mode}:${snap.mapId}`;
+
+    let pips = '';
+    if (me.maxHp <= 5) {
+      for (let i = 0; i < me.maxHp; i++) pips += `<div class="pip${i < me.hp ? '' : ' off'}"></div>`;
+    } else {
+      pips = `<div class="hpbar"><div style="width:${(me.hp / me.maxHp) * 100}%"></div></div><span class="hpnum">${me.hp}/${me.maxHp}</span>`;
     }
-    const s = Math.ceil(timeLeft);
+    $('hpbox').innerHTML = pips;
+    const label = SCORE_LABEL[snap.mode] ?? 'Score';
+    $('kills').textContent =
+      `${label} ${me.score}${snap.mode === 'coins' || snap.mode === 'hill' ? `  \u00b7  Kills ${me.kills}` : ''}`;
+
+    const s = Math.ceil(snap.timeLeft);
     $('timer').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    const top = [...players].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths).slice(0, 5);
+    let info = MODES[snap.mode].name;
+    if (snap.mode === 'tdm')
+      info = `<span style="color:#80b4ff">${snap.teamScore[0]}</span> Blue : Red <span style="color:#ff8a9a">${snap.teamScore[1]}</span>`;
+    else if (snap.mode === 'hill') {
+      const h = snap.hillHolder;
+      info =
+        h === '*'
+          ? 'Hill contested!'
+          : h
+            ? `Hill: ${esc(players.find((p) => p.id === h)?.name ?? '')}`
+            : 'Capture the hill';
+    }
+    $('modeinfo').innerHTML = info;
+
+    const top = [...players].sort((a, b) => b.score - a.score || b.kills - a.kills).slice(0, 5);
     $('lb').innerHTML = top
       .map(
         (p) =>
-          `<div class="${me && p.id === me.id ? 'me' : ''}"><span>${esc(p.name)}</span><span>${p.kills}</span></div>`,
+          `<div class="${p.id === me.id ? 'me' : ''}"><span>${esc(p.name)}</span><span>${p.score}</span></div>`,
       )
       .join('');
+
+    // active effects
+    $('fxbar').innerHTML = me.fx
+      ? me.fx
+          .split(',')
+          .map((f) => {
+            const [id, r] = f.split(':');
+            const e = EFFECTS[id as EffectId];
+            if (!e) return '';
+            return `<span class="chip" style="border-color:${hex(RARITIES[Number(r)]?.color ?? 0xffffff)};color:${hex(e.color)}">${esc(e.name)}</span>`;
+          })
+          .join('')
+      : '';
+    if (me.shield > 0)
+      $('fxbar').innerHTML +=
+        `<span class="chip" style="border-color:#7dff6b;color:#7dff6b">Guard x${me.shield}</span>`;
+
+    // skills
+    const cds = [me.cd0, me.cd1];
+    [me.sk0, me.sk1].forEach((id, i) => {
+      const def = SKILLS[id];
+      const b = this.skillBtns[i];
+      if (!def) {
+        b.hidden = true;
+        return;
+      }
+      b.hidden = false;
+      const max = def.cd * (CHARACTERS[me.char]?.skillCd ?? 1);
+      const frac = Math.min(1, cds[i] / max);
+      b.style.setProperty('--cd', `${frac * 100}%`);
+      b.style.borderColor = hex(def.color);
+      b.classList.toggle('ready', cds[i] <= 0 && me.alive);
+      b.innerHTML = `<span class="skn">${esc(def.name)}</span><span class="key">${i === 0 ? 'Space' : 'E'}</span><span class="cdn">${cds[i] > 0 ? Math.ceil(cds[i]) : ''}</span>`;
+    });
   }
 
-  showScoreboard(players: PlayerView[], meId: string, winner: string, secondsLeft: number): void {
+  showScoreboard(
+    players: PlayerView[],
+    meId: string,
+    snap: Snapshot,
+    secondsLeft: number,
+    rewardHtml: string,
+  ): void {
     this.board.hidden = false;
+    const label = SCORE_LABEL[snap.mode] ?? 'Score';
+    const team = MODES[snap.mode].team;
     const rows = [...players]
-      .sort((a, b) => b.kills - a.kills || a.deaths - b.deaths)
-      .map(
-        (p, i) =>
-          `<tr class="${p.id === meId ? 'me' : ''}"><td>${i + 1}</td><td><span style="color:${hex(p.color)}">&#9679;</span> ${esc(p.name)}</td><td>${p.kills}</td><td>${p.deaths}</td></tr>`,
-      )
+      .sort((a, b) => b.score - a.score || b.kills - a.kills || a.deaths - b.deaths)
+      .map((p, i) => {
+        const dot = team ? (p.team === 0 ? '#2979ff' : '#ff1744') : hex(p.color);
+        return `<tr class="${p.id === meId ? 'me' : ''}"><td>${i + 1}</td><td><span style="color:${dot}">&#9679;</span> ${esc(p.name)}</td><td>${p.score}</td><td>${p.kills}</td><td>${p.deaths}</td></tr>`;
+      })
       .join('');
-    this.board.innerHTML = `<h2>${winner ? `${esc(winner)} wins!` : 'Round over'}</h2>
-      <table><tr><th>#</th><th>Player</th><th>Kills</th><th>Deaths</th></tr>${rows}</table>
+    const title = snap.winner ? `${esc(snap.winner)} wins!` : 'Round over';
+    const sub = team
+      ? `<div class="sub">${TEAM_NAMES[0]} ${snap.teamScore[0]} : ${snap.teamScore[1]} ${TEAM_NAMES[1]}</div>`
+      : '';
+    this.board.innerHTML = `<h2>${title}</h2>${sub}
+      <table><tr><th>#</th><th>Player</th><th>${label}</th><th>Kills</th><th>Deaths</th></tr>${rows}</table>
+      ${rewardHtml}
       <div class="next">Next round in ${Math.max(0, Math.ceil(secondsLeft))}</div>`;
   }
 

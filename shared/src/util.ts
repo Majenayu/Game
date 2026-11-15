@@ -39,6 +39,8 @@ export function movePlayer(
   moveX: number,
   moveY: number,
   dt: number,
+  speed: number = PLAYER_SPEED,
+  obstacles: Rect[] = OBSTACLES,
 ): { x: number; y: number } {
   let mx = Number.isFinite(moveX) ? moveX : 0;
   let my = Number.isFinite(moveY) ? moveY : 0;
@@ -47,11 +49,11 @@ export function movePlayer(
     mx /= len;
     my /= len;
   }
-  let nx = x + mx * PLAYER_SPEED * dt;
-  let ny = y + my * PLAYER_SPEED * dt;
+  let nx = x + mx * speed * dt;
+  let ny = y + my * speed * dt;
   nx = clamp(nx, PLAYER_RADIUS, WORLD_W - PLAYER_RADIUS);
   ny = clamp(ny, PLAYER_RADIUS, WORLD_H - PLAYER_RADIUS);
-  for (const o of OBSTACLES) {
+  for (const o of obstacles) {
     const r = resolveCircleRect(nx, ny, PLAYER_RADIUS, o);
     nx = r.x;
     ny = r.y;
@@ -64,14 +66,20 @@ export function pointInRect(x: number, y: number, rect: Rect, pad = 0): boolean 
 }
 
 /** True when the straight segment crosses any obstacle (sampled). */
-export function segmentBlocked(x1: number, y1: number, x2: number, y2: number): boolean {
+export function segmentBlocked(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  obstacles: Rect[] = OBSTACLES,
+): boolean {
   const dist = Math.hypot(x2 - x1, y2 - y1);
   const steps = Math.max(1, Math.ceil(dist / 20));
   for (let i = 1; i < steps; i++) {
     const t = i / steps;
     const x = x1 + (x2 - x1) * t;
     const y = y1 + (y2 - y1) * t;
-    for (const o of OBSTACLES) if (pointInRect(x, y, o, 4)) return true;
+    for (const o of obstacles) if (pointInRect(x, y, o, 4)) return true;
   }
   return false;
 }
@@ -146,6 +154,8 @@ export interface PlayerInput {
   aim: number;
   shooting: boolean;
   seq: number;
+  /** Bit 0 = skill slot 1, bit 1 = skill slot 2 (pressed since the last message). */
+  skill: number;
 }
 
 /** Validates untrusted input. Returns null when unusable. */
@@ -162,6 +172,7 @@ export function sanitizeInput(raw: unknown): PlayerInput | null {
     aim: normalizeAngle(aimAngle),
     shooting: shooting === true,
     seq,
+    skill: typeof r.skill === 'number' && Number.isInteger(r.skill) ? r.skill & 3 : 0,
   };
 }
 
@@ -172,4 +183,5 @@ export interface InputMessage {
   aimAngle: number;
   shooting: boolean;
   seq: number;
+  skill?: number;
 }

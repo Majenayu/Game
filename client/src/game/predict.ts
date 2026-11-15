@@ -1,4 +1,4 @@
-import { TICK_MS, movePlayer } from '@orb/shared';
+import { OBSTACLES, PLAYER_SPEED, TICK_MS, movePlayer, type Rect } from '@orb/shared';
 
 interface SentInput {
   seq: number;
@@ -12,10 +12,13 @@ const CORRECTION_RATE = 10;
 /**
  * Client-side prediction for the local player. Moves immediately from input, then blends toward
  * the server position replayed with the inputs the server has not acknowledged yet (by seq).
+ * `speed` (movement multiplier) and `obstacles` follow the server state and the current map.
  */
 export class Predictor {
   x = 0;
   y = 0;
+  speed = 1;
+  obstacles: Rect[] = OBSTACLES;
   private corrX = 0;
   private corrY = 0;
   private pending: SentInput[] = [];
@@ -47,7 +50,7 @@ export class Predictor {
     let ty = sy;
     this.pending.forEach((inp, idx) => {
       const dt = idx === this.pending.length - 1 ? sinceSendSec : TICK_MS / 1000;
-      const m = movePlayer(tx, ty, inp.moveX, inp.moveY, dt);
+      const m = movePlayer(tx, ty, inp.moveX, inp.moveY, dt, PLAYER_SPEED * this.speed, this.obstacles);
       tx = m.x;
       ty = m.y;
     });
@@ -65,7 +68,7 @@ export class Predictor {
   }
 
   step(moveX: number, moveY: number, dt: number): void {
-    const m = movePlayer(this.x, this.y, moveX, moveY, dt);
+    const m = movePlayer(this.x, this.y, moveX, moveY, dt, PLAYER_SPEED * this.speed, this.obstacles);
     this.x = m.x;
     this.y = m.y;
     const f = Math.min(1, dt * CORRECTION_RATE);

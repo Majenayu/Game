@@ -1,19 +1,34 @@
 import Phaser from 'phaser';
 import type { Room } from 'colyseus.js';
-import { RECONNECT_SECONDS, WORLD_H, WORLD_W, randomNick, sanitizeNick } from '@orb/shared';
+import {
+  LEVELS,
+  RECONNECT_SECONDS,
+  WORLD_H,
+  WORLD_W,
+  powerupFromId,
+  powerupName,
+  randomNick,
+  sanitizeNick,
+  type LevelDef,
+  type ModeId,
+} from '@orb/shared';
 import { sfx } from './audio';
-import { GameScene } from './game/GameScene';
+import { GameScene, type RoundResult } from './game/GameScene';
 import { OfflineSource, OnlineSource } from './game/sources';
+import { LevelRunner } from './meta/campaign';
+import { Progress } from './meta/economy';
+import { Pages, type PageName } from './meta/pages';
 import { joinArena, reconnect, serverUrls, type JoinTarget } from './net';
-import { createPlatform, showMidgameAd, type Platform } from './platform/crazygames';
+import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './platform/crazygames';
 import { TouchControls, isTouchDevice } from './ui/touch';
 import { Ui } from './ui/ui';
-
-const NICK_KEY = 'orb.nick';
 
 async function boot(): Promise<void> {
   const platform = await createPlatform();
   platform.loadingStart();
+
+  const progress = new Progress(platform);
+  await progress.init();
 
   const ui = new Ui();
   const touch = new TouchControls();
@@ -34,18 +49,39 @@ async function boot(): Promise<void> {
     scene,
   });
   (window as any).__orbGame = game;
+  (window as any).__orbProgress = progress;
 
   // ---- identity -----------------------------------------------------------
   const user = await platform.getUser();
-  let nick = user?.username ?? localStorage.getItem(NICK_KEY) ?? randomNick();
-  nick = sanitizeNick(nick);
+  let nick = sanitizeNick(
+    user?.username ?? (progress.data.nick || localStorage.getItem('orb.nick')) ?? randomNick(),
+  );
   ui.setNick(nick);
   const readNick = (raw: string): string => {
     const n = sanitizeNick(raw);
-    if (!user) localStorage.setItem(NICK_KEY, n);
+    progress.data.nick = n;
     ui.setNick(n);
     return user ? user.username : n;
   };
+
+  // ---- meta status ----------------------------------------------------------
+  const refreshStatus = () => {
+    const l = progress.level;
+    ui.setStatus(l.level, l.into, l.need, progress.data.coins);
+    ui.setBadge('daily', progress.dailyStatus().canClaim);
+    ui.setBadge('spin', progress.spinStatus().free);
+    progress.ensureQuests();
+    const q = [...progress.data.quests.list, ...progress.data.quests.weekList];
+    ui.setBadge(
+      'quests',
+      q.some((x) => {
+        const d = progress.questDef(x.id);
+        return !!d && !x.claimed && x.progress >= d.target;
+      }),
+    );
+  };
+  progress.onChange(refreshStatus);
+  refreshStatus();
 
   // ---- audio --------------------------------------------------------------
   const syncMute = () => {
@@ -73,13 +109,40 @@ async function boot(): Promise<void> {
     if (want) platform.gameplayStart();
     else platform.gameplayStop();
   };
+
+  let campaignActive = false;
+  let offlinePractice = false;
+
   scene.hooks = {
     onPlayingChange: (p) => {
       playingFlag = p;
       applyPlaying();
     },
-    onRoundEnd: () => {
+    onRoundEnd: (r: RoundResult) => {
       void showMidgameAd(platform);
+      if (campaignActive || !r.me) return '';
+      const res = progress.recordMatch(
+        { mode: r.mode, kills: r.me.kills, deaths: r.me.deaths, score: r.me.score, won: r.won },
+        offlinePractice ? 0.5 : 1,
+      );
+      res.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
+      if (r.won) ui.notify('Victory!', '#ffc93c', 4000);
+      return `<div class="reward">+${res.coins} coins &middot; +${res.xp} XP${r.won ? ' &middot; Victory bonus!' : ''}${offlinePractice ? ' (practice rewards are halved)' : ''}</div>`;
+    },
+    onEvent: (ev, me) => {
+      if (campaignActive) return;
+      if (ev.t === 'kill' && ev.by === me && ev.id !== me) progress.track('kills', 1);
+      else if (ev.t === 'skill' && ev.id === me) progress.track('skills', 1);
+      else if (ev.t === 'coin' && ev.id === me) {
+        progress.track('coins', ev.v);
+        progress.data.stats.coinsCollected += ev.v;
+      } else if (ev.t === 'pickup' && ev.id === me) {
+        progress.track('pickups', 1);
+        if (progress.discover(ev.pu)) {
+          const pu = powerupFromId(ev.pu);
+          if (pu) ui.notify(`New powerup discovered: ${powerupName(pu)}`, '#80d8ff', 3500);
+        }
+      }
     },
   };
   document.addEventListener('visibilitychange', () => {
@@ -91,10 +154,25 @@ async function boot(): Promise<void> {
   let current: Room | null = null;
   let intentionalLeave = false;
   let sessionId = 0;
+  let runner: LevelRunner | null = null;
+
+  const showHowTo = () =>
+    ui.showHint(
+      (isTouchDevice()
+        ? '<b>Left stick</b> to move &middot; <b>Right stick</b> to aim and shoot &middot; buttons for skills'
+        : '<b>WASD</b> move &middot; <b>Mouse</b> aim &middot; <b>Click</b> shoot &middot; <b>Space / E</b> skills') +
+        '<br />Grab glowing powerups. Highest score wins!',
+    );
 
   const endSession = async () => {
     sessionId++;
     intentionalLeave = true;
+    runner?.stop();
+    runner = null;
+    campaignActive = false;
+    offlinePractice = false;
+    scene.suppressBoard = false;
+    ui.setObjective('');
     const r = current;
     current = null;
     if (r) {
@@ -114,20 +192,16 @@ async function boot(): Promise<void> {
   const toMenu = async () => {
     await endSession();
     ui.showMenu();
+    refreshStatus();
   };
 
-  const showHowTo = () =>
-    ui.showHint(
-      (isTouchDevice()
-        ? '<b>Left stick</b> to move &middot; <b>Right stick</b> to aim and shoot'
-        : '<b>WASD</b> to move &middot; <b>Mouse</b> to aim &middot; <b>Click</b> to shoot') +
-        '<br />Most kills in 90 seconds wins!',
-    );
+  const loadoutOf = () => progress.data.loadout;
 
-  const startOffline = async (rawName: string) => {
+  const startOffline = async (rawName: string, mode: ModeId, mapId: string) => {
     const name = readNick(rawName);
     await endSession();
-    scene.setSource(new OfflineSource(name));
+    offlinePractice = true;
+    scene.setSource(new OfflineSource(name, loadoutOf(), { mode, mapId }));
     document.body.dataset.mode = 'offline';
     ui.showGame();
     ui.setInviteVisible(false);
@@ -135,19 +209,55 @@ async function boot(): Promise<void> {
     showHowTo();
   };
 
-  const shareInvite = async (room: Room, serverIndex: number) => {
-    const link = platform.inviteLink({ roomId: room.roomId, server: String(serverIndex) });
-    if (!link) return ui.toast('Invite link not available');
-    try {
-      await navigator.clipboard.writeText(link);
-      ui.toast('Invite link copied! Send it to a friend.');
-    } catch {
-      ui.toast(link);
-    }
-    window.setTimeout(() => ui.toast(''), 4000);
+  const startLevel = async (level: LevelDef) => {
+    const name = readNick(ui.nickValue());
+    await endSession();
+    campaignActive = true;
+    scene.suppressBoard = true;
+    const src = new OfflineSource(name, loadoutOf(), {
+      mode: level.mode,
+      mapId: level.map,
+      seats: level.bots + 1,
+      botSkill: level.skill,
+      autoRestart: false,
+      boss: level.boss === true,
+      roundTime: level.time,
+    });
+    scene.setSource(src);
+    document.body.dataset.mode = 'campaign';
+    ui.showGame();
+    ui.setInviteVisible(false);
+    touch.setEnabled(true);
+    ui.notify(`Level ${level.id}: ${level.name}`, '#4dd2ff', 3500);
+    runner = new LevelRunner(level, src, ui, (res) => {
+      const reward = res.won ? progress.finishLevel(level, res.stars) : null;
+      if (res.won) sfx.reward();
+      const starHtml = [1, 2, 3]
+        .map((i) => `<span class="star ${i <= res.stars ? 'on' : ''}" style="font-size:32px">&#9733;</span>`)
+        .join('');
+      const next = LEVELS.find((l) => l.id === level.id + 1);
+      const buttons = [
+        ...(res.won && next ? [{ label: 'Next level', onClick: () => void startLevel(next) }] : []),
+        {
+          label: res.won ? 'Replay' : 'Try again',
+          ghost: res.won && !!next,
+          onClick: () => void startLevel(level),
+        },
+        { label: 'Campaign', ghost: true, onClick: () => void toMenu().then(() => pages.open('campaign')) },
+        { label: 'Menu', ghost: true, onClick: () => void toMenu() },
+      ];
+      ui.showOverlayHtml(
+        `<h2 style="margin:0;color:${res.won ? '#ffc93c' : '#ff8a9a'}">${res.won ? 'Level complete!' : 'Level failed'}</h2>
+         <div>${starHtml}</div>
+         ${reward ? `<div style="color:#ffc93c;margin-top:6px">+${reward.coins} coins &middot; +${reward.xp} XP</div>` : '<div class="sub">Try a different loadout or skills.</div>'}`,
+        buttons,
+      );
+      reward?.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
+    });
+    runner.start();
   };
 
-  const runOnline = (room: Room, serverIndex: number, name: string, firstJoin = true) => {
+  const runOnline = (room: Room, serverIndex: number, name: string, target: JoinTarget, firstJoin = true) => {
     const mySession = sessionId;
     current = room;
     intentionalLeave = false;
@@ -168,14 +278,26 @@ async function boot(): Promise<void> {
     });
     room.onLeave(() => {
       if (mySession !== sessionId || intentionalLeave || current !== room) return;
-      void handleDrop(room, serverIndex, name);
+      void handleDrop(room, serverIndex, name, target);
     });
     room.onError(() => {
       /* surfaced through onLeave */
     });
   };
 
-  const handleDrop = async (room: Room, serverIndex: number, name: string) => {
+  const shareInvite = async (room: Room, serverIndex: number) => {
+    const link = platform.inviteLink({ roomId: room.roomId, server: String(serverIndex) });
+    if (!link) return ui.toast('Invite link not available');
+    try {
+      await navigator.clipboard.writeText(link);
+      ui.toast('Invite link copied! Send it to a friend.');
+    } catch {
+      ui.toast(link);
+    }
+    window.setTimeout(() => ui.toast(''), 4000);
+  };
+
+  const handleDrop = async (room: Room, serverIndex: number, name: string, target: JoinTarget) => {
     const mySession = sessionId;
     ui.showOverlay('Reconnecting...');
     const urls = serverUrls();
@@ -185,7 +307,7 @@ async function boot(): Promise<void> {
       return;
     }
     if (back) {
-      runOnline(back, serverIndex, name, false);
+      runOnline(back, serverIndex, name, target, false);
       return;
     }
     current = null;
@@ -193,8 +315,8 @@ async function boot(): Promise<void> {
     touch.setEnabled(false);
     platform.leftRoom();
     ui.showOverlay('Connection lost.', [
-      { label: 'Rejoin', onClick: () => void startOnline(name) },
-      { label: 'Practice offline', ghost: true, onClick: () => void startOffline(name) },
+      { label: 'Rejoin', onClick: () => void startOnline(name, { ...target, roomId: undefined }) },
+      { label: 'Practice offline', ghost: true, onClick: () => void startOffline(name, 'dm', 'neon') },
       { label: 'Menu', ghost: true, onClick: () => void toMenu().then(() => ui.hideOverlay()) },
     ]);
   };
@@ -204,31 +326,66 @@ async function boot(): Promise<void> {
     await endSession();
     const mySession = sessionId;
     ui.showGame();
+    ui.setInviteVisible(false);
     ui.showOverlay('Connecting...');
+    const full: JoinTarget = { ...target, loadout: loadoutOf() };
     try {
-      const { room, serverIndex } = await joinArena(name, target);
+      const { room, serverIndex } = await joinArena(name, full);
       if (mySession !== sessionId) {
         void room.leave();
         return;
       }
-      runOnline(room, serverIndex, name);
+      runOnline(room, serverIndex, name, full);
     } catch (e) {
       console.warn('join failed', e);
       if (mySession !== sessionId) return;
       ui.showOverlay('Could not reach the game server.', [
-        { label: 'Retry', onClick: () => void startOnline(name, target.roomId ? {} : target) },
-        { label: 'Practice offline', ghost: true, onClick: () => void startOffline(name) },
+        {
+          label: 'Retry',
+          onClick: () => void startOnline(name, full.roomId ? { ...full, roomId: undefined } : full),
+        },
+        { label: 'Practice offline', ghost: true, onClick: () => void startOffline(name, 'dm', 'neon') },
         { label: 'Menu', ghost: true, onClick: () => void toMenu().then(() => ui.hideOverlay()) },
       ]);
     }
   };
 
-  ui.onPlay = (raw) => void startOnline(raw);
-  ui.onPractice = (raw) => void startOffline(raw);
-  ui.onLeave = () => void toMenu();
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && scene.hasSource) void toMenu();
+  // ---- pages --------------------------------------------------------------------
+  const pages: Pages = new Pages(ui, progress, {
+    playOnline: (mode, map) => {
+      pages.close();
+      void startOnline(ui.nickValue(), { mode, map });
+    },
+    playOffline: (mode, map) => {
+      pages.close();
+      void startOffline(ui.nickValue(), mode, map);
+    },
+    startLevel: (level) => {
+      pages.close();
+      void startLevel(level);
+    },
+    watchAd: () => showRewardedAd(platform),
   });
+  ui.onPage = (name) => pages.open(name as PageName);
+  ui.onPageClose = () => {
+    pages.close();
+    ui.showMenu();
+    refreshStatus();
+  };
+  progress.onChange(() => {
+    if (pages.current && pages.current !== 'spin') pages.render();
+  });
+
+  ui.onPlay = (raw) => void startOnline(raw, { mode: 'mix', map: 'rotate' });
+  ui.onPractice = (raw) => void startOffline(raw, 'dm', 'neon');
+  ui.onLeave = () => void toMenu();
+  ui.onSkill = (slot) => scene.queueSkill(slot);
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (pages.current) ui.onPageClose();
+    else if (scene.hasSource) void toMenu();
+  });
+  window.addEventListener('pagehide', () => progress.flush());
 
   const inviteTarget = (params: Pick<Platform, 'getInviteParam'>): JoinTarget | null => {
     const roomId = params.getInviteParam('roomId');
@@ -253,7 +410,11 @@ async function boot(): Promise<void> {
   const invite = inviteTarget(platform);
   if (invite) void startOnline(nick, invite);
   else if (platform.isInstantMultiplayer) void startOnline(nick, { createPrivate: true });
-  else ui.showMenu();
+  else {
+    ui.showMenu();
+    if (progress.dailyStatus().canClaim) ui.notify('Your daily reward is ready!', '#ffc93c', 4000);
+  }
+  nick = nick || '';
 }
 
 void boot();

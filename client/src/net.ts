@@ -57,6 +57,11 @@ export interface JoinTarget {
   serverIndex?: number;
   /** Create a fresh private room (CrazyGames Instant Multiplayer). */
   createPrivate?: boolean;
+  /** Game mode or 'mix' for Quick Play. */
+  mode?: string;
+  /** Map id or 'rotate'. */
+  map?: string;
+  loadout?: unknown;
 }
 
 export async function joinArena(
@@ -73,11 +78,12 @@ export async function joinArena(
     ({ index: serverIndex, url } = await pickServer(urls));
   }
   const client = new Client(url);
+  const opts = { name, mode: target.mode ?? 'mix', map: target.map ?? 'rotate', loadout: target.loadout };
   const room = target.roomId
-    ? await client.joinById(target.roomId, { name })
+    ? await client.joinById(target.roomId, { name, loadout: target.loadout })
     : target.createPrivate
-      ? await client.create('arena', { name, private: true })
-      : await client.joinOrCreate('arena', { name });
+      ? await client.create('arena', { ...opts, private: true })
+      : await client.joinOrCreate('arena', opts);
   return { room, serverIndex };
 }
 

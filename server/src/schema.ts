@@ -3,17 +3,31 @@ import { MapSchema, Schema, type } from '@colyseus/schema';
 export class PlayerState extends Schema {
   @type('string') name = '';
   @type('boolean') bot = false;
+  @type('boolean') boss = false;
   @type('uint32') color = 0;
+  @type('string') char = 'nova';
   @type('float32') x = 0;
   @type('float32') y = 0;
   @type('float32') aim = 0;
   @type('uint8') hp = 0;
+  @type('uint8') maxHp = 3;
   @type('int16') kills = 0;
   @type('int16') deaths = 0;
+  @type('int16') score = 0;
   @type('boolean') alive = true;
   @type('boolean') invuln = false;
-  @type('boolean') rapid = false;
+  @type('uint8') team = 0;
+  @type('string') fx = '';
+  @type('uint8') shield = 0;
+  @type('boolean') slow = false;
+  @type('uint8') trail = 0;
+  @type('uint8') bfx = 0;
+  @type('float32') spd = 1;
   @type('uint32') seq = 0;
+  @type('string') sk0 = '';
+  @type('string') sk1 = '';
+  @type('float32') cd0 = 0;
+  @type('float32') cd1 = 0;
 }
 
 export class BulletState extends Schema {
@@ -22,19 +36,44 @@ export class BulletState extends Schema {
   @type('float32') y = 0;
   @type('float32') vx = 0;
   @type('float32') vy = 0;
+  @type('float32') r = 6;
+  @type('uint8') kind = 0;
 }
 
 export class PickupState extends Schema {
   @type('float32') x = 0;
   @type('float32') y = 0;
+  /** Powerup id (see shared content). */
+  @type('uint16') pu = 0;
+}
+
+export class CoinState extends Schema {
+  @type('float32') x = 0;
+  @type('float32') y = 0;
+  @type('uint8') v = 1;
+}
+
+export class MineState extends Schema {
+  @type('float32') x = 0;
+  @type('float32') y = 0;
+  @type('string') owner = '';
+  @type('boolean') armed = false;
 }
 
 export class ArenaState extends Schema {
   @type({ map: PlayerState }) players = new MapSchema<PlayerState>();
   @type({ map: BulletState }) bullets = new MapSchema<BulletState>();
   @type({ map: PickupState }) pickups = new MapSchema<PickupState>();
+  @type({ map: CoinState }) coins = new MapSchema<CoinState>();
+  @type({ map: MineState }) mines = new MapSchema<MineState>();
   @type('string') phase = 'play';
+  @type('string') mode = 'dm';
+  @type('string') mapId = 'neon';
   @type('float32') timeLeft = 0;
   @type('uint16') round = 1;
   @type('string') winner = '';
+  @type('int8') winnerTeam = -1;
+  @type('int16') teamScore0 = 0;
+  @type('int16') teamScore1 = 0;
+  @type('string') hillHolder = '';
 }

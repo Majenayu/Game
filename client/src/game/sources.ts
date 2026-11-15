@@ -1,11 +1,16 @@
 import type { Room } from 'colyseus.js';
 import {
+  COLORS,
   MSG_EVENT,
   Sim,
+  powerupId,
   sanitizeInput,
   toView,
   type InputMessage,
+  type Loadout,
+  type ModeId,
   type PlayerView,
+  type SimConfig,
   type SimEvent,
 } from '@orb/shared';
 import { INTERP_DELAY_MS, SnapshotBuffer } from './interp';
@@ -16,14 +21,24 @@ export class OfflineSource implements GameSource {
   readonly online = false;
   readonly localId = 'me';
   onEvent: (ev: SimEvent) => void = () => {};
-  private sim = new Sim();
+  readonly sim: Sim;
+  /** Freezes the simulation (used when a campaign level ends). */
+  paused = false;
 
-  constructor(name: string) {
-    this.sim.addPlayer(this.localId, name);
+  constructor(name: string, loadout: Loadout, config: Partial<SimConfig> = {}) {
+    this.sim = new Sim(Math.random, config);
+    this.sim.addPlayer(this.localId, name, false, {
+      charId: loadout.char,
+      skills: loadout.skills,
+      color: COLORS[loadout.color]?.hex,
+      trail: loadout.trail,
+      bfx: loadout.bfx,
+    });
     this.sim.rebalanceBots();
   }
 
   update(dt: number): void {
+    if (this.paused) return;
     this.sim.step(Math.min(dt, 0.05));
     for (const e of this.sim.drainEvents()) this.onEvent(e);
   }
@@ -36,7 +51,7 @@ export class OfflineSource implements GameSource {
   view(): Snapshot {
     const s = this.sim;
     return {
-      players: Array.from(s.players.values()).map((p) => toView(p, s.time)),
+      players: Array.from(s.players.values()).map((p) => toView(p, s)),
       bullets: s.bullets.map((b) => ({
         id: String(b.id),
         owner: b.owner,
@@ -44,12 +59,27 @@ export class OfflineSource implements GameSource {
         y: b.y,
         vx: b.vx,
         vy: b.vy,
+        r: b.r,
+        kind: b.kind,
       })),
-      pickups: s.pickups.map((p) => ({ id: String(p.id), x: p.x, y: p.y })),
+      pickups: s.pickups.map((p) => ({ id: String(p.id), x: p.x, y: p.y, pu: powerupId(p.pu) })),
+      coins: s.coins.map((c) => ({ id: String(c.id), x: c.x, y: c.y, v: c.v })),
+      mines: s.mines.map((m) => ({
+        id: String(m.id),
+        x: m.x,
+        y: m.y,
+        owner: m.owner,
+        armed: s.time >= m.armedAt,
+      })),
       phase: s.phase,
+      mode: s.mode,
+      mapId: s.map.id,
       timeLeft: Math.max(0, s.timeLeft),
       round: s.round,
       winner: s.winnerName,
+      winnerTeam: s.winnerTeam,
+      teamScore: [s.teamScore[0], s.teamScore[1]],
+      hillHolder: s.hillHolder,
     };
   }
 
@@ -94,33 +124,60 @@ export class OnlineSource implements GameSource {
         id,
         name: p.name,
         bot: p.bot,
+        boss: p.boss,
         color: p.color,
         x: p.x,
         y: p.y,
         aim: p.aim,
         hp: p.hp,
+        maxHp: p.maxHp,
         kills: p.kills,
         deaths: p.deaths,
+        score: p.score,
         alive: p.alive,
         invuln: p.invuln,
-        rapid: p.rapid,
+        team: p.team,
+        char: p.char,
+        fx: p.fx,
+        shield: p.shield,
+        slow: p.slow,
+        trail: p.trail,
+        bfx: p.bfx,
+        spd: p.spd,
         seq: p.seq,
+        sk0: p.sk0,
+        sk1: p.sk1,
+        cd0: p.cd0,
+        cd1: p.cd1,
       });
     });
     const bullets: Snapshot['bullets'] = [];
     state.bullets.forEach((b: any, id: string) =>
-      bullets.push({ id, owner: b.owner, x: b.x, y: b.y, vx: b.vx, vy: b.vy }),
+      bullets.push({ id, owner: b.owner, x: b.x, y: b.y, vx: b.vx, vy: b.vy, r: b.r, kind: b.kind }),
     );
     const pickups: Snapshot['pickups'] = [];
-    state.pickups.forEach((p: any, id: string) => pickups.push({ id, x: p.x, y: p.y }));
+    state.pickups.forEach((p: any, id: string) => pickups.push({ id, x: p.x, y: p.y, pu: p.pu }));
+    const coins: Snapshot['coins'] = [];
+    state.coins.forEach((c: any, id: string) => coins.push({ id, x: c.x, y: c.y, v: c.v }));
+    const mines: Snapshot['mines'] = [];
+    state.mines.forEach((m: any, id: string) =>
+      mines.push({ id, x: m.x, y: m.y, owner: m.owner, armed: m.armed }),
+    );
     this.latest = {
       players,
       bullets,
       pickups,
+      coins,
+      mines,
       phase: state.phase === 'scoreboard' ? 'scoreboard' : 'play',
+      mode: state.mode as ModeId,
+      mapId: state.mapId,
       timeLeft: state.timeLeft,
       round: state.round,
       winner: state.winner,
+      winnerTeam: state.winnerTeam,
+      teamScore: [state.teamScore0, state.teamScore1],
+      hillHolder: state.hillHolder,
     };
     this.latestAt = now;
     this.buf.push(now, players);

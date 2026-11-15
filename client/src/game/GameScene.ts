@@ -1,14 +1,22 @@
 import Phaser from 'phaser';
 import {
-  BULLET_RADIUS,
-  MAX_HP,
-  OBSTACLES,
+  EFFECTS,
+  MODES,
   PICKUP_RADIUS,
   PLAYER_RADIUS,
+  RARITIES,
   RESPAWN_DELAY,
   SCOREBOARD_TIME,
+  SKILLS,
+  TEAM_COLORS,
   WORLD_H,
   WORLD_W,
+  getMap,
+  powerupFromId,
+  powerupName,
+  type EffectId,
+  type MapDef,
+  type ModeId,
   type PlayerView,
   type SimEvent,
 } from '@orb/shared';
@@ -17,7 +25,7 @@ import type { TouchControls } from '../ui/touch';
 import type { Ui } from '../ui/ui';
 import { Predictor } from './predict';
 import { OnlineSource } from './sources';
-import type { GameSource } from './types';
+import type { GameSource, Snapshot } from './types';
 
 interface Particle {
   x: number;
@@ -30,58 +38,105 @@ interface Particle {
   size: number;
 }
 
+interface TrailPoint {
+  x: number;
+  y: number;
+  t: number;
+}
+
+export interface RoundResult {
+  mode: ModeId;
+  players: PlayerView[];
+  meId: string;
+  winner: string;
+  winnerTeam: number;
+  teamScore: [number, number];
+  won: boolean;
+  me?: PlayerView;
+}
+
 export interface SceneHooks {
   /** True while the player is actively in a live round (drives SDK gameplayStart/Stop). */
   onPlayingChange(playing: boolean): void;
-  onRoundEnd(): void;
+  /** Called once when a round ends. May return HTML (rewards) to show on the scoreboard. */
+  onRoundEnd(result: RoundResult): string;
+  /** Every simulation event, with the local player id. */
+  onEvent(ev: SimEvent, meId: string): void;
 }
+
+const TRAIL_MS = 450;
 
 export class GameScene extends Phaser.Scene {
   ui!: Ui;
   touch!: TouchControls;
-  hooks: SceneHooks = { onPlayingChange: () => {}, onRoundEnd: () => {} };
+  hooks: SceneHooks = { onPlayingChange: () => {}, onRoundEnd: () => '', onEvent: () => {} };
 
   private source: GameSource | null = null;
   private predictor = new Predictor();
+  private bg!: Phaser.GameObjects.Graphics;
   private g!: Phaser.GameObjects.Graphics;
+  private map!: MapDef;
   private names = new Map<string, Phaser.GameObjects.Text>();
   private particles: Particle[] = [];
+  private trails = new Map<string, TrailPoint[]>();
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private seq = 0;
   private lastSend = 0;
   private lastSentAt = 0;
+  private skillBits = 0;
   private knownBullets = new Set<string>();
   private lastOtherShot = 0;
+  private lastOtherSkill = 0;
   private prevPhase: 'play' | 'scoreboard' | null = null;
+  private prevMode: ModeId | null = null;
+  private prevRound = 0;
   private scoreboardStart = 0;
+  private rewardHtml = '';
   private deadSince = 0;
   private wasPlaying = false;
   private localAim = 0;
+  /** Hide the end of round scoreboard (campaign levels show their own result). */
+  suppressBoard = false;
 
   constructor() {
     super('game');
   }
 
   create(): void {
-    this.drawArena();
+    this.bg = this.add.graphics().setDepth(0);
     this.g = this.add.graphics().setDepth(10);
+    this.applyMap('neon');
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT') as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,SPACE,E,SHIFT') as Record<
+      string,
+      Phaser.Input.Keyboard.Key
+    >;
+    kb.addCapture('SPACE,UP,DOWN,LEFT,RIGHT');
     this.input.mouse?.disableContextMenu();
     this.game.events.on(Phaser.Core.Events.BLUR, () => {
       for (const k of Object.values(this.keys)) k.reset();
     });
   }
 
+  /** Queue a skill press (0 or 1). Sent with the next input message. */
+  queueSkill(slot: number): void {
+    this.skillBits |= 1 << slot;
+  }
+
   setSource(src: GameSource | null): void {
     this.source?.dispose();
     this.source = src;
     this.prevPhase = null;
+    this.prevMode = null;
+    this.prevRound = 0;
     this.knownBullets.clear();
     this.particles = [];
+    this.trails.clear();
     this.predictor = new Predictor();
     this.seq = 0;
+    this.skillBits = 0;
     this.deadSince = 0;
+    this.rewardHtml = '';
     this.ui.hideScoreboard();
     this.ui.banner(null);
     this.clearNames();
@@ -93,6 +148,7 @@ export class GameScene extends Phaser.Scene {
     if (src instanceof OnlineSource) {
       src.onServerState = (me) => {
         if (!me) return;
+        this.predictor.speed = me.spd;
         if (!me.alive || this.prevPhase === 'scoreboard') this.predictor.reset(me.x, me.y);
         else this.predictor.onServer(me.x, me.y, me.seq, (performance.now() - this.lastSentAt) / 1000);
       };
@@ -101,6 +157,10 @@ export class GameScene extends Phaser.Scene {
 
   get hasSource(): boolean {
     return this.source !== null;
+  }
+
+  get mapId(): string {
+    return this.map?.id ?? 'neon';
   }
 
   private setPlaying(p: boolean): void {
@@ -115,25 +175,37 @@ export class GameScene extends Phaser.Scene {
     this.names.clear();
   }
 
-  private drawArena(): void {
-    const bg = this.add.graphics().setDepth(0);
-    bg.fillStyle(0x0b0e1a, 1).fillRect(0, 0, WORLD_W, WORLD_H);
-    bg.lineStyle(1, 0x161c38, 1);
+  // ---- arena drawing ---------------------------------------------------------
+
+  private applyMap(id: string): void {
+    this.map = getMap(id);
+    this.predictor.obstacles = this.map.obstacles;
+    const m = this.map;
+    const t = m.theme;
+    const bg = this.bg;
+    bg.clear();
+    bg.fillStyle(t.bg, 1).fillRect(0, 0, WORLD_W, WORLD_H);
+    bg.lineStyle(1, t.grid, 1);
     for (let x = 0; x <= WORLD_W; x += 100) bg.lineBetween(x, 0, x, WORLD_H);
     for (let y = 0; y <= WORLD_H; y += 100) bg.lineBetween(0, y, WORLD_W, y);
-    for (const o of OBSTACLES) {
-      bg.fillStyle(0x4a5bd0, 0.12).fillRoundedRect(o.x - 8, o.y - 8, o.w + 16, o.h + 16, 8);
-      bg.fillStyle(0x1b2247, 1).fillRoundedRect(o.x, o.y, o.w, o.h, 4);
-      bg.lineStyle(2, 0x5b6cf0, 1).strokeRoundedRect(o.x, o.y, o.w, o.h, 4);
+    for (const h of m.hazards) {
+      bg.fillStyle(t.hazard, 0.28).fillRoundedRect(h.x, h.y, h.w, h.h, 10);
+      bg.lineStyle(2, t.hazard, 0.9).strokeRoundedRect(h.x, h.y, h.w, h.h, 10);
     }
-    bg.lineStyle(6, 0x4dd2ff, 0.25).strokeRect(0, 0, WORLD_W, WORLD_H);
-    bg.lineStyle(2, 0x4dd2ff, 0.9).strokeRect(1, 1, WORLD_W - 2, WORLD_H - 2);
+    for (const o of m.obstacles) {
+      bg.fillStyle(t.wallLine, 0.12).fillRoundedRect(o.x - 8, o.y - 8, o.w + 16, o.h + 16, 8);
+      bg.fillStyle(t.wall, 1).fillRoundedRect(o.x, o.y, o.w, o.h, 4);
+      bg.lineStyle(2, t.wallLine, 1).strokeRoundedRect(o.x, o.y, o.w, o.h, 4);
+    }
+    bg.lineStyle(6, t.accent, 0.25).strokeRect(0, 0, WORLD_W, WORLD_H);
+    bg.lineStyle(2, t.accent, 0.9).strokeRect(1, 1, WORLD_W - 2, WORLD_H - 2);
   }
 
   // ---- events --------------------------------------------------------------
 
   private handleEvent(ev: SimEvent): void {
-    const me = this.source?.localId;
+    const me = this.source?.localId ?? '';
+    this.hooks.onEvent(ev, me);
     switch (ev.t) {
       case 'hit':
         this.burst(ev.x, ev.y, 0xff5e8a, 8);
@@ -148,11 +220,44 @@ export class GameScene extends Phaser.Scene {
           sfx.kill();
           this.cameras.main.shake(220, 0.012);
           this.deadSince = performance.now();
-        } else if (ev.by === me) sfx.kill();
+        } else if (ev.by === me) {
+          sfx.kill();
+          this.ui.notify('Eliminated!', '#ffc93c');
+        }
         break;
-      case 'pickup':
+      case 'pickup': {
         this.burst(ev.x, ev.y, 0xffc93c, 14);
-        if (ev.id === me) sfx.pickup();
+        if (ev.id === me) {
+          sfx.pickup();
+          const pu = powerupFromId(ev.pu);
+          if (pu)
+            this.ui.notify(powerupName(pu), '#' + RARITIES[pu.rarity].color.toString(16).padStart(6, '0'));
+        }
+        break;
+      }
+      case 'coin':
+        this.burst(ev.x, ev.y, 0xffd54f, 5);
+        if (ev.id === me) sfx.coin();
+        break;
+      case 'skill': {
+        const col = SKILLS[ev.skill]?.color ?? 0xffffff;
+        this.burst(ev.x, ev.y, col, 10);
+        if (ev.id === me) sfx.skill(ev.skill);
+        else if (performance.now() - this.lastOtherSkill > 150) {
+          this.lastOtherSkill = performance.now();
+          sfx.skill(ev.skill);
+        }
+        break;
+      }
+      case 'shield':
+        this.burst(ev.x, ev.y, 0x7dff6b, 10);
+        sfx.shieldBreak();
+        break;
+      case 'boom':
+        this.burst(ev.x, ev.y, 0xff8a3c, 30);
+        sfx.boom();
+        if (this.source && Math.hypot(ev.x - this.predictor.x, ev.y - this.predictor.y) < 400)
+          this.cameras.main.shake(140, 0.005);
         break;
       case 'respawn':
         this.burst(ev.x, ev.y, 0x4dd2ff, 12);
@@ -196,6 +301,8 @@ export class GameScene extends Phaser.Scene {
     let my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
     let aim = this.localAim;
     let shooting = false;
+    if (Phaser.Input.Keyboard.JustDown(k.SPACE)) this.queueSkill(0);
+    if (Phaser.Input.Keyboard.JustDown(k.E) || Phaser.Input.Keyboard.JustDown(k.SHIFT)) this.queueSkill(1);
     if (this.touch.enabled) {
       const t = this.touch.state;
       if (Math.hypot(t.moveX, t.moveY) > 0.12) {
@@ -230,22 +337,26 @@ export class GameScene extends Phaser.Scene {
     const snap = src.view(now);
     if (!snap) return;
 
+    if (snap.mapId !== this.map.id) this.applyMap(snap.mapId);
+    this.announceMode(snap);
+
     const meView = snap.players.find((p) => p.id === src.localId);
     const playing = snap.phase === 'play' && !document.hidden;
     this.setPlaying(playing);
 
-    // local input and prediction
     let px = meView?.x ?? WORLD_W / 2;
     let py = meView?.y ?? WORLD_H / 2;
     const canMove = !!meView && meView.alive && snap.phase === 'play';
     if (src.online) {
       if (!this.predictor.initialised && meView) this.predictor.reset(meView.x, meView.y);
+      if (meView) this.predictor.speed = meView.spd;
       px = this.predictor.x;
       py = this.predictor.y;
     }
     const input = this.readInput(px, py);
     this.localAim = input.aim;
     const send = canMove ? input : { moveX: 0, moveY: 0, aim: input.aim, shooting: false };
+    if (!canMove) this.skillBits = 0;
 
     if (src.online) {
       if (canMove) this.predictor.step(send.moveX, send.moveY, dt);
@@ -259,7 +370,9 @@ export class GameScene extends Phaser.Scene {
           aimAngle: send.aim,
           shooting: send.shooting,
           seq: this.seq,
+          skill: this.skillBits,
         });
+        this.skillBits = 0;
         this.predictor.recordSent(this.seq, send.moveX, send.moveY);
       }
     } else {
@@ -270,7 +383,9 @@ export class GameScene extends Phaser.Scene {
         aimAngle: send.aim,
         shooting: send.shooting,
         seq: this.seq,
+        skill: this.skillBits,
       });
+      this.skillBits = 0;
     }
 
     const players: PlayerView[] = snap.players.map((p) =>
@@ -285,19 +400,17 @@ export class GameScene extends Phaser.Scene {
     );
     const me = players.find((p) => p.id === src.localId);
 
-    this.handlePhase(snap.phase, players, snap.winner, now);
+    this.handlePhase(snap, players, me, now);
     this.detectShots(snap.bullets, src.localId, now);
     this.render(g, players, snap, src.localId, now, dt);
 
     if (me) {
-      this.ui.updateHud(now, me, players, snap.timeLeft);
+      this.ui.updateHud(now, me, players, snap);
       if (snap.phase === 'scoreboard') {
         this.ui.banner(null);
       } else if (!me.alive) {
         const left = Math.max(1, Math.ceil(RESPAWN_DELAY - (now - (this.deadSince || now)) / 1000));
         this.ui.banner(`Respawning in ${left}`);
-      } else if (me.rapid) {
-        this.ui.banner('RAPID FIRE!');
       } else {
         this.ui.banner(null);
       }
@@ -306,24 +419,47 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private handlePhase(
-    phase: 'play' | 'scoreboard',
-    players: PlayerView[],
-    winner: string,
-    now: number,
-  ): void {
+  private announceMode(snap: Snapshot): void {
+    if (snap.mode !== this.prevMode || (snap.round !== this.prevRound && snap.phase === 'play')) {
+      this.prevMode = snap.mode;
+      this.prevRound = snap.round;
+      this.ui.notify(`${MODES[snap.mode].name} on ${getMap(snap.mapId).name}`, '#4dd2ff', 3200);
+      this.ui.notify(MODES[snap.mode].desc, '#e8ecff', 3200);
+    }
+  }
+
+  private handlePhase(snap: Snapshot, players: PlayerView[], me: PlayerView | undefined, now: number): void {
+    const phase = snap.phase;
     if (phase !== this.prevPhase) {
       if (phase === 'scoreboard') {
         this.scoreboardStart = now;
-        this.hooks.onRoundEnd();
+        const sorted = [...players].sort(
+          (a, b) => b.score - a.score || b.kills - a.kills || a.deaths - b.deaths,
+        );
+        const team = MODES[snap.mode].team;
+        const won =
+          !!me &&
+          (team
+            ? snap.winnerTeam >= 0 && me.team === snap.winnerTeam
+            : !!snap.winner && sorted[0]?.id === me.id);
+        this.rewardHtml = this.hooks.onRoundEnd({
+          mode: snap.mode,
+          players: sorted,
+          meId: this.source!.localId,
+          winner: snap.winner,
+          winnerTeam: snap.winnerTeam,
+          teamScore: snap.teamScore,
+          won,
+          me,
+        });
       } else {
         this.ui.hideScoreboard();
       }
       this.prevPhase = phase;
     }
-    if (phase === 'scoreboard') {
+    if (phase === 'scoreboard' && !this.suppressBoard) {
       const left = SCOREBOARD_TIME - (now - this.scoreboardStart) / 1000;
-      this.ui.showScoreboard(players, this.source!.localId, winner, left);
+      this.ui.showScoreboard(players, this.source!.localId, snap, left, this.rewardHtml);
     }
   }
 
@@ -341,30 +477,166 @@ export class GameScene extends Phaser.Scene {
     this.knownBullets = seen;
   }
 
+  // ---- drawing -------------------------------------------------------------
+
+  private drawBullet(
+    g: Phaser.GameObjects.Graphics,
+    b: Snapshot['bullets'][number],
+    color: number,
+    now: number,
+  ): void {
+    const r = b.r;
+    const ang = Math.atan2(b.vy, b.vx);
+    switch (b.kind) {
+      case 1: {
+        const pts = [0, 1, 2, 3].map((i) => {
+          const a = ang + (i * Math.PI) / 2;
+          const d = i % 2 === 0 ? r * 1.9 : r * 1.1;
+          return { x: b.x + Math.cos(a) * d, y: b.y + Math.sin(a) * d };
+        });
+        g.fillStyle(color, 0.25).fillCircle(b.x, b.y, r * 2.2);
+        g.fillStyle(color, 1).fillPoints(pts, true);
+        break;
+      }
+      case 2:
+        g.lineStyle(3, color, 1).strokeCircle(b.x, b.y, r * 1.4);
+        g.fillStyle(0xffffff, 0.9).fillCircle(b.x, b.y, r * 0.5);
+        break;
+      case 3:
+        for (let i = 1; i <= 4; i++) {
+          g.fillStyle(color, 0.5 - i * 0.1).fillCircle(
+            b.x - Math.cos(ang) * i * 9,
+            b.y - Math.sin(ang) * i * 9,
+            r * (1 - i * 0.15),
+          );
+        }
+        g.fillStyle(0xffffff, 1).fillCircle(b.x, b.y, r * 0.8);
+        break;
+      case 4: {
+        const pts: Array<{ x: number; y: number }> = [];
+        for (let i = 0; i < 10; i++) {
+          const a = now / 150 + (i * Math.PI) / 5;
+          const d = i % 2 === 0 ? r * 2 : r * 0.9;
+          pts.push({ x: b.x + Math.cos(a) * d, y: b.y + Math.sin(a) * d });
+        }
+        g.fillStyle(color, 0.25).fillCircle(b.x, b.y, r * 2.4);
+        g.fillStyle(color, 1).fillPoints(pts, true);
+        break;
+      }
+      default:
+        g.fillStyle(color, 0.25).fillCircle(b.x, b.y, r * 2.2);
+        g.fillStyle(0xffffff, 1).fillCircle(b.x, b.y, r * 0.8);
+        g.fillStyle(color, 0.9).fillCircle(b.x, b.y, r);
+    }
+  }
+
+  private drawTrail(g: Phaser.GameObjects.Graphics, p: PlayerView, now: number): void {
+    let pts = this.trails.get(p.id);
+    if (!pts) {
+      pts = [];
+      this.trails.set(p.id, pts);
+    }
+    if (p.alive && p.trail > 0) {
+      const last = pts[pts.length - 1];
+      if (!last || Math.hypot(last.x - p.x, last.y - p.y) > 5) pts.push({ x: p.x, y: p.y, t: now });
+    }
+    while (pts.length && now - pts[0].t > TRAIL_MS) pts.shift();
+    if (!p.alive) pts.length = 0;
+    if (p.trail <= 0 || pts.length < 2) return;
+    for (let i = 0; i < pts.length; i++) {
+      const q = pts[i];
+      const k = 1 - (now - q.t) / TRAIL_MS;
+      if (p.trail === 1)
+        g.fillStyle(p.color, k).fillCircle(q.x + Math.sin(i * 7) * 6, q.y + Math.cos(i * 5) * 6, 2 + k * 3);
+      else if (p.trail === 3) g.lineStyle(2, p.color, k * 0.8).strokeCircle(q.x, q.y, 4 + (1 - k) * 14);
+      else if (i > 0) {
+        const a = pts[i - 1];
+        if (p.trail === 2) g.lineStyle(2 + k * 16, p.color, k * 0.5).lineBetween(a.x, a.y, q.x, q.y);
+        else if (p.trail === 4) g.lineStyle(3, 0xffffff, k).lineBetween(a.x, a.y, q.x, q.y);
+        else if (p.trail === 5) {
+          const c = Phaser.Display.Color.HSVToRGB(
+            (((now / 600 + i * 0.07) % 1) + 1) % 1,
+            1,
+            1,
+          ) as Phaser.Types.Display.ColorObject;
+          g.lineStyle(6 * k + 1, Phaser.Display.Color.GetColor(c.r, c.g, c.b), k).lineBetween(
+            a.x,
+            a.y,
+            q.x,
+            q.y,
+          );
+        }
+      }
+    }
+  }
+
   private render(
     g: Phaser.GameObjects.Graphics,
     players: PlayerView[],
-    snap: NonNullable<ReturnType<GameSource['view']>>,
+    snap: Snapshot,
     meId: string,
     now: number,
     dt: number,
   ): void {
+    const t = this.map.theme;
+    const team = MODES[snap.mode].team;
+    // hazards pulse
+    for (const h of this.map.hazards) {
+      g.fillStyle(t.hazard, 0.12 + 0.12 * Math.sin(now / 250)).fillRoundedRect(h.x, h.y, h.w, h.h, 10);
+    }
+    // hill zone
+    if (snap.mode === 'hill') {
+      const hz = this.map.hill;
+      const holder = snap.hillHolder;
+      const col =
+        holder === '*'
+          ? 0xff1744
+          : holder
+            ? (players.find((p) => p.id === holder)?.color ?? 0xffffff)
+            : t.accent;
+      g.fillStyle(col, 0.12 + 0.05 * Math.sin(now / 300)).fillCircle(hz.x, hz.y, hz.r);
+      g.lineStyle(4, col, 0.9).strokeCircle(hz.x, hz.y, hz.r);
+      g.lineStyle(2, col, 0.4).strokeCircle(hz.x, hz.y, hz.r * (0.6 + 0.1 * Math.sin(now / 400)));
+    }
+    // coins
+    for (const c of snap.coins) {
+      const big = c.v > 1;
+      const r = big ? 14 : 10;
+      g.fillStyle(0xffd54f, 0.2).fillCircle(c.x, c.y, r * 2);
+      g.fillStyle(big ? 0xff9800 : 0xffd54f, 1).fillCircle(c.x, c.y, r);
+      g.lineStyle(2, 0xfff59d, 1).strokeCircle(c.x, c.y, r * 0.6);
+    }
     // pickups
     const pulse = 1 + Math.sin(now / 160) * 0.15;
     for (const pk of snap.pickups) {
-      g.fillStyle(0xffc93c, 0.15).fillCircle(pk.x, pk.y, PICKUP_RADIUS * 2 * pulse);
-      g.lineStyle(3, 0xffc93c, 1).strokeCircle(pk.x, pk.y, PICKUP_RADIUS * pulse);
-      g.fillStyle(0xffc93c, 1).fillCircle(pk.x, pk.y, 5);
+      const pu = powerupFromId(pk.pu);
+      const ec = pu ? EFFECTS[pu.effect].color : 0xffc93c;
+      const rc = pu ? RARITIES[pu.rarity].color : 0xffffff;
+      g.fillStyle(ec, 0.18).fillCircle(pk.x, pk.y, PICKUP_RADIUS * 2.2 * pulse);
+      g.lineStyle(3, rc, 1).strokeCircle(pk.x, pk.y, PICKUP_RADIUS * pulse);
+      g.fillStyle(ec, 1).fillCircle(pk.x, pk.y, 8);
+      if (pu && pu.rarity >= 2) g.lineStyle(2, rc, 0.5).strokeCircle(pk.x, pk.y, PICKUP_RADIUS * 1.7 * pulse);
+    }
+    // mines
+    const colorOf = new Map(players.map((p) => [p.id, p.color]));
+    for (const m of snap.mines) {
+      const c = colorOf.get(m.owner) ?? 0xffffff;
+      g.fillStyle(c, 0.2).fillCircle(m.x, m.y, 24);
+      g.fillStyle(m.armed ? 0xff1744 : c, m.armed ? 0.6 + 0.4 * Math.sin(now / 120) : 0.5).fillCircle(
+        m.x,
+        m.y,
+        9,
+      );
+      g.lineStyle(2, c, 1).strokeCircle(m.x, m.y, 14);
     }
 
+    // trails below players
+    const aliveIds = new Set(players.map((p) => p.id));
+    for (const p of players) this.drawTrail(g, p, now);
+    for (const id of Array.from(this.trails.keys())) if (!aliveIds.has(id)) this.trails.delete(id);
+
     // bullets
-    const colorOf = new Map(players.map((p) => [p.id, p.color]));
-    for (const b of snap.bullets) {
-      const c = colorOf.get(b.owner) ?? 0xffffff;
-      g.fillStyle(c, 0.25).fillCircle(b.x, b.y, BULLET_RADIUS * 2.2);
-      g.fillStyle(0xffffff, 1).fillCircle(b.x, b.y, BULLET_RADIUS * 0.8);
-      g.fillStyle(c, 0.9).fillCircle(b.x, b.y, BULLET_RADIUS);
-    }
+    for (const b of snap.bullets) this.drawBullet(g, b, colorOf.get(b.owner) ?? 0xffffff, now);
 
     // players
     const alive = new Set<string>();
@@ -381,7 +653,8 @@ export class GameScene extends Phaser.Scene {
       }
       label.setVisible(p.alive);
       if (!p.alive) continue;
-      label.setText(p.name).setPosition(p.x, p.y + PLAYER_RADIUS + 16);
+      label.setText(p.boss ? `${p.name} (boss)` : p.name).setPosition(p.x, p.y + PLAYER_RADIUS + 16);
+      if (team) label.setColor(p.team === 0 ? '#80b4ff' : '#ff8a9a');
       const blink = p.invuln ? 0.45 + 0.35 * Math.sin(now / 70) : 1;
       g.fillStyle(p.color, 0.08 * blink).fillCircle(p.x, p.y, PLAYER_RADIUS * 2.4);
       g.fillStyle(p.color, 0.18 * blink).fillCircle(p.x, p.y, PLAYER_RADIUS * 1.6);
@@ -393,18 +666,47 @@ export class GameScene extends Phaser.Scene {
       );
       g.fillStyle(p.color, blink).fillCircle(p.x, p.y, PLAYER_RADIUS);
       g.fillStyle(0xffffff, 0.5 * blink).fillCircle(p.x - 6, p.y - 6, PLAYER_RADIUS * 0.4);
-      if (p.rapid)
-        g.lineStyle(3, 0xffc93c, 1).strokeCircle(p.x, p.y, PLAYER_RADIUS + 5 + Math.sin(now / 80) * 2);
+      if (team)
+        g.lineStyle(4, TEAM_COLORS[p.team === 0 ? 0 : 1], 0.95).strokeCircle(p.x, p.y, PLAYER_RADIUS + 8);
+      if (p.boss)
+        g.lineStyle(4, 0xff1744, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 12 + Math.sin(now / 120) * 2);
+      if (p.shield > 0) {
+        for (let i = 0; i < Math.min(p.shield, 3); i++)
+          g.lineStyle(3, 0x7dff6b, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 4 + i * 4);
+      }
+      if (p.slow) g.lineStyle(3, 0x80d8ff, 0.8).strokeCircle(p.x, p.y, PLAYER_RADIUS + 2);
       if (p.id === meId) g.lineStyle(2, 0xffffff, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 3);
-      for (let i = 0; i < MAX_HP; i++) {
-        const hx = p.x + (i - (MAX_HP - 1) / 2) * 13;
-        const hy = p.y - PLAYER_RADIUS - 12;
-        g.fillStyle(i < p.hp ? 0xff5e8a : 0x2a2f4a, 1).fillCircle(hx, hy, 4);
+      // hp
+      if (p.maxHp <= 5) {
+        for (let i = 0; i < p.maxHp; i++) {
+          const hx = p.x + (i - (p.maxHp - 1) / 2) * 13;
+          g.fillStyle(i < p.hp ? 0xff5e8a : 0x2a2f4a, 1).fillCircle(hx, p.y - PLAYER_RADIUS - 12, 4);
+        }
+      } else {
+        const w = 44;
+        g.fillStyle(0x2a2f4a, 1).fillRect(p.x - w / 2, p.y - PLAYER_RADIUS - 16, w, 7);
+        g.fillStyle(0xff5e8a, 1).fillRect(p.x - w / 2, p.y - PLAYER_RADIUS - 16, (w * p.hp) / p.maxHp, 7);
+      }
+      // effect dots
+      if (p.fx) {
+        const fx = p.fx.split(',');
+        fx.forEach((f, i) => {
+          const [id, r] = f.split(':');
+          const e = EFFECTS[id as EffectId];
+          if (!e) return;
+          const ex = p.x + (i - (fx.length - 1) / 2) * 11;
+          g.fillStyle(e.color, 1).fillCircle(ex, p.y - PLAYER_RADIUS - 26, 4);
+          g.lineStyle(1.5, RARITIES[Number(r)]?.color ?? 0xffffff, 1).strokeCircle(
+            ex,
+            p.y - PLAYER_RADIUS - 26,
+            5.5,
+          );
+        });
       }
     }
-    for (const [id, t] of this.names) {
+    for (const [id, tx] of this.names) {
       if (!alive.has(id)) {
-        t.destroy();
+        tx.destroy();
         this.names.delete(id);
       }
     }

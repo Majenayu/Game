@@ -78,4 +78,65 @@ describe('ArenaRoom', () => {
     expect(stranger.roomId).not.toBe(host.roomId);
     await Promise.all([host.leave(), friend.leave(), stranger.leave()]);
   });
+
+  it('separates rooms by mode and map, applies the loadout and syncs mode state', async () => {
+    const url = `ws://localhost:${PORT}`;
+    const loadout = { char: 'titan', skills: ['pulse', 'mine'], color: 9, trail: 2, bfx: 1 };
+    const a = await new Client(url).joinOrCreate<any>('arena', {
+      name: 'Coiner',
+      mode: 'coins',
+      map: 'maze',
+      loadout,
+    });
+    const b = await new Client(url).joinOrCreate<any>('arena', {
+      name: 'Hiller',
+      mode: 'hill',
+      map: 'pillars',
+    });
+    const c = await new Client(url).joinOrCreate<any>('arena', {
+      name: 'Coiner2',
+      mode: 'coins',
+      map: 'maze',
+    });
+    expect(a.roomId).toBe(c.roomId);
+    expect(a.roomId).not.toBe(b.roomId);
+    await until(() => a.state.mode === 'coins' && a.state.mapId === 'maze' && a.state.players?.size === 8);
+    await until(() => b.state.mode === 'hill' && b.state.mapId === 'pillars');
+    const me = a.state.players.get(a.sessionId);
+    expect(me.char).toBe('titan');
+    expect(me.maxHp).toBe(5);
+    expect(me.sk0).toBe('pulse');
+    expect(me.color).toBe(0x2979ff);
+    await until(() => a.state.coins.size > 0);
+    await Promise.all([a.leave(), b.leave(), c.leave()]);
+  });
+
+  it('rejects unknown modes and maps, and ignores bad loadouts', async () => {
+    const url = `ws://localhost:${PORT}`;
+    await expect(new Client(url).joinOrCreate('arena', { mode: 'hax' })).rejects.toBeDefined();
+    await expect(new Client(url).joinOrCreate('arena', { map: '../../etc' })).rejects.toBeDefined();
+    const r = await new Client(url).joinOrCreate<any>('arena', {
+      name: 'Odd',
+      mode: 'dm',
+      map: 'neon',
+      loadout: { char: 'god', skills: [1, 2], color: -5 },
+    });
+    await until(() => r.state.players?.size === 8);
+    const me = r.state.players.get(r.sessionId);
+    expect(me.char).toBe('nova');
+    expect(me.maxHp).toBe(3);
+    await r.leave();
+  });
+
+  it('skill messages trigger a skill and cooldown', async () => {
+    const r = await new Client(`ws://localhost:${PORT}`).joinOrCreate<any>('arena', {
+      name: 'Skiller',
+      mode: 'dm',
+      map: 'neon',
+    });
+    await until(() => r.state.players?.size === 8);
+    r.send(MSG_INPUT, { moveX: 0, moveY: 0, aimAngle: 0, shooting: false, seq: 1, skill: 1 });
+    await until(() => r.state.players.get(r.sessionId).cd0 > 0);
+    await r.leave();
+  });
 });

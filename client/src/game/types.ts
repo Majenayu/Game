@@ -1,4 +1,4 @@
-import type { InputMessage, PlayerView, SimEvent } from '@orb/shared';
+import type { InputMessage, ModeId, PlayerView, SimEvent } from '@orb/shared';
 
 export interface BulletView {
   id: string;
@@ -7,22 +7,48 @@ export interface BulletView {
   y: number;
   vx: number;
   vy: number;
+  r: number;
+  kind: number;
 }
 
 export interface PickupView {
   id: string;
   x: number;
   y: number;
+  /** Powerup id, see shared content. */
+  pu: number;
+}
+
+export interface CoinView {
+  id: string;
+  x: number;
+  y: number;
+  v: number;
+}
+
+export interface MineView {
+  id: string;
+  x: number;
+  y: number;
+  owner: string;
+  armed: boolean;
 }
 
 export interface Snapshot {
   players: PlayerView[];
   bullets: BulletView[];
   pickups: PickupView[];
+  coins: CoinView[];
+  mines: MineView[];
   phase: 'play' | 'scoreboard';
+  mode: ModeId;
+  mapId: string;
   timeLeft: number;
   round: number;
   winner: string;
+  winnerTeam: number;
+  teamScore: [number, number];
+  hillHolder: string;
 }
 
 /** A source of game state: the local offline simulation or a Colyseus room. */

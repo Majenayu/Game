@@ -24,6 +24,6 @@ export function createGameServer() {
   const gameServer = new Server({
     transport: new WebSocketTransport({ server: httpServer, pingInterval: 5000, pingMaxRetries: 3 }),
   });
-  gameServer.define('arena', ArenaRoom);
+  gameServer.define('arena', ArenaRoom).filterBy(['mode', 'map']);
   return gameServer;
 }

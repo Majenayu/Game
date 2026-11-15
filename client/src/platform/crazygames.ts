@@ -27,6 +27,9 @@ export interface Platform {
   getUser(): Promise<PlatformUser | null>;
   updateRoom(info: { roomId?: string; isJoinable?: boolean; inviteParams?: Record<string, string> }): void;
   leftRoom(): void;
+  /** Reads saved data. CrazyGames uses its Data module (cloud for logged-in players). */
+  loadData(key: string): Promise<string | null>;
+  saveData(key: string, value: string): void;
   /** Link a friend can open to join this room, or null when unavailable. */
   inviteLink(params: Record<string, string>): string | null;
   onJoinRoom(cb: (params: Record<string, string>) => void): void;
@@ -85,6 +88,10 @@ class StubPlatform implements Platform {
   }
   updateRoom() {}
   leftRoom() {}
+  async loadData() {
+    return null;
+  }
+  saveData() {}
   inviteLink(params: Record<string, string>) {
     const u = new URL(location.href);
     u.search = new URLSearchParams(params).toString();
@@ -168,6 +175,17 @@ class CrazyPlatform implements Platform {
   }
   leftRoom() {
     this.safe(() => this.sdk?.game.leftRoom());
+  }
+  async loadData(key: string): Promise<string | null> {
+    try {
+      const v = this.sdk?.data?.getItem(key);
+      return typeof v === 'string' ? v : null;
+    } catch {
+      return null;
+    }
+  }
+  saveData(key: string, value: string) {
+    this.safe(() => this.sdk?.data?.setItem(key, value));
   }
   inviteLink(params: Record<string, string>): string | null {
     try {

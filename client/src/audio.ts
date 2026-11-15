@@ -74,6 +74,34 @@ class Sfx {
   respawn(): void {
     this.tone(200, 600, 0.2, 'sine', 0.6);
   }
+  coin(): void {
+    this.tone(880, 1320, 0.07, 'square', 0.35);
+  }
+  skill(kind = 'dash'): void {
+    const f: Record<string, [number, number]> = {
+      dash: [300, 900],
+      shield: [500, 700],
+      pulse: [200, 60],
+      mine: [180, 120],
+      blink: [900, 300],
+      burst: [600, 200],
+      repair: [400, 800],
+    };
+    const [a, b] = f[kind] ?? [400, 600];
+    this.tone(a, b, 0.18, kind === 'pulse' ? 'sawtooth' : 'triangle', 0.7);
+  }
+  boom(): void {
+    this.tone(160, 40, 0.3, 'sawtooth', 0.9);
+  }
+  shieldBreak(): void {
+    this.tone(1200, 300, 0.15, 'square', 0.4);
+  }
+  reward(): void {
+    [523, 659, 784, 1046].forEach((fr, i) => this.tone(fr, fr, 0.25, 'triangle', 0.7, i * 0.09));
+  }
+  click(): void {
+    this.tone(500, 400, 0.04, 'square', 0.3);
+  }
   roundEnd(): void {
     [523, 659, 784].forEach((f, i) => this.tone(f, f, 0.4, 'triangle', 0.7, i * 0.12));
   }
