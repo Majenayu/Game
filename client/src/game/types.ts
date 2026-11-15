@@ -1,4 +1,4 @@
-import type { InputMessage, ModeId, PlayerView, SimEvent } from '@orb/shared';
+import type { InputMessage, Loadout, ModeId, PlayerView, SimEvent, SkillInstance } from '@orb/shared';
 
 export interface BulletView {
   id: string;
@@ -68,6 +68,8 @@ export interface Snapshot {
   winnerTeam: number;
   teamScore: [number, number];
   hillHolder: string;
+  /** Seconds left to confirm in the lobby; 0 once the match has started. */
+  lobby: number;
 }
 
 /** A source of game state: the local offline simulation or a Colyseus room. */
@@ -84,5 +86,9 @@ export interface GameSource {
   sendEmote(e: number): void;
   /** Fires when any player (including you) shows an emote. */
   onEmote: (id: string, e: number) => void;
+  /** Confirm in the lobby: ready to fight. */
+  confirm(): void;
+  /** Change the loadout while still waiting in the lobby. */
+  changeLoadout(l: Loadout, instances: SkillInstance[]): void;
   dispose(): void;
 }

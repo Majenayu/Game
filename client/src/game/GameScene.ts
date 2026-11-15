@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import {
+  COUNTDOWN_SECONDS,
   EMOTES,
+  getSkill,
+  type Kind,
   EFFECTS,
   ELEMENTS,
   MODES,
@@ -75,6 +78,8 @@ export interface SceneHooks {
   onRoundEnd(result: RoundResult): string;
   /** Every simulation event, with the local player id. */
   onEvent(ev: SimEvent, meId: string): void;
+  /** Every frame with the latest view (lobby panel). */
+  onFrame?(snap: Snapshot, me: PlayerView | undefined, players: PlayerView[]): void;
 }
 
 const TRAIL_MS = 450;
@@ -119,6 +124,13 @@ export class GameScene extends Phaser.Scene {
   private localAim = 0;
   /** Hide the end of round scoreboard (campaign levels show their own result). */
   suppressBoard = false;
+  /** Auto skills: casts attack and defence skills by itself and aims them at the nearest enemy. */
+  autoSkills = localStorage.getItem('orb.auto') === '1';
+  private nextAuto = 0;
+  private autoAim = 0;
+  private autoAimUntil = 0;
+  private lastHold = 0;
+  private goUntil = 0;
 
   constructor() {
     super('game');
@@ -152,6 +164,55 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  toggleAuto(on = !this.autoSkills): boolean {
+    this.autoSkills = on;
+    localStorage.setItem('orb.auto', on ? '1' : '0');
+    return on;
+  }
+  /** Picks a ready skill by situation: defend when hurt, attack enemies in range. */
+  private runAuto(me: PlayerView, players: PlayerView[], snap: Snapshot, now: number): void {
+    if (!this.autoSkills || now < this.nextAuto || !me.alive || me.hold > 0 || me.casting > 0) return;
+    this.nextAuto = now + 350;
+    const team = MODES[snap.mode].team;
+    let target: PlayerView | null = null;
+    let best = 1e9;
+    for (const o of players) {
+      if (o.id === me.id || !o.alive || o.hidden || (team && o.team === me.team)) continue;
+      const d = Math.hypot(o.x - me.x, o.y - me.y);
+      if (d < best) {
+        best = d;
+        target = o;
+      }
+    }
+    const ids = me.skills ? me.skills.split(',').map(Number) : [];
+    const cds = me.cds ? me.cds.split(',').map((c) => Number(c.split(':')[0])) : [];
+    const ready: Array<{ slot: number; kind: Kind; range: number }> = [];
+    ids.forEach((id, slot) => {
+      if (!Number.isFinite(id) || (cds[slot] ?? 0) > 0) return;
+      const s = getSkill(id);
+      if (s.kind === 'world' || me.mp < s.base.mp) return;
+      ready.push({ slot, kind: s.kind, range: s.base.range || 500 });
+    });
+    if (!ready.length) return;
+    const pick = (kinds: Kind[], maxDist = 1e9) =>
+      ready.find((r) => kinds.includes(r.kind) && best <= Math.min(maxDist, r.range + 60));
+    const low = me.hp <= Math.max(1, Math.floor(me.maxHp / 3));
+    let choice: { slot: number } | undefined;
+    if (low) choice = ready.find((r) => ['heal', 'shield', 'barrier', 'stealth'].includes(r.kind));
+    if (!choice && target) {
+      choice =
+        pick(['cleave', 'nova', 'pull', 'slow'], 190) ??
+        pick(['beam', 'projectile', 'volley', 'ambush'], 760) ??
+        pick(['summon', 'mine', 'buff', 'aura'], 420) ??
+        (best < 220 ? ready.find((r) => r.kind === 'shield' || r.kind === 'barrier') : undefined);
+    }
+    if (!choice) return;
+    if (target) {
+      this.autoAim = Math.atan2(target.y - me.y, target.x - me.x);
+      this.autoAimUntil = now + 220;
+    }
+    this.queueSkill(choice.slot);
+  }
   /** Queue a skill press (slot 0 to 4). Sent with the next input message. */
   queueSkill(slot: number): void {
     this.skillBits |= 1 << slot;
@@ -191,6 +252,9 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  get activeSource(): GameSource | null {
+    return this.source;
+  }
   get hasSource(): boolean {
     return this.source !== null;
   }
@@ -313,17 +377,17 @@ export class GameScene extends Phaser.Scene {
       }
       case 'skill': {
         const col = ELEMENTS[ev.element]?.color ?? 0xffffff;
-        this.burst(ev.x, ev.y, col, 14);
-        this.fxs.push({
-          kind: 'ring',
-          x: ev.x,
-          y: ev.y,
-          angle: 0,
-          size: 90,
-          color: col,
-          born: performance.now(),
-          ms: 350,
-        });
+        const wide = ['nova', 'aura', 'barrier', 'heal', 'slow', 'pull', 'shield'].includes(ev.kind);
+        this.burst(ev.x, ev.y, col, wide ? 60 : 36);
+        const t0 = performance.now();
+        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: wide ? 260 : 150, color: col, born: t0, ms: 800 });
+        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: wide ? 170 : 100, color: 0xffffff, born: t0 + 90, ms: 650 });
+        const sk = getSkill(ev.skill);
+        if (sk) {
+          const hexCol = '#' + col.toString(16).padStart(6, '0');
+          this.pop(ev.x, ev.y - 58, sk.name.toUpperCase(), hexCol, ev.id === me ? 30 : 22);
+        }
+        if (ev.id === me) this.cameras.main.flash(120, (col >> 16) & 255, (col >> 8) & 255, col & 255, false);
         if (ev.id === me) sfx.skill(ev.kind);
         else if (performance.now() - this.lastOtherSkill > 150) {
           this.lastOtherSkill = performance.now();
@@ -340,7 +404,7 @@ export class GameScene extends Phaser.Scene {
           size: ev.len,
           color: ELEMENTS[ev.element]?.color ?? 0xffffff,
           born: performance.now(),
-          ms: 260,
+          ms: 650,
         });
         break;
       case 'swing':
@@ -352,7 +416,7 @@ export class GameScene extends Phaser.Scene {
           size: ev.r,
           color: ELEMENTS[ev.element]?.color ?? 0xffffff,
           born: performance.now(),
-          ms: 220,
+          ms: 520,
         });
         break;
       case 'shield':
@@ -450,7 +514,7 @@ export class GameScene extends Phaser.Scene {
 
     let px = meView?.x ?? WORLD_W / 2;
     let py = meView?.y ?? WORLD_H / 2;
-    const canMove = !!meView && meView.alive && snap.phase === 'play';
+    const canMove = !!meView && meView.alive && snap.phase === 'play' && meView.hold <= 0;
     if (src.online) {
       if (!this.predictor.initialised && meView) this.predictor.reset(meView.x, meView.y);
       if (meView) this.predictor.speed = meView.spd;
@@ -458,6 +522,7 @@ export class GameScene extends Phaser.Scene {
       py = this.predictor.y;
     }
     const input = this.readInput(px, py);
+    if (now < this.autoAimUntil) input.aim = this.autoAim;
     this.localAim = input.aim;
     const send = canMove ? input : { moveX: 0, moveY: 0, aim: input.aim, shooting: false };
     if (!canMove) this.skillBits = 0;
@@ -507,8 +572,24 @@ export class GameScene extends Phaser.Scene {
     this.handlePhase(snap, players, me, now);
     this.detectShots(snap.bullets, src.localId, now);
     this.render(g, players, snap, src.localId, now, dt);
+    this.hooks.onFrame?.(snap, me, players);
 
     if (me) {
+      this.runAuto(me, players, snap, now);
+      // 3, 2, 1, GO! (only after the lobby, while the countdown runs)
+      if (snap.phase === 'play' && snap.lobby <= 0 && me.hold > 0 && me.hold <= COUNTDOWN_SECONDS + 0.05) {
+        const n = Math.ceil(me.hold);
+        if (n !== this.lastHold) {
+          this.lastHold = n;
+          sfx.click();
+        }
+        this.ui.countdown(String(n));
+      } else if (this.lastHold > 0 && me.hold <= 0) {
+        this.lastHold = 0;
+        this.goUntil = now + 800;
+        sfx.reward();
+        this.ui.countdown('GO!');
+      } else if (now > this.goUntil) this.ui.countdown(null);
       this.ui.updateHud(now, me, players, snap);
       if (snap.phase === 'scoreboard') {
         this.ui.banner(null);
@@ -684,6 +765,96 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** A small accessory per character so each one reads at a glance. */
+  /** The barrel shows which main weapon an orb carries. */
+  private drawWeapon(g: Phaser.GameObjects.Graphics, p: PlayerView, a: number): void {
+    const R = PLAYER_RADIUS;
+    const cx = Math.cos(p.aim);
+    const cy = Math.sin(p.aim);
+    const nx = -cy;
+    const ny = cx;
+    const bar = (off: number, from: number, to: number, w: number, col = p.color) =>
+      g
+        .lineStyle(w, col, a)
+        .lineBetween(p.x + cx * from + nx * off, p.y + cy * from + ny * off, p.x + cx * to + nx * off, p.y + cy * to + ny * off);
+    switch (p.weapon) {
+      case 1: // scatter: wide short muzzle
+        for (const o of [-6, 0, 6]) bar(o, 8, R + 8, 4);
+        break;
+      case 2: // rail: long thin barrel with a glowing tip
+        bar(0, 8, R + 22, 4, 0xdfe8ff);
+        g.fillStyle(0x4dd2ff, a).fillCircle(p.x + cx * (R + 22), p.y + cy * (R + 22), 3.5);
+        break;
+      case 3: // smg: short barrel with a magazine
+        bar(0, 8, R + 7, 5);
+        bar(4, 10, 16, 6, 0x333a55);
+        break;
+      case 4: // mortar: thick tube
+        bar(0, 6, R + 9, 12, 0x5a4a7a);
+        bar(0, R + 5, R + 9, 14, p.color);
+        break;
+      case 5: // twin pistols
+        bar(-5, 8, R + 9, 4);
+        bar(5, 8, R + 9, 4);
+        break;
+      default:
+        bar(0, 8, R + 10, 5);
+    }
+  }
+  /** Hats and charms (looks only). */
+  private drawAccessory(g: Phaser.GameObjects.Graphics, p: PlayerView, a: number): void {
+    const R = PLAYER_RADIUS;
+    const x = p.x;
+    const y = p.y - R;
+    switch (p.acc) {
+      case 1: // crown
+        g.fillStyle(0xffc93c, a).fillPoints(
+          [
+            { x: x - 13, y: y + 2 },
+            { x: x - 13, y: y - 10 },
+            { x: x - 6, y: y - 4 },
+            { x: x, y: y - 14 },
+            { x: x + 6, y: y - 4 },
+            { x: x + 13, y: y - 10 },
+            { x: x + 13, y: y + 2 },
+          ],
+          true,
+        );
+        g.fillStyle(0xff4da6, a).fillCircle(x, y - 3, 2.5);
+        break;
+      case 2: // horns
+        g.fillStyle(0xf4eeff, a).fillTriangle(x - 15, y + 6, x - 20, y - 12, x - 8, y + 2);
+        g.fillTriangle(x + 15, y + 6, x + 20, y - 12, x + 8, y + 2);
+        break;
+      case 3: // halo
+        g.lineStyle(3, 0xffe9a8, a * 0.9).strokeEllipse(x, y - 10, 30, 9);
+        break;
+      case 4: // wizard hat
+        g.fillStyle(0x5b3fd0, a).fillTriangle(x - 16, y + 4, x + 16, y + 4, x + 4, y - 26);
+        g.fillStyle(0xffe58a, a).fillCircle(x + 2, y - 8, 2.5);
+        break;
+      case 5: // headband
+        g.lineStyle(5, 0xff1744, a).beginPath();
+        g.arc(p.x, p.y, R - 3, Math.PI * 1.15, Math.PI * 1.85, false);
+        g.strokePath();
+        g.lineBetween(x + 16, y + 10, x + 26, y + 16);
+        break;
+      case 6: // cat ears
+        g.fillStyle(p.color, a).fillTriangle(x - 16, y + 8, x - 14, y - 10, x - 4, y + 2);
+        g.fillTriangle(x + 16, y + 8, x + 14, y - 10, x + 4, y + 2);
+        g.fillStyle(0xff9ec7, a).fillTriangle(x - 13, y + 5, x - 12, y - 5, x - 7, y + 2);
+        g.fillTriangle(x + 13, y + 5, x + 12, y - 5, x + 7, y + 2);
+        break;
+      case 7: // visor
+        g.fillStyle(0x4dd2ff, a * 0.85).fillRoundedRect(p.x - 15, p.y - 9, 30, 8, 4);
+        break;
+      case 8: // antenna
+        g.lineStyle(2, 0xdfe8ff, a).lineBetween(x, y + 2, x + 4, y - 16);
+        g.fillStyle(0xff4da6, a).fillCircle(x + 4, y - 17, 4);
+        break;
+      default:
+        break;
+    }
+  }
   private drawGear(g: Phaser.GameObjects.Graphics, p: PlayerView): void {
     const R = PLAYER_RADIUS;
     const x = p.x;
@@ -895,16 +1066,12 @@ export class GameScene extends Phaser.Scene {
       const blink = (p.invuln ? 0.45 + 0.35 * Math.sin(now / 70) : 1) * (ghost ? 0.25 : 1);
       g.fillStyle(p.color, 0.08 * blink).fillCircle(p.x, p.y, PLAYER_RADIUS * 2.4);
       g.fillStyle(p.color, 0.18 * blink).fillCircle(p.x, p.y, PLAYER_RADIUS * 1.6);
-      g.lineStyle(5, p.color, blink).lineBetween(
-        p.x + Math.cos(p.aim) * 8,
-        p.y + Math.sin(p.aim) * 8,
-        p.x + Math.cos(p.aim) * (PLAYER_RADIUS + 10),
-        p.y + Math.sin(p.aim) * (PLAYER_RADIUS + 10),
-      );
+      this.drawWeapon(g, p, blink);
       g.fillStyle(p.color, blink).fillCircle(p.x, p.y, PLAYER_RADIUS);
       g.fillStyle(0xffffff, 0.5 * blink).fillCircle(p.x - 6, p.y - 6, PLAYER_RADIUS * 0.4);
       this.drawFace(g, p, blink, now);
       this.drawGear(g, p);
+      this.drawAccessory(g, p, blink);
       if (p.casting > 0) {
         const cc = 0xffe58a;
         const k = (now / 120) % 1;
@@ -963,14 +1130,19 @@ export class GameScene extends Phaser.Scene {
       if (f.kind === 'beam') {
         const ex = f.x + Math.cos(f.angle) * f.size;
         const ey = f.y + Math.sin(f.angle) * f.size;
-        g.lineStyle(14 * (1 - k) + 2, f.color, 0.35 * (1 - k)).lineBetween(f.x, f.y, ex, ey);
-        g.lineStyle(5 * (1 - k) + 1, 0xffffff, 1 - k).lineBetween(f.x, f.y, ex, ey);
+        g.lineStyle(44 * (1 - k) + 4, f.color, 0.3 * (1 - k)).lineBetween(f.x, f.y, ex, ey);
+        g.lineStyle(20 * (1 - k) + 3, f.color, 0.8 * (1 - k)).lineBetween(f.x, f.y, ex, ey);
+        g.lineStyle(7 * (1 - k) + 1, 0xffffff, 1 - k).lineBetween(f.x, f.y, ex, ey);
+        g.fillStyle(f.color, 0.6 * (1 - k)).fillCircle(ex, ey, 26 * (1 - k) + 6);
       } else if (f.kind === 'swing') {
-        g.lineStyle(10 * (1 - k) + 2, f.color, 1 - k).beginPath();
+        g.fillStyle(f.color, 0.25 * (1 - k)).slice(f.x, f.y, f.size * (0.6 + 0.4 * k), f.angle - 1.1, f.angle + 1.1, false).fillPath();
+        g.lineStyle(22 * (1 - k) + 3, f.color, 1 - k).beginPath();
         g.arc(f.x, f.y, f.size * (0.6 + 0.4 * k), f.angle - 1.1, f.angle + 1.1, false);
         g.strokePath();
       } else {
-        g.lineStyle(4 * (1 - k) + 1, f.color, 1 - k).strokeCircle(f.x, f.y, f.size * (0.3 + 0.7 * k));
+        if (k < 0) continue;
+        g.fillStyle(f.color, 0.12 * (1 - k)).fillCircle(f.x, f.y, f.size * (0.3 + 0.7 * k));
+        g.lineStyle(10 * (1 - k) + 2, f.color, 1 - k).strokeCircle(f.x, f.y, f.size * (0.3 + 0.7 * k));
       }
     }
 

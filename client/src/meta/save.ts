@@ -13,7 +13,14 @@ export interface SaveData {
   coins: number;
   xp: number;
   loadout: Loadout;
-  owned: { chars: string[]; colors: number[]; trails: number[]; bfx: number[] };
+  owned: {
+    chars: string[];
+    colors: number[];
+    trails: number[];
+    bfx: number[];
+    weapons: number[];
+    accs: number[];
+  };
   /** Owned skill instances, one per skill id (duplicates merge automatically). */
   skills: SkillInstance[];
   skillMeta: { dropDay: string; fusionWeek: string; fusionsUsed: number; starterGiven: boolean };
@@ -46,6 +53,8 @@ export function defaultSave(): SaveData {
       colors: [0, 1, 2, 3, 4, 5, 6, 7],
       trails: [0],
       bfx: [0],
+      weapons: [0],
+      accs: [0],
     },
     skills: [],
     skillMeta: { dropDay: '', fusionWeek: '', fusionsUsed: 0, starterGiven: false },
@@ -124,6 +133,8 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
         colors: Array.from(new Set([...d.owned.colors, ...nums(owned.colors, [])])),
         trails: Array.from(new Set([...d.owned.trails, ...nums(owned.trails, [])])),
         bfx: Array.from(new Set([...d.owned.bfx, ...nums(owned.bfx, [])])),
+        weapons: Array.from(new Set([...d.owned.weapons, ...nums(owned.weapons, [])])),
+        accs: Array.from(new Set([...d.owned.accs, ...nums(owned.accs, [])])),
       },
       skills: instances(j.skills),
       skillMeta: {

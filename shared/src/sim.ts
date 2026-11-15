@@ -674,7 +674,7 @@ export class Sim {
     let interval = FIRE_INTERVAL * ch.fire * w.fire;
     if (rapid) interval /= 1 + 0.9 * rapid.power;
     if (p.boss) interval *= 0.9;
-    else if (p.bot) interval *= 2.7 - this.cfg.botSkill;
+    else if (p.bot) interval *= 3.2 - this.cfg.botSkill;
     p.nextShot = this.time + interval;
     p.hiddenUntil = 0;
     const angles: number[] = [];
@@ -742,7 +742,13 @@ export class Sim {
   /** Central damage entry. Handles invulnerability and shield hits. */
   private hurt(victim: SimPlayer, by: string, dmg: number): void {
     if (!victim.alive) return;
-    if (this.time < victim.invulnUntil || this.time < victim.holdUntil || this.time < this.freezeUntil) return;
+    // Nobody can be hit while frozen, and everyone gets a short safe moment right after GO.
+    if (
+      this.time < victim.invulnUntil ||
+      this.time < victim.holdUntil ||
+      (this.freezeUntil > 0 && this.time < this.freezeUntil + INVULN_TIME)
+    )
+      return;
     if (this.cfg.training && !victim.bot && victim.hp - dmg <= 0) {
       victim.hp = victim.maxHp;
       return;
@@ -1578,11 +1584,15 @@ export class Sim {
       if (this.rng() < 0.15) brain.strafe = -brain.strafe;
       let target: SimPlayer | null = null;
       let best = 1e9;
+      let bestScore = 1e9;
       for (const o of this.players.values()) {
         if (!o.alive || !this.isEnemy(p, o)) continue;
         const d = Math.hypot(o.x - p.x, o.y - p.y);
         if (o.hiddenUntil > this.time && d > 150) continue;
-        if (d < best) {
+        // Bots slightly prefer other bots so a person is not hunted by the whole lobby at once.
+        const score = d + (o.bot ? 0 : 140);
+        if (score < bestScore) {
+          bestScore = score;
           best = d;
           target = o;
         }

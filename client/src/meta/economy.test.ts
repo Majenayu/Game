@@ -182,7 +182,7 @@ describe('skill inventory', () => {
     const rng = seeded(11);
     expect(p.equipSkills([123456789]).ok).toBe(false);
     const ids: number[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const id = battleSkill('A', rng, ids);
       ids.push(id);
       p.addSkill(makeInstance(id, rng, p.newUid()));
@@ -192,7 +192,7 @@ describe('skill inventory', () => {
     const over = p.equipSkills(ids);
     expect(over.ok).toBe(false);
     expect(over.reason).toMatch(/budget/i);
-    expect(CASUAL_BUDGET).toBe(3300);
+    expect(CASUAL_BUDGET).toBe(5200);
     expect(p.data.loadout.skillIds).toEqual(ids.slice(0, 3));
   });
 
@@ -218,11 +218,9 @@ describe('skill inventory', () => {
     expect(p.fusionStatus().left).toBe(1);
   });
 
-  it('refuses to fuse low level skills', async () => {
-    const p = await fresh();
-    const [a, b] = p.data.skills;
-    expect(p.fuseSkills(a.uid, b.uid).ok).toBe(false);
-    expect(p.data.skills.length).toBe(5);
+  it('fusion has no level requirement', async () => {
+    const { FUSION_MIN_LEVEL } = await import('@orb/shared');
+    expect(FUSION_MIN_LEVEL).toBe(1);
   });
 });
 
@@ -280,8 +278,13 @@ describe('daily reward, quests, lucky draw', () => {
     counts.forEach((n) => expect(n).toBeGreaterThan(0));
     expect(counts[0]).toBeGreaterThan(counts[7]);
     const before = p.data.coins;
-    expect(p.grantPrize(1)).toBe('50 coins');
+    expect(p.grantPrize(WHEEL.findIndex((w) => w.kind === 'coins' && w.value === 50))).toBe('50 coins');
     expect(p.data.coins).toBe(before + 50);
+    const skills = p.data.skills.length;
+    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'skill'));
+    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'unique'));
+    expect(p.data.skills.length).toBeGreaterThanOrEqual(skills + 1);
+    expect(p.data.skills.some((s) => s.skillId > 1_000_000)).toBe(true);
     const skinIdx = WHEEL.findIndex((w) => w.kind === 'cosmetic');
     const owned = p.data.owned.colors.length + p.data.owned.trails.length + p.data.owned.bfx.length;
     p.grantPrize(skinIdx);

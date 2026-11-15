@@ -1,6 +1,13 @@
 import {
+  ACCESSORIES,
   BULLET_FX,
+  CHAMPION_LEVEL_ID,
   CHARACTERS,
+  RANKS,
+  UNIQUES,
+  WEAPONS,
+  getSkill,
+  uniqueIdOf,
   COLORS,
   LEVELS,
   CASUAL_BUDGET,
@@ -79,19 +86,24 @@ export const DAILY_REWARDS = [50, 75, 100, 150, 200, 300, 500];
 export interface WheelSegment {
   label: string;
   weight: number;
-  kind: 'coins' | 'cosmetic';
+  kind: 'coins' | 'cosmetic' | 'skill' | 'unique';
   value: number;
   color: string;
 }
 
+/** Skill prizes use `value` as an index into RANKS (F=0 ... S=6). */
 export const WHEEL: WheelSegment[] = [
-  { label: '25', weight: 24, kind: 'coins', value: 25, color: '#2a3a7a' },
-  { label: '50', weight: 22, kind: 'coins', value: 50, color: '#1f5f8f' },
-  { label: 'Skin', weight: 8, kind: 'cosmetic', value: 0, color: '#7a2a6a' },
-  { label: '100', weight: 16, kind: 'coins', value: 100, color: '#2a3a7a' },
-  { label: '150', weight: 12, kind: 'coins', value: 150, color: '#1f5f8f' },
-  { label: '250', weight: 8, kind: 'coins', value: 250, color: '#2f7a4a' },
+  { label: '25', weight: 20, kind: 'coins', value: 25, color: '#2a3a7a' },
+  { label: 'Skill D', weight: 14, kind: 'skill', value: 2, color: '#1f4f9f' },
+  { label: '50', weight: 18, kind: 'coins', value: 50, color: '#1f5f8f' },
+  { label: 'Skin', weight: 7, kind: 'cosmetic', value: 0, color: '#7a2a6a' },
+  { label: 'Skill C', weight: 10, kind: 'skill', value: 3, color: '#1f7a6a' },
+  { label: '100', weight: 12, kind: 'coins', value: 100, color: '#2a3a7a' },
+  { label: 'Skill B', weight: 6, kind: 'skill', value: 4, color: '#5a2a9a' },
+  { label: '250', weight: 6, kind: 'coins', value: 250, color: '#2f7a4a' },
+  { label: 'Skill A', weight: 2, kind: 'skill', value: 5, color: '#a0521f' },
   { label: '500', weight: 3, kind: 'coins', value: 500, color: '#8a6a1f' },
+  { label: 'UNIQUE', weight: 0.3, kind: 'unique', value: 7, color: '#c0206a' },
   { label: '1000', weight: 1, kind: 'coins', value: 1000, color: '#a02a2a' },
 ];
 
@@ -154,7 +166,15 @@ export function levelFromXp(xp: number): LevelInfo {
   return { level, into: level >= MAX_LEVEL ? 0 : left, need: level >= MAX_LEVEL ? 1 : xpToNext(level) };
 }
 
-export type ShopKind = 'char' | 'color' | 'trail' | 'bfx';
+export type ShopKind = 'char' | 'color' | 'trail' | 'bfx' | 'weapon' | 'acc';
+const OWNED_KEY: Record<ShopKind, string> = {
+  char: 'chars',
+  color: 'colors',
+  trail: 'trails',
+  bfx: 'bfx',
+  weapon: 'weapons',
+  acc: 'accs',
+};
 
 export interface MatchResult {
   mode: string;
@@ -259,19 +279,21 @@ export class Progress {
         return TRAILS[id as number] ?? null;
       case 'bfx':
         return BULLET_FX[id as number] ?? null;
+      case 'weapon':
+        return WEAPONS[id as number] ?? null;
+      case 'acc':
+        return ACCESSORIES[id as number] ?? null;
     }
   }
 
   owns(kind: ShopKind, id: string | number): boolean {
     const o = this.data.owned as unknown as Record<string, Array<string | number>>;
-    const key = { char: 'chars', color: 'colors', trail: 'trails', bfx: 'bfx' }[kind];
-    return o[key].includes(id);
+    return o[OWNED_KEY[kind]].includes(id);
   }
 
   private grant(kind: ShopKind, id: string | number): void {
     const o = this.data.owned as unknown as Record<string, Array<string | number>>;
-    const key = { char: 'chars', color: 'colors', trail: 'trails', bfx: 'bfx' }[kind];
-    if (!o[key].includes(id)) o[key].push(id);
+    if (!o[OWNED_KEY[kind]].includes(id)) o[OWNED_KEY[kind]].push(id);
   }
 
   buy(kind: ShopKind, id: string | number): { ok: boolean; reason?: string } {
@@ -293,6 +315,8 @@ export class Progress {
     else if (kind === 'color') l.color = id as number;
     else if (kind === 'trail') l.trail = id as number;
     else if (kind === 'bfx') l.bfx = id as number;
+    else if (kind === 'weapon') l.weapon = id as number;
+    else if (kind === 'acc') l.acc = id as number;
     this.data.loadout = sanitizeLoadout(l);
     this.commit();
     return true;
@@ -362,6 +386,17 @@ export class Progress {
     return drop;
   }
 
+  /** A random skill of one rank (lucky draw prizes). */
+  grantSkillOfRank(rank: Rank, rng: () => number = Math.random): SkillDrop {
+    return this.addSkill(makeInstance(randomSkillOfRank(rank, rng), rng, this.newUid()));
+  }
+  /** A unique skill you do not own yet (or any unique when you own them all). */
+  grantUnique(rng: () => number = Math.random): SkillDrop {
+    const missing = UNIQUES.filter((u) => !this.skillBySkillId(uniqueIdOf(u.n)));
+    const pool = missing.length ? missing : UNIQUES;
+    const u = pool[Math.floor(rng() * pool.length)];
+    return this.addSkill(makeInstance(uniqueIdOf(u.n), rng, this.newUid()));
+  }
   private dropSkill(source: DropSource, rng: () => number = Math.random): SkillDrop {
     const rank = rollDrop(source, rng);
     const id = randomSkillOfRank(rank, rng);
@@ -523,6 +558,11 @@ export class Progress {
       this.commit();
       return `${seg.value} coins`;
     }
+    if (seg.kind === 'skill' || seg.kind === 'unique') {
+      const d = seg.kind === 'unique' ? this.grantUnique(rng) : this.grantSkillOfRank(RANKS[seg.value], rng);
+      this.commit();
+      return `${getSkill(d.skillId).name} (${d.rank})${d.merged ? `, merged to level ${d.level}` : ''}`;
+    }
     const locked: Array<{ kind: ShopKind; id: number; name: string }> = [];
     for (const c of COLORS)
       if (!this.owns('color', c.id)) locked.push({ kind: 'color', id: c.id, name: `${c.name} color` });
@@ -577,12 +617,19 @@ export class Progress {
     const tower = level.id >= TOWER_FIRST_ID;
     const xp = prev === 0 ? (tower ? 200 + (level.id - TOWER_FIRST_ID) * 40 : 80 + level.id * 10) : 20;
     const levelsGained = this.addXp(xp);
-    const drop = prev === 0 ? this.dropSkill(tower ? 'boss' : 'story') : undefined;
+    // Beating the champion Majen for the first time awards a unique skill.
+    const drop =
+      prev === 0
+        ? level.id === CHAMPION_LEVEL_ID
+          ? this.grantUnique()
+          : this.dropSkill(tower ? 'boss' : 'story')
+        : undefined;
     this.commit();
     return { coins, xp, levelsGained, drop };
   }
 
   levelUnlocked(level: LevelDef): boolean {
+    if (level.id === CHAMPION_LEVEL_ID) return true;
     if (level.id === TOWER_FIRST_ID) return (this.data.campaign[String(TOWER_UNLOCK_LEVEL)] ?? 0) > 0;
     return level.id === 1 || (this.data.campaign[String(level.id - 1)] ?? 0) > 0;
   }

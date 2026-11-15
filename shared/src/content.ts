@@ -478,7 +478,7 @@ export interface Loadout {  char: string;
 export const DEFAULT_LOADOUT: Loadout = { char: 'nova', skillIds: [], color: 0, trail: 0, bfx: 0, weapon: 0, acc: 0 };
 
 /** Highest total rank budget a casual loadout may use. The server enforces it until accounts verify ownership. */
-export const CASUAL_BUDGET = 3300;
+export const CASUAL_BUDGET = 5200;
 
 /** Validates untrusted loadout data from a client. Falls back to defaults field by field. */
 export function sanitizeLoadout(raw: unknown): Loadout {

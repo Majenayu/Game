@@ -1,8 +1,14 @@
 import type { Room } from 'colyseus.js';
 import {
   COLORS,
+  CHARACTERS,
+  COUNTDOWN_SECONDS,
   EMOTES,
   EMOTE_COOLDOWN,
+  LOBBY_SECONDS,
+  MSG_LOADOUT,
+  MSG_READY,
+  slotFromInstance,
   MSG_EMOTE,
   MSG_EVENT,
   Sim,
@@ -39,7 +45,7 @@ export class OfflineSource implements GameSource {
     config: Partial<SimConfig> = {},
     instances: SkillInstance[] = [],
   ) {
-    this.sim = new Sim(Math.random, config);
+    this.sim = new Sim(Math.random, { countdown: COUNTDOWN_SECONDS, ...config });
     this.sim.addPlayer(this.localId, name, false, {
       charId: loadout.char,
       skillIds: loadout.skillIds,
@@ -47,8 +53,32 @@ export class OfflineSource implements GameSource {
       color: COLORS[loadout.color]?.hex,
       trail: loadout.trail,
       bfx: loadout.bfx,
+      weapon: loadout.weapon,
+      acc: loadout.acc,
     });
     this.sim.rebalanceBots();
+    // Same lobby as online: up to 25 seconds to look at the enemies and confirm, then 3, 2, 1, GO.
+    // The training ground starts at once.
+    if (config.training) this.confirmed = true;
+    else this.sim.lobby(LOBBY_SECONDS + COUNTDOWN_SECONDS);
+  }
+  private confirmed = false;
+  confirm(): void {
+    if (this.confirmed) return;
+    this.confirmed = true;
+    this.sim.release(COUNTDOWN_SECONDS);
+  }
+  changeLoadout(l: Loadout, instances: SkillInstance[]): void {
+    const p = this.sim.players.get(this.localId);
+    if (!p || this.confirmed || this.sim.frozenFor <= COUNTDOWN_SECONDS) return;
+    const ch = CHARACTERS[l.char] ?? CHARACTERS.nova;
+    p.charId = l.char;
+    p.maxHp = ch.hp;
+    p.hp = ch.hp;
+    p.weapon = l.weapon;
+    p.acc = l.acc;
+    if (instances.length) p.slots = instances.slice(0, 5).map(slotFromInstance);
+    else this.sim.setLoadout(this.localId, { ...l, skillIds: [] });
   }
 
   update(dt: number): void {
@@ -109,6 +139,7 @@ export class OfflineSource implements GameSource {
       winnerTeam: s.winnerTeam,
       teamScore: [s.teamScore[0], s.teamScore[1]],
       hillHolder: s.hillHolder,
+      lobby: !this.confirmed ? Math.max(0, s.frozenFor - COUNTDOWN_SECONDS) : 0,
     };
   }
 
@@ -152,6 +183,20 @@ export class OnlineSource implements GameSource {
     }
   }
 
+  confirm(): void {
+    try {
+      this.room.send(MSG_READY);
+    } catch {
+      /* socket closing */
+    }
+  }
+  changeLoadout(l: Loadout): void {
+    try {
+      this.room.send(MSG_LOADOUT, l);
+    } catch {
+      /* socket closing */
+    }
+  }
   sendEmote(e: number): void {
     if (!isEmoteId(e)) return;
     try {
@@ -195,6 +240,9 @@ export class OnlineSource implements GameSource {
         maxMp: p.maxMp,
         hidden: p.hidden,
         casting: p.casting,
+        weapon: p.weapon ?? 0,
+        acc: p.acc ?? 0,
+        hold: p.hold ?? 0,
       });
     });
     const bullets: Snapshot['bullets'] = [];
@@ -234,6 +282,7 @@ export class OnlineSource implements GameSource {
       winnerTeam: state.winnerTeam,
       teamScore: [state.teamScore0, state.teamScore1],
       hillHolder: state.hillHolder,
+      lobby: state.lobby ?? 0,
     };
     this.latestAt = now;
     this.buf.push(now, players);

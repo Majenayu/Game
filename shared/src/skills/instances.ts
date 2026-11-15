@@ -399,6 +399,21 @@ export interface StarterPack {
   lucky: 'A' | 'S' | 'U' | null;
 }
 
+/** Starter kits are playable: three attacks, one defence and one move skill. */
+const STARTER_ROLES: string[][] = [
+  ['projectile', 'beam', 'volley'],
+  ['nova', 'cleave', 'projectile'],
+  ['shield', 'heal', 'barrier'],
+  ['dash', 'blink'],
+  ['projectile', 'volley', 'beam'],
+];
+function starterOfRole(rank: Rank, kinds: string[], rng: Rng): number {
+  for (let t = 0; t < 300; t++) {
+    const id = randomSkillOfRank(rank, rng);
+    if (kinds.includes(getSkill(id).kind)) return id;
+  }
+  return randomSkillOfRank(rank, rng);
+}
 export function rollStarterPack(
   rng: Rng,
   uidPrefix: string,
@@ -420,7 +435,7 @@ export function rollStarterPack(
       id = free[Math.floor(rng() * free.length)];
       registry.claim(id, account);
     } else if (i === 0 && lucky) id = randomSkillOfRank(lucky, rng);
-    else id = randomSkillOfRank(rank, rng);
+    else id = starterOfRole(rank, STARTER_ROLES[i % STARTER_ROLES.length], rng);
     skills.push(makeInstance(id, rng, `${uidPrefix}-${i}`));
   });
   return { skills, lucky };

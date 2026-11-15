@@ -16,8 +16,13 @@ import {
   RARITIES,
   RECIPES,
   TRAILS,
+  ACCESSORIES,
   BOSS_FIGHTS,
   BOSS_LEVELS,
+  LEVEL_COPIES,
+  UNIQUES,
+  WEAPONS,
+  uniqueIdOf,
   RANKED_TIERS,
   TOWER_UNLOCK_LEVEL,
   budgetCost,
@@ -54,6 +59,10 @@ export interface PageActions {
   startLevel(level: LevelDef): void;
   /** Joins the online 2v2 ranked queue. */
   playRanked(): void;
+  /** Opens the training ground (harmless dummies). */
+  playTraining(): void;
+  /** 1v1 against the champion Majen. Open to everyone. */
+  challengeChampion(): void;
   /** Shows the rewarded-ad flow for an extra spin. Resolves true when granted. */
   watchAd(): Promise<boolean>;
 }
@@ -72,7 +81,8 @@ export type PageName =
   | 'bestiary'
   | 'tower'
   | 'ranked'
-  | 'market';
+  | 'market'
+  | 'training';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -89,6 +99,7 @@ const TITLES: Record<PageName, string> = {
   tower: 'Boss Tower',
   ranked: '2v2 Ranked',
   market: 'Market',
+  training: 'Training Ground',
 };
 
 export class Pages {
@@ -158,6 +169,8 @@ export class Pages {
         return this.rankedHtml();
       case 'market':
         return this.marketHtml();
+      case 'training':
+        return this.trainingHtml();
     }
   }
 
@@ -222,9 +235,24 @@ export class Pages {
         )
         .join('');
     };
-    return `<p class="sub">Your loadout is used in every online match, arena and campaign level. Buy more characters and cosmetics in the Shop.</p>
-      <h3>Character</h3><div class="cards">${chars}</div>
+    const gear = (kind: 'weapon' | 'acc') => {
+      const ownedIds = kind === 'weapon' ? owned.weapons : owned.accs;
+      const cur = kind === 'weapon' ? l.weapon : l.acc;
+      const list: Array<{ id: number; name: string; desc: string }> =
+        kind === 'weapon' ? WEAPONS : ACCESSORIES.map((a) => ({ id: a.id, name: a.name, desc: 'Looks only.' }));
+      return list
+        .filter((c) => ownedIds.includes(c.id))
+        .map(
+          (c) => `<div class="card ${cur === c.id ? 'sel' : ''}"><b>${esc(c.name)}</b><div class="d">${esc(c.desc)}</div>
+          <button data-equip="${kind}:${c.id}" ${cur === c.id ? 'disabled' : ''}>${cur === c.id ? 'Equipped' : 'Equip'}</button></div>`,
+        )
+        .join('');
+    };
+    return `<p class="sub">Your loadout is used in every match. You can also change skills and weapon in the lobby before each match. Buy more weapons and accessories in the Shop.</p>
       ${this.skillSlotsHtml()}
+      <h3>Weapon</h3><div class="cards">${gear('weapon')}</div>
+      <h3>Accessory</h3><div class="cards">${gear('acc')}</div>
+      <h3>Character</h3><div class="cards">${chars}</div>
       <h3>Orb color</h3><div class="cards">${cos('color')}</div>
       <h3>Trail</h3><div class="cards">${cos('trail')}</div>
       <h3>Bullets</h3><div class="cards">${cos('bfx')}</div>`;
@@ -264,9 +292,23 @@ export class Pages {
     return `<p class="sub">You own ${skills.length} skill(s). Duplicates merge into the skill you already have and raise its level automatically. Win matches and clear levels to find more.</p>
       <div class="row"><div class="grow"><b>Daily skill drop</b><div class="sub" style="margin:0">One free skill every day.</div></div>
       <button data-dailydrop="1" ${drop ? '' : 'disabled'}>${drop ? 'Claim' : 'Come back tomorrow'}</button></div>
-      <h3>Your skills</h3><div class="cards">${cards || '<p class="sub">No skills yet.</p>'}</div>`;
+      <h3>Your skills</h3><div class="cards">${cards || '<p class="sub">No skills yet.</p>'}</div>
+      ${this.uniquesHtml()}`;
   }
 
+  /** All 100 unique skills: owned ones are shown in full, the rest show how to get them. */
+  private uniquesHtml(): string {
+    const owned = UNIQUES.filter((u) => this.pr.skillBySkillId(uniqueIdOf(u.n))).length;
+    const list = UNIQUES.map((u) => {
+      const have = !!this.pr.skillBySkillId(uniqueIdOf(u.n));
+      return `<div class="card ${have ? 'sel' : 'locked'}" style="border-color:#ff4da6"><span class="rb" style="color:#ff4da6">U</span>
+        <b style="color:#ff4da6">${esc(u.name)}</b><div class="d">${esc(u.category)} &middot; ${esc(u.kind)}<br />${esc(u.desc)}</div>
+        <div class="d">${have ? 'Owned' : 'Not owned'}</div></div>`;
+    }).join('');
+    return `<h3>Unique skills (${owned} / ${UNIQUES.length})</h3>
+      <p class="sub">Uniques are the strongest skills. Get one by beating the champion Majen for the first time, or by hitting the UNIQUE slice in the Lucky Draw.</p>
+      <div class="cards">${list}</div>`;
+  }
   private skillSlotsHtml(): string {
     const pr = this.pr;
     const equipped = pr.loadoutInstances();
@@ -328,6 +370,8 @@ export class Pages {
         ['color', 'Colors'],
         ['trail', 'Trails'],
         ['bfx', 'Bullets'],
+        ['weapon', 'Weapons'],
+        ['acc', 'Accessories'],
       ] as Array<[ShopKind, string]>
     )
       .map(([k, n]) => `<button class="${k === this.shopTab ? 'on' : ''}" data-shoptab="${k}">${n}</button>`)
@@ -371,6 +415,16 @@ export class Pages {
         id: c.id,
         name: c.name,
         desc: 'Bullet style.',
+        price: c.price,
+        level: c.level,
+      }));
+    if (this.shopTab === 'weapon')
+      items = WEAPONS.map((c) => ({ id: c.id, name: c.name, desc: c.desc, price: c.price, level: c.level }));
+    if (this.shopTab === 'acc')
+      items = ACCESSORIES.map((c) => ({
+        id: c.id,
+        name: c.name,
+        desc: 'A look for your orb.',
         price: c.price,
         level: c.level,
       }));
@@ -446,7 +500,7 @@ export class Pages {
         <button data-tower="${l.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? (champ ? 'Challenge' : 'Fight') : 'Locked'}</button>
       </div>`;
     }).join('');
-    return `<p class="sub">Climb nine floors. Each boss fights with five unique skills. The tower opens after campaign level ${TOWER_UNLOCK_LEVEL}; Majen, the champion, waits at the top. First clears pay a boss skill drop.</p>${rows}`;
+    return `<p class="sub">Climb eight boss floors (they open after campaign level ${TOWER_UNLOCK_LEVEL}). Each boss fights with five unique skills. Majen, the champion, can be challenged by anyone at any time: a 1v1 in an empty arena. Beat him once to win a unique skill.</p>${rows}`;
   }
   private rankedHtml(): string {
     const r = this.pr.data.ranked;
@@ -460,6 +514,21 @@ export class Pages {
         <button data-ranked="1">Find 2v2 match</button></div>
       <p class="sub">Two against two, team battle, rotating arenas. Win to gain rating, lose to drop a little. You never lose levels or skills. Empty seats are filled by bots so a match always starts at once. Every fifth win pays a ranked skill drop.</p>
       <h3>Tiers</h3><p>${tiers}</p>`;
+  }
+  private trainingHtml(): string {
+    const lv = LEVEL_COPIES.slice(0, 8)
+      .map((n, i) => `<span class="tag">Lv ${i + 1}: ${n} cop${n === 1 ? 'y' : 'ies'}</span>`)
+      .join(' ');
+    return `<div class="row"><div class="grow"><b>Training ground</b><div class="sub" style="margin:0">An empty arena with three dummies that never attack. Your mana refills fast and you cannot be knocked out. Try every skill and see what it does.</div></div>
+        <button data-train="1">Start training</button></div>
+      <h3>How skills work</h3>
+      <p class="sub">You carry up to 5 skills (keys 1 to 5, or the buttons). Each skill costs mana (the blue bar) and then needs to cool down (the dark sweep on its button). Some skills take a moment to cast; a yellow ring shows that. Press <b>Q</b> or the <b>AUTO</b> button and your orb casts attack and defence skills for you and aims them at the nearest enemy.</p>
+      <p class="sub">Kinds: <b>shots, beams, volleys</b> hit at range &middot; <b>nova</b> and <b>swing</b> hit close &middot; <b>shield, barrier, heal</b> protect &middot; <b>dash, blink, portal</b> move you &middot; <b>mine, pet, pull, slow, aura, buff, stealth</b> set up fights.</p>
+      <h3>How merging works</h3>
+      <p class="sub">Every time you get a skill you already own, it merges into your copy automatically and its level rises when it has enough copies. Higher levels hit harder and recharge faster.</p>
+      <p>${lv}</p>
+      <h3>How fusion works</h3>
+      <p class="sub">In the Fusion Lab, two different skills of the same or neighbouring rank fuse into a new one. Any level works. Both parents are used up. You can fuse a few times each week.</p>`;
   }
   private marketHtml(): string {
     const pr = this.pr;
@@ -487,7 +556,8 @@ export class Pages {
       <div class="boss ${f.id === MAJEN.id ? 'champion' : ''}">
         <div class="art">${uniqueSvg(f.svg, 'dex')}</div>
         <div><b style="color:${f.color}">${esc(f.name)}</b><div class="tt">${esc(f.title)} &middot; ${esc(f.element)}</div>
-        <div class="lore">${esc(f.lore)}</div><div class="hint">${esc(f.hint)}</div></div>
+        <div class="lore">${esc(f.lore)}</div><div class="hint">${esc(f.hint)}</div>
+        ${f.id === MAJEN.id ? '<button data-challenge="1">Challenge Majen (1v1)</button>' : ''}</div>
       </div>`;
     return `<p class="sub">Meet the champion and the bosses of the world. Each boss has a secret condition. Find it, and it falls.</p>
       <div class="bossgrid">${ALL_FIGURES.map(card).join('')}</div>`;
@@ -547,6 +617,8 @@ export class Pages {
         this.actions.startLevel(BOSS_LEVELS.find((l) => l.id === Number(el.dataset.tower))!),
       );
     if (name === 'ranked') on('[data-ranked]', () => this.actions.playRanked());
+    if (name === 'training') on('[data-train]', () => this.actions.playTraining());
+    if (name === 'bestiary') on('[data-challenge]', () => this.actions.challengeChampion());
     if (name === 'market') {
       on('[data-buy]', (el) => {
         const r = pr.buyOffer(Number(el.dataset.buy));
@@ -615,11 +687,13 @@ export class Pages {
       };
       on('[data-equipskill]', (el) => {
         const cur = pr.data.loadout.skillIds;
+        const id = Number(el.dataset.equipskill);
         if (cur.length >= 5) {
-          note('All five slots are full. Remove a skill first.', '#ff8a9a');
+          set([...cur.slice(0, 4), id]);
+          note('Slot 5 swapped for the new skill.', '#ffc93c');
           return;
         }
-        set([...cur, Number(el.dataset.equipskill)]);
+        set([...cur, id]);
       });
       on('[data-unequip]', (el) =>
         set(pr.data.loadout.skillIds.filter((id) => id !== Number(el.dataset.unequip))),

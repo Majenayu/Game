@@ -42,6 +42,9 @@ export class Ui {
   private leaveBtn = $<HTMLButtonElement>('leave');
   private inviteBtn = $<HTMLButtonElement>('invite');
   private emoteBtn = $<HTMLButtonElement>('emotebtn');
+  private autoBtn = $<HTMLButtonElement>('autobtn');
+  private countdownEl = $('countdown');
+  private lobbyEl = $('lobby');
   private emotePanel = $('emotes');
   /** False when the platform disables chat; then quick chat is hidden. */
   chatAllowed = true;
@@ -56,12 +59,15 @@ export class Ui {
   onInvite: () => void = () => {};
   onSkill: (slot: number) => void = () => {};
   onEmote: (e: number) => void = () => {};
+  onAuto: () => void = () => {};
+  onChampion: () => void = () => {};
   onPage: (name: string) => void = () => {};
   onPageClose: () => void = () => {};
 
   constructor() {
     $('champart').innerHTML = uniqueSvg(MAJEN.svg, 'menu');
     $('champbtn').addEventListener('click', () => this.onPage('bestiary'));
+    $('champfight').addEventListener('click', () => this.onChampion());
     $('play').addEventListener('click', () => this.onPlay(this.nick.value));
     $('practice').addEventListener('click', () => this.onPractice(this.nick.value));
     this.muteBtn.addEventListener('click', () => this.onMuteToggle());
@@ -69,6 +75,10 @@ export class Ui {
     this.inviteBtn.addEventListener('click', () => this.onInvite());
     this.emotePanel.innerHTML = EMOTES.map((t, i) => `<button class="ghost" data-emote="${i}">${esc(t)}</button>`).join('');
     this.emoteBtn.addEventListener('click', () => this.toggleEmotes());
+    this.autoBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      this.onAuto();
+    });
     this.emotePanel.querySelectorAll<HTMLButtonElement>('[data-emote]').forEach((b) =>
       b.addEventListener('click', () => {
         this.onEmote(Number(b.dataset.emote));
@@ -113,6 +123,28 @@ export class Ui {
     this.emoteBtn.hidden = !v || !this.chatAllowed;
     if (this.emoteBtn.hidden) this.emotePanel.hidden = true;
   }
+  setAuto(on: boolean): void {
+    this.autoBtn.classList.toggle('on', on);
+    this.autoBtn.textContent = on ? 'AUTO ON' : 'AUTO';
+  }
+  /** Big "3, 2, 1, GO!" text, or null to hide it. */
+  countdown(text: string | null): void {
+    this.countdownEl.hidden = !text;
+    if (text && this.countdownEl.textContent !== text) this.countdownEl.textContent = text;
+  }
+  /** Shows the pre-match lobby. `html` is trusted markup built by the lobby module. */
+  showLobby(html: string): HTMLElement {
+    this.lobbyEl.innerHTML = html;
+    this.lobbyEl.hidden = false;
+    return this.lobbyEl;
+  }
+  hideLobby(): void {
+    this.lobbyEl.hidden = true;
+    this.lobbyEl.innerHTML = '';
+  }
+  get lobbyVisible(): boolean {
+    return !this.lobbyEl.hidden;
+  }
   /** Opens or closes the quick-chat panel. */
   toggleEmotes(open = this.emotePanel.hidden): void {
     this.emotePanel.hidden = !open || this.emoteBtn.hidden;
@@ -139,6 +171,9 @@ export class Ui {
     this.leaveBtn.hidden = true;
     this.inviteBtn.hidden = true;
     this.setEmoteVisible(false);
+    this.autoBtn.hidden = true;
+    this.countdown(null);
+    this.hideLobby();
     this.skillBtns.forEach((b) => (b.hidden = true));
     this.hud.hidden = true;
     this.board.hidden = true;
@@ -156,6 +191,7 @@ export class Ui {
     this.hud.hidden = false;
     this.overlay.hidden = true;
     this.setEmoteVisible(true);
+    this.autoBtn.hidden = false;
   }
 
   /** Opens a full page (shop, loadout...). `body` is raw trusted HTML built by the pages module. */

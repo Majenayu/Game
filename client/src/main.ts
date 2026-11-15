@@ -10,6 +10,7 @@ import {
   BOSS_LEVELS,
   LEVELS,
   RECONNECT_SECONDS,
+  CHAMPION_LEVEL_ID,
   TOWER_FIRST_ID,
   rankedTier,
   WORLD_H,
@@ -25,6 +26,7 @@ import {
 import { sfx } from './audio';
 import { GameScene, type RoundResult } from './game/GameScene';
 import { OfflineSource, OnlineSource } from './game/sources';
+import { LobbyPanel } from './game/lobby';
 import { LevelRunner } from './meta/campaign';
 import { Progress, type SkillDrop } from './meta/economy';
 import { Pages, type PageName } from './meta/pages';
@@ -140,7 +142,9 @@ async function boot(): Promise<void> {
   let offlinePractice = false;
   let rankedActive = false;
 
+  const lobby = new LobbyPanel(ui, progress);
   scene.hooks = {
+    onFrame: (snap, me, players) => lobby.frame(snap, me, players, scene.activeSource),
     onPlayingChange: (p) => {
       playingFlag = p;
       sfx.intense = p;
@@ -248,6 +252,26 @@ async function boot(): Promise<void> {
     showHowTo();
   };
 
+  /** Training ground: harmless dummies, fast mana, you cannot be knocked out. */
+  const startTraining = async () => {
+    const name = readNick(ui.nickValue());
+    await endSession();
+    offlinePractice = true;
+    campaignActive = true;
+    scene.setSource(
+      new OfflineSource(
+        name,
+        loadoutOf(),
+        { mode: 'dm', mapId: 'throne', seats: 4, training: true, roundTime: 600 },
+        progress.loadoutInstances(),
+      ),
+    );
+    document.body.dataset.mode = 'offline';
+    ui.showGame();
+    ui.setInviteVisible(false);
+    touch.setEnabled(true);
+    ui.setObjective('Training ground: try every skill on the dummies. Press Q for auto skills. Esc to leave.');
+  };
   const startLevel = async (level: LevelDef) => {
     const name = readNick(ui.nickValue());
     await endSession();
@@ -419,6 +443,14 @@ async function boot(): Promise<void> {
       pages.close();
       void startLevel(level);
     },
+    playTraining: () => {
+      pages.close();
+      void startTraining();
+    },
+    challengeChampion: () => {
+      pages.close();
+      void startLevel(BOSS_LEVELS.find((l) => l.id === CHAMPION_LEVEL_ID)!);
+    },
     playRanked: () => {
       pages.close();
       void startOnline(ui.nickValue(), { ranked: true }).then(() => {
@@ -428,6 +460,10 @@ async function boot(): Promise<void> {
     watchAd: () => showRewardedAd(platform),
   });
   ui.onPage = (name) => pages.open(name as PageName);
+  ui.onChampion = () => {
+    sfx.unlock();
+    void startLevel(BOSS_LEVELS.find((l) => l.id === CHAMPION_LEVEL_ID)!);
+  };
   ui.onPageClose = () => {
     pages.close();
     ui.showMenu();
@@ -442,10 +478,16 @@ async function boot(): Promise<void> {
   ui.onLeave = () => void toMenu();
   ui.onSkill = (slot) => scene.queueSkill(slot);
   ui.onEmote = (e) => scene.sendEmote(e);
+  ui.onAuto = () => ui.setAuto(scene.toggleAuto());
+  ui.setAuto(scene.autoSkills);
   ui.chatAllowed = !platform.disableChat;
   window.addEventListener('keydown', (e) => {
     if ((e.key === 't' || e.key === 'T') && scene.hasSource && !pages.current) {
       ui.toggleEmotes();
+      return;
+    }
+    if ((e.key === 'q' || e.key === 'Q') && scene.hasSource && !pages.current) {
+      ui.setAuto(scene.toggleAuto());
       return;
     }
     if (e.key !== 'Escape') return;

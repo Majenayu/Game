@@ -33,6 +33,28 @@ describe('boss tower progress', () => {
   });
 });
 
+describe('champion, weapons and accessories', () => {
+  it('anyone can challenge Majen, and the first win grants a unique skill', async () => {
+    const p = await fresh();
+    const majen = BOSS_LEVELS[8];
+    expect(p.levelUnlocked(majen)).toBe(true);
+    const r = p.finishLevel(majen, 1);
+    expect(r.drop?.rank).toBe('U');
+  });
+  it('buys and equips weapons and accessories', async () => {
+    const p = await fresh();
+    p.data.coins = 5000;
+    p.data.xp = 100000;
+    expect(p.buy('weapon', 1).ok).toBe(true);
+    expect(p.equip('weapon', 1)).toBe(true);
+    expect(p.data.loadout.weapon).toBe(1);
+    expect(p.buy('acc', 1).ok).toBe(true);
+    expect(p.equip('acc', 1)).toBe(true);
+    expect(p.data.loadout.acc).toBe(1);
+    expect(p.equip('weapon', 4)).toBe(false);
+  });
+});
+
 describe('ranked', () => {
   it('moves the rating and records games and wins', async () => {
     const p = await fresh();

@@ -113,15 +113,50 @@ test('skills can be used with the keyboard and show a cooldown', async ({ page }
   await page.goto('/');
   await page.locator('#practice').click();
   await expect(page.locator('#sk0')).toBeVisible({ timeout: 8_000 });
-  await page.waitForTimeout(500);
+  await page.locator('[data-lconfirm]').click();
+  await page.waitForTimeout(3600);
   await page.keyboard.press('Digit1');
   await expect(page.locator('#sk0 .cdn')).not.toHaveText('', { timeout: 10_000 });
 });
 
+test('lobby shows every orb with skills, waits for confirm, then counts down 3 2 1', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#practice').click();
+  await expect(page.locator('#lobby')).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator('#lobby .lp')).toHaveCount(8);
+  await expect(page.locator('#lobby .lsk').first()).toBeVisible();
+  await expect(page.locator('#lobbytime')).toHaveText(/^(2[0-5]|1\d)$/);
+  await page.locator('[data-ledit]').click();
+  await expect(page.locator('[data-lpick]').first()).toBeVisible();
+  await page.locator('[data-lcancel]').click();
+  await page.locator('[data-lconfirm]').click();
+  await expect(page.locator('#lobby')).toBeHidden();
+  await expect(page.locator('#countdown')).toBeVisible();
+  await expect(page.locator('#countdown')).toHaveText(/^[123]$/);
+  await expect(page.locator('#countdown')).toHaveText('GO!', { timeout: 5_000 });
+});
+test('anyone can challenge Majen 1v1, training starts at once, auto skills toggle', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#champfight').click();
+  await expect(page.locator('body')).toHaveAttribute('data-players', '2', { timeout: 8_000 });
+  await expect(page.locator('#lobby')).toContainText('Majen');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#menu')).toBeVisible();
+  await page.locator('[data-page="training"]').click();
+  await page.locator('[data-train]').click();
+  await expect(page.locator('#hud')).toBeVisible();
+  await expect(page.locator('#lobby')).toBeHidden();
+  await expect(page.locator('#autobtn')).toBeVisible();
+  await page.locator('#autobtn').dispatchEvent('pointerdown');
+  await expect(page.locator('#autobtn')).toHaveText('AUTO ON');
+  await page.keyboard.press('q');
+  await expect(page.locator('#autobtn')).toHaveText('AUTO');
+});
 test('boss tower lists nine floors and starts locked', async ({ page }) => {
   await openPage(page, 'tower');
   await expect(page.locator('[data-tower]')).toHaveCount(9);
   await expect(page.locator('[data-tower="101"]')).toBeDisabled();
+  await expect(page.locator('[data-tower="109"]')).toBeEnabled();
   await expect(page.locator('#pagebody')).toContainText('Majen');
 });
 test('market sells a skill for coins and marks it sold', async ({ page }) => {
@@ -142,6 +177,9 @@ test('2v2 ranked joins a four orb team match and quick chat works', async ({ pag
   await page.locator('[data-ranked]').click();
   await expect(page.locator('#hud')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('#overlay')).toBeHidden({ timeout: 20_000 });
+  await expect(page.locator('#lobby')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('#lobby .lp')).toHaveCount(4);
+  await page.locator('[data-lconfirm]').click();
   await expect(page.locator('#emotebtn')).toBeVisible();
   await page.locator('#emotebtn').click();
   await expect(page.locator('#emotes')).toBeVisible();
