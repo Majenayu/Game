@@ -16,6 +16,7 @@ import {
 } from './constants';
 import {
   BULLET_FX,
+  WEAPONS,
   CHARACTERS,
   CHARACTER_LIST,
   MODES,
@@ -77,6 +78,10 @@ export interface SimConfig {
   bossHp?: number;
   bossColor?: number;
   bossKit?: number[];
+  /** Seconds of "3, 2, 1, GO" freeze at the start of every round. 0 = start at once (tests). */
+  countdown?: number;
+  /** Training ground: bots are harmless dummies, your mana refills fast and you cannot be knocked out. */
+  training?: boolean;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -143,6 +148,11 @@ export interface SimPlayer {
   nextRegen: number;
   nextHazard: number;
   holdAcc: number;
+  /** Main weapon (WEAPONS) and accessory (ACCESSORIES). */
+  weapon: number;
+  acc: number;
+  /** Frozen and safe until this time (waiting in the lobby or for the countdown). */
+  holdUntil: number;
 }
 
 export interface SimBullet {
@@ -260,6 +270,8 @@ export interface PlayerOpts {
   color?: number;
   trail?: number;
   bfx?: number;
+  weapon?: number;
+  acc?: number;
   boss?: boolean;
 }
 
@@ -293,6 +305,8 @@ export class Sim {
   private scoreboardLeft = 0;
   private rotIdx = 0;
   private bossMade = false;
+  /** Everyone is frozen until this time (lobby and round countdown). */
+  freezeUntil = 0;
 
   constructor(
     private rng: Rng = Math.random,
@@ -345,6 +359,8 @@ export class Sim {
       color: 0,
       trail: opts.trail,
       bfx: opts.bfx,
+      weapon: opts.weapon,
+      acc: opts.acc,
     });
     const ch = CHARACTERS[load.char];
     const used = new Set<number>();
@@ -355,7 +371,8 @@ export class Sim {
         PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[this.players.size % PLAYER_COLORS.length];
     const boss = opts.boss === true;
     const maxHp = boss ? Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) : ch.hp;
-    const spot = this.pickSpawn();
+    const team = MODES[this.mode].team ? this.smallerTeam() : 0;
+    const spot = this.pickSpawn(undefined, true, MODES[this.mode].team ? team : -1);
     const p: SimPlayer = {
       id,
       name: sanitizeNick(name, this.rng),
@@ -374,7 +391,7 @@ export class Sim {
       nextDot: 0,
       trail: load.trail,
       bfx: load.bfx,
-      team: MODES[this.mode].team ? this.smallerTeam() : 0,
+      team,
       x: spot.x,
       y: spot.y,
       aim: 0,
@@ -402,6 +419,9 @@ export class Sim {
       nextRegen: this.time + (ch.regen || 0),
       nextHazard: 0,
       holdAcc: 0,
+      weapon: load.weapon,
+      acc: load.acc,
+      holdUntil: 0,
     };
     if (boss) p.charId = 'titan';
     this.players.set(id, p);
@@ -505,6 +525,8 @@ export class Sim {
     );
     p.trail = l.trail;
     p.bfx = l.bfx;
+    p.weapon = l.weapon;
+    p.acc = l.acc;
     p.maxHp = ch.hp;
     p.hp = ch.hp;
     p.nextRegen = this.time + (ch.regen || 0);
@@ -522,6 +544,8 @@ export class Sim {
     if (sp) m *= 1 + 0.35 * sp.power;
     if (this.time < p.slowUntil) m *= 0.6;
     if (p.castAt >= 0) m *= 0.5;
+    // Bots move a little slower than people so fights feel fair; training dummies barely move.
+    if (p.bot && !p.boss) m *= this.cfg.training ? 0.35 : 0.85;
     return m;
   }
 
@@ -538,7 +562,8 @@ export class Sim {
       if (this.scoreboardLeft <= 0 && this.cfg.autoRestart) this.startRound();
       return;
     }
-    this.timeLeft -= dt;
+    const frozenAll = this.time < this.freezeUntil;
+    if (!frozenAll) this.timeLeft -= dt;
 
     for (const p of this.players.values()) {
       if (p.bot) this.thinkBot(p);
@@ -552,7 +577,11 @@ export class Sim {
         p.nextRegen = this.time + ch.regen;
         if (p.hp < p.maxHp) p.hp += 1;
       }
-      p.mp = Math.min(p.maxMp, p.mp + MP_REGEN * dt);
+      p.mp = Math.min(p.maxMp, p.mp + MP_REGEN * dt * (this.cfg.training && !p.bot ? 5 : 1));
+      if (frozenAll || this.time < p.holdUntil) {
+        p.pendingSkill = 0;
+        continue;
+      }
       if (this.time < p.dotUntil && this.time >= p.nextDot) {
         p.nextDot = this.time + 1;
         this.hurt(p, p.dotBy, 1);
@@ -615,7 +644,8 @@ export class Sim {
     const od = this.eff(p, 'overdrive');
     const dx = Math.cos(angle);
     const dy = Math.sin(angle);
-    const speed = BULLET_SPEED * ch.bulletSpeed;
+    const w = WEAPONS[p.weapon] ?? WEAPONS[0];
+    const speed = BULLET_SPEED * ch.bulletSpeed * w.speed;
     this.bullets.push({
       id: this.nextId++,
       owner: p.id,
@@ -624,9 +654,9 @@ export class Sim {
       y: p.y + dy * (PLAYER_RADIUS + 2),
       vx: dx * speed,
       vy: dy * speed,
-      ttl: BULLET_TTL * (ric ? 1.4 : 1),
-      r: BULLET_RADIUS * (big ? 1.4 + 0.3 * big.power : 1),
-      dmg: od ? 2 : 1,
+      ttl: BULLET_TTL * (ric ? 1.4 : 1) * w.range,
+      r: BULLET_RADIUS * (big ? 1.4 + 0.3 * big.power : 1) * w.size,
+      dmg: w.dmg + (od ? 1 : 0),
       pierce: pierce ? Math.ceil(pierce.power) : 0,
       bounce: ric ? Math.ceil(ric.power) : 0,
       freeze: !!this.eff(p, 'freeze'),
@@ -640,17 +670,17 @@ export class Sim {
   private fire(p: SimPlayer): void {
     const ch = CHARACTERS[p.charId];
     const rapid = this.eff(p, 'rapid');
-    let interval = FIRE_INTERVAL * ch.fire;
+    const w = WEAPONS[p.weapon] ?? WEAPONS[0];
+    let interval = FIRE_INTERVAL * ch.fire * w.fire;
     if (rapid) interval /= 1 + 0.9 * rapid.power;
-    if (p.boss) interval *= 0.8;
-    else if (p.bot) interval *= 2.2 - this.cfg.botSkill;
+    if (p.boss) interval *= 0.9;
+    else if (p.bot) interval *= 2.7 - this.cfg.botSkill;
     p.nextShot = this.time + interval;
     p.hiddenUntil = 0;
-    if (this.eff(p, 'triple')) {
-      this.shoot(p, p.aim - 0.2);
-      this.shoot(p, p.aim);
-      this.shoot(p, p.aim + 0.2);
-    } else this.shoot(p, p.aim);
+    const angles: number[] = [];
+    for (let k = 0; k < w.pellets; k++) angles.push(p.aim + (k - (w.pellets - 1) / 2) * w.spread);
+    if (this.eff(p, 'triple')) for (const a of angles.slice()) angles.push(a - 0.2, a + 0.2);
+    for (const a of angles) this.shoot(p, a);
   }
 
   private stepBullets(dt: number): void {
@@ -712,7 +742,11 @@ export class Sim {
   /** Central damage entry. Handles invulnerability and shield hits. */
   private hurt(victim: SimPlayer, by: string, dmg: number): void {
     if (!victim.alive) return;
-    if (this.time < victim.invulnUntil) return;
+    if (this.time < victim.invulnUntil || this.time < victim.holdUntil || this.time < this.freezeUntil) return;
+    if (this.cfg.training && !victim.bot && victim.hp - dmg <= 0) {
+      victim.hp = victim.maxHp;
+      return;
+    }
     if (victim.shieldHits > 0) {
       victim.shieldHits--;
       this.events.push({ t: 'shield', id: victim.id, x: victim.x, y: victim.y });
@@ -744,8 +778,26 @@ export class Sim {
     this.events.push({ t: 'kill', id: victim.id, by, x: victim.x, y: victim.y });
   }
 
+  /** Freezes everyone (lobby). Call release() to start the countdown. */
+  lobby(seconds: number): void {
+    this.freezeUntil = this.time + seconds;
+  }
+  /** Ends the lobby: the match starts after a short countdown. */
+  release(countdown = 3): void {
+    this.freezeUntil = Math.min(this.freezeUntil, this.time + countdown);
+  }
+  /** Seconds until the whole match is unfrozen. */
+  get frozenFor(): number {
+    return Math.max(0, this.freezeUntil - this.time);
+  }
+  /** Holds one player (joined a running match and has not confirmed yet). */
+  holdPlayer(id: string, seconds: number): void {
+    const p = this.players.get(id);
+    if (p) p.holdUntil = this.time + seconds;
+  }
+
   private respawn(p: SimPlayer): void {
-    const s = this.pickSpawn(p.id);
+    const s = this.pickSpawn(p.id, true, MODES[this.mode].team ? p.team : -1);
     p.x = s.x;
     p.y = s.y;
     p.hp = p.maxHp;
@@ -1323,11 +1375,12 @@ export class Sim {
   }
 
   /** Picks a free spot. Prefers distance from living players when `awayFromPlayers` is set. */
-  pickSpawn(excludeId?: string, awayFromPlayers = true): { x: number; y: number } {
+  /** A free spot. `side` 0 or 1 keeps team spawns on the left or right third of the arena. */
+  pickSpawn(excludeId?: string, awayFromPlayers = true, side = -1): { x: number; y: number } {
     let best = { x: WORLD_W / 2, y: 80 };
     let bestScore = -1;
     for (let i = 0; i < 24; i++) {
-      const x = 60 + this.rng() * (WORLD_W - 120);
+      const x = side === 0 ? 60 + this.rng() * 460 : side === 1 ? WORLD_W - 520 + this.rng() * 460 : 60 + this.rng() * (WORLD_W - 120);
       const y = 60 + this.rng() * (WORLD_H - 120);
       if (this.map.obstacles.some((o) => pointInRect(x, y, o, PLAYER_RADIUS + 10))) continue;
       if (this.map.hazards.some((o) => pointInRect(x, y, o, PLAYER_RADIUS + 10))) continue;
@@ -1418,10 +1471,12 @@ export class Sim {
       p.slowUntil = 0;
       p.invulnUntil = this.time + INVULN_TIME;
       p.nextShot = 0;
-      const s = this.pickSpawn(p.id);
+      p.holdUntil = 0;
+      const s = this.pickSpawn(p.id, true, MODES[this.mode].team ? p.team : -1);
       p.x = s.x;
       p.y = s.y;
     }
+    if (this.cfg.countdown) this.freezeUntil = this.time + this.cfg.countdown;
     this.events.push({ t: 'roundStart', round: this.round, mode: this.mode, map: this.map.id });
   }
 
@@ -1473,7 +1528,7 @@ export class Sim {
     if (!pick) return;
     if (target) p.aim = normalizeAngle(Math.atan2(target.y - p.y, target.x - p.x) + brain.aimErr);
     this.castSlot(p, pick.i);
-    brain.nextCast = this.time + 0.5 + (1 - skill) * 1.1 + this.rng() * 0.5;
+    brain.nextCast = this.time + 1.8 + (1 - skill) * 2.2 + this.rng() * 1.2;
   }
 
   private steerBullet(b: SimBullet, dt: number): void {
@@ -1504,9 +1559,22 @@ export class Sim {
       return;
     }
     const skill = p.boss ? 0.9 : this.cfg.botSkill;
+    if (this.cfg.training) {
+      // Training dummies wander slowly and never attack.
+      p.shooting = false;
+      if (this.time >= brain.wanderUntil) {
+        brain.wanderX = 200 + this.rng() * (WORLD_W - 400);
+        brain.wanderY = 150 + this.rng() * (WORLD_H - 300);
+        brain.wanderUntil = this.time + 3 + this.rng() * 3;
+      }
+      const d = this.steer(p, brain, brain.wanderX, brain.wanderY);
+      p.moveX = d.x;
+      p.moveY = d.y;
+      return;
+    }
     if (this.time >= brain.nextThink) {
       brain.nextThink = this.time + 0.35 - skill * 0.15 + this.rng() * 0.15;
-      brain.aimErr = (this.rng() - 0.5) * (0.12 + (1 - skill) * 0.6);
+      brain.aimErr = (this.rng() - 0.5) * (0.22 + (1 - skill) * 0.8);
       if (this.rng() < 0.15) brain.strafe = -brain.strafe;
       let target: SimPlayer | null = null;
       let best = 1e9;
@@ -1672,6 +1740,10 @@ export interface PlayerView {
   hidden: boolean;
   /** Seconds left of the cast in progress, 0 when not casting. */
   casting: number;
+  weapon: number;
+  acc: number;
+  /** Seconds until this player may act (lobby, countdown or waiting to confirm). 0 = free. */
+  hold: number;
 }
 
 export function toView(p: SimPlayer, sim: Sim): PlayerView {
@@ -1715,5 +1787,8 @@ export function toView(p: SimPlayer, sim: Sim): PlayerView {
     maxMp: p.maxMp,
     hidden: t < p.hiddenUntil,
     casting: p.castAt >= 0 ? Math.max(0, p.castAt - t) : 0,
+    weapon: p.weapon,
+    acc: p.acc,
+    hold: Math.max(0, Math.max(sim.freezeUntil, p.holdUntil) - t),
   };
 }

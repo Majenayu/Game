@@ -49,3 +49,11 @@ export const PLAYER_COLORS = [0x4dd2ff, 0xff5e8a, 0x7dff6b, 0xffc93c, 0xb77dff, 
 export const MSG_INPUT = 'input';
 export const MSG_EVENT = 'ev';
 export const MSG_HELLO = 'hello';
+/** Client confirms the lobby (ready to fight). */
+export const MSG_READY = 'ready';
+/** Client changes its loadout while still waiting in the lobby. */
+export const MSG_LOADOUT = 'loadout';
+/** Seconds the lobby waits for everyone to confirm before the match starts anyway. */
+export const LOBBY_SECONDS = 25;
+/** "3, 2, 1, GO" before every round. */
+export const COUNTDOWN_SECONDS = 3;

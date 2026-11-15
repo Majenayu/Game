@@ -3,9 +3,13 @@ import {
   COLORS,
   MAX_PLAYERS,
   EMOTE_COOLDOWN,
+  COUNTDOWN_SECONDS,
+  LOBBY_SECONDS,
   MSG_EMOTE,
   MSG_EVENT,
   MSG_INPUT,
+  MSG_LOADOUT,
+  MSG_READY,
   RECONNECT_SECONDS,
   Sim,
   TICK_MS,
@@ -71,6 +75,10 @@ export class ArenaRoom extends Room<ArenaState> {
   private ipBySession = new Map<string, string>();
   private rate = new Map<string, { windowStart: number; count: number }>();
   private lastEmote = new Map<string, number>();
+  /** Players who pressed Confirm. */
+  private ready = new Set<string>();
+  /** True while the first lobby is waiting for confirmations. */
+  private lobbyOpen = true;
   /** True for 2v2 ranked rooms (see RankedRoom). Clients cannot choose this through join options. */
   protected readonly isRanked: boolean = false;
 
@@ -80,8 +88,14 @@ export class ArenaRoom extends Room<ArenaState> {
     const ranked = this.isRanked;
     if (ranked) this.maxClients = RANKED_SEATS;
     this.sim = ranked
-      ? new Sim(Math.random, { mode: 'tdm', mapId: 'rotate', seats: RANKED_SEATS })
-      : new Sim(Math.random, { mode: pickMode(options?.mode), mapId: pickMap(options?.map) });
+      ? new Sim(Math.random, { mode: 'tdm', mapId: 'rotate', seats: RANKED_SEATS, countdown: COUNTDOWN_SECONDS })
+      : new Sim(Math.random, {
+          mode: pickMode(options?.mode),
+          mapId: pickMap(options?.map),
+          countdown: COUNTDOWN_SECONDS,
+        });
+    // Lobby: everyone waits up to LOBBY_SECONDS for confirmations, then the countdown runs.
+    this.sim.lobby(LOBBY_SECONDS + COUNTDOWN_SECONDS);
     this.setState(new ArenaState());
     this.state.ranked = ranked;
     this.sim.rebalanceBots();
@@ -91,6 +105,25 @@ export class ArenaRoom extends Room<ArenaState> {
       if (!this.allowMessage(client.sessionId)) return;
       const input = sanitizeInput(raw);
       if (input) this.sim.applyInput(client.sessionId, input);
+    });
+    this.onMessage(MSG_READY, (client) => {
+      if (!this.allowMessage(client.sessionId)) return;
+      this.ready.add(client.sessionId);
+      const p = this.sim.players.get(client.sessionId);
+      if (!this.lobbyOpen && p && p.holdUntil > this.sim.time)
+        p.holdUntil = Math.min(p.holdUntil, this.sim.time + COUNTDOWN_SECONDS);
+      this.checkLobby();
+    });
+    this.onMessage(MSG_LOADOUT, (client, raw) => {
+      if (!this.allowMessage(client.sessionId)) return;
+      const p = this.sim.players.get(client.sessionId);
+      // Loadouts can only change while waiting, never in the middle of a fight.
+      const waiting = this.lobbyOpen || (p !== undefined && p.holdUntil > this.sim.time);
+      if (!p || !waiting || this.ready.has(client.sessionId)) return;
+      const color = p.color;
+      this.sim.setLoadout(client.sessionId, raw);
+      p.color = color;
+      this.syncState();
     });
     this.onMessage(MSG_EMOTE, (client, raw) => {
       if (!this.allowMessage(client.sessionId) || !isEmoteId(raw)) return;
@@ -108,6 +141,7 @@ export class ArenaRoom extends Room<ArenaState> {
         this.acc -= TICK_MS;
         steps++;
       }
+      if (this.lobbyOpen && this.sim.frozenFor <= COUNTDOWN_SECONDS) this.lobbyOpen = false;
       if (steps > 0) {
         this.syncState();
         for (const ev of this.sim.drainEvents()) this.broadcast(MSG_EVENT, ev);
@@ -139,6 +173,8 @@ export class ArenaRoom extends Room<ArenaState> {
     const colorId = (options?.loadout as { color?: unknown } | undefined)?.color;
     const p = this.sim.players.get(client.sessionId);
     if (p && Number.isInteger(colorId)) p.color = colorHex(colorId as number, p.color);
+    // Joining a running match: you wait (safe) until you confirm, at most LOBBY_SECONDS.
+    if (!this.lobbyOpen) this.sim.holdPlayer(client.sessionId, LOBBY_SECONDS);
     this.sim.rebalanceBots();
     if (this.sim.humanCount >= this.maxClients) void this.lock();
     this.syncState();
@@ -171,11 +207,20 @@ export class ArenaRoom extends Room<ArenaState> {
     this.sim.rebalanceBots();
     this.rate.delete(id);
     this.lastEmote.delete(id);
+    this.ready.delete(id);
+    this.checkLobby();
     this.releaseIp(id);
     if (this.sim.humanCount < this.maxClients) void this.unlock();
     this.syncState();
   }
 
+  /** Starts the countdown once every human in the lobby has confirmed. */
+  private checkLobby(): void {
+    if (!this.lobbyOpen || this.sim.humanCount === 0) return;
+    for (const p of this.sim.players.values()) if (!p.bot && !this.ready.has(p.id)) return;
+    this.lobbyOpen = false;
+    this.sim.release(COUNTDOWN_SECONDS);
+  }
   private releaseIp(sessionId: string): void {
     const ip = this.ipBySession.get(sessionId);
     if (ip === undefined) return;
@@ -209,6 +254,7 @@ export class ArenaRoom extends Room<ArenaState> {
     s.teamScore0 = sim.teamScore[0];
     s.teamScore1 = sim.teamScore[1];
     s.hillHolder = sim.hillHolder;
+    s.lobby = this.lobbyOpen ? Math.max(0, Math.round((sim.frozenFor - COUNTDOWN_SECONDS) * 10) / 10) : 0;
 
     for (const id of Array.from(s.players.keys())) if (!sim.players.has(id)) s.players.delete(id);
     for (const p of sim.players.values()) {
@@ -247,6 +293,10 @@ export class ArenaRoom extends Room<ArenaState> {
       ps.maxMp = v.maxMp;
       ps.hidden = v.hidden;
       ps.casting = Math.round(v.casting * 10) / 10;
+      ps.weapon = v.weapon;
+      ps.acc = v.acc;
+      ps.hold = Math.round(v.hold * 10) / 10;
+      ps.ready = v.bot || this.ready.has(p.id);
     }
 
     syncMap(

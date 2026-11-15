@@ -1,6 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Client } from 'colyseus.js';
-import { MAX_PLAYERS, MSG_EMOTE, MSG_INPUT, firstIdOfRank, getSkill, skillCount } from '@orb/shared';
+import {
+  MAX_PLAYERS,
+  MSG_EMOTE,
+  MSG_INPUT,
+  MSG_LOADOUT,
+  MSG_READY,
+  firstIdOfRank,
+  getSkill,
+  skillCount,
+} from '@orb/shared';
 import { createGameServer } from './app';
 
 function firstOfKind(kind: string): number {
@@ -53,6 +62,9 @@ describe('ArenaRoom', () => {
     };
     await until(() => humans(a) === 2 && humans(b) === 2);
     expect(b.state.players.get(b.sessionId).name).toBe('Bob');
+    a.send(MSG_READY);
+    b.send(MSG_READY);
+    await until(() => a.state.players.get(a.sessionId).hold === 0, 6000);
 
     const x0 = a.state.players.get(a.sessionId).x;
     for (let i = 1; i <= 10; i++) {
@@ -144,6 +156,8 @@ describe('ArenaRoom', () => {
       map: 'neon',
     });
     await until(() => r.state.players?.size === 8);
+    r.send(MSG_READY);
+    await until(() => r.state.players.get(r.sessionId).hold === 0, 6000);
     r.send(MSG_INPUT, { moveX: 0, moveY: 0, aimAngle: 0, shooting: false, seq: 1, skill: 1 });
     await until(() => (r.state.players.get(r.sessionId).cds as string).split(',')[0].split(':')[0] > '0');
     await r.leave();
@@ -159,6 +173,26 @@ it('2v2 ranked rooms hold four orbs in two teams and stay apart from casual room
     const teams = Array.from(a.state.players.values()).map((p: any) => p.team);
     expect(teams.filter((t: number) => t === 0).length).toBe(2);
     await Promise.all([a.leave(), b.leave(), c.leave()]);
+  });
+  it('waits in the lobby until everyone confirms, allows loadout changes only while waiting, then counts down', async () => {
+    const url = `ws://localhost:${PORT}`;
+    const a = await new Client(url).joinOrCreate<any>('arena', { name: 'L1', mode: 'coins', map: 'pillars' });
+    const b = await new Client(url).joinOrCreate<any>('arena', { name: 'L2', mode: 'coins', map: 'pillars' });
+    await until(() => a.state.players?.size === MAX_PLAYERS);
+    expect(a.state.lobby).toBeGreaterThan(20);
+    expect(a.state.players.get(a.sessionId).hold).toBeGreaterThan(20);
+    a.send(MSG_LOADOUT, { char: 'nova', skillIds: [SKILL_B], weapon: 2, acc: 1 });
+    await until(() => a.state.players.get(a.sessionId).weapon === 2);
+    a.send(MSG_READY);
+    await until(() => a.state.players.get(a.sessionId).ready === true);
+    expect(a.state.lobby).toBeGreaterThan(15);
+    a.send(MSG_LOADOUT, { char: 'nova', skillIds: [], weapon: 3 });
+    b.send(MSG_READY);
+    await until(() => a.state.lobby === 0);
+    expect(a.state.players.get(a.sessionId).weapon).toBe(2);
+    expect(a.state.players.get(a.sessionId).hold).toBeLessThanOrEqual(3);
+    await until(() => a.state.players.get(a.sessionId).hold === 0, 6000);
+    await Promise.all([a.leave(), b.leave()]);
   });
   it('broadcasts preset emotes, rejects bad ones and rate limits spam', async () => {
     const url = `ws://localhost:${PORT}`;

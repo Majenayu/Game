@@ -425,16 +425,57 @@ export const BULLET_FX: CosmeticDef[] = [
   { id: 4, name: 'Star', price: 800, level: 11 },
 ];
 
-export interface Loadout {
-  char: string;
+/** Main weapons change the basic attack. All are fair sidegrades; none is strictly better. */
+export interface WeaponDef extends CosmeticDef {
+  key: string;
+  desc: string;
+  /** Multiplier on the fire interval (higher = slower). */
+  fire: number;
+  /** Multiplier on bullet speed. */
+  speed: number;
+  /** Multiplier on bullet life (range). */
+  range: number;
+  dmg: number;
+  /** Bullets per shot and the spread between them (radians). */
+  pellets: number;
+  spread: number;
+  /** Multiplier on bullet size. */
+  size: number;
+}
+export const WEAPONS: WeaponDef[] = [
+  { id: 0, key: 'blaster', name: 'Blaster', desc: 'Balanced shots.', price: 0, level: 1, fire: 1, speed: 1, range: 1, dmg: 1, pellets: 1, spread: 0, size: 1 },
+  { id: 1, key: 'scatter', name: 'Scatter Gun', desc: 'Three pellets, short range, slower.', price: 300, level: 2, fire: 1.6, speed: 0.9, range: 0.55, dmg: 1, pellets: 3, spread: 0.18, size: 0.9 },
+  { id: 2, key: 'rail', name: 'Rail Lance', desc: 'Fast long shots that hit for 2, slow to reload.', price: 500, level: 4, fire: 2.6, speed: 1.6, range: 1.3, dmg: 2, pellets: 1, spread: 0, size: 0.8 },
+  { id: 3, key: 'buzz', name: 'Buzz SMG', desc: 'Very fast fire, small bullets, less range.', price: 450, level: 3, fire: 0.5, speed: 1.05, range: 0.65, dmg: 1, pellets: 1, spread: 0.08, size: 0.7 },
+  { id: 4, key: 'mortar', name: 'Orb Mortar', desc: 'Big slow orbs that hit for 2.', price: 700, level: 6, fire: 2.2, speed: 0.6, range: 1.4, dmg: 2, pellets: 1, spread: 0, size: 2 },
+  { id: 5, key: 'twin', name: 'Twin Pistols', desc: 'Two parallel shots, a bit slower.', price: 600, level: 5, fire: 1.35, speed: 1, range: 0.85, dmg: 1, pellets: 2, spread: 0.06, size: 0.85 },
+];
+/** Accessories are looks only: hats and charms drawn on your orb. */
+export const ACCESSORIES: CosmeticDef[] = [
+  { id: 0, name: 'None', price: 0, level: 1 },
+  { id: 1, name: 'Crown', price: 400, level: 3 },
+  { id: 2, name: 'Horns', price: 250, level: 2 },
+  { id: 3, name: 'Halo', price: 350, level: 3 },
+  { id: 4, name: 'Wizard Hat', price: 500, level: 5 },
+  { id: 5, name: 'Headband', price: 150, level: 1 },
+  { id: 6, name: 'Cat Ears', price: 300, level: 2 },
+  { id: 7, name: 'Visor', price: 450, level: 4 },
+  { id: 8, name: 'Antenna', price: 200, level: 2 },
+];
+
+export interface Loadout {  char: string;
   /** Up to five skill ids (see skills/). Empty means "use the default kit". */
   skillIds: number[];
   color: number;
   trail: number;
   bfx: number;
+  /** Main weapon id (WEAPONS). */
+  weapon: number;
+  /** Accessory id (ACCESSORIES). */
+  acc: number;
 }
 
-export const DEFAULT_LOADOUT: Loadout = { char: 'nova', skillIds: [], color: 0, trail: 0, bfx: 0 };
+export const DEFAULT_LOADOUT: Loadout = { char: 'nova', skillIds: [], color: 0, trail: 0, bfx: 0, weapon: 0, acc: 0 };
 
 /** Highest total rank budget a casual loadout may use. The server enforces it until accounts verify ownership. */
 export const CASUAL_BUDGET = 3300;
@@ -464,5 +505,7 @@ export function sanitizeLoadout(raw: unknown): Loadout {
     color: int(r.color, COLORS.length, 0),
     trail: int(r.trail, TRAILS.length, 0),
     bfx: int(r.bfx, BULLET_FX.length, 0),
+    weapon: int(r.weapon, WEAPONS.length, 0),
+    acc: int(r.acc, ACCESSORIES.length, 0),
   };
 }

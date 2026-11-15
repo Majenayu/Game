@@ -32,6 +32,11 @@ export class PlayerState extends Schema {
   @type('uint8') maxMp = 100;
   @type('boolean') hidden = false;
   @type('float32') casting = 0;
+  @type('uint8') weapon = 0;
+  @type('uint8') acc = 0;
+  /** Seconds until this player may act (lobby, countdown, waiting to confirm). */
+  @type('float32') hold = 0;
+  @type('boolean') ready = false;
 }
 
 export class BulletState extends Schema {
@@ -86,6 +91,8 @@ export class ArenaState extends Schema {
   @type({ map: ZoneState }) zones = new MapSchema<ZoneState>();
   @type({ map: PetState }) pets = new MapSchema<PetState>();
   @type('boolean') ranked = false;
+  /** Seconds left for lobby confirmations (0 once the match has started). */
+  @type('float32') lobby = 0;
   @type('string') phase = 'play';
   @type('string') mode = 'dm';
   @type('string') mapId = 'neon';

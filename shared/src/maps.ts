@@ -169,6 +169,17 @@ const CORE_MAPS: Record<string, MapDef> = {
 
 export const MAPS: Record<string, MapDef> = { ...CORE_MAPS, ...EXTRA_MAPS };
 export const MAP_LIST = Object.values(MAPS);
+/** The champion's throne room: an empty arena for the 1v1 duel with Majen. Not part of the normal rotation. */
+export const CHAMPION_ARENA: MapDef = {
+  id: 'throne',
+  name: "Champion's Throne",
+  level: 1,
+  theme: { bg: 0x120a1f, grid: 0x2a1a45, wall: 0x3a2460, wallLine: 0xffd36e, accent: 0xffd36e, hazard: 0xff1744 },
+  obstacles: [],
+  hazards: [],
+  hill: HILL,
+};
+MAPS[CHAMPION_ARENA.id] = CHAMPION_ARENA;
 
 export function isMapId(v: unknown): v is string {
   return typeof v === 'string' && Object.prototype.hasOwnProperty.call(MAPS, v);

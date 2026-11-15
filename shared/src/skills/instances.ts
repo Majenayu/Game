@@ -134,7 +134,7 @@ export function effectiveStats(inst: SkillInstance): EffectiveStats {
 
 // ---- weekly fusion ----------------------------------------------------------
 
-export const FUSION_MIN_LEVEL = 3;
+export const FUSION_MIN_LEVEL = 1;
 
 /** ISO week id such as "2026-W46". */
 export function weekId(d: Date): string {

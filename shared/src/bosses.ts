@@ -91,14 +91,17 @@ export function bossKitIds(f: BossFight): number[] {
 
 /** Boss Tower levels use ids from 101 so they never clash with the 12 campaign levels. */
 export const TOWER_FIRST_ID = 101;
-const TOWER_MAPS = ['crypt', 'glacier', 'orbit', 'solar', 'jungle', 'foundry', 'nebula', 'abyss', 'finale'];
+const TOWER_MAPS = ['crypt', 'glacier', 'orbit', 'solar', 'jungle', 'foundry', 'nebula', 'abyss', 'throne'];
+/** Level id of the champion duel. Anyone may challenge Majen at any time. */
+export const CHAMPION_LEVEL_ID = TOWER_FIRST_ID + 8;
 
 export const BOSS_LEVELS: LevelDef[] = BOSS_FIGHTS.map((f, i) => ({
   id: TOWER_FIRST_ID + i,
   name: f.figure === 'majen' ? 'Champion: Majen' : f.name,
   mode: 'dm',
   map: TOWER_MAPS[i],
-  bots: 1 + Math.min(3, Math.floor(i / 2)),
+  // Majen fights alone (1v1 in an empty arena); the other bosses bring guards.
+  bots: f.figure === 'majen' ? 1 : 1 + Math.min(3, Math.floor(i / 2)),
   skill: Math.min(0.95, 0.55 + i * 0.05),
   time: 150,
   obj: { type: 'boss', n: 1 },
