@@ -1,4 +1,6 @@
-/** Tiny WebAudio synth. No audio files. */
+import { presentation } from './presentation';
+
+/** Original layered WebAudio synth. No audio files or external services. */
 class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -40,27 +42,36 @@ class Sfx {
     else if (!this.muted) void this.ctx.resume();
   }
 
+  refreshMix(): void {
+    this.apply();
+    if (this.musicGain) this.musicGain.gain.value = presentation.prefs.music * 0.22;
+  }
+
   private apply(): void {
     if (this.master) this.master.gain.value = this.muted ? 0 : 0.25;
+    if ((this.muted || presentation.prefs.voice === 0) && typeof speechSynthesis !== 'undefined')
+      speechSynthesis.cancel();
   }
 
   private tone(freq: number, end: number, dur: number, type: OscillatorType, vol = 1, delay = 0): void {
-    if (!this.ctx || !this.master || this.muted) return;
+    if (!this.ctx || !this.master || this.muted || presentation.prefs.effects === 0) return;
     const t = this.ctx.currentTime + delay;
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
     o.type = type;
     o.frequency.setValueAtTime(freq, t);
     o.frequency.exponentialRampToValueAtTime(Math.max(20, end), t + dur);
-    g.gain.setValueAtTime(vol, t);
+    g.gain.setValueAtTime(Math.max(0.0001, vol * presentation.prefs.effects), t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g).connect(this.master);
     o.start(t);
     o.stop(t + dur + 0.02);
   }
 
-  shoot(vol = 0.5): void {
-    this.tone(720, 220, 0.09, 'square', 0.25 * vol);
+  shoot(vol = 0.5, weapon = 0): void {
+    const freq = [720, 330, 1320, 920, 170, 680][weapon] ?? 720;
+    this.tone(freq, freq * 0.3, weapon === 4 ? 0.2 : 0.08, 'triangle', 0.32 * vol);
+    this.tone(freq * 0.4, 50, 0.045, 'sawtooth', 0.1 * vol);
   }
   hit(): void {
     this.tone(220, 90, 0.12, 'sawtooth', 0.6);
@@ -87,6 +98,22 @@ class Sfx {
       blink: [900, 300],
       burst: [600, 200],
       repair: [400, 800],
+      cast: [170, 650],
+      projectile: [640, 180],
+      beam: [1200, 220],
+      volley: [800, 340],
+      nova: [200, 45],
+      cleave: [450, 70],
+      heal: [400, 880],
+      barrier: [330, 580],
+      aura: [420, 760],
+      buff: [500, 950],
+      stealth: [160, 80],
+      ambush: [900, 100],
+      summon: [220, 700],
+      pull: [110, 50],
+      slow: [320, 100],
+      portal: [120, 900],
     };
     const [a, b] = f[kind] ?? [400, 600];
     this.tone(a, b, 0.18, kind === 'pulse' ? 'sawtooth' : 'triangle', 0.7);
@@ -103,7 +130,7 @@ class Sfx {
   private lastSay = 0;
   /** Speaks a short line (skill names, boss forms) with the browser's built-in voice. */
   say(text: string, force = false): void {
-    if (this.muted || typeof speechSynthesis === 'undefined') return;
+    if (this.muted || presentation.prefs.voice === 0 || typeof speechSynthesis === 'undefined') return;
     const now = performance.now();
     if (!force && now - this.lastSay < 700) return;
     this.lastSay = now;
@@ -112,7 +139,7 @@ class Sfx {
       const u = new SpeechSynthesisUtterance(text);
       u.rate = 1.15;
       u.pitch = 0.9;
-      u.volume = 0.8;
+      u.volume = presentation.prefs.voice;
       speechSynthesis.speak(u);
     } catch {
       /* speech not available */
@@ -145,6 +172,7 @@ class Sfx {
       const out = this.musicGain;
       if (!ctx || !out || ctx.state !== 'running') return;
       const chord = chords[Math.floor(this.step / 16) % chords.length];
+      out.gain.value = presentation.prefs.music * 0.22;
       const t = ctx.currentTime + 0.05;
       if (this.step % 16 === 0) for (const f of chord) this.note(out, f / 2, t, beat * 16, 'sine', 0.18);
       const arp = [0, 1, 2, 1, 0, 2, 1, 2];

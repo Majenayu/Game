@@ -28,7 +28,10 @@ import {
 import { sfx } from '../audio';
 import { ArenaArt } from './sprites';
 import { drawSkillAnim } from '../art/skillanim';
+import { drawArena } from '../art/arena';
+import { drawCast, drawEffectGlyph, drawEnd, lifecyclePhase } from '../art/lifecycle';
 import { drawBurst, lookOf, type SkillLook } from '../art/skillfx';
+import { presentation, SIDE } from '../presentation';
 import type { TouchControls } from '../ui/touch';
 import type { Ui } from '../ui/ui';
 import { Predictor } from './predict';
@@ -48,7 +51,7 @@ interface Particle {
 
 /** A short lived visual from a beam or swing event. */
 interface Fx {
-  kind: 'beam' | 'swing' | 'ring' | 'warn' | 'burst' | 'anim';
+  kind: 'beam' | 'swing' | 'ring' | 'warn' | 'burst' | 'anim' | 'cast';
   look?: SkillLook;
   /** For 'anim': skill kind and element (skill animation engine). */
   skind?: string;
@@ -149,6 +152,9 @@ export class GameScene extends Phaser.Scene {
   private autoAimUntil = 0;
   private lastHold = 0;
   private goUntil = 0;
+  private streak = 0;
+  private viewportKey = '';
+  private portraitHeight = WORLD_H;
 
   constructor() {
     super('game');
@@ -270,6 +276,7 @@ export class GameScene extends Phaser.Scene {
   }
   /** Queue a skill press (slot 0 to 4). Sent with the next input message. */
   queueSkill(slot: number): void {
+    if (!document.getElementById('modal')!.hidden) return;
     this.skillBits |= 1 << slot;
   }
 
@@ -292,6 +299,7 @@ export class GameScene extends Phaser.Scene {
     this.ui.banner(null);
     this.clearNames();
     if (!src) {
+      this.updateViewport();
       this.setPlaying(false);
       return;
     }
@@ -323,6 +331,37 @@ export class GameScene extends Phaser.Scene {
       this.wasPlaying = p;
       this.hooks.onPlayingChange(p);
     }
+  }
+
+  /** Portrait changes only the camera presentation; world size, input and simulation stay untouched. */
+  private updateViewport(me?: PlayerView): void {
+    if (!this.cameras?.main) return;
+    const portrait = !!me && this.touch.enabled && innerWidth <= 650 && innerHeight > innerWidth;
+    const width = portrait ? 640 : WORLD_W;
+    if (portrait) {
+      const bounds = document.getElementById('game')!.getBoundingClientRect();
+      const key = `${Math.round(bounds.width)}:${Math.round(bounds.height)}`;
+      if (key !== this.viewportKey) {
+        this.viewportKey = key;
+        this.portraitHeight = Math.max(760, Math.min(1100, Math.round(width * bounds.height / Math.max(1, bounds.width))));
+      }
+    } else {
+      this.viewportKey = '';
+      this.portraitHeight = WORLD_H;
+    }
+    const height = portrait ? this.portraitHeight : WORLD_H;
+    const camera = this.cameras.main;
+    if (this.scale.gameSize.width !== width || this.scale.gameSize.height !== height) {
+      this.scale.setGameSize(width, height);
+      camera.setSize(width, height).setBounds(0, 0, WORLD_W, WORLD_H);
+    }
+    if (portrait && me) {
+      const amount = presentation.prefs.motion ? 0.14 : 1;
+      camera.centerOn(
+        Phaser.Math.Linear(camera.midPoint.x, me.x, amount),
+        Phaser.Math.Linear(camera.midPoint.y, me.y, amount),
+      );
+    } else camera.setScroll(0, 0);
   }
 
   private clearNames(): void {
@@ -364,25 +403,7 @@ export class GameScene extends Phaser.Scene {
   private applyMap(id: string): void {
     this.map = getMap(id);
     this.predictor.obstacles = this.map.obstacles;
-    const m = this.map;
-    const t = m.theme;
-    const bg = this.bg;
-    bg.clear();
-    bg.fillStyle(t.bg, 1).fillRect(0, 0, WORLD_W, WORLD_H);
-    bg.lineStyle(1, t.grid, 1);
-    for (let x = 0; x <= WORLD_W; x += 100) bg.lineBetween(x, 0, x, WORLD_H);
-    for (let y = 0; y <= WORLD_H; y += 100) bg.lineBetween(0, y, WORLD_W, y);
-    for (const h of m.hazards) {
-      bg.fillStyle(t.hazard, 0.28).fillRoundedRect(h.x, h.y, h.w, h.h, 10);
-      bg.lineStyle(2, t.hazard, 0.9).strokeRoundedRect(h.x, h.y, h.w, h.h, 10);
-    }
-    for (const o of m.obstacles) {
-      bg.fillStyle(t.wallLine, 0.12).fillRoundedRect(o.x - 8, o.y - 8, o.w + 16, o.h + 16, 8);
-      bg.fillStyle(t.wall, 1).fillRoundedRect(o.x, o.y, o.w, o.h, 4);
-      bg.lineStyle(2, t.wallLine, 1).strokeRoundedRect(o.x, o.y, o.w, o.h, 4);
-    }
-    bg.lineStyle(6, t.accent, 0.25).strokeRect(0, 0, WORLD_W, WORLD_H);
-    bg.lineStyle(2, t.accent, 0.9).strokeRect(1, 1, WORLD_W - 2, WORLD_H - 2);
+    drawArena(this.bg, this.map);
   }
 
   // ---- events --------------------------------------------------------------
@@ -396,19 +417,25 @@ export class GameScene extends Phaser.Scene {
         if (ev.id === me || ev.by === me) this.pop(ev.x, ev.y - 34, 'HIT!', '#ffffff', 26);
         if (ev.id === me) {
           sfx.hit();
-          this.cameras.main.shake(120, 0.006);
+          this.shake(120, 0.006);
         } else if (ev.by === me) sfx.hit();
         break;
       case 'kill':
         this.burst(ev.x, ev.y, 0xffffff, 26);
         this.pop(ev.x, ev.y - 40, 'K.O.!', '#ffe58a', 44);
         if (ev.id === me) {
+          this.streak = 0;
           sfx.kill();
-          this.cameras.main.shake(220, 0.012);
+          this.shake(220, 0.012);
           this.deadSince = performance.now();
         } else if (ev.by === me) {
+          this.streak++;
           sfx.kill();
           this.ui.notify('Eliminated!', '#ffc93c');
+          this.ui.killFeed(this.lastPlayers.find(p => p.id === ev.by)?.name ?? 'You', this.lastPlayers.find(p => p.id === ev.id)?.name ?? 'Orb', true);
+          if (this.streak >= 2) this.ui.notify(`${this.streak} elimination streak`, '#f4c76a', 2200);
+        } else {
+          this.ui.killFeed(this.lastPlayers.find(p => p.id === ev.by)?.name ?? 'Arena', this.lastPlayers.find(p => p.id === ev.id)?.name ?? 'Orb', this.isAlly(ev.by));
         }
         break;
       case 'pickup': {
@@ -431,7 +458,7 @@ export class GameScene extends Phaser.Scene {
         // Charge-up circle while the skill is being cast, and the name shows at once.
         if (csk) {
           const col = ELEMENTS[csk.element]?.color ?? 0xffffff;
-          this.fxs.push({ kind: 'warn', x: ev.x, y: ev.y, angle: 0, size: 70, color: col, born: performance.now(), ms: Math.max(250, ev.time * 1000) });
+          this.fxs.push({ kind: 'cast', x: ev.x, y: ev.y, angle: 0, size: 70, color: col, born: performance.now(), ms: Math.max(250, ev.time * 1000), skind: csk.kind, elem: csk.element });
           if (ev.id === me && ev.time > 0.05) {
             this.ui.skillFeed('me', csk.name.toUpperCase());
             sfx.say(csk.name);
@@ -445,8 +472,6 @@ export class GameScene extends Phaser.Scene {
         const wide = ['nova', 'aura', 'barrier', 'heal', 'slow', 'pull', 'shield'].includes(ev.kind);
         this.burst(ev.x, ev.y, col, wide ? 60 : 36);
         const t0 = performance.now();
-        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: wide ? 260 : 150, color: col, born: t0, ms: 800 });
-        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: wide ? 170 : 100, color: 0xffffff, born: t0 + 90, ms: 650 });
         const sk = getSkill(ev.skill);
         if (sk) {
           const look = lookOf(ev.skill);
@@ -456,7 +481,7 @@ export class GameScene extends Phaser.Scene {
           const caster = this.lastPlayers.find((q) => q.id === ev.id);
           const big = sk.unique ? 2.4 : look.scale;
           this.fxs.push({ kind: 'anim', x: ev.x, y: ev.y, angle: caster?.aim ?? 0, size: big, color: col, born: t0, ms: 1100 + big * 350, skind: ev.kind, elem: ev.element, look });
-          if (sk.unique) this.cameras.main.shake(350, 0.012);
+          if (sk.unique) this.shake(350, 0.012);
           if (ev.id === me) {
             this.ui.skillFeed('me', sk.name.toUpperCase());
             sfx.say(sk.name);
@@ -466,7 +491,8 @@ export class GameScene extends Phaser.Scene {
             if (sk.unique) sfx.say(sk.name);
           }
         }
-        if (ev.id === me) this.cameras.main.flash(120, (col >> 16) & 255, (col >> 8) & 255, col & 255, false);
+        if (ev.id === me && presentation.prefs.motion)
+          this.cameras.main.flash(90, (col >> 16) & 255, (col >> 8) & 255, col & 255, false);
         if (ev.id === me) sfx.skill(ev.kind);
         else if (performance.now() - this.lastOtherSkill > 150) {
           this.lastOtherSkill = performance.now();
@@ -506,7 +532,7 @@ export class GameScene extends Phaser.Scene {
         this.burst(ev.x, ev.y, 0xff8a3c, 30);
         sfx.boom();
         if (this.source && Math.hypot(ev.x - this.predictor.x, ev.y - this.predictor.y) < 400)
-          this.cameras.main.shake(140, 0.005);
+          this.shake(140, 0.005);
         break;
       case 'respawn':
         this.burst(ev.x, ev.y, 0x4dd2ff, 12);
@@ -537,13 +563,14 @@ export class GameScene extends Phaser.Scene {
         this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: 420, color: 0xff1744, born: performance.now(), ms: 1100 });
         this.pop(ev.x, ev.y - 80, ev.name.toUpperCase() + '!', '#ff5e8a', 46);
         this.ui.notify(`Boss form change: ${ev.name}! Stronger attack and defence.`, '#ff5e8a', 3500);
-        this.cameras.main.shake(400, 0.015);
+        this.shake(400, 0.015);
         sfx.boom();
         break;
       }
       case 'domain':
         this.ui.notify(`DOMAIN EXPANSION: ${ev.name}`, '#' + ev.color.toString(16).padStart(6, '0'), 4500);
-        this.cameras.main.flash(500, (ev.color >> 16) & 255, (ev.color >> 8) & 255, ev.color & 255, false);
+        if (presentation.prefs.motion)
+          this.cameras.main.flash(350, (ev.color >> 16) & 255, (ev.color >> 8) & 255, ev.color & 255, false);
         sfx.roundEnd();
         break;
       default:
@@ -551,7 +578,14 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private shake(ms: number, strength: number): void {
+    if (presentation.prefs.motion && presentation.prefs.shake)
+      this.cameras.main.shake(ms, strength * 0.65);
+  }
+
   private burst(x: number, y: number, color: number, n: number): void {
+    const budget = presentation.budget;
+    n = Math.min(n, budget.perBurst);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = 60 + Math.random() * 260;
@@ -567,7 +601,8 @@ export class GameScene extends Phaser.Scene {
         size: 2 + Math.random() * 3,
       });
     }
-    if (this.particles.length > 400) this.particles.splice(0, this.particles.length - 400);
+    if (this.particles.length > budget.particles)
+      this.particles.splice(0, this.particles.length - budget.particles);
   }
 
   // ---- input ---------------------------------------------------------------
@@ -602,6 +637,7 @@ export class GameScene extends Phaser.Scene {
   // ---- frame ---------------------------------------------------------------
 
   update(_time: number, deltaMs: number): void {
+    presentation.sample(deltaMs);
     const g = this.g;
     g.clear();
     this.gt.clear();
@@ -687,6 +723,7 @@ export class GameScene extends Phaser.Scene {
         : p,
     );
     const me = players.find((p) => p.id === src.localId);
+    this.updateViewport(me);
 
     this.handlePhase(snap, players, me, now);
     this.detectShots(snap.bullets, src.localId, now);
@@ -774,10 +811,11 @@ export class GameScene extends Phaser.Scene {
     for (const b of bullets) {
       seen.add(b.id);
       if (this.knownBullets.has(b.id)) continue;
-      if (b.owner === me) sfx.shoot(1);
+      const weapon = this.lastPlayers.find(p => p.id === b.owner)?.weapon ?? 0;
+      if (b.owner === me) sfx.shoot(1, weapon);
       else if (now - this.lastOtherShot > 90) {
         this.lastOtherShot = now;
-        sfx.shoot(0.3);
+        sfx.shoot(0.3, weapon);
       }
     }
     this.knownBullets = seen;
@@ -790,9 +828,16 @@ export class GameScene extends Phaser.Scene {
     b: Snapshot['bullets'][number],
     color: number,
     now: number,
+    side: number,
   ): void {
     const r = b.r;
     const ang = Math.atan2(b.vy, b.vx);
+    const speed = Math.hypot(b.vx, b.vy);
+    const trail = Math.min(30, 8 + speed * 0.025);
+    g.lineStyle(Math.max(2, r * 0.7), side, 0.75).lineBetween(
+      b.x - Math.cos(ang) * trail, b.y - Math.sin(ang) * trail, b.x, b.y,
+    );
+    g.lineStyle(2, side, 1).strokeCircle(b.x, b.y, r + 2);
     switch (b.kind) {
       case 1: {
         const pts = [0, 1, 2, 3].map((i) => {
@@ -1225,15 +1270,19 @@ export class GameScene extends Phaser.Scene {
       g.lineStyle(2, 0xfff59d, 1).strokeCircle(c.x, c.y, r * 0.6);
     }
     // pickups
-    const pulse = 1 + Math.sin(now / 160) * 0.15;
+    const pulse = presentation.prefs.motion ? 1 + Math.sin(now / 160) * 0.12 : 1;
     for (const pk of snap.pickups) {
       const pu = powerupFromId(pk.pu);
       const ec = pu ? EFFECTS[pu.effect].color : 0xffc93c;
       const rc = pu ? RARITIES[pu.rarity].color : 0xffffff;
       g.fillStyle(ec, 0.18).fillCircle(pk.x, pk.y, PICKUP_RADIUS * 2.2 * pulse);
       g.lineStyle(3, rc, 1).strokeCircle(pk.x, pk.y, PICKUP_RADIUS * pulse);
-      g.fillStyle(ec, 1).fillCircle(pk.x, pk.y, 8);
+      g.fillStyle(0x08101d, 0.86).fillCircle(pk.x, pk.y, 12);
+      if (pu) drawEffectGlyph(g, pu.effect, pk.x, pk.y, 7, ec);
+      else g.fillStyle(ec, 1).fillCircle(pk.x, pk.y, 7);
       if (pu && pu.rarity >= 2) g.lineStyle(2, rc, 0.5).strokeCircle(pk.x, pk.y, PICKUP_RADIUS * 1.7 * pulse);
+      if (pu) for (let i = 0; i <= pu.rarity; i++)
+        g.fillStyle(rc, 1).fillCircle(pk.x + (i - pu.rarity / 2) * 5, pk.y + PICKUP_RADIUS + 7, 1.5);
     }
     // mines
     const colorOf = new Map(players.map((p) => [p.id, p.color]));
@@ -1282,7 +1331,14 @@ export class GameScene extends Phaser.Scene {
     for (const id of Array.from(this.trails.keys())) if (!aliveIds.has(id)) this.trails.delete(id);
 
     // bullets
-    for (const b of snap.bullets) this.drawBullet(g, b, colorOf.get(b.owner) ?? 0xffffff, now);
+    for (const b of snap.bullets)
+      this.drawBullet(
+        g,
+        b,
+        colorOf.get(b.owner) ?? 0xffffff,
+        now,
+        b.owner === meId || this.isAlly(b.owner) ? SIDE.ally : SIDE.enemy,
+      );
 
     // players
     const alive = new Set<string>();
@@ -1366,7 +1422,12 @@ export class GameScene extends Phaser.Scene {
           g.lineStyle(3, 0x7dff6b, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 4 + i * 4);
       }
       if (p.slow) g.lineStyle(3, 0x80d8ff, 0.8).strokeCircle(p.x, p.y, PLAYER_RADIUS + 2);
-      if (p.id === meId) g.lineStyle(2, 0xffffff, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 3);
+      const side = p.id === meId || this.isAlly(p.id) ? SIDE.ally : SIDE.enemy;
+      g.lineStyle(p.id === meId ? 3 : 2, side, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 7);
+      if (presentation.prefs.colorblind) {
+        if (side === SIDE.ally) g.fillStyle(side, 1).fillCircle(p.x, p.y + PLAYER_RADIUS + 10, 3);
+        else g.fillStyle(side, 1).fillTriangle(p.x, p.y + PLAYER_RADIUS + 5, p.x - 4, p.y + PLAYER_RADIUS + 12, p.x + 4, p.y + PLAYER_RADIUS + 12);
+      }
       // hp
       {
         // HP bar (green > yellow > red); bosses get a wide bar with 25% form marks
@@ -1393,8 +1454,9 @@ export class GameScene extends Phaser.Scene {
           if (!e) return;
           const ex = p.x + (i - (fx.length - 1) / 2) * 11;
           const ey = p.y - this.art.topOf(p) - 12;
-          this.gt.fillStyle(e.color, 1).fillCircle(ex, ey, 4);
-          this.gt.lineStyle(1.5, RARITIES[Number(r)]?.color ?? 0xffffff, 1).strokeCircle(ex, ey, 5.5);
+          this.gt.fillStyle(0x080b18, 0.9).fillCircle(ex, ey, 7);
+          drawEffectGlyph(this.gt, id as EffectId, ex, ey, 4, e.color);
+          this.gt.lineStyle(1.5, RARITIES[Number(r)]?.color ?? 0xffffff, 1).strokeCircle(ex, ey, 6);
         });
       }
     }
@@ -1431,9 +1493,15 @@ export class GameScene extends Phaser.Scene {
         // Danger warning: a pulsing circle that fills up until the hit lands.
         g.lineStyle(3, f.color, 0.9).strokeCircle(f.x, f.y, f.size);
         g.fillStyle(f.color, 0.12 + 0.25 * k).fillCircle(f.x, f.y, f.size * k);
+      } else if (f.kind === 'cast') {
+        if (k < 0) continue;
+        drawCast(g, f.skind ?? '', f.x, f.y, f.angle, k, f.color);
       } else if (f.kind === 'anim') {
         if (k < 0) continue;
-        drawSkillAnim(g, f.skind ?? '', f.elem ?? 0, f.x, f.y, f.angle, k, f.size, f.color, f.born % 97);
+        const phase = lifecyclePhase(k);
+        if (phase === 'cast') drawCast(g, f.skind ?? '', f.x, f.y, f.angle, k / 0.18, f.color);
+        else if (phase === 'end') drawEnd(g, f.skind ?? '', f.x, f.y, f.angle, (k - 0.78) / 0.22, f.color);
+        else drawSkillAnim(g, f.skind ?? '', f.elem ?? 0, f.x, f.y, f.angle, k, f.size, f.color, f.born % 97);
       } else if (f.kind === 'burst' && f.look) {
         if (k < 0) continue;
         drawBurst(g, f.x, f.y, f.size, k, f.look);

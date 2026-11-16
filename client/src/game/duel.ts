@@ -23,6 +23,7 @@ import type { TouchControls } from '../ui/touch';
 import type { Ui } from '../ui/ui';
 import { esc, hex } from '../ui/ui';
 import { drawBurst, drawShot, lookOf, type SkillLook } from '../art/skillfx';
+import { presentation } from '../presentation';
 
 export interface DuelSnap {
   fighters: FighterView[];
@@ -280,7 +281,8 @@ export class DuelScene extends Phaser.Scene {
     if (e.t === 'hit') {
       this.fxs.push({ kind: 'spark', x: e.x, y: e.y, dir: 0, len: e.blocked ? 30 : 60, color: e.blocked ? 0x80d8ff : 0xffe58a, born: now, ms: 260 });
       this.popText(e.x, e.y - 30, e.blocked ? 'BLOCK' : String(e.dmg), e.blocked ? '#80d8ff' : '#ffe58a');
-      if (e.id === me) this.cameras.main.shake(e.blocked ? 60 : 140, e.blocked ? 0.003 : 0.008);
+      if (e.id === me && presentation.prefs.motion && presentation.prefs.shake)
+        this.cameras.main.shake(e.blocked ? 60 : 140, e.blocked ? 0.003 : 0.008);
       sfx.hit();
     } else if (e.t === 'skill') {
       const s = getSkill(e.skill);
@@ -289,7 +291,8 @@ export class DuelScene extends Phaser.Scene {
       this.fxs.push({ kind: 'burst', x: e.x + (e.kind === 'cleave' ? e.dir * 90 : 0), y: e.y, dir: e.dir, len: big ? 170 : 90, color: look.color, born: now, ms: 700, look });
       this.fxs.push({ kind: 'burst', x: e.x, y: e.y, dir: e.dir, len: 60, color: look.accent, born: now + 120, ms: 600, look: { ...look, style: (look.style + 3) % 6 } });
       this.popText(e.x, e.y - 100, s.name.toUpperCase(), '#' + look.color.toString(16).padStart(6, '0'));
-      if (e.id === this.src?.localId) this.cameras.main.flash(90, (look.color >> 16) & 255, (look.color >> 8) & 255, look.color & 255, false);
+      if (e.id === this.src?.localId && presentation.prefs.motion)
+        this.cameras.main.flash(90, (look.color >> 16) & 255, (look.color >> 8) & 255, look.color & 255, false);
       sfx.skill(e.kind);
     } else if (e.t === 'beam') {
       const look = lookOf(e.skill);
@@ -300,7 +303,7 @@ export class DuelScene extends Phaser.Scene {
       if (heavy) this.popText(e.x + e.dir * 60, e.y - 60, e.move.toUpperCase(), '#ffe9a8');
     } else if (e.t === 'ko') {
       this.big.setText('K.O.!');
-      this.cameras.main.shake(400, 0.015);
+      if (presentation.prefs.motion && presentation.prefs.shake) this.cameras.main.shake(400, 0.015);
       sfx.kill();
     } else if (e.t === 'roundEnd') {
       if (!this.big.text) this.big.setText(e.winner === me ? 'ROUND WON' : 'ROUND LOST');

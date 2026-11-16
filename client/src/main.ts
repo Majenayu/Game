@@ -42,6 +42,10 @@ import { DuelScene, OfflineDuel, OnlineDuel, type DuelSource } from './game/duel
 import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './platform/crazygames';
 import { TouchControls, isTouchDevice, setTouchDevice } from './ui/touch';
 import { Ui } from './ui/ui';
+import { presentation } from './presentation';
+import { mountSettings } from './ui/settings';
+import { mountJourney } from './ui/journey';
+import './ui/refined-starforge.css?phase=5';
 
 /**
  * Removes data from older versions (old save, old nickname). Opening the game with ?reset=1 wipes everything
@@ -62,6 +66,7 @@ function cleanStorage(): void {
 
 async function boot(): Promise<void> {
   cleanStorage();
+  presentation.reload();
   const platform = await createPlatform();
   platform.loadingStart();
   await Promise.all([
@@ -75,6 +80,8 @@ async function boot(): Promise<void> {
   await progress.init();
 
   const ui = new Ui();
+  mountSettings(ui);
+  mountJourney(ui, progress);
   const touch = new TouchControls();
 
   const scene = new GameScene();
@@ -734,6 +741,11 @@ async function boot(): Promise<void> {
   ui.setAuto(scene.autoSkills);
   ui.chatAllowed = !platform.disableChat;
   window.addEventListener('keydown', (e) => {
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLSelectElement ||
+      !document.getElementById('modal')!.hidden
+    ) return;
     if ((e.key === 't' || e.key === 'T') && scene.hasSource && !pages.current) {
       ui.toggleEmotes();
       return;
@@ -784,7 +796,9 @@ async function boot(): Promise<void> {
   if (invite) void startOnline(nick, invite);
   else if (platform.isInstantMultiplayer) void startOnline(nick, { createPrivate: true });
   else {
-    progress.onSkill((d) => ui.showSkillGain(d));
+    progress.onSkill((d) => {
+      if (progress.data.profile.onboarded) ui.showSkillGain(d);
+    });
     if (progress.needsProfile) {
       // CrazyGames: new players land in gameplay immediately. Start the tutorial right away with a
       // default kit; the "create your fighter" screen opens when they leave it.

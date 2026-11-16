@@ -263,7 +263,14 @@ export class Pages {
       ? `<div class="tabs pgtabs">${group.tabs.map(([n, t]) => `<button class="${n === name ? 'on' : ''}" data-pgtab="${n}">${t}</button>`).join('')}</div>`
       : '';
     const hero = group?.title === 'Hero' ? this.heroPreview() : '';
+    const page = document.getElementById('page')!;
+    const resetScroll = page.hidden || page.dataset.view !== name;
     const body = this.ui.showPage(title, tabs + hero + this.html(name));
+    page.dataset.view = name;
+    if (resetScroll) {
+      page.scrollTop = 0;
+      body.scrollTop = 0;
+    }
     body.querySelectorAll<HTMLElement>('[data-pgtab]').forEach((el) =>
       el.addEventListener('click', () => {
         sfx.click();
@@ -440,7 +447,7 @@ export class Pages {
       <div class="d">${esc(d.desc)}</div>${extra}
       <div class="d">${esc(d.category)}${el ? ` &middot; ${esc(el.name)}` : ''} &middot; ${esc(d.kind)}<br />
         Lv ${s.level} &middot; ${s.copies} cop${s.copies === 1 ? 'y' : 'ies'} &middot; Mastery ${masteryLevel(s.masteryXp)}<br />
-        ${tags}</div>${buttons}</div>`;
+        ${tags}</div>${buttons}<button class="ghost" data-skill-detail="${s.skillId}" aria-label="Inspect ${esc(d.name)}">Full stats</button></div>`;
   }
 
   private sortedSkills(): SkillInstance[] {
@@ -1057,12 +1064,17 @@ export class Pages {
     const note = (t: string, c = '#e8ecff') => this.ui.notify(t, c);
     const levelUps = (ls: number[]) => ls.forEach((l) => note(`Level up! You reached level ${l}`, '#ffc93c'));
     // Tap any skill card (not its buttons) to see the full stats.
-    body.addEventListener('click', (e) => {
+    body.onclick = (e) => {
       const t = e.target as HTMLElement;
+      const details = t.closest<HTMLElement>('[data-skill-detail]');
+      if (details) {
+        this.showSkill(Number(details.dataset.skillDetail));
+        return;
+      }
       if (t.closest('button')) return;
       const card = t.closest<HTMLElement>('[data-skill]');
       if (card) this.showSkill(Number(card.dataset.skill));
-    });
+    };
 
     if (name === 'arenas') {
       on('[data-mode]', (el) => {

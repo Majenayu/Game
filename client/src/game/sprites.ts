@@ -4,6 +4,7 @@ import { ALL_FIGURES } from '../art/bestiary';
 import { heroSvg } from '../art/hero';
 import { BOSS_ART, CREATURE_ART, FL, GI } from '../art/packs.gen';
 import { hx, shade } from '../art/render';
+import { presentation } from '../presentation';
 
 /**
  * Turns the SVG art (heroes, bosses, summons) into Phaser textures and draws them in the arena.
@@ -69,13 +70,19 @@ export class ArenaArt {
     const key = `hero:${p.char}:${p.look}`;
     if (!this.ensure(key, () => heroSvg({ char: p.char, gear }), 120, 144)) return false;
     const im = this.image(p.id, key);
-    const step = Math.sin(now / 110 + p.x * 0.05) * (p.spd > 0 ? 1.5 : 0);
+    const moving = p.spd > 0;
+    const step = presentation.prefs.motion ? Math.sin(now / 135 + p.x * 0.05) * (moving ? 1.5 : 0.7) : 0;
+    const lean = presentation.prefs.motion && moving ? Math.sin(p.aim) * 2.5 : 0;
+    const breathe = presentation.prefs.motion ? 1 + Math.sin(now / 420 + p.x * 0.01) * 0.012 : 1;
     const h = PLAYER_RADIUS * 4.6;
-    im.setDisplaySize(h * (100 / 120), h)
+    im.setDisplaySize(h * (100 / 120) * breathe, h * breathe)
       .setPosition(p.x, p.y - PLAYER_RADIUS * 0.55 + step)
+      .setAngle(lean)
       .setFlipX(Math.cos(p.aim) < 0)
-      .setAlpha(alpha)
-      .clearTint();
+      .setAlpha(alpha);
+    if (p.hp <= p.maxHp * 0.34) im.setTint(0xffc0c8);
+    else if (p.casting > 0) im.setTint(0xfff1b8);
+    else im.clearTint();
     return true;
   }
 
