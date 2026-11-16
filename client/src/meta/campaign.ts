@@ -84,7 +84,14 @@ export class LevelRunner {
       won = !!boss && !boss.alive && boss.deaths > 0 && me.alive;
       lost = !me.alive;
     }
-    if (!won && !lost && timeUp) lost = true;
+    // Time up: whoever has more HP left (in percent) wins. Draws go to the enemy.
+    if (!won && !lost && timeUp) {
+      const foe = Array.from(sim.players.values()).find((p) => p.bot);
+      const mine = me.maxHp > 0 ? me.hp / me.maxHp : 0;
+      const theirs = foe && foe.maxHp > 0 ? (foe.alive ? foe.hp / foe.maxHp : 0) : 0;
+      if (me.alive && mine > theirs) won = true;
+      else lost = true;
+    }
     if (!won && !lost) return;
     this.done = true;
     window.clearInterval(this.timer);

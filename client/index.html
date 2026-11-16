@@ -828,7 +828,19 @@
         padding: 2px 16px;
         border-radius: 10px;
         background: rgba(8, 10, 24, 0.55);
-        animation: mfxin 0.25s ease-out;
+        text-shadow: 0 0 12px currentColor;
+        white-space: nowrap;
+        animation: bannerin 0.3s ease-out;
+      }
+      @keyframes bannerin {
+        from {
+          transform: translateX(-50%) scale(1.8);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(-50%) scale(1);
+          opacity: 1;
+        }
       }
       #formfx {
         position: fixed;

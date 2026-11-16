@@ -478,10 +478,19 @@ async function boot(): Promise<void> {
         ...(level.id <= 88
           ? (() => {
               const w = WORLDS[worldOfLevel(level.id).world];
-              return { effect: w.effect, effectElement: w.element >= 0 ? w.element : undefined, botLevel: 1 + (level.id - 1) * 7 + (level.boss ? 15 : 0) };
+              const { world, index } = worldOfLevel(level.id);
+              const you = progress.level.level;
+              const curve = 1 + (level.id - 1) * 7 + (level.boss ? 25 : 0);
+              // Enemy 1 of a map is a bit below your level, enemy 10 is above it; the boss is far above.
+              const rel = level.boss ? you * (1.5 + world * 0.1) + 10 : you * (0.85 + index * 0.04 + world * 0.03);
+              return {
+                effect: w.effect,
+                effectElement: w.element >= 0 ? w.element : undefined,
+                botLevel: Math.min(1000, Math.round(Math.max(curve, rel))),
+              };
             })()
           : { botLevel: level.id === CHAMPION_LEVEL_ID ? 1000 : 300 }),
-        bossSkillScale: level.id === CHAMPION_LEVEL_ID ? 1 : 0.3,
+        bossSkillScale: level.id === CHAMPION_LEVEL_ID ? 1.5 : 0.6 + 0.06 * worldOfLevel(Math.min(88, level.id)).world,
       },
       progress.loadoutInstances(),
       progress.level.level,

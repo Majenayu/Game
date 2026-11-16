@@ -198,9 +198,9 @@ export const LEVELS: LevelDef[] = CAMPAIGN_MAPS.flatMap((map, mapIndex) => {
       map: map.id,
       bots: 1,
       skill: Math.min(0.95, 0.15 + mapIndex * 0.09 + encounter * 0.035),
-      time: 3600,
+      time: 120,
       obj: { type: 'kills' as const, n: 1 },
-      par: 3600,
+      par: 120,
       reward: base.reward + mapIndex * 80 + encounter * 20,
     };
   });
@@ -214,9 +214,9 @@ export const LEVELS: LevelDef[] = CAMPAIGN_MAPS.flatMap((map, mapIndex) => {
       map: map.id,
       bots: 1,
       skill: Math.min(0.98, 0.5 + mapIndex * 0.05),
-      time: 3600,
+      time: 300,
       obj: { type: 'boss' as const, n: 1 },
-      par: 3600,
+      par: 300,
       boss: true,
       bossName: boss.name,
       bossHp: boss.hp,

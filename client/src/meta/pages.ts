@@ -107,7 +107,7 @@ export interface PageActions {
   playTeam2v2(): void;
   /** Opens the training ground (harmless dummies). */
   playTraining(): void;
-  /** 1v1 against the champion Majen (from level 50). */
+  /** 1v1 against the champion Majen. Open to everyone from level 1. */
   challengeChampion(): void;
   /** Shows the rewarded-ad flow for an extra spin. Resolves true when granted. */
   watchAd(): Promise<boolean>;

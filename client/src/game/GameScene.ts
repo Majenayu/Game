@@ -415,6 +415,16 @@ export class GameScene extends Phaser.Scene {
         break;
       case 'cast': {
         this.burst(ev.x, ev.y, 0xffffff, 4);
+        const csk = getSkill(ev.skill);
+        // Charge-up circle while the skill is being cast, and the name shows at once.
+        if (csk) {
+          const col = ELEMENTS[csk.element]?.color ?? 0xffffff;
+          this.fxs.push({ kind: 'warn', x: ev.x, y: ev.y, angle: 0, size: 70, color: col, born: performance.now(), ms: Math.max(250, ev.time * 1000) });
+          if (ev.id === me && ev.time > 0.05) {
+            this.ui.skillBanner(csk.name.toUpperCase(), '#' + col.toString(16).padStart(6, '0'));
+            sfx.say(csk.name);
+          }
+        }
         if (ev.id === me) sfx.skill('cast');
         break;
       }

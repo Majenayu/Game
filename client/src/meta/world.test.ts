@@ -35,11 +35,9 @@ describe('boss tower progress', () => {
 });
 
 describe('champion, weapons and accessories', () => {
-  it('the champion opens at level 50; the winner picks a skill from his kit and takes the crown', async () => {
+  it('anyone can challenge the champion from level 1; the winner picks a skill from his kit and takes the crown', async () => {
     const p = await fresh();
     const majen = BOSS_LEVELS[8];
-    expect(p.levelUnlocked(majen)).toBe(false);
-    for (let i = 0; i < 400 && p.level.level < 50; i++) p.addXp(5000);
     expect(p.levelUnlocked(majen)).toBe(true);
     p.finishLevel(majen, 1);
     const kit = p.championKit();

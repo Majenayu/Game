@@ -109,7 +109,7 @@ export const SPINS_PER_DAY = 10;
 /** Accessories you may pick for free when you create your profile. */
 export const FREE_ACCS = [0, 2, 5, 6, 8];
 /** Level needed to challenge the champion (1 = anyone). */
-export const CHAMPION_MIN_LEVEL = 50;
+export const CHAMPION_MIN_LEVEL = 1;
 
 export interface WheelSegment {
   label: string;

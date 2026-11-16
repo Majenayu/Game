@@ -447,7 +447,7 @@ export class Sim {
     const st: CombatStats =
       opts.stats ?? (bot && this.cfg.botLevel ? combatFromSheet(levelSheet(this.cfg.botLevel)) : combatFromSheet(levelSheet(level)));
     const maxHp = boss
-      ? Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) * HP_SCALE
+      ? Math.round(Math.max(1, Math.min(60, this.cfg.bossHp ?? 12)) * HP_SCALE * (opts.stats ? 1 : levelSheet(this.cfg.botLevel ?? level).hp / 300))
       : Math.round((st.maxHp * ch.hp) / 3);
     const team = MODES[this.mode].team ? this.smallerTeam() : 0;
     const spot = this.pickSpawn(undefined, true, MODES[this.mode].team ? team : -1);
@@ -691,7 +691,9 @@ export class Sim {
       if (this.scoreboardLeft <= 0 && this.cfg.autoRestart) this.startRound();
       return;
     }
-    const frozenAll = this.time < this.freezeUntil || this.time < this.pauseUntil;
+    // Boss form change: the whole battle stops (bots, bullets, pets, zones, arena effects), not only the players.
+    if (this.time < this.pauseUntil) return;
+    const frozenAll = this.time < this.freezeUntil;
     if (!frozenAll) this.timeLeft -= dt;
 
     for (const p of this.players.values()) {
@@ -1041,9 +1043,13 @@ export class Sim {
     const fin = this.cfg.bossFinal ?? { armor: 0.6, dmg: 3 };
     b.armor = want === 3 ? fin.armor : FORM_ARMOR[want];
     b.dmgMul = want === 3 ? fin.dmg : FORM_DMG[want];
-    b.invulnUntil = this.time + 1.2;
+    b.invulnUntil = this.time + FORM_PAUSE + 1.2;
     b.mp = b.maxMp;
-    for (const s of b.slots) s.cdUntil = 0;
+    // Skills come back right after the pause, never during it, and players get a short safe moment.
+    for (const s of b.slots) s.cdUntil = this.time + FORM_PAUSE + 0.8;
+    b.castAt = -1;
+    b.pendingSkill = 0;
+    for (const o of this.players.values()) if (!o.boss) o.invulnUntil = Math.max(o.invulnUntil, this.time + FORM_PAUSE + 0.6);
     b.effects.push({ effect: 'speed', rarity: 3, until: this.time + 9999, power: 0.3 * want });
     if (want >= 2) b.effects.push({ effect: 'rapid', rarity: 3, until: this.time + 9999, power: 0.4 * (want - 1) });
     // The whole battle pauses while the boss transforms, so everyone sees it.
@@ -1561,11 +1567,33 @@ export class Sim {
       if (!owner) continue;
       const i = index.get(pt.owner) ?? 0;
       index.set(pt.owner, i + 1);
-      const a = this.time * 1.6 + i * 1.3;
-      pt.x += (owner.x + Math.cos(a) * 54 - pt.x) * Math.min(1, 7 * dt);
-      pt.y += (owner.y + Math.sin(a) * 54 - pt.y) * Math.min(1, 7 * dt);
+      let target = this.nearestEnemy(owner, 520);
+      if (pt.creature !== undefined) {
+        // Summoned creatures fight on their own: they chase the nearest enemy and circle it at attack range,
+        // and walk back to their owner when nothing is near.
+        const foe = this.nearestEnemy(owner, 900);
+        let gx = owner.x - 60;
+        let gy = owner.y + 30;
+        if (foe) {
+          const side = (pt.id % 2 ? 1 : -1) * (this.time * 0.6);
+          gx = foe.x + Math.cos(side) * 150;
+          gy = foe.y + Math.sin(side) * 150;
+        }
+        const dx = gx - pt.x;
+        const dy = gy - pt.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 8) {
+          const m = movePlayer(pt.x, pt.y, dx / d, dy / d, dt, Math.min(260, d * 4), this.map.obstacles);
+          pt.x = m.x;
+          pt.y = m.y;
+        }
+        target = foe && Math.hypot(foe.x - pt.x, foe.y - pt.y) < 520 ? foe : null;
+      } else {
+        const a = this.time * 1.6 + i * 1.3;
+        pt.x += (owner.x + Math.cos(a) * 54 - pt.x) * Math.min(1, 7 * dt);
+        pt.y += (owner.y + Math.sin(a) * 54 - pt.y) * Math.min(1, 7 * dt);
+      }
       if (this.time < pt.nextShot) continue;
-      const target = this.nearestEnemy(owner, 520);
       if (!target || segmentBlocked(pt.x, pt.y, target.x, target.y, this.map.obstacles)) continue;
       pt.nextShot = this.time + (pt.fire ?? 1.3);
       const ang = Math.atan2(target.y - pt.y, target.x - pt.x);
