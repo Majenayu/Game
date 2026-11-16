@@ -20,6 +20,7 @@ import {
   MP_COST_SCALE,
   RANKED_START,
   dmgFromPower,
+  CHARACTERS,
   BFX_BUFFS,
   TRAIL_BUFFS,
   bonusText,
@@ -72,8 +73,10 @@ import {
 import { claimName } from './onboarding';
 import { MorePages } from './pages2';
 import { avatar, gearIcon } from '../art/icons2';
+import { heroArt } from '../art/hero';
+import { auctionLots, placeBid, settleAuction } from './auction';
+import { equippedGear, myStats } from './inventory';
 import { fetchRaid, raidClaim } from '../account';
-import { equippedGear } from './inventory';
 import { sfx } from '../audio';
 import { ENABLE_ADS } from '../platform/crazygames';
 import type { Ui } from '../ui/ui';
@@ -134,7 +137,8 @@ export type PageName =
   | 'guild'
   | 'summons'
   | 'gear'
-  | 'encyclopedia';
+  | 'encyclopedia'
+  | 'auction';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -156,8 +160,23 @@ const TITLES: Record<PageName, string> = {
   chests: 'Treasure Chests',
   guild: 'Guilds',
   summons: 'Summons',
-  gear: 'Accessories & Gear',
-  encyclopedia: 'Skill Encyclopedia',
+  gear: 'Hero',
+  encyclopedia: 'Skills',
+  auction: 'Shop & Market',
+};
+/** Pages that share one screen with tabs (one menu tile each). */
+const GROUPS: Array<{ title: string; tabs: Array<[PageName, string]> }> = [
+  { title: 'Hero', tabs: [['loadout', 'Loadout'], ['gear', 'Gear'], ['profile', 'Profile']] },
+  { title: 'Skills', tabs: [['collection', 'Collection'], ['fusion', 'Fusion Lab'], ['encyclopedia', 'Encyclopedia']] },
+  { title: 'Shop & Market', tabs: [['shop', 'Shop'], ['market', 'Market'], ['auction', 'Auction']] },
+];
+const WHEEL_TITLES: Record<WheelKind, string> = {
+  coins: 'Coin & Skin Wheel',
+  skills: 'Skill Wheel',
+  weapons: 'Weapon Wheel',
+  accs: 'Looks Wheel',
+  gear: 'Gear Wheel',
+  summons: 'Summon Wheel',
 };
 
 export class Pages {
@@ -200,7 +219,19 @@ export class Pages {
     });
   }
 
-  open(name: PageName): void {
+  open(raw: PageName | string): void {
+    // "spin:skills" opens the skill wheel on its own page.
+    let name = raw as PageName;
+    if (raw.startsWith('spin:')) {
+      const k = raw.slice(5) as WheelKind;
+      if (k in WHEELS && k !== this.wheel) {
+        this.wheel = k;
+        this.wheelRot = 0;
+        this.spinMsg = '';
+        this.spinCards = [];
+      }
+      name = 'spin';
+    }
     this.current = name;
     if (name === 'profile' || name === 'ranked') {
       this.world = null;
@@ -222,7 +253,19 @@ export class Pages {
   render(): void {
     if (!this.current) return;
     const name = this.current;
-    const body = this.ui.showPage(TITLES[name], this.html(name));
+    const group = GROUPS.find((g) => g.tabs.some(([n]) => n === name));
+    const title = name === 'spin' ? WHEEL_TITLES[this.wheel] : group ? group.title : TITLES[name];
+    const tabs = group
+      ? `<div class="tabs pgtabs">${group.tabs.map(([n, t]) => `<button class="${n === name ? 'on' : ''}" data-pgtab="${n}">${t}</button>`).join('')}</div>`
+      : '';
+    const hero = group?.title === 'Hero' ? this.heroPreview() : '';
+    const body = this.ui.showPage(title, tabs + hero + this.html(name));
+    body.querySelectorAll<HTMLElement>('[data-pgtab]').forEach((el) =>
+      el.addEventListener('click', () => {
+        sfx.click();
+        this.open(el.dataset.pgtab as PageName);
+      }),
+    );
     this.bind(name, body);
     const l = this.pr.level;
     this.ui.setStatus(l.level, l.into, l.need, this.pr.data.coins);
@@ -274,6 +317,8 @@ export class Pages {
         return this.more.gearHtml();
       case 'encyclopedia':
         return this.more.encyclopediaHtml();
+      case 'auction':
+        return this.auctionHtml();
     }
   }
 
@@ -668,7 +713,8 @@ export class Pages {
     const prizes = WHEELS[this.wheel]
       .map((w) => `<span class="tag" style="border-color:${w.color}">${esc(w.label)} ${((w.weight / total) * 100).toFixed(w.weight / total < 0.01 ? 1 : 0)}%</span>`)
       .join(' ');
-    return `<div class="tabs">${tabs}</div><div class="wheelbox"><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
+    void tabs;
+    return `<div class="wheelbox"><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
       <p>${prizes}</p>
       <div id="wheelwrap"><div id="pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
       <div id="spinresult" style="min-height:26px;color:var(--gold);font-size:18px">${esc(this.spinMsg)}</div>
@@ -893,6 +939,39 @@ export class Pages {
       <h3>How fusion works</h3>
       <p class="sub">In the Fusion Lab, two different skills of the same or neighbouring rank fuse into a new one. Any level works. Both parents are used up. You can fuse a few times each week.</p>`;
   }
+  /** Your hero as it looks in battle, with equipped gear and main stats (top of the Hero screen). */
+  private heroPreview(): string {
+    const pr = this.pr;
+    const st = myStats(pr);
+    const l = pr.data.loadout;
+    const gear = equippedGear(pr)
+      .map((id) => `<span title="${esc(getGear(id).name)}">${gearIcon(id)}</span>`)
+      .join('');
+    return `<div class="heroprev"><div class="heroart">${heroArt(pr)}</div>
+      <div class="grow"><b style="font-size:22px">${esc(pr.data.nick || 'You')}</b> <span class="tag">Lv ${pr.level.level}</span>
+        <div class="sub" style="margin:0">${esc(CHARACTERS[l.char]?.name ?? l.char)} &middot; ${esc(classById(pr.data.profile.cls)?.name ?? '')} &middot; ${esc(WEAPONS[l.weapon]?.name ?? '')}</div>
+        <div class="sub" style="margin:0">HP ${Math.round(st.combat.maxHp)} &middot; Attack ${+st.sheet.attack.toFixed(1)} &middot; Defence ${+st.sheet.defence.toFixed(1)} &middot; Speed ${+st.sheet.speed.toFixed(1)}</div>
+        <div class="heroGear">${gear || '<span class="sub">No gear equipped. Equip it in the Gear tab.</span>'}</div></div></div>`;
+  }
+  private auctionHtml(): string {
+    const pr = this.pr;
+    const won = settleAuction(pr);
+    if (won.length) this.ui.notify(`Auction won: ${won.join(', ')}`, '#ffc93c', 5000);
+    const { lots, endsIn } = auctionLots(pr);
+    const m = Math.floor(endsIn / 60000);
+    const s = Math.floor((endsIn % 60000) / 1000);
+    const cards = lots
+      .map((l) => {
+        const icon = l.kind === 'gear' ? gearIcon(l.item) : l.kind === 'skill' ? skillIcon(getSkill(l.item).kind, RANK_INFO[l.rank].color) : `<span style="font-size:34px">${l.kind === 'egg' ? '&#129370;' : '&#128142;'}</span>`;
+        return `<div class="card ${l.mine ? 'sel' : ''}">${icon}<b style="color:${hex(RANK_INFO[l.rank].color)}">[${l.rank}] ${esc(l.name)}</b>
+          <div class="d">Top bid <b>${l.top}</b> by ${esc(l.topName)}</div>
+          ${l.mine ? '<button disabled>You lead</button>' : `<button data-bid="${l.index}" data-amt="${l.next}" ${pr.data.coins >= l.next ? '' : 'disabled'}>Bid ${l.next}</button>
+          <button class="ghost" data-bid="${l.index}" data-amt="${Math.ceil(l.next * 1.5)}" ${pr.data.coins >= Math.ceil(l.next * 1.5) ? '' : 'disabled'}>Bid ${Math.ceil(l.next * 1.5)}</button>`}</div>`;
+      })
+      .join('');
+    return `<p class="sub">Four rare lots every 20 minutes. Bidders compete with you: if your bid is under their limit they outbid you at once and your coins stay with you. Lead a lot when the round ends and it is yours (paid out the next time you open this page).</p>
+      <div class="row"><div class="grow"><b>Round ends in ${m}:${String(s).padStart(2, '0')}</b></div></div><div class="cards">${cards}</div>`;
+  }
   private marketHtml(): string {
     const pr = this.pr;
     const offers = pr
@@ -1028,6 +1107,17 @@ export class Pages {
         this.actions.startLevel(BOSS_LEVELS.find((l) => l.id === Number(el.dataset.tower))!),
       );
     if (name === 'training') on('[data-train]', () => this.actions.playTraining());
+    if (name === 'auction')
+      on('[data-bid]', (el) => {
+        const r = placeBid(pr, Number(el.dataset.bid), Number(el.dataset.amt));
+        if (!r.ok) note(r.reason ?? 'Cannot bid', '#ff8a9a');
+        else if (r.outbid) note(`Outbid! ${r.outbid}`, '#ff8a9a');
+        else {
+          sfx.reward();
+          note('You lead this lot!', '#7dff6b');
+        }
+        this.render();
+      });
     if (name === 'profile') {
       on('[data-goto]', (el) => this.open(el.dataset.goto as PageName));
       on('[data-reset]', () => {

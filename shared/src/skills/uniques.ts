@@ -139,6 +139,15 @@ const ROWS: Row[] = [
     'summon',
     'Take a random skill from a defeated enemy for the rest of the match.',
   ],
+  // new uniques (v3)
+  ["Executioner's Verdict", 'attack', 'nova', 'Instantly defeats every enemy below 30% HP. Bosses lose 25% of their max HP instead.'],
+  ['Soul Harvest', 'attack', 'nova', 'Steals 20% of the HP of every enemy and heals you by the total.'],
+  ['Meteor Judgement', 'attack', 'nova', 'Calls a giant meteor onto every enemy at once.'],
+  ['Chrono Overdrive', 'support', 'buff', 'No cooldowns at all for 8 seconds.'],
+  ['Plague Monarch', 'attack', 'aura', 'Every shot poisons for 12 seconds.'],
+  ["Titan's Wrath", 'support', 'buff', 'Double damage and speed for 12 seconds.'],
+  ['Absolute Zero', 'control', 'slow', 'Every enemy freezes solid for 3 seconds.'],
+  ['Void Silence', 'control', 'slow', 'No enemy can cast a skill for 5 seconds.'],
 ];
 
 export const UNIQUES: UniqueDef[] = ROWS.map(([name, category, kind, desc, perk], i) => ({
@@ -151,7 +160,7 @@ export const UNIQUES: UniqueDef[] = ROWS.map(([name, category, kind, desc, perk]
 }));
 
 export const UNIQUE_COUNT = UNIQUES.length;
-/** Unique skills have ids 1,000,001 to 1,000,100 so they never collide with generated ones. */
+/** Unique skills have ids from 1,000,001 up (one per unique) so they never collide with generated ones. */
 export const UNIQUE_BASE_ID = 1_000_000;
 
 export function uniqueIdOf(n: number): number {

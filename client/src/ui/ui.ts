@@ -299,7 +299,8 @@ export class Ui {
   }
 
   setBadge(page: string, on: boolean): void {
-    this.menu.querySelector<HTMLElement>(`[data-page="${page}"] .dot`)?.classList.toggle('on', on);
+    const key = page === 'spin' ? 'spin:coins' : page;
+    this.menu.querySelector<HTMLElement>(`[data-page="${key}"] .dot`)?.classList.toggle('on', on);
   }
 
   showMenu(): void {

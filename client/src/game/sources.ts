@@ -46,7 +46,7 @@ export class OfflineSource implements GameSource {
     config: Partial<SimConfig> = {},
     instances: SkillInstance[] = [],
     level = 1,
-    extra: { stats?: CombatStats; summon?: { id: number; level: number; cards: number[] } } = {},
+    extra: { stats?: CombatStats; summon?: { id: number; level: number; cards: number[] }; gear?: number[] } = {},
   ) {
     this.sim = new Sim(Math.random, { countdown: COUNTDOWN_SECONDS, ...config });
     this.sim.addPlayer(this.localId, name, false, {
@@ -61,6 +61,7 @@ export class OfflineSource implements GameSource {
       level,
       stats: extra.stats,
       summon: extra.summon,
+      gear: extra.gear,
     });
     this.sim.rebalanceBots();
     // Same lobby as online: up to 25 seconds to look at the enemies and confirm, then 3, 2, 1, GO.
@@ -255,6 +256,7 @@ export class OnlineSource implements GameSource {
         lv: p.lv ?? 1,
         atk: p.atk ?? 50,
         def: p.def ?? 0,
+        look: p.look ?? '',
       });
     });
     const bullets: Snapshot['bullets'] = [];

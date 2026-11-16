@@ -15,6 +15,7 @@ export class PlayerState extends Schema {
   @type('uint16') lv = 1;
   @type('uint16') atk = 50;
   @type('uint8') def = 0;
+  @type('string') look = '';
   @type('int16') kills = 0;
   @type('int16') deaths = 0;
   @type('int16') score = 0;

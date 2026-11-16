@@ -3,11 +3,14 @@ import { seed } from './seed';
 
 test.beforeEach(async ({ page }) => seed(page));
 
+/** Opens a menu page; "tile/tab" opens a tab inside a merged page (e.g. "shop/market"). */
 async function openPage(page: Page, name: string) {
   await page.goto('/');
   await expect(page.locator('#menu')).toBeVisible({ timeout: 15_000 });
-  await page.locator(`[data-page="${name}"]`).click();
+  const [tile, tab] = name.split('/');
+  await page.locator(`[data-page="${tile}"]`).click();
   await expect(page.locator('#page')).toBeVisible();
+  if (tab) await page.locator(`[data-pgtab="${tab}"]`).click();
 }
 
 test('menu shows progress and every page opens', async ({ page }) => {
@@ -21,25 +24,31 @@ test('menu shows progress and every page opens', async ({ page }) => {
     'campaign',
     'loadout',
     'collection',
-    'fusion',
     'shop',
     'daily',
     'quests',
-    'spin',
+    'spin:coins',
+    'spin:skills',
+    'spin:weapons',
+    'spin:gear',
+    'spin:summons',
+    'spin:accs',
     'dex',
     'bestiary',
     'ranked',
-    'gear',
-    'encyclopedia',
     'summons',
-    'market',
     'training',
-    'profile',
     'chests',
+    'guild',
   ]) {
     await page.locator(`[data-page="${name}"]`).click();
     await expect(page.locator('#page')).toBeVisible();
     await expect(page.locator('#pagebody')).not.toBeEmpty();
+    // merged pages: every tab opens too
+    for (const tab of await page.locator('[data-pgtab]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.pgtab!))) {
+      await page.locator(`[data-pgtab="${tab}"]`).click();
+      await expect(page.locator('#pagebody')).not.toBeEmpty();
+    }
     await page.locator('#pageclose').click();
     await expect(page.locator('#menu')).toBeVisible();
   }
@@ -84,7 +93,12 @@ test('new players own five starter skills and can claim a daily skill drop', asy
   await expect(page.locator('#pagebody')).not.toContainText('Power budget');
 });
 test('lucky draw spins and grants a prize', async ({ page }) => {
-  await openPage(page, 'spin');
+  await page.addInitScript(() => {
+    const s = JSON.parse(localStorage.getItem('orb.save3') || '{}');
+    s.coins = 5000;
+    localStorage.setItem('orb.save3', JSON.stringify(s));
+  });
+  await openPage(page, 'spin:coins');
   await page.locator('[data-spin-count="1"]').click();
   // The prize card shows only after the wheel stops.
   await expect(page.locator('.prizecard')).toHaveCount(0);
@@ -216,15 +230,18 @@ test('chests list their contents and opening one shows what you got', async ({ p
   await expect(page.locator('#pagebody')).toContainText('You got');
   await expect(page.locator('#pagebody li').first()).toContainText('coins');
 });
-test('lucky draw has a wheel for every category and 10 free spins', async ({ page }) => {
-  await openPage(page, 'spin');
-  await expect(page.locator('[data-wheel]')).toHaveCount(6);
+test('lucky draw has a separate wheel page for every category and 10 free spins', async ({ page }) => {
+  await openPage(page, 'spin:coins');
+  await expect(page.locator('[data-wheel]')).toHaveCount(0);
   await expect(page.locator('[data-spin-count="1"]')).toContainText('10 left');
-  await page.locator('[data-wheel="weapons"]').click();
+  await page.locator('#pageclose').click();
+  await expect(page.locator('[data-page^="spin:"]')).toHaveCount(6);
+  await page.locator('[data-page="spin:weapons"]').click();
+  await expect(page.locator('#pagetitle')).toContainText('Weapon Wheel');
   await expect(page.locator('#pagebody')).toContainText('Rail Lance');
 });
 test('profile shows stats, loadout and leaderboard', async ({ page }) => {
-  await openPage(page, 'profile');
+  await openPage(page, 'loadout/profile');
   await expect(page.locator('#pagebody')).toContainText('Matches');
   await expect(page.locator('#pagebody')).toContainText('World ranking');
   await expect(page.locator('#pagebody .ico').first()).toBeVisible();
@@ -233,14 +250,21 @@ test('there is no boss tower tile; gear and encyclopedia pages open', async ({ p
   await page.goto('/');
   await expect(page.locator('#menu')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('[data-page="tower"]')).toHaveCount(0);
-  await openPage(page, 'gear');
+  await openPage(page, 'loadout/gear');
   await expect(page.locator('#pagebody')).toContainText('Your stats');
+  await expect(page.locator('.heroprev svg').first()).toBeVisible();
   await page.locator('#pageclose').click();
-  await page.locator('[data-page="encyclopedia"]').click();
+  await page.locator('[data-page="collection"]').click();
+  await page.locator('[data-pgtab="encyclopedia"]').click();
   await expect(page.locator('#pagebody')).not.toBeEmpty();
 });
+test('auction house: bid on a lot', async ({ page }) => {
+  await openPage(page, 'shop/auction');
+  await expect(page.locator('#pagebody')).toContainText('Round ends in');
+  await expect(page.locator('[data-bid]').first()).toBeVisible();
+});
 test('market sells a skill for coins and marks it sold', async ({ page }) => {
-  await openPage(page, 'market');
+  await openPage(page, 'shop/market');
   await expect(page.locator('[data-buy]').first()).toBeVisible();
   const before = Number(await page.locator('#page [data-coins]').first().innerText());
   const cheapest = page.locator('[data-buy]:not([disabled])').first();

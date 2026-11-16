@@ -159,8 +159,8 @@ export const WHEELS: Record<WheelKind, WheelSegment[]> = {
   summons: [
     { label: 'Egg', weight: 18, kind: 'egg', value: 1, color: '#1f7a6a' },
     { label: '2 Eggs', weight: 6, kind: 'egg', value: 2, color: '#5a2a9a' },
-    { label: 'Stone', weight: 30, kind: 'stones', value: 1, color: '#2a3a7a' },
-    { label: '3 Stones', weight: 12, kind: 'stones', value: 3, color: '#1f4f9f' },
+    { label: '2 Stones', weight: 40, kind: 'stones', value: 2, color: '#2a3a7a' },
+    { label: '5 Stones', weight: 18, kind: 'stones', value: 5, color: '#1f4f9f' },
     { label: '100', weight: 30, kind: 'coins', value: 100, color: '#2f7a4a' },
     { label: '5 Eggs', weight: 1, kind: 'egg', value: 5, color: '#a0521f' },
   ],
@@ -265,6 +265,8 @@ export interface Reward {
   drop?: SkillDrop;
   /** Map-star milestone rewards earned by this result. */
   bonus?: string;
+  /** Fusion stones earned by this result. */
+  stones?: number;
 }
 
 export interface SkillDrop {
@@ -585,7 +587,7 @@ export class Progress {
     const gearRank: Rank = kind === 'legend' ? 'S' : kind === 'gold' ? 'A' : kind === 'silver' ? 'C' : 'E';
     const gid = dropGear(this, luckyRank(gearRank, this.passives.luck, rng), rng);
     items.push(`Gear: ${getGear(gid).name} (${getGear(gid).rank})`);
-    const stones = { wood: 0, silver: 1, gold: 2, legend: 5 }[kind];
+    const stones = { wood: 2, silver: 4, gold: 8, legend: 20 }[kind];
     if (stones) {
       this.data.stones += stones;
       items.push(`${stones} fusion stone(s)`);
@@ -926,8 +928,11 @@ export class Progress {
     this.addCoins(coins);
     const levelsGained = this.addXp(xp);
     const drop = this.dropSkill(r.mode === 'tdm' ? 'team' : 'solo');
+    // Fusion stones drop often: 1 per match, 2 for a win, sometimes one more.
+    const stones = Math.round(((r.won ? 2 : 1) + (Math.random() < 0.5 ? 1 : 0)) * Math.max(0.5, scale));
+    this.data.stones += stones;
     this.commit();
-    return { coins, xp, levelsGained, drop, chest };
+    return { coins, xp, levelsGained, drop, chest, stones };
   }
 
   /** Applies a campaign result. Returns coins paid (full on first clear, 20% on replays). */
@@ -986,8 +991,12 @@ export class Progress {
     else if (tower) chest = prev === 0 ? 'gold' : 'silver';
     else chest = prev === 0 ? 'silver' : 'wood';
     if (level.id !== CHAMPION_LEVEL_ID) this.data.chests[chest] += 1;
+    // Fusion stones: 2-3 per enemy and 6-8 per boss (20 for Majen), double on the first clear.
+    const base = level.id === CHAMPION_LEVEL_ID ? 20 : level.boss || tower ? 6 + Math.floor(Math.random() * 3) : 2 + (Math.random() < 0.5 ? 1 : 0);
+    const stones = prev === 0 ? base * 2 : base;
+    this.data.stones += stones;
     this.commit();
-    return { coins, xp, levelsGained, drop, chest, bonus: bonus || undefined };
+    return { coins, xp, levelsGained, drop, chest, bonus: bonus || undefined, stones };
   }
 
   summon(id: number): { ok: boolean; reason?: string } {

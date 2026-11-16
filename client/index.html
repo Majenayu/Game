@@ -1809,6 +1809,79 @@
         vertical-align: middle;
         margin-right: 4px;
       }
+      .worldmap .bob {
+        animation: wmbob 3s ease-in-out infinite;
+      }
+      .worldmap .fall {
+        animation: wmfall 6s linear infinite;
+      }
+      .worldmap .fall.fast {
+        animation-duration: 1.2s;
+      }
+      .worldmap .rise {
+        animation: wmrise 5s linear infinite;
+      }
+      .worldmap .flash {
+        opacity: 0;
+        animation: wmflash 7s infinite;
+      }
+      .worldmap .gift.ready {
+        animation: wmbob 1.2s ease-in-out infinite;
+      }
+      @keyframes wmbob {
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      @keyframes wmfall {
+        to {
+          transform: translate(-30px, 380px);
+        }
+      }
+      @keyframes wmrise {
+        to {
+          transform: translate(20px, -380px);
+          opacity: 0;
+        }
+      }
+      @keyframes wmflash {
+        0%,
+        90%,
+        94%,
+        100% {
+          opacity: 0;
+        }
+        92% {
+          opacity: 0.35;
+        }
+      }
+      .heroprev {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        padding: 8px 10px;
+        margin: 6px 0 10px;
+        border: 1px solid #33406e;
+        border-radius: 12px;
+        background: linear-gradient(120deg, #1b2148, #10142c);
+      }
+      .heroart svg {
+        width: 190px;
+        height: 228px;
+      }
+      .heroGear {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .cards .card > svg.ico:first-child {
+        width: 72px;
+        height: 72px;
+      }
+      .heroGear .ico {
+        width: 34px;
+        height: 34px;
+        margin: 4px 4px 0 0;
+      }
       .prizecards {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
@@ -1947,32 +2020,31 @@
         <div class="grid">
           <button class="tile" data-page="arenas"><span class="ic">&#9876;</span>Arenas</button>
           <button class="tile" data-page="campaign"><span class="ic">&#9733;</span>Campaign</button>
-          <button class="tile" data-page="loadout"><span class="ic">&#9881;</span>Loadout</button>
-          <button class="tile" data-page="shop"><span class="ic">&#128722;</span>Shop</button>
+          <button class="tile" data-page="loadout"><span class="ic">&#129466;</span>Hero</button>
+          <button class="tile" data-page="shop"><span class="ic">&#128722;</span>Shop &amp; Market</button>
           <button class="tile" data-page="daily">
             <span class="ic">&#127873;</span>Daily<i class="dot"></i>
           </button>
           <button class="tile" data-page="quests">
             <span class="ic">&#128220;</span>Quests<i class="dot"></i>
           </button>
-          <button class="tile" data-page="spin">
-            <span class="ic">&#127922;</span>Lucky Draw<i class="dot"></i>
-          </button>
+          <button class="tile" data-page="spin:coins"><span class="ic">&#127922;</span>Coin Wheel<i class="dot"></i></button>
+          <button class="tile" data-page="spin:skills"><span class="ic">&#10024;</span>Skill Wheel</button>
+          <button class="tile" data-page="spin:weapons"><span class="ic">&#9876;</span>Weapon Wheel</button>
+          <button class="tile" data-page="spin:gear"><span class="ic">&#127890;</span>Gear Wheel</button>
+          <button class="tile" data-page="spin:summons"><span class="ic">&#129370;</span>Summon Wheel</button>
+          <button class="tile" data-page="spin:accs"><span class="ic">&#127912;</span>Looks Wheel</button>
           <button class="tile" data-page="collection"><span class="ic">&#128220;</span>Skills</button>
           <button class="tile" data-page="summons"><span class="ic">&#128054;</span>Summons</button>
-          <button class="tile" data-page="fusion"><span class="ic">&#9878;</span>Fusion Lab</button>
           <button class="tile" data-page="dex"><span class="ic">&#128218;</span>Powerups</button>
           <button class="tile" data-page="bestiary"><span class="ic">&#128009;</span>Bestiary</button>
-          <button class="tile" data-page="gear"><span class="ic">&#127890;</span>Gear</button>
-          <button class="tile" data-page="encyclopedia"><span class="ic">&#128214;</span>Encyclopedia</button>
           <button class="tile" data-page="ranked"><span class="ic">&#127942;</span>Ranked</button>
-          <button class="tile" data-page="profile"><span class="ic">&#128100;</span>Profile</button>
           <button class="tile" data-page="chests"><span class="ic">&#128230;</span>Chests</button>
           <button class="tile" data-page="guild"><span class="ic">&#128737;</span>Guilds</button>
           <button class="tile" data-page="training"><span class="ic">&#127919;</span>Training</button>
-          <button class="tile" data-page="market"><span class="ic">&#128176;</span>Market</button>
         </div>
         <button id="practice" class="ghost">Practice offline</button>
+        <div class="sub" style="font-size:11px;opacity:.7;margin-top:4px">Art: Fluent Emoji by Microsoft (MIT) &middot; icons from game-icons.net by Lorc, Delapouite and contributors (CC BY 3.0)</div>
         <div class="controls" id="controls">
           WASD / arrows: move &middot; Mouse: aim &middot; Click: shoot &middot; 1-5 (or Space / E): skills<br />Touch:
           left stick moves, right stick aims and fires, buttons use skills

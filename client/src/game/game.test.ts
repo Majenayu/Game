@@ -41,6 +41,7 @@ const pv = (id: string, x: number, y: number, aim = 0): PlayerView => ({
   lv: 1,
   atk: 50,
   def: 0,
+  look: '',
 });
 
 describe('SnapshotBuffer', () => {

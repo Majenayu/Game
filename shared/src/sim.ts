@@ -53,6 +53,7 @@ import { getSkill } from './skills/generate';
 import type { ArenaEffect } from './worlds';
 import { combatFromSheet, levelSheet, type CombatStats } from './progression';
 import { creatureStats, isCreatureId } from './summons';
+import { GEAR_SLOTS, isGearId, randomGear } from './gear';
 import { ROTATION, getMap, type MapDef } from './maps';
 import type { SkillInstance } from './skills/instances';
 import { findPath, getNav, segmentClear } from './nav';
@@ -216,6 +217,8 @@ export interface SimPlayer {
   reloadMul: number;
   /** Summon that fights beside this player. */
   creature: { id: number; level: number; cards: number[] } | null;
+  /** Equipped gear ids, comma separated. */
+  look: string;
 }
 
 export interface SimBullet {
@@ -346,6 +349,8 @@ export interface PlayerOpts {
   summon?: { id: number; level: number; cards: number[] };
   /** Player level 1..1000 (extra max HP). */
   level?: number;
+  /** Equipped gear ids (how the character looks). Bots get a random outfit. */
+  gear?: number[];
 }
 
 export class Sim {
@@ -515,6 +520,7 @@ export class Sim {
       spdMul: st.spdMul,
       reloadMul: st.reloadMul,
       creature: opts.summon && isCreatureId(opts.summon.id) ? { id: opts.summon.id, level: opts.summon.level, cards: opts.summon.cards.slice(0, 2) } : null,
+      look: (opts.gear ?? (bot ? this.botOutfit() : [])).filter(isGearId).slice(0, 8).join(','),
     };
     p.maxMp = Math.round(st.maxMp);
     p.mp = p.maxMp;
@@ -623,6 +629,23 @@ export class Sim {
     p.reloadMul = st.reloadMul;
   }
   /** Gives a human player a summon companion (not in ranked rooms). */
+  /** A random outfit for a bot: 4 to 8 gear pieces, better ranks for higher bot levels. */
+  private botOutfit(): number[] {
+    const lvl = this.cfg.botLevel ?? 1;
+    const top = Math.min(RANKS.length - 1, 1 + Math.floor(lvl / 140));
+    const out: number[] = [];
+    for (const slot of GEAR_SLOTS) {
+      if (slot !== 'armor' && slot !== 'sword' && this.rng() < 0.35) continue;
+      const rank = RANKS[Math.max(0, top - Math.floor(this.rng() * 2))];
+      out.push(randomGear(rank, this.rng, slot));
+    }
+    return out;
+  }
+  /** Sets the equipped gear a player shows. */
+  setGear(id: string, ids: number[]): void {
+    const p = this.players.get(id);
+    if (p) p.look = ids.filter(isGearId).slice(0, 8).join(',');
+  }
   setSummon(id: string, s: { id: number; level: number; cards: number[] } | null): void {
     const p = this.players.get(id);
     if (!p || p.bot) return;
@@ -947,7 +970,23 @@ export class Sim {
   domain: ActiveDomain | null = null;
   /** The battle is paused (boss form change) until this time. */
   pauseUntil = 0;
-  private strikes: Array<{ x: number; y: number; r: number; at: number }> = [];
+  private strikes: Array<{ x: number; y: number; r: number; at: number; owner?: string; dmg?: number }> = [];
+  /** Damage that ignores armour and shields (unique signature effects). */
+  private hurtTrue(victim: SimPlayer, by: string, amount: number): void {
+    if (!victim.alive || amount <= 0) return;
+    const keepShield = victim.shieldHits;
+    victim.shieldHits = 0;
+    const attacker = this.players.get(by);
+    const mul = attacker?.dmgMul ?? 1;
+    const guard = 1 - (1 - victim.armor) * (1 - victim.defPct);
+    // hurt() scales by HP_SCALE, attacker damage and guard; undo that so exactly `amount` HP is removed.
+    const raw = amount / (HP_SCALE * mul * Math.max(0.05, 1 - guard));
+    const inv = victim.invulnUntil;
+    victim.invulnUntil = 0;
+    this.hurt(victim, by, raw);
+    victim.invulnUntil = Math.min(inv, this.time);
+    victim.shieldHits = victim.alive ? keepShield : 0;
+  }
   private nextStrike = 4;
 
   /** Summons: one persistent companion per player. It shoots, and uses its attached skill cards. */
@@ -1023,7 +1062,7 @@ export class Sim {
       }
       const status = e === 'fire' ? 'burn' : e === 'toxic' ? 'poison' : 'slow';
       this.strikes = this.strikes.filter((s) => {
-        if (this.time < s.at) return true;
+        if (s.owner || this.time < s.at) return true;
         for (const p of this.players.values())
           if (p.alive && Math.hypot(p.x - s.x, p.y - s.y) <= s.r) {
             this.hurt(p, '', 0.5);
@@ -1032,6 +1071,14 @@ export class Sim {
         return false;
       });
     }
+    this.strikes = this.strikes.filter((s) => {
+      if (!s.owner) return true;
+      if (this.time < s.at) return true;
+      const owner = this.players.get(s.owner);
+      for (const p of this.players.values())
+        if (p.alive && owner && this.isEnemy(owner, p) && Math.hypot(p.x - s.x, p.y - s.y) <= s.r) this.hurt(p, s.owner, s.dmg ?? 1);
+      return false;
+    });
   }
 
   /** Boss form changes at 75%, 50% and 25% HP. Each form hits harder and takes less damage. */
@@ -1077,6 +1124,24 @@ export class Sim {
       for (const sl of p.slots) sl.cdUntil = Math.min(sl.cdUntil, this.time);
     } else if (sig === 'venom') p.venomUntil = until;
     else if (sig === 'rage') p.rageUntil = until;
+    else if (sig === 'execute' || sig === 'drain' || sig === 'meteor') {
+      let stolen = 0;
+      for (const o of this.players.values()) {
+        if (!o.alive || !this.isEnemy(p, o)) continue;
+        if (sig === 'execute') {
+          if (o.boss) this.hurtTrue(o, p.id, Math.round(o.maxHp * 0.25));
+          else if (o.hp <= o.maxHp * 0.3) this.hurtTrue(o, p.id, o.hp);
+        } else if (sig === 'drain') {
+          const take = Math.round(o.hp * (o.boss ? 0.08 : 0.2));
+          stolen += take;
+          this.hurtTrue(o, p.id, take);
+        } else {
+          this.strikes.push({ x: o.x, y: o.y, r: 110, at: this.time + 0.8, owner: p.id, dmg: dmgFromPower(400) * SKILL_DMG_MUL * p.skillMul });
+          this.events.push({ t: 'strike', x: o.x, y: o.y, r: 110, effect: 'fire', delay: 0.8 });
+        }
+      }
+      if (stolen) p.hp = Math.min(p.maxHp, p.hp + stolen);
+    }
     else if (sig === 'domain') {
       this.domain = { name: `${p.name}'s Domain`, color: p.color, effect: 'all', owner: p.id, until };
       this.events.push({ t: 'domain', id: p.id, name: this.domain.name, color: p.color });
@@ -2115,6 +2180,8 @@ export interface PlayerView {
   lv: number;
   atk: number;
   def: number;
+  /** Equipped gear ids, comma separated (the character's outfit). */
+  look: string;
 }
 
 export function toView(p: SimPlayer, sim: Sim): PlayerView {
@@ -2165,5 +2232,6 @@ export function toView(p: SimPlayer, sim: Sim): PlayerView {
     lv: p.level,
     atk: Math.round(p.atkMul * 50),
     def: Math.round(p.defPct * 100),
+    look: p.look,
   };
 }

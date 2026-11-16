@@ -671,3 +671,17 @@ CrazyGames rules do not allow a separate login. The backend must use the CrazyGa
 - Guilds: 5 members, guild level, class buffs (Harmony for 5 classes, Legion for 5 of one class), shown in the lobby; daily raid boss; 5v5 guild war room.
 - Majen: challenge from level 50; battle pauses on each form change and shows the new stats; final form is a golden dragon.
 - Not built: champion replacement shared across all players (local only), real guild-vs-guild wars need two online guilds to test.
+
+## 23. Real art, merged pages, auction (built)
+
+- Art packs (free): Fluent Emoji Flat (MIT, Microsoft) and game-icons.net (CC BY 3.0, credited on the menu). `scripts/gen-art.mjs` extracts only the used pictures into `client/src/art/packs.gen.ts`.
+- Character engine (`art/hero.ts`): full-body heroes per character (body, skin, face, hair) dressed in the equipped gear: armour, pants, shoes, gloves, hat, bag, weapon and vehicle each change the look (design = shape, colour = paint, rank = trim and glow). Bots get random outfits. Players and bosses are sprites in the arena (`game/sprites.ts`); gear syncs as `look`.
+- Bosses change shape per form: bestiary figure grows and changes tint, final form is a monster; Majen's final form is a gold-repainted dragon. The whole battle freezes during a form change.
+- Summons: real creature art; bigger with level, aura at 10, sparkles at 25, crown at 40, golden halo at 50. In battle they chase and attack enemies.
+- Skill animation engine (`art/skillanim.ts`): a motion per skill kind plus a motif per element; uniques are 2.4x bigger with screen shake.
+- Campaign map (`meta/worldmap.ts`): a different route, scenery, ground and weather per world, boss portraits, 3 gifts per world.
+- Pages: Hero (Loadout + Gear + Profile, with a character preview), Skills (Collection + Fusion + Encyclopedia), Shop & Market (Shop + Market + Auction). Six separate wheel pages.
+- Auction house (`meta/auction.ts`): 4 lots every 20 minutes against bot bidders with hidden limits.
+- Campaign: enemies scale with player level, bosses far above; 2 min per enemy, 5 min per boss, time-up decided by HP %. Majen from level 1.
+- 8 new uniques (108 total) with new effects: execute, HP drain, meteors, plus stronger nocd / venom / rage / stun / silence.
+- Fusion stones drop from every match, level, boss, chest, map gift and the wheel.

@@ -108,7 +108,7 @@ export function elementStatus(element: number): string {
  * nocd: no cooldowns for a while. venom: every shot poisons. stun: enemies freeze. silence: enemies cannot cast.
  * domain: the caster opens a domain expansion over the whole arena. rage: big damage and speed boost.
  */
-export type Signature = 'nocd' | 'venom' | 'stun' | 'silence' | 'domain' | 'rage';
+export type Signature = 'nocd' | 'venom' | 'stun' | 'silence' | 'domain' | 'rage' | 'execute' | 'drain' | 'meteor';
 export const SIGNATURES: Record<string, { sig: Signature; secs: number; text: string }> = {
   Overclock: { sig: 'nocd', secs: 6, text: 'No cooldowns for 6 seconds.' },
   'Hyper Dash': { sig: 'nocd', secs: 3, text: 'No cooldowns for 3 seconds.' },
@@ -120,6 +120,14 @@ export const SIGNATURES: Record<string, { sig: Signature; secs: number; text: st
   'Domain Expansion': { sig: 'domain', secs: 12, text: 'Opens your domain over the whole arena for 12 seconds.' },
   'Final Form': { sig: 'rage', secs: 10, text: 'Double damage and speed for 10 seconds.' },
   'Berserker Core': { sig: 'rage', secs: 8, text: 'Double damage and speed for 8 seconds.' },
+  "Executioner's Verdict": { sig: 'execute', secs: 0, text: 'Defeats every enemy below 30% HP at once (bosses lose 25%).' },
+  'Soul Harvest': { sig: 'drain', secs: 0, text: 'Steals 20% HP from every enemy.' },
+  'Meteor Judgement': { sig: 'meteor', secs: 0, text: 'A meteor falls on every enemy.' },
+  'Chrono Overdrive': { sig: 'nocd', secs: 8, text: 'No cooldowns for 8 seconds.' },
+  'Plague Monarch': { sig: 'venom', secs: 12, text: 'Every shot poisons for 12 seconds.' },
+  "Titan's Wrath": { sig: 'rage', secs: 12, text: 'Double damage and speed for 12 seconds.' },
+  'Absolute Zero': { sig: 'stun', secs: 3, text: 'Every enemy freezes for 3 seconds.' },
+  'Void Silence': { sig: 'silence', secs: 5, text: 'Enemies cannot cast skills for 5 seconds.' },
 };
 
 /** Plain explanation of what each skill kind does in a match. */

@@ -410,7 +410,7 @@ async function boot(): Promise<void> {
     ui.setObjective('Training ground: try every skill on the dummies. Press Q for auto skills. Use Leave to exit.');
   };
   /** Your stats and summon for offline matches. */
-  const offlineExtra = () => ({ stats: myStats(progress).combat, summon: activeSummon(progress) });
+  const offlineExtra = () => ({ stats: myStats(progress).combat, summon: activeSummon(progress), gear: equippedGear(progress) });
   const levelUps = (levels: number[]) => {
     if (levels.length) ui.showLevelUp(levels[levels.length - 1], levels.length);
   };
@@ -529,7 +529,7 @@ async function boot(): Promise<void> {
         `<h2 style="margin:0;color:${res.won ? '#ffc93c' : '#ff8a9a'}">${res.won ? 'Level complete!' : 'Level failed'}</h2>
          <div>${starHtml}</div>
          ${res.won ? `<div class="sub">Hero HP remaining: ${Math.round(res.hpPercent)}% &middot; ${res.stars === 3 ? 'Perfect health clear!' : res.stars === 2 ? 'Strong clear!' : 'Cleared!'}</div>` : '<div class="sub">Your hero reached 0 HP.</div>'}
-         ${reward ? `<div style="color:#ffc93c;margin-top:6px">+${reward.coins} coins &middot; +${reward.xp} XP${reward.bonus ? ` &middot; Map reward: ${reward.bonus}` : ''}</div>` : '<div class="sub">Try a different loadout or skills.</div>'}`,
+         ${reward ? `<div style="color:#ffc93c;margin-top:6px">+${reward.coins} coins &middot; +${reward.xp} XP${reward.stones ? ` &middot; +${reward.stones} fusion stones` : ''}${reward.bonus ? ` &middot; Map reward: ${reward.bonus}` : ''}</div>` : '<div class="sub">Try a different loadout or skills.</div>'}`,
         buttons,
       );
       if (reward?.drop) ui.notify(`Skill drop: ${dropText(reward.drop)}`, '#b77dff', 4500);

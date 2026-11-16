@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   BOSS_UNIQUE_FIRST,
   CLASSES,
+  Sim,
+  UNIQUES,
+  SIGNATURES,
   CREATURE_TOTAL,
   GEAR_SLOTS,
   GEAR_TOTAL,
@@ -29,6 +32,27 @@ const seeded = (seed: number) => {
   let s = seed >>> 0;
   return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
 };
+
+describe('boss form change pause', () => {
+  it('freezes the whole battle: bots, bullets and the timer stop', () => {
+    const sim = new Sim(seeded(5), { mode: 'dm', mapId: 'neon', boss: true, bossHp: 20, botLevel: 50 });
+    sim.addPlayer('me', 'Me', false);
+    sim.addPlayer('b', 'Boss', true, { boss: true });
+    for (let i = 0; i < 200; i++) sim.step(1 / 30);
+    sim.pauseUntil = sim.time + 2;
+    const before = JSON.stringify([sim.timeLeft, [...sim.players.values()].map((p) => [p.x, p.y, p.hp]), sim.bullets.map((b) => [b.x, b.y])]);
+    for (let i = 0; i < 30; i++) sim.step(1 / 30);
+    const after = JSON.stringify([sim.timeLeft, [...sim.players.values()].map((p) => [p.x, p.y, p.hp]), sim.bullets.map((b) => [b.x, b.y])]);
+    expect(after).toBe(before);
+  });
+  it('bots wear a random outfit and players show their gear', () => {
+    const sim = new Sim(seeded(6), { mode: 'dm', mapId: 'neon', botLevel: 400 });
+    sim.addPlayer('me', 'Me', false, { gear: [randomGear('S', seeded(2), 'hat')] });
+    sim.addPlayer('b1', 'Bot', true);
+    expect(sim.players.get('me')!.look.split(',').length).toBe(1);
+    expect(sim.players.get('b1')!.look.length).toBeGreaterThan(0);
+  });
+});
 
 describe('level 1000 progression', () => {
   it('every level raises every stat and level 1 defence blocks nothing', () => {
@@ -110,6 +134,15 @@ describe('campaign worlds', () => {
       }
     }
     expect(BOSS_UNIQUE_FIRST).toBeGreaterThan(0);
+  });
+});
+
+describe('new unique skills', () => {
+  it('every new unique has a signature effect', () => {
+    for (const n of ["Executioner's Verdict", 'Soul Harvest', 'Meteor Judgement', 'Absolute Zero']) {
+      expect(UNIQUES.some((u) => u.name === n)).toBe(true);
+      expect(SIGNATURES[n]).toBeDefined();
+    }
   });
 });
 

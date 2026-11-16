@@ -59,7 +59,8 @@ test('skill details, merge animation, guilds, world ranking and pause', async ({
   await page.locator('#modal [data-mclose]').click();
   await expect(page.locator('#modal')).toBeHidden();
   await page.locator('#pageclose').click();
-  await page.locator('[data-page="profile"]').click();
+  await page.locator('[data-page="loadout"]').click();
+  await page.locator('[data-pgtab="profile"]').click();
   await expect(page.locator('#pagebody')).toContainText('How ranking works');
   await expect(page.locator('#pagebody')).toContainText('ranked players worldwide', { timeout: 8_000 });
   await page.locator('#pageclose').click();

@@ -2,15 +2,12 @@ import {
   CATEGORIES,
   ELEMENTS,
   GEAR_SLOTS,
-  LEVELS,
   RANKED_TIERS,
   RANKS,
   RANK_INFO,
   SLOT_NAMES,
-  STAR_MILESTONES,
   STAT_KEYS,
   STAT_LABELS,
-  WORLDS,
   bonusText,
   creatureStats,
   creatureUpgradeCost,
@@ -45,6 +42,7 @@ import {
   upgradeCreature,
 } from './inventory';
 
+import { openMapGift, worldMapHtml } from './worldmap';
 export interface MoreCtx {
   ui: Ui;
   pr: Progress;
@@ -80,54 +78,7 @@ export class MorePages {
 
   // ---- campaign world map (candy-crush style path) -----------------------------------------
   worldMapHtml(): string {
-    const pr = this.c.pr;
-    return WORLDS.map((w) => {
-      const levels = LEVELS.filter((l) => l.id > w.id * 11 && l.id <= w.id * 11 + 11);
-      const stars = levels.reduce((s, l) => s + (pr.data.campaign[String(l.id)] ?? 0), 0);
-      const open = levels.length > 0 && pr.levelUnlocked(levels[0]);
-      const W = 900;
-      const H = 330;
-      const pts = levels.map((_, i) => ({ x: 70 + (i * (W - 140)) / 10, y: 165 + Math.sin(i * 0.95 + w.id) * 105 }));
-      const path = pts.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(0)} ${p.y.toFixed(0)}`).join(' ');
-      const nodes = levels
-        .map((l, i) => {
-          const p = pts[i];
-          const st = pr.data.campaign[String(l.id)] ?? 0;
-          const un = pr.levelUnlocked(l);
-          const next = un && !st;
-          const r = l.boss ? 30 : 20;
-          const fill = !un ? '#2a2f4a' : l.boss ? '#ff1744' : st ? w.path : '#ffc93c';
-          const starTxt = [1, 2, 3].map((k) => `<tspan fill="${k <= st ? '#ffc93c' : '#4a5070'}">&#9733;</tspan>`).join('');
-          return `<g class="mnode ${next ? 'next' : ''} ${un ? 'open' : 'lock'}" data-mlvl="${un ? l.id : ''}" style="cursor:${un ? 'pointer' : 'default'}">
-            <circle cx="${p.x}" cy="${p.y}" r="${r + 6}" fill="${fill}" opacity=".25" class="halo"/>
-            <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="#fff" stroke-width="3"/>
-            <text x="${p.x}" y="${p.y + 6}" text-anchor="middle" font-size="${l.boss ? 15 : 16}" font-weight="800" fill="#1b0a3a">${l.boss ? 'BOSS' : i + 1}</text>
-            <text x="${p.x}" y="${p.y + r + 18}" text-anchor="middle" font-size="14">${starTxt}</text>
-            ${un ? '' : `<text x="${p.x}" y="${p.y - r - 6}" text-anchor="middle" font-size="14">&#128274;</text>`}
-          </g>`;
-        })
-        .join('');
-      const deco = Array.from({ length: 14 }, (_, k) => {
-        const x = (k * 97 + w.id * 31) % W;
-        const y = (k * 53 + w.id * 17) % H;
-        return `<circle class="spark" cx="${x}" cy="${y}" r="${1 + (k % 3)}" fill="#fff" style="animation-delay:${(k % 7) * 0.4}s"/>`;
-      }).join('');
-      const ms = STAR_MILESTONES.map(
-        (m) => `<span class="tag" style="${stars >= m.stars ? 'color:#7dff6b;border-color:#7dff6b' : ''}">${m.stars}&#9733;: ${esc(m.text)}${stars >= m.stars ? ' &#10003;' : ''}</span>`,
-      ).join(' ');
-      return `<div class="worldbox ${open ? '' : 'locked'}">
-        <div class="row" style="border:none;padding:4px 0"><div class="grow"><b style="font-size:20px;color:${w.path}">World ${w.id + 1}: ${esc(w.name)}</b>
-          <div class="sub" style="margin:0">${esc(w.desc)} &middot; Stars ${stars} / 33</div>
-          <div class="bar"><div style="width:${(stars / 33) * 100}%"></div></div><div style="margin-top:4px">${ms}</div></div></div>
-        <svg class="worldmap" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-          <defs><linearGradient id="sky${w.id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${w.sky[0]}"/><stop offset="1" stop-color="${w.sky[1]}"/></linearGradient></defs>
-          <rect width="${W}" height="${H}" rx="18" fill="url(#sky${w.id})"/>
-          ${deco}
-          <path d="${path}" stroke="#000" stroke-opacity=".35" stroke-width="22" fill="none" stroke-linecap="round"/>
-          <path d="${path}" stroke="${w.path}" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="2 18" class="trail"/>
-          ${nodes}
-        </svg></div>`;
-    }).join('');
+    return worldMapHtml(this.c.pr);
   }
   bindWorldMap(body: HTMLElement): void {
     body.querySelectorAll<SVGGElement>('[data-mlvl]').forEach((n) =>
@@ -137,6 +88,16 @@ export class MorePages {
           sfx.click();
           this.c.startLevel(id);
         }
+      }),
+    );
+    body.querySelectorAll<SVGGElement>('[data-gift]').forEach((n) =>
+      n.addEventListener('click', () => {
+        const got = openMapGift(this.c.pr, n.dataset.gift ?? '');
+        if (got) {
+          sfx.reward();
+          this.c.ui.notify(`Gift: ${got}`, '#ffc93c', 4500);
+        }
+        this.c.render();
       }),
     );
     body.querySelector('.mnode.next')?.scrollIntoView({ block: 'center' });
@@ -191,7 +152,7 @@ export class MorePages {
           const sid = c.cards[i];
           return sid !== undefined ? `<span class="tag">${esc(getSkill(sid).name)}</span>` : '<span class="tag">empty card slot</span>';
         }).join(' ');
-        return `<div class="card ${act ? 'sel' : ''}">${creatureIcon(c.id)}<b style="color:${hex(RANK_INFO[d.rank].color)}">[${d.rank}] ${esc(d.name)}</b>
+        return `<div class="card ${act ? 'sel' : ''}">${creatureIcon(c.id, c.level)}<b style="color:${hex(RANK_INFO[d.rank].color)}">[${d.rank}] ${esc(d.name)}</b>
           <div class="d">${esc(d.familyName)} &middot; Lv ${c.level} &middot; dmg ${st.dmg} &middot; shot every ${st.fire.toFixed(1)}s</div><div class="d">${cards}</div>
           ${act ? '<button disabled>Fighting</button>' : `<button data-cact="${c.uid}">Take to battle</button>`}
           <button class="ghost" data-cup="${c.uid}">Upgrade ${creatureUpgradeCost(c.id, c.level)}</button>

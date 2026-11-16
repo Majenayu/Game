@@ -70,6 +70,10 @@ export interface SaveData {
   recipes: Record<string, number>;
   /** Market refreshes bought today. */
   marketRefresh: { day: string; n: number };
+  /** Campaign map gifts already opened ("world:node"). */
+  mapGifts: string[];
+  /** Auction house: your bids in the current round. */
+  auction: { round: number; lots: Record<string, { top: number; mine: boolean; name: string }>; claimed: number };
 }
 
 /** Bumped to start everyone fresh with the Skill World update. */
@@ -114,6 +118,8 @@ export function defaultSave(): SaveData {
     eggs: 1,
     recipes: {},
     marketRefresh: { day: '', n: 0 },
+    auction: { round: 0, lots: {}, claimed: 0 },
+    mapGifts: [],
   };
 }
 
@@ -280,6 +286,16 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
         Object.entries((j.recipes ?? {}) as Record<string, unknown>).filter(([k, v]) => /^\d+-\d+$/.test(k) && typeof v === 'number' && !!rankOf(v)),
       ) as Record<string, number>,
       marketRefresh: { day: String(j.marketRefresh?.day ?? ''), n: Math.max(0, Math.floor(num(j.marketRefresh?.n, 0))) },
+    mapGifts: Array.isArray(j.mapGifts) ? (j.mapGifts as unknown[]).filter((x): x is string => typeof x === 'string' && /^\d:\d+$/.test(x)).slice(0, 64) : [],
+    auction: {
+      round: Math.max(0, Math.floor(num(j.auction?.round, 0))),
+      claimed: Math.max(0, Math.floor(num(j.auction?.claimed, 0))),
+      lots: Object.fromEntries(
+        Object.entries((j.auction?.lots ?? {}) as Record<string, { top?: unknown; mine?: unknown; name?: unknown }>)
+          .filter(([k]) => /^[0-3]$/.test(k))
+          .map(([k, v]) => [k, { top: Math.max(0, Math.floor(num(v?.top, 0))), mine: v?.mine === true, name: String(v?.name ?? '').slice(0, 16) }]),
+      ),
+    },
     };
   } catch {
     return null;

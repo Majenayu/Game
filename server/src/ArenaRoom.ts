@@ -220,6 +220,7 @@ export class ArenaRoom extends Room<ArenaState> {
       guild: guildBonus,
     });
     this.sim.setStats(client.sessionId, st.combat);
+    this.sim.setGear(client.sessionId, gear);
     // Summons fight in casual rooms only.
     const sm = options?.summon as { id?: unknown; level?: unknown; cards?: unknown } | undefined;
     if (!this.rankedMode && !this.isRanked && sm && typeof sm.id === 'number')
@@ -417,6 +418,7 @@ export class ArenaRoom extends Room<ArenaState> {
       ps.lv = v.lv;
       ps.atk = v.atk;
       ps.def = v.def;
+    if (ps.look !== v.look) ps.look = v.look;
       ps.ready = v.bot || this.ready.has(p.id);
     }
 

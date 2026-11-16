@@ -61,10 +61,10 @@ describe('skill catalog', () => {
   it('has the planned numbers of skills per rank', () => {
     expect(RANK_INFO.S.count).toBe(1000);
     expect(RANK_INFO.A.count).toBe(10000);
-    expect(RANK_INFO.U.count).toBe(100);
-    expect(UNIQUES.length).toBe(100);
+    expect(RANK_INFO.U.count).toBe(108);
+    expect(UNIQUES.length).toBe(108);
     expect(GENERATED_TOTAL).toBe(115_000);
-    expect(TOTAL_SKILLS).toBe(115_100);
+    expect(TOTAL_SKILLS).toBe(115_108);
     expect(ARCHETYPES.length * 12 * MODIFIERS.length).toBe(COMBOS);
     for (const r of ['F', 'E', 'D', 'C', 'B', 'A', 'S'] as Rank[])
       expect(RANK_INFO[r].count).toBeLessThanOrEqual(COMBOS);
@@ -78,7 +78,7 @@ describe('skill catalog', () => {
     expect(rankOf(GENERATED_TOTAL)).toBeNull();
     expect(rankOf(UNIQUE_BASE_ID + 1)).toBe('U');
     expect(rankOf(UNIQUE_BASE_ID + 100)).toBe('U');
-    expect(rankOf(UNIQUE_BASE_ID + 101)).toBeNull();
+    expect(rankOf(UNIQUE_BASE_ID + 109)).toBeNull();
     expect(rankOf(-1)).toBeNull();
     expect(isValidSkillId(1.5)).toBe(false);
     expect(() => getSkill(-5)).toThrow();
@@ -132,7 +132,7 @@ describe('unique registry', () => {
     expect(reg.claim(id, 'bob', 0)).toBe(false);
     expect(reg.claim(5, 'bob')).toBe(false);
     expect(reg.ownerOf(id)).toBe('alice');
-    expect(reg.unclaimed().length).toBe(99);
+    expect(reg.unclaimed().length).toBe(107);
     expect(reg.transfer(id, 'bob', 'carol')).toBe(false);
     expect(reg.transfer(id, 'alice', 'bob', 1000)).toBe(true);
     expect(reg.ownerOf(id)).toBe('bob');
@@ -141,7 +141,7 @@ describe('unique registry', () => {
     expect(reg.releaseInactive(1000 + 61 * day, 60, new Set(['bob']))).toEqual([]);
     expect(reg.releaseInactive(1000 + 61 * day)).toEqual([id]);
     expect(reg.ownerOf(id)).toBeNull();
-    expect(reg.hall().length).toBe(100);
+    expect(reg.hall().length).toBe(108);
   });
 });
 
@@ -305,7 +305,7 @@ describe('starter pack and luck', () => {
     expect(forceU.lucky).toBe('U');
     expect(rankOf(forceU.skills[0].skillId)).toBe('U');
     expect(reg.ownerOf(forceU.skills[0].skillId)).toBe('alice');
-    expect(reg.unclaimed().length).toBe(99);
+    expect(reg.unclaimed().length).toBe(107);
     const forceS = rollStarterPack(seeded(1), 'y', 'bob', reg, { A: 0, S: 1, U: 0 });
     expect(forceS.lucky).toBe('S');
     expect(rankOf(forceS.skills[0].skillId)).toBe('S');

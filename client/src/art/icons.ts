@@ -1,53 +1,25 @@
+import { weaponArt } from './icons2';
+import { GEAR_ART } from './packs.gen';
+import { frame, giPart } from './render';
 /** Small original SVG icons for weapons, accessories, skills and chests (viewBox 64x64). */
 const svg = (inner: string, bg = '#141a33') =>
   `<svg class="ico" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="12" fill="${bg}"/>${inner}</svg>`;
 const hx = (n: number) => '#' + n.toString(16).padStart(6, '0');
 
-const ORB = (c: string) => `<circle cx="26" cy="34" r="14" fill="${c}"/><circle cx="21" cy="29" r="5" fill="#fff" opacity=".45"/>`;
 
+/** Weapons: real gun shapes (see icons2.weaponArt). */
 export function weaponIcon(id: number): string {
-  const c = '#4dd2ff';
-  switch (id) {
-    case 1: // scatter
-      return svg(`${ORB(c)}<g stroke="#dfe8ff" stroke-width="4" stroke-linecap="round"><path d="M38 28 L56 22"/><path d="M38 34 L58 34"/><path d="M38 40 L56 46"/></g>`);
-    case 2: // rail
-      return svg(`${ORB(c)}<path d="M38 34 L60 34" stroke="#dfe8ff" stroke-width="4"/><circle cx="60" cy="34" r="3.5" fill="#4dd2ff"/><path d="M42 30 L42 38 M48 30 L48 38" stroke="#4dd2ff" stroke-width="2"/>`);
-    case 3: // smg
-      return svg(`${ORB(c)}<path d="M38 34 L54 34" stroke="#dfe8ff" stroke-width="6"/><rect x="42" y="36" width="6" height="12" rx="2" fill="#333a55"/>`);
-    case 4: // mortar
-      return svg(`${ORB(c)}<path d="M36 34 L54 30" stroke="#5a4a7a" stroke-width="14" stroke-linecap="round"/><circle cx="56" cy="29" r="6" fill="#ffb347"/>`);
-    case 5: // twin
-      return svg(`${ORB(c)}<path d="M38 28 L56 28 M38 40 L56 40" stroke="#dfe8ff" stroke-width="4" stroke-linecap="round"/>`);
-    default:
-      return svg(`${ORB(c)}<path d="M38 34 L56 34" stroke="#dfe8ff" stroke-width="5" stroke-linecap="round"/><circle cx="58" cy="34" r="3" fill="#ffe58a"/>`);
-  }
+  return weaponArt(id);
 }
 
+/** Look accessories (10,000): a real hat, mask, crown or charm shape in one of many colours. */
 export function accIcon(id: number): string {
-  const o = `<circle cx="32" cy="40" r="16" fill="#7c84ff"/><circle cx="27" cy="35" r="5" fill="#fff" opacity=".4"/>`;
-  switch (id) {
-    case 1:
-      return svg(`${o}<path d="M18 24 L18 12 L25 18 L32 8 L39 18 L46 12 L46 24 Z" fill="#ffc93c"/><circle cx="32" cy="19" r="2.5" fill="#ff4da6"/>`);
-    case 2:
-      return svg(`${o}<path d="M18 28 L12 10 L24 24 Z M46 28 L52 10 L40 24 Z" fill="#f4eeff"/>`);
-    case 3:
-      return svg(`${o}<ellipse cx="32" cy="16" rx="15" ry="5" fill="none" stroke="#ffe9a8" stroke-width="3"/>`);
-    case 4:
-      return svg(`${o}<path d="M14 28 L50 28 L36 2 Z" fill="#5b3fd0"/><circle cx="34" cy="18" r="2.5" fill="#ffe58a"/>`);
-    case 5:
-      return svg(`${o}<path d="M17 32 Q32 22 47 32" stroke="#ff1744" stroke-width="5" fill="none"/><path d="M47 32 L56 38" stroke="#ff1744" stroke-width="4"/>`);
-    case 6:
-      return svg(`${o}<path d="M18 30 L19 12 L28 24 Z M46 30 L45 12 L36 24 Z" fill="#7c84ff"/><path d="M20 26 L21 17 L25 23 Z M44 26 L43 17 L39 23 Z" fill="#ff9ec7"/>`);
-    case 7:
-      return svg(`${o}<rect x="17" y="32" width="30" height="8" rx="4" fill="#4dd2ff" opacity=".9"/>`);
-    case 8:
-      return svg(`${o}<path d="M32 26 L36 8" stroke="#dfe8ff" stroke-width="2"/><circle cx="36" cy="7" r="4" fill="#ff4da6"/>`);
-    default:
-      return svg(`${o}`);
-  }
+  const shapes = [...(GEAR_ART.hat ?? []), ...(GEAR_ART.bag ?? [])];
+  const art = shapes[id % Math.max(1, shapes.length)] ?? 'crown';
+  const col = ((id * 2654435761) >>> 8) & 0xffffff | 0x404040;
+  return frame(giPart(art, 8, 8, 48, col, { glow: id % 7 === 0 ? 2 : 0, flip: id % 2 === 1 }), hx(col));
 }
 
-/** A glyph per skill kind, tinted by the skill's element colour. */
 export function skillIcon(kind: string, color: number): string {
   const c = hx(color);
   const g: Record<string, string> = {

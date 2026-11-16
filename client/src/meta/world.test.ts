@@ -19,6 +19,34 @@ async function fresh(): Promise<Progress> {
   return p;
 }
 
+describe('auction house and map gifts', () => {
+  it('a low bid is outbid by a bot and costs nothing; a high bid leads and pays out next round', async () => {
+    const { auctionLots, placeBid, settleAuction, AUCTION_ROUND_MS } = await import('./auction');
+    const p = await fresh();
+    p.data.coins = 1_000_000;
+    const t = AUCTION_ROUND_MS * 1000 + 1000;
+    const lot = auctionLots(p, t).lots[0];
+    const low = placeBid(p, 0, lot.next, t);
+    expect(low.ok).toBe(true);
+    if (low.outbid) expect(p.data.coins).toBe(1_000_000);
+    const big = placeBid(p, 0, 999_999, t);
+    expect(big.ok).toBe(true);
+    expect(auctionLots(p, t).lots[0].mine).toBe(true);
+    const won = settleAuction(p, t + AUCTION_ROUND_MS);
+    expect(won.length).toBe(1);
+  });
+  it('map gifts open once after the level before them is cleared', async () => {
+    const { openMapGift } = await import('./worldmap');
+    const p = await fresh();
+    expect(openMapGift(p, '0:3')).toBeNull();
+    p.data.campaign['3'] = 1;
+    const stones = p.data.stones;
+    expect(openMapGift(p, '0:3')).toContain('coins');
+    expect(p.data.stones).toBeGreaterThan(stones);
+    expect(openMapGift(p, '0:3')).toBeNull();
+  });
+});
+
 describe('boss tower progress', () => {
   it('opens after campaign level 6 and each floor needs the one below', async () => {
     const p = await fresh();
