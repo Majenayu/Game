@@ -78,3 +78,14 @@ The server stores unique player names, ranked ratings and guilds. Without a data
 3. In the `orb-arena-server` service on Render: Environment > Add `DATABASE_URL` = that string. Save; Render redeploys.
 
 The server creates its table (`orb_kv`) by itself.
+
+`render.yaml` now declares the database (`orb-arena-db`) and links it to the web service, so a Render Blueprint deploy sets `DATABASE_URL` for you.
+
+To test the Render database from your PC, copy the **External Database URL** and start the server with it (PowerShell):
+
+```powershell
+$env:DATABASE_URL = "postgres://USER:PASSWORD@HOST/orb_arena"
+npm run dev -w server
+```
+
+The server stores the whole game database as one JSON row. That is fine for a beta. Move to separate tables (players, guilds, matches) before ranked has many players.

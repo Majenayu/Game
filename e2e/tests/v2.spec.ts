@@ -232,6 +232,10 @@ test('lucky draw is one section with a category tab for every wheel and 10 free 
   await page.locator('[data-wheel="weapons"]').click();
   await expect(page.locator('#pagebody')).toContainText('Weapon Wheel');
   await expect(page.locator('#pagebody')).toContainText('Rail Lance');
+  await page.locator('[data-wheel="looks"]').click();
+  await expect(page.locator('[data-wheel^="looks"]')).toHaveCount(9);
+  await page.locator('[data-wheel="looks2"]').click();
+  await expect(page.locator('#pagebody')).toContainText('Armor');
   await page.locator('#pageclose').click();
   await expect(page.locator('[data-page^="spin"]')).toHaveCount(1);
 });

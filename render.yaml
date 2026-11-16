@@ -8,3 +8,16 @@ services:
     region: oregon # oregon, ohio, virginia, frankfurt, singapore
     healthCheckPath: /health
     autoDeploy: true
+    envVars:
+      # Accounts, ranked ratings and guilds are stored here. Without it the server falls back to a JSON file
+      # that Render wipes on every deploy.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: orb-arena-db
+          property: connectionString
+databases:
+  - name: orb-arena-db
+    plan: free # free databases expire after a while; use basic-256mb or higher for a real launch
+    region: oregon # keep the same region as the web service
+    databaseName: orb_arena
+    user: orb_arena

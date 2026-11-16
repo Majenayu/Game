@@ -88,6 +88,10 @@ import {
   SPINS_PER_DAY,
   WEEKLY_POOL,
   WHEELS,
+  LOOK_GENRES,
+  LOOK_WHEELS,
+  isLookWheel,
+  lookGenreIndex,
   type WheelKind,
   type Progress,
   type ShopKind,
@@ -170,14 +174,13 @@ const GROUPS: Array<{ title: string; tabs: Array<[PageName, string]> }> = [
   { title: 'Skills', tabs: [['collection', 'Collection'], ['fusion', 'Fusion Lab'], ['encyclopedia', 'Encyclopedia']] },
   { title: 'Shop & Market', tabs: [['shop', 'Shop'], ['market', 'Market'], ['auction', 'Auction']] },
 ];
-const WHEEL_TITLES: Record<WheelKind, string> = {
-  coins: 'Coin & Skin Wheel',
-  skills: 'Skill Wheel',
-  weapons: 'Weapon Wheel',
-  accs: 'Looks Wheel',
-  gear: 'Gear Wheel',
-  summons: 'Summon Wheel',
-};
+function wheelTitle(k: WheelKind): string {
+  if (isLookWheel(k)) return `Looks Wheel: ${LOOK_GENRES[lookGenreIndex(k)]}`;
+  const t: Record<string, string> = { coins: 'Coin & Skin Wheel', skills: 'Skill Wheel', weapons: 'Weapon Wheel', gear: 'Gear Wheel', summons: 'Summon Wheel' };
+  return t[k];
+}
+/** The wheel categories shown as the top tab row (all look genres share the Looks tab). */
+const WHEEL_CATEGORIES: Array<[string, string]> = [['coins', 'Coins & skins'], ['skills', 'Skills'], ['weapons', 'Weapons'], ['looks', 'Looks'], ['gear', 'Gear'], ['summons', 'Summons']];
 
 export class Pages {
   current: PageName | null = null;
@@ -185,6 +188,7 @@ export class Pages {
   private shopTab: ShopKind = 'char';
   private wheelBusy = false;
   private wheel: WheelKind = 'coins';
+  private lastLook: WheelKind = 'looks0';
   private chestLog: { name: string; items: string[] } | null = null;
   private wheelRot = 0;
   private world: { offline: boolean; total: number; top: PublicPlayer[]; me: PublicPlayer | null } | null = null;
@@ -705,15 +709,19 @@ export class Pages {
 
   private spinHtml(): string {
     const st = this.pr.spinStatus();
-    const names: Record<WheelKind, string> = { coins: 'Coins & skins', skills: 'Skills', weapons: 'Weapons', accs: 'Looks', gear: 'Gear', summons: 'Summons' };
-    const tabs = (Object.keys(WHEELS) as WheelKind[])
-      .map((k) => `<button class="${k === this.wheel ? 'on' : ''}" data-wheel="${k}">${names[k]}</button>`)
-      .join('');
+    const inLooks = isLookWheel(this.wheel);
+    const tabs = WHEEL_CATEGORIES.map(([k, n]) => {
+      const on = k === 'looks' ? inLooks : k === this.wheel;
+      return `<button class="${on ? 'on' : ''}" data-wheel="${k}">${n}</button>`;
+    }).join('');
+    const genres = inLooks
+      ? `<div class="tabs" style="flex-wrap:wrap;justify-content:center;margin-top:4px">${LOOK_WHEELS.map((k, i) => `<button class="${k === this.wheel ? 'on' : ''}" data-wheel="${k}">${LOOK_GENRES[i]}</button>`).join('')}</div>`
+      : '';
     const total = WHEELS[this.wheel].reduce((a, w) => a + w.weight, 0);
     const prizes = WHEELS[this.wheel]
       .map((w) => `<span class="tag" style="border-color:${w.color}">${esc(w.label)} ${((w.weight / total) * 100).toFixed(w.weight / total < 0.01 ? 1 : 0)}%</span>`)
       .join(' ');
-    return `<div class="wheelbox"><div class="tabs" style="flex-wrap:wrap;justify-content:center">${tabs}</div><h3 style="margin:6px 0">${WHEEL_TITLES[this.wheel]}</h3><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
+    return `<div class="wheelbox"><div class="tabs" style="flex-wrap:wrap;justify-content:center">${tabs}</div>${genres}<h3 style="margin:6px 0">${wheelTitle(this.wheel)}</h3><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
       <p>${prizes}</p>
       <div id="wheelwrap"><div id="pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
       <div id="spinresult" style="min-height:26px;color:var(--gold);font-size:18px">${esc(this.spinMsg)}</div>
@@ -1377,7 +1385,9 @@ export class Pages {
     body.querySelectorAll<HTMLElement>('[data-wheel]').forEach((el) =>
       el.addEventListener('click', () => {
         if (this.wheelBusy) return;
-        this.wheel = el.dataset.wheel as WheelKind;
+        const k = el.dataset.wheel!;
+        this.wheel = (k === 'looks' ? (isLookWheel(this.wheel) ? this.wheel : this.lastLook) : k) as WheelKind;
+        if (isLookWheel(this.wheel)) this.lastLook = this.wheel;
         this.wheelRot = 0;
         this.spinMsg = '';
         this.spinCards = [];

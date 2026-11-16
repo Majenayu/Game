@@ -1,5 +1,6 @@
 import {
   ACCESSORIES,
+  accessorySlot,
   BOSS_LEVELS,
   BULLET_FX,
   CHESTS,
@@ -114,9 +115,12 @@ export const CHAMPION_MIN_LEVEL = 1;
 export interface WheelSegment {
   label: string;
   weight: number;
-  kind: 'coins' | 'cosmetic' | 'skill' | 'unique' | 'weapon' | 'acc' | 'gear' | 'egg' | 'stones';
+  kind: 'coins' | 'cosmetic' | 'skill' | 'unique' | 'weapon' | 'acc' | 'look' | 'gear' | 'egg' | 'stones';
+  /** For 'look' segments this is the tier (0 to 4). */
   value: number;
   color: string;
+  /** For 'look' segments: the genre, an index into ACCESSORY_SLOTS. */
+  genre?: number;
 }
 
 /** Skill prizes use `value` as an index into RANKS (F=0 ... S=6). */
@@ -131,7 +135,29 @@ export const WHEEL: WheelSegment[] = [
 ];
 
 export const EXTRA_SPIN_COST = 150;
-export type WheelKind = 'coins' | 'skills' | 'weapons' | 'accs' | 'gear' | 'summons';
+/** Looks have one wheel per genre (hats, gloves, armor, ...), named looks0 to looks7. */
+export type LookWheel = `looks${number}`;
+export type WheelKind = 'coins' | 'skills' | 'weapons' | 'gear' | 'summons' | LookWheel;
+/** Display names of the look genres, in the order of ACCESSORY_SLOTS. */
+export const LOOK_GENRES = ['Hats', 'Gloves', 'Armor', 'Pants', 'Shoes', 'Bags', 'Weapon skins', 'Rides'];
+/** Look tiers by accessory level: 1-8, 9-16, 17-24, 25-32, 33-40. */
+export const LOOK_TIERS = [
+  { name: 'Common', weight: 40, color: '#4a5070' },
+  { name: 'Uncommon', weight: 28, color: '#2f7a4a' },
+  { name: 'Rare', weight: 18, color: '#1f4f9f' },
+  { name: 'Epic', weight: 10, color: '#5a2a9a' },
+  { name: 'Legendary', weight: 4, color: '#a08a1f' },
+];
+export const LOOK_WHEELS: LookWheel[] = LOOK_GENRES.map((_, i) => `looks${i}` as LookWheel);
+export function isLookWheel(k: string): k is LookWheel {
+  return /^looks[0-7]$/.test(k);
+}
+export function lookGenreIndex(k: LookWheel): number {
+  return Number(k.slice(5));
+}
+function lookWheel(genre: number): WheelSegment[] {
+  return LOOK_TIERS.map((t, i) => ({ label: t.name, weight: t.weight, kind: 'look' as const, value: i, color: t.color, genre }));
+}
 const WCOL = ['#2a3a7a', '#1f5f8f', '#5a2a9a', '#2f7a4a', '#8a6a1f', '#a02a2a', '#1f7a6a', '#7a2a6a'];
 /** Separate wheels on the Lucky Draw page. All share the 10 free spins a day. */
 export const WHEELS: Record<WheelKind, WheelSegment[]> = {
@@ -171,13 +197,7 @@ export const WHEELS: Record<WheelKind, WheelSegment[]> = {
     value: w.id,
     color: WCOL[i % WCOL.length],
   })),
-  accs: ACCESSORIES.slice(1, 101).map((a, i) => ({
-    label: a.name,
-    weight: Math.max(1, 10 - a.level),
-    kind: 'acc' as const,
-    value: a.id,
-    color: WCOL[i % WCOL.length],
-  })),
+  ...(Object.fromEntries(LOOK_WHEELS.map((k, i) => [k, lookWheel(i)])) as Record<LookWheel, WheelSegment[]>),
 };
 export const MAX_LEVEL = 1000;
 
@@ -861,6 +881,19 @@ export class Progress {
       this.data.stones += seg.value;
       this.commit();
       return `${seg.value} fusion stone(s)`;
+    }
+    if (seg.kind === 'look') {
+      // A random look of this genre and tier that you do not own yet.
+      const pool = ACCESSORIES.filter((a) => a.id > 0 && accessorySlot(a.id) === seg.genre && Math.floor((a.level - 1) / 8) === seg.value && !this.owns('acc', a.id));
+      if (!pool.length) {
+        this.addCoins(100);
+        this.commit();
+        return `100 coins (you own every ${seg.label} ${LOOK_GENRES[seg.genre ?? 0].toLowerCase()} look)`;
+      }
+      const a = pool[Math.floor(rng() * pool.length)];
+      this.grant('acc', a.id);
+      this.commit();
+      return `${a.name} (${seg.label})`;
     }
     if (seg.kind === 'weapon' || seg.kind === 'acc') {
       const k: ShopKind = seg.kind;

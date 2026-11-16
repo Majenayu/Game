@@ -461,9 +461,13 @@ const BASE_ACCESSORIES: CosmeticDef[] = [
   { id: 8, name: 'Antenna', price: 200, level: 2 },
 ];
 
-const ACCESSORY_SLOTS = ['Hat', 'Gloves', 'Armor', 'Pants', 'Shoes', 'Bag', 'Weapon', 'Vehicle'];
+export const ACCESSORY_SLOTS = ['Hat', 'Gloves', 'Armor', 'Pants', 'Shoes', 'Bag', 'Weapon', 'Vehicle'];
 const ACCESSORY_COLORS = ['Aqua', 'Rose', 'Lime', 'Gold', 'Violet', 'Amber', 'Snow', 'Crimson'];
 
+/** Which slot (genre) an accessory belongs to, as an index into ACCESSORY_SLOTS. The 8 base items are headwear. */
+export function accessorySlot(id: number): number {
+  return id < BASE_ACCESSORIES.length ? 0 : (id - BASE_ACCESSORIES.length) % ACCESSORY_SLOTS.length;
+}
 /** Large deterministic cosmetic catalog; only owned or market-selected entries are rendered at once. */
 export const ACCESSORIES: CosmeticDef[] = [
   ...BASE_ACCESSORIES,

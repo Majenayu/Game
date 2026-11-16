@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ACCESSORIES,
+  accessorySlot,
   LEVELS,
   getSkill,
   makeInstance,
@@ -11,6 +13,8 @@ import type { Platform } from '../platform/crazygames';
 import {
   DAILY_REWARDS,
   EXTRA_SPIN_COST,
+  LOOK_GENRES,
+  LOOK_WHEELS,
   Progress,
   WHEEL,
   WHEELS,
@@ -303,6 +307,21 @@ describe('daily reward, quests, lucky draw', () => {
     expect(p.data.owned.colors.length + p.data.owned.trails.length + p.data.owned.bfx.length).toBe(owned + 1);
   });
 
+  it('has one looks wheel per genre and grants a look of that genre', async () => {
+    expect(LOOK_WHEELS).toHaveLength(LOOK_GENRES.length);
+    for (let g = 0; g < LOOK_WHEELS.length; g++) {
+      const p = await fresh();
+      const wheel = LOOK_WHEELS[g];
+      for (let tier = 0; tier < WHEELS[wheel].length; tier++) {
+        const before = p.data.owned.accs.slice();
+        p.grantPrize(tier, Math.random, wheel);
+        const got = p.data.owned.accs.filter((id: number) => !before.includes(id));
+        expect(got).toHaveLength(1);
+        expect(accessorySlot(got[0])).toBe(g);
+        expect(Math.floor((ACCESSORIES[got[0]].level - 1) / 8)).toBe(tier);
+      }
+    }
+  });
   it('grants batched lucky-draw rewards after charging free spins first', async () => {
     const p = await fresh();
     const ten = p.spinBatch(10, () => 0, 'coins');
