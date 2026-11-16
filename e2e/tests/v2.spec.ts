@@ -27,12 +27,7 @@ test('menu shows progress and every page opens', async ({ page }) => {
     'shop',
     'daily',
     'quests',
-    'spin:coins',
-    'spin:skills',
-    'spin:weapons',
-    'spin:gear',
-    'spin:summons',
-    'spin:accs',
+    'spin',
     'dex',
     'bestiary',
     'ranked',
@@ -98,7 +93,7 @@ test('lucky draw spins and grants a prize', async ({ page }) => {
     s.coins = 5000;
     localStorage.setItem('orb.save3', JSON.stringify(s));
   });
-  await openPage(page, 'spin:coins');
+  await openPage(page, 'spin');
   await page.locator('[data-spin-count="1"]').click();
   // The prize card shows only after the wheel stops.
   await expect(page.locator('.prizecard')).toHaveCount(0);
@@ -230,15 +225,15 @@ test('chests list their contents and opening one shows what you got', async ({ p
   await expect(page.locator('#pagebody')).toContainText('You got');
   await expect(page.locator('#pagebody li').first()).toContainText('coins');
 });
-test('lucky draw has a separate wheel page for every category and 10 free spins', async ({ page }) => {
-  await openPage(page, 'spin:coins');
-  await expect(page.locator('[data-wheel]')).toHaveCount(0);
+test('lucky draw is one section with a category tab for every wheel and 10 free spins', async ({ page }) => {
+  await openPage(page, 'spin');
+  await expect(page.locator('[data-wheel]')).toHaveCount(6);
   await expect(page.locator('[data-spin-count="1"]')).toContainText('10 left');
-  await page.locator('#pageclose').click();
-  await expect(page.locator('[data-page^="spin:"]')).toHaveCount(6);
-  await page.locator('[data-page="spin:weapons"]').click();
-  await expect(page.locator('#pagetitle')).toContainText('Weapon Wheel');
+  await page.locator('[data-wheel="weapons"]').click();
+  await expect(page.locator('#pagebody')).toContainText('Weapon Wheel');
   await expect(page.locator('#pagebody')).toContainText('Rail Lance');
+  await page.locator('#pageclose').click();
+  await expect(page.locator('[data-page^="spin"]')).toHaveCount(1);
 });
 test('profile shows stats, loadout and leaderboard', async ({ page }) => {
   await openPage(page, 'loadout/profile');

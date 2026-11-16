@@ -209,6 +209,27 @@ export class Ui {
   }
   private lvTimer = 0;
   private bannerTimer = 0;
+  /**
+   * Skill names scroll in at the sides of the screen: yours on the left in blue, opponents' on the right in red.
+   */
+  skillFeed(side: 'me' | 'foe', text: string): void {
+    const box = document.getElementById(side === 'me' ? 'skfeed-l' : 'skfeed-r');
+    if (!box) return;
+    // The cast and the release of one skill both report its name; show it once.
+    const last = box.lastElementChild as HTMLElement | null;
+    if (last && last.textContent === text && performance.now() - Number(last.dataset.t) < 700) return;
+    const el = document.createElement('div');
+    el.className = 'skf ' + side;
+    el.textContent = text;
+    el.dataset.t = String(performance.now());
+    box.appendChild(el);
+    while (box.children.length > 4) box.firstElementChild?.remove();
+    window.setTimeout(() => el.remove(), 1800);
+  }
+  /** Clears both skill name columns (when leaving a match). */
+  clearSkillFeed(): void {
+    for (const id of ['skfeed-l', 'skfeed-r']) document.getElementById(id)?.replaceChildren();
+  }
   /** The name of the skill you just cast, at the top of the screen (does not cover the arena centre). */
   skillBanner(text: string, color: string): void {
     const b = $('skillbanner');
@@ -299,7 +320,7 @@ export class Ui {
   }
 
   setBadge(page: string, on: boolean): void {
-    const key = page === 'spin' ? 'spin:coins' : page;
+    const key = page;
     this.menu.querySelector<HTMLElement>(`[data-page="${key}"] .dot`)?.classList.toggle('on', on);
   }
 
@@ -320,6 +341,7 @@ export class Ui {
     this.board.hidden = true;
     this.overlay.hidden = true;
     this.page.hidden = true;
+    this.clearSkillFeed();
     this.setObjective('');
   }
 

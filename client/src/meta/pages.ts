@@ -149,7 +149,7 @@ const TITLES: Record<PageName, string> = {
   shop: 'Shop',
   daily: 'Daily Reward',
   quests: 'Quests',
-  spin: 'Lucky Draw',
+  spin: 'Lucky Wheel',
   dex: 'Powerup Collection',
   bestiary: 'Bestiary',
   tower: 'Boss Tower',
@@ -254,7 +254,7 @@ export class Pages {
     if (!this.current) return;
     const name = this.current;
     const group = GROUPS.find((g) => g.tabs.some(([n]) => n === name));
-    const title = name === 'spin' ? WHEEL_TITLES[this.wheel] : group ? group.title : TITLES[name];
+    const title = name === 'spin' ? 'Lucky Wheel' : group ? group.title : TITLES[name];
     const tabs = group
       ? `<div class="tabs pgtabs">${group.tabs.map(([n, t]) => `<button class="${n === name ? 'on' : ''}" data-pgtab="${n}">${t}</button>`).join('')}</div>`
       : '';
@@ -713,8 +713,7 @@ export class Pages {
     const prizes = WHEELS[this.wheel]
       .map((w) => `<span class="tag" style="border-color:${w.color}">${esc(w.label)} ${((w.weight / total) * 100).toFixed(w.weight / total < 0.01 ? 1 : 0)}%</span>`)
       .join(' ');
-    void tabs;
-    return `<div class="wheelbox"><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
+    return `<div class="wheelbox"><div class="tabs" style="flex-wrap:wrap;justify-content:center">${tabs}</div><h3 style="margin:6px 0">${WHEEL_TITLES[this.wheel]}</h3><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
       <p>${prizes}</p>
       <div id="wheelwrap"><div id="pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
       <div id="spinresult" style="min-height:26px;color:var(--gold);font-size:18px">${esc(this.spinMsg)}</div>

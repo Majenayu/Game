@@ -132,6 +132,7 @@ export class GameScene extends Phaser.Scene {
   private scoreboardStart = 0;
   private rewardHtml = '';
   private deadSince = 0;
+  private teamMode = false;
   private wasPlaying = false;
   private localAim = 0;
   /** Hide the end of round scoreboard (campaign levels show their own result). */
@@ -432,7 +433,7 @@ export class GameScene extends Phaser.Scene {
           const col = ELEMENTS[csk.element]?.color ?? 0xffffff;
           this.fxs.push({ kind: 'warn', x: ev.x, y: ev.y, angle: 0, size: 70, color: col, born: performance.now(), ms: Math.max(250, ev.time * 1000) });
           if (ev.id === me && ev.time > 0.05) {
-            this.ui.skillBanner(csk.name.toUpperCase(), '#' + col.toString(16).padStart(6, '0'));
+            this.ui.skillFeed('me', csk.name.toUpperCase());
             sfx.say(csk.name);
           }
         }
@@ -448,7 +449,6 @@ export class GameScene extends Phaser.Scene {
         this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: wide ? 170 : 100, color: 0xffffff, born: t0 + 90, ms: 650 });
         const sk = getSkill(ev.skill);
         if (sk) {
-          const hexCol = '#' + col.toString(16).padStart(6, '0');
           const look = lookOf(ev.skill);
           // Unique and high-rank skills get a big, clearly visible burst.
           this.fxs.push({ kind: 'burst', x: ev.x, y: ev.y, angle: 0, size: wide ? 170 : 110, color: look.color, born: t0, ms: 900 + look.scale * 250, look });
@@ -458,10 +458,11 @@ export class GameScene extends Phaser.Scene {
           this.fxs.push({ kind: 'anim', x: ev.x, y: ev.y, angle: caster?.aim ?? 0, size: big, color: col, born: t0, ms: 1100 + big * 350, skind: ev.kind, elem: ev.element, look });
           if (sk.unique) this.cameras.main.shake(350, 0.012);
           if (ev.id === me) {
-            this.ui.skillBanner(sk.name.toUpperCase(), hexCol);
+            this.ui.skillFeed('me', sk.name.toUpperCase());
             sfx.say(sk.name);
           } else {
-            this.pop(ev.x, ev.y - 58, sk.name.toUpperCase(), hexCol, 22);
+            this.skillFeedFor(ev.id, sk.name.toUpperCase());
+            this.pop(ev.x, ev.y - 58, sk.name.toUpperCase(), this.isAlly(ev.id) ? '#6ea8ff' : '#ff5e6e', 22);
             if (sk.unique) sfx.say(sk.name);
           }
         }
@@ -961,6 +962,47 @@ export class GameScene extends Phaser.Scene {
       for (let i = 0; i < 9; i++) g.lineStyle(220, 0x05030a, 0.12 + i * 0.09).strokeCircle(me.x, me.y, 330 + i * 200);
     }
   }
+  /**
+   * Respawn marker, drawn on the top layer and only for the local player. A light pillar, a shrinking ring, a
+   * ghost orb and a down arrow, all in bright colours so it reads on every arena theme.
+   */
+  private drawRespawnBeacon(p: PlayerView, now: number): void {
+    const g = this.gt;
+    const R = PLAYER_RADIUS;
+    const k = (now % 900) / 900;
+    const pulse = 0.5 + 0.5 * Math.sin(now / 150);
+    // Wide soft glow on the floor.
+    g.fillStyle(0x4dd2ff, 0.16 + 0.1 * pulse).fillCircle(p.x, p.y, R * 3.2);
+    g.fillStyle(0xffffff, 0.2 + 0.1 * pulse).fillCircle(p.x, p.y, R * 1.9);
+    // Light pillar going up from the spot.
+    for (let i = 0; i < 6; i++) {
+      const h = 40 + i * 28;
+      g.fillStyle(0x9be8ff, 0.1 + 0.03 * pulse).fillRect(p.x - 16 + i * 1.5, p.y - h, 32 - i * 3, h);
+    }
+    // Ring closing in on the spot, plus a steady outline.
+    g.lineStyle(4, 0xffffff, 0.35 + 0.65 * k).strokeCircle(p.x, p.y, R + 8 + (1 - k) * 56);
+    g.lineStyle(5, 0x4dd2ff, 1).strokeCircle(p.x, p.y, R + 8);
+    g.lineStyle(2, 0xffffff, 0.9).strokeCircle(p.x, p.y, R + 14);
+    // Ghost of your orb.
+    g.fillStyle(p.color, 0.45).fillCircle(p.x, p.y, R);
+    g.lineStyle(3, 0xffffff, 0.9).strokeCircle(p.x, p.y, R);
+    g.lineStyle(3, 0xffffff, 1).lineBetween(p.x - 14, p.y, p.x + 14, p.y).lineBetween(p.x, p.y - 14, p.x, p.y + 14);
+    // Bobbing arrow above the spot.
+    const ay = p.y - R - 26 - Math.abs(Math.sin(now / 200)) * 10;
+    g.fillStyle(0xffffff, 1).fillTriangle(p.x - 12, ay - 14, p.x + 12, ay - 14, p.x, ay + 4);
+    g.lineStyle(2, 0x4dd2ff, 1).strokeTriangle(p.x - 12, ay - 14, p.x + 12, ay - 14, p.x, ay + 4);
+  }
+  /** Teammates count as allies in team modes; everyone else is an opponent. */
+  private isAlly(id: string): boolean {
+    const me = this.lastPlayers.find((p) => p.id === this.source?.localId);
+    const o = this.lastPlayers.find((p) => p.id === id);
+    return !!me && !!o && this.teamMode && o.team === me.team;
+  }
+  /** Shows another player's skill name: blue on the left for allies, red on the right for opponents. */
+  private skillFeedFor(id: string, skill: string): void {
+    const o = this.lastPlayers.find((p) => p.id === id);
+    this.ui.skillFeed(this.isAlly(id) ? 'me' : 'foe', o ? `${o.name}: ${skill}` : skill);
+  }
   /** The barrel shows which main weapon an orb carries. */
   private drawWeapon(g: Phaser.GameObjects.Graphics, p: PlayerView, a: number): void {
     const R = PLAYER_RADIUS;
@@ -1149,6 +1191,7 @@ export class GameScene extends Phaser.Scene {
   ): void {
     const t = this.map.theme;
     const team = MODES[snap.mode].team;
+    this.teamMode = team;
     if (snap.domain) {
       // Domain expansion: the whole arena glows in the owner's colour
       const pulse = 0.1 + 0.05 * Math.sin(now / 300);
@@ -1263,12 +1306,14 @@ export class GameScene extends Phaser.Scene {
       label.setVisible(p.alive).setAlpha(ghost ? 0.25 : 1);
       if (!p.alive && p.id === meId && snap.phase === 'play') {
         // Only you see where you will respawn; enemies see nothing until you are back.
-        const k = (now % 900) / 900;
-        g.lineStyle(4, p.color, 0.9).strokeCircle(p.x, p.y, PLAYER_RADIUS + 6);
-        g.lineStyle(3, 0xffffff, 1 - k).strokeCircle(p.x, p.y, PLAYER_RADIUS + 6 + k * 40);
-        g.fillStyle(p.color, 0.25).fillCircle(p.x, p.y, PLAYER_RADIUS);
-        g.lineStyle(2, 0xffffff, 0.8).lineBetween(p.x - 12, p.y, p.x + 12, p.y).lineBetween(p.x, p.y - 12, p.x, p.y + 12);
-        label.setVisible(true).setAlpha(1).setText('YOU RESPAWN HERE').setPosition(p.x, p.y + PLAYER_RADIUS + 20);
+        this.drawRespawnBeacon(p, now);
+        const left = Math.max(1, Math.ceil(RESPAWN_DELAY - (now - (this.deadSince || now)) / 1000));
+        label
+          .setVisible(true)
+          .setAlpha(1)
+          .setText(`YOU RESPAWN HERE  ${left}`)
+          .setColor('#ffffff')
+          .setPosition(p.x, p.y + PLAYER_RADIUS + 34);
       }
       if (!p.alive) continue;
       label.setText(p.boss ? `${p.name} (boss)` : `${p.name} Lv${p.lv}`).setPosition(p.x, p.y + PLAYER_RADIUS + 16 + (p.boss ? p.form * 8 : 0));
