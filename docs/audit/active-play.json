@@ -1,0 +1,76 @@
+{
+  "readiness": "Wait for authoritative offline snapshot hold <= 0, not a fixed wall-clock countdown",
+  "sessions": [
+    {
+      "mode": "dm",
+      "map": "neon",
+      "ready": true,
+      "countdownWallMs": 4865,
+      "skillFeed": ""
+    },
+    {
+      "mode": "dm",
+      "map": "crossfire",
+      "ready": true,
+      "countdownWallMs": 2877,
+      "skillFeed": ""
+    },
+    {
+      "mode": "dm",
+      "map": "pillars",
+      "ready": true,
+      "countdownWallMs": 2840,
+      "skillFeed": ""
+    },
+    {
+      "mode": "dm",
+      "map": "fortress",
+      "ready": true,
+      "countdownWallMs": 2872,
+      "skillFeed": "LUNAR VOID BOLT"
+    },
+    {
+      "mode": "dm",
+      "map": "lava",
+      "ready": true,
+      "countdownWallMs": 2892,
+      "skillFeed": ""
+    },
+    {
+      "mode": "dm",
+      "map": "maze",
+      "ready": true,
+      "countdownWallMs": 2861,
+      "skillFeed": ""
+    },
+    {
+      "mode": "tdm",
+      "map": "neon",
+      "ready": true,
+      "countdownWallMs": 2862,
+      "skillFeed": "LUNAR VOID BOLT\nPip: FIERCE FLAME BLINK"
+    },
+    {
+      "mode": "coins",
+      "map": "neon",
+      "ready": true,
+      "countdownWallMs": 2864,
+      "skillFeed": "LUNAR VOID BOLT"
+    },
+    {
+      "mode": "hill",
+      "map": "neon",
+      "ready": true,
+      "countdownWallMs": 2840,
+      "skillFeed": ""
+    }
+  ],
+  "errors": [],
+  "uncontendedFps": {
+    "rafMean": 20.324798246488378,
+    "p95ms": 66.69999999999891,
+    "phaserFps": 20.995544741643243,
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "seconds": 5
+  }
+}

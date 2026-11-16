@@ -1,0 +1,409 @@
+{
+  "environment": "Headless system Chromium, sandbox GPU; not representative physical hardware",
+  "pages": [
+    {
+      "name": "arenas",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "campaign",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "loadout",
+      "tabs": [
+        "loadout",
+        "gear",
+        "profile"
+      ],
+      "opened": true,
+      "loadout": true,
+      "gear": true,
+      "profile": true
+    },
+    {
+      "name": "shop",
+      "tabs": [
+        "shop",
+        "market",
+        "auction"
+      ],
+      "opened": true,
+      "shop": true,
+      "market": true,
+      "auction": true
+    },
+    {
+      "name": "daily",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "quests",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "spin",
+      "tabs": [],
+      "opened": true,
+      "categories": 6,
+      "sharedFreeText": true
+    },
+    {
+      "name": "collection",
+      "tabs": [
+        "collection",
+        "fusion",
+        "encyclopedia"
+      ],
+      "opened": true,
+      "collection": true,
+      "fusion": true,
+      "encyclopedia": true
+    },
+    {
+      "name": "summons",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "dex",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "bestiary",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "ranked",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "chests",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "guild",
+      "tabs": [],
+      "opened": true
+    },
+    {
+      "name": "training",
+      "tabs": [],
+      "opened": true
+    }
+  ],
+  "matches": [
+    {
+      "mode": "dm",
+      "map": "neon",
+      "state": "dm:neon"
+    },
+    {
+      "mode": "dm",
+      "map": "crossfire",
+      "state": "dm:crossfire"
+    },
+    {
+      "mode": "dm",
+      "map": "pillars",
+      "state": "dm:pillars"
+    },
+    {
+      "mode": "dm",
+      "map": "fortress",
+      "state": "dm:fortress"
+    },
+    {
+      "mode": "dm",
+      "map": "lava",
+      "state": "dm:lava"
+    },
+    {
+      "mode": "dm",
+      "map": "maze",
+      "state": "dm:maze"
+    },
+    {
+      "mode": "dm",
+      "map": "sunken",
+      "state": "dm:sunken"
+    },
+    {
+      "mode": "dm",
+      "map": "dunes",
+      "state": "dm:dunes"
+    },
+    {
+      "mode": "dm",
+      "map": "glacier",
+      "state": "dm:glacier"
+    },
+    {
+      "mode": "dm",
+      "map": "orchard",
+      "state": "dm:orchard"
+    },
+    {
+      "mode": "dm",
+      "map": "foundry",
+      "state": "dm:foundry"
+    },
+    {
+      "mode": "dm",
+      "map": "reef",
+      "state": "dm:reef"
+    },
+    {
+      "mode": "dm",
+      "map": "citadel",
+      "state": "dm:citadel"
+    },
+    {
+      "mode": "dm",
+      "map": "grove",
+      "state": "dm:grove"
+    },
+    {
+      "mode": "dm",
+      "map": "orbit",
+      "state": "dm:orbit"
+    },
+    {
+      "mode": "dm",
+      "map": "crypt",
+      "state": "dm:crypt"
+    },
+    {
+      "mode": "dm",
+      "map": "harbor",
+      "state": "dm:harbor"
+    },
+    {
+      "mode": "dm",
+      "map": "canyon",
+      "state": "dm:canyon"
+    },
+    {
+      "mode": "dm",
+      "map": "nebula",
+      "state": "dm:nebula"
+    },
+    {
+      "mode": "dm",
+      "map": "clockwork",
+      "state": "dm:clockwork"
+    },
+    {
+      "mode": "dm",
+      "map": "tundra",
+      "state": "dm:tundra"
+    },
+    {
+      "mode": "dm",
+      "map": "jungle",
+      "state": "dm:jungle"
+    },
+    {
+      "mode": "dm",
+      "map": "abyss",
+      "state": "dm:abyss"
+    },
+    {
+      "mode": "dm",
+      "map": "solar",
+      "state": "dm:solar"
+    },
+    {
+      "mode": "dm",
+      "map": "finale",
+      "state": "dm:finale"
+    },
+    {
+      "mode": "tdm",
+      "map": "neon",
+      "state": "tdm:neon"
+    },
+    {
+      "mode": "tdm",
+      "map": "crossfire",
+      "state": "tdm:crossfire"
+    },
+    {
+      "mode": "tdm",
+      "map": "pillars",
+      "state": "tdm:pillars"
+    },
+    {
+      "mode": "tdm",
+      "map": "fortress",
+      "state": "tdm:fortress"
+    },
+    {
+      "mode": "tdm",
+      "map": "lava",
+      "state": "tdm:lava"
+    },
+    {
+      "mode": "tdm",
+      "map": "maze",
+      "state": "tdm:maze"
+    },
+    {
+      "mode": "coins",
+      "map": "neon",
+      "state": "coins:neon"
+    },
+    {
+      "mode": "coins",
+      "map": "crossfire",
+      "state": "coins:crossfire"
+    },
+    {
+      "mode": "coins",
+      "map": "pillars",
+      "state": "coins:pillars"
+    },
+    {
+      "mode": "coins",
+      "map": "fortress",
+      "state": "coins:fortress"
+    },
+    {
+      "mode": "coins",
+      "map": "lava",
+      "state": "coins:lava"
+    },
+    {
+      "mode": "coins",
+      "map": "maze",
+      "state": "coins:maze"
+    },
+    {
+      "mode": "hill",
+      "map": "neon",
+      "state": "hill:neon"
+    },
+    {
+      "mode": "hill",
+      "map": "crossfire",
+      "state": "hill:crossfire"
+    },
+    {
+      "mode": "hill",
+      "map": "pillars",
+      "state": "hill:pillars"
+    },
+    {
+      "mode": "hill",
+      "map": "fortress",
+      "state": "hill:fortress"
+    },
+    {
+      "mode": "hill",
+      "map": "lava",
+      "state": "hill:lava"
+    },
+    {
+      "mode": "hill",
+      "map": "maze",
+      "state": "hill:maze"
+    }
+  ],
+  "viewports": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "touch": false,
+      "layout": {
+        "overflow": false,
+        "rotateVisible": false,
+        "smallTargets": 4
+      }
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "touch": false,
+      "layout": {
+        "overflow": false,
+        "rotateVisible": false,
+        "smallTargets": 4
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "layout": {
+        "overflow": false,
+        "rotateVisible": true,
+        "smallTargets": 2
+      }
+    }
+  ],
+  "errors": [],
+  "online": [
+    {
+      "mode": "",
+      "room": false,
+      "humans": "1",
+      "overlay": "Could not reach the game server."
+    },
+    {
+      "mode": "",
+      "room": false,
+      "overlay": "Could not reach the game server."
+    }
+  ],
+  "load": {
+    "navigationMs": 497,
+    "gameReadyMs": 1440.6999999999534,
+    "resources": 77,
+    "renderer": 2
+  },
+  "maps": [
+    "neon",
+    "crossfire",
+    "pillars",
+    "fortress",
+    "lava",
+    "maze",
+    "sunken",
+    "dunes",
+    "glacier",
+    "orchard",
+    "foundry",
+    "reef",
+    "citadel",
+    "grove",
+    "orbit",
+    "crypt",
+    "harbor",
+    "canyon",
+    "nebula",
+    "clockwork",
+    "tundra",
+    "jungle",
+    "abyss",
+    "solar",
+    "finale"
+  ],
+  "fps": {
+    "rafMean": 11.860637509265716,
+    "frameP95ms": 100.10000000000582,
+    "phaserFps": 12.413625992446221,
+    "seconds": 4
+  },
+  "campaign": {
+    "mode": "campaign",
+    "objective": "Defeat one enemy Enemy HP 447 · Your HP 736/736"
+  }
+}
