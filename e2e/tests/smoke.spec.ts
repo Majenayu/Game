@@ -37,7 +37,7 @@ test('two browsers join the same room and see each other', async ({ browser }) =
   await expect
     .poll(async () => (await humans(a)) === (await humans(b)) && (await humans(a)) >= 2, { timeout: 15_000 })
     .toBe(true);
-  await expect(a.locator('body')).toHaveAttribute('data-players', '8');
+  await expect(a.locator('body')).toHaveAttribute('data-players', '4');
   const base = await humans(a);
 
   // invite button produces a link containing the room id, and opening it joins the same room
@@ -66,7 +66,7 @@ test('a lone offline player gets bots', async ({ page }) => {
   await page.goto('/');
   await page.locator('#practice').click();
   await expect(page.locator('body')).toHaveAttribute('data-mode', 'offline');
-  await expect(page.locator('body')).toHaveAttribute('data-players', '8', { timeout: 5_000 });
+  await expect(page.locator('body')).toHaveAttribute('data-players', '4', { timeout: 5_000 });
   await expect(page.locator('body')).toHaveAttribute('data-humans', '1');
   await expect(page.locator('#timer')).toContainText(':');
 });

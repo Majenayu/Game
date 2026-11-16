@@ -66,6 +66,13 @@ export interface JoinTarget {
   ranked?: boolean;
   /** Player level (extra max HP). */
   level?: number;
+  /** Ranked arena: '1v1' or '2v2'. */
+  rankedMode?: '1v1' | '2v2';
+  /** Guild war room. */
+  war?: boolean;
+  token?: string;
+  gear?: number[];
+  summon?: { id: number; level: number; cards: number[] };
 }
 
 /** Joins the ranked 1v1 duel queue. */
@@ -76,7 +83,7 @@ export async function joinDuel(
   token: string,
 ): Promise<{ room: Room; serverIndex: number }> {
   const { index, url } = await pickServer(serverUrls());
-  const room = await new Client(url).joinOrCreate('ranked', { name, loadout, level, token });
+  const room = await new Client(url).joinOrCreate('shadow', { name, loadout, level, token });
   return { room, serverIndex: index };
 }
 export async function joinArena(
@@ -99,7 +106,22 @@ export async function joinArena(
     map: target.map ?? 'rotate',
     loadout: target.loadout,
     level: target.level,
+    token: target.token,
+    gear: target.gear,
+    summon: target.summon,
   };
+  if (target.rankedMode) {
+    const { summon: _s, ...ranked } = opts;
+    return { room: await client.joinOrCreate(`ranked${target.rankedMode}`, ranked), serverIndex };
+  }
+  if (target.war) {
+    try {
+      return { room: await client.joinOrCreate('guildwar', opts), serverIndex };
+    } catch {
+      // The open war is between two other guilds: start a new one.
+      return { room: await client.create('guildwar', opts), serverIndex };
+    }
+  }
   const room = target.roomId
     ? await client.joinById(target.roomId, { name, loadout: target.loadout })
     : target.createPrivate

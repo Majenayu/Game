@@ -11,6 +11,8 @@ import {
   LEVELS,
   RECONNECT_SECONDS,
   CHAMPION_LEVEL_ID,
+  WORLDS,
+  worldOfLevel,
   TOWER_FIRST_ID,
   rankedTier,
   WORLD_H,
@@ -30,7 +32,8 @@ import { OfflineSource, OnlineSource } from './game/sources';
 import { LobbyPanel } from './game/lobby';
 import { LevelRunner } from './meta/campaign';
 import { claimName, showOnboarding } from './meta/onboarding';
-import { accountToken } from './account';
+import { accountToken, claimHold, facts, fetchMe, raidHit } from './account';
+import { activeSummon, equippedGear, myStats, setGuildBonus } from './meta/inventory';
 import { Ui as UiClass } from './ui/ui';
 import { Progress, type SkillDrop } from './meta/economy';
 import { Pages, type PageName } from './meta/pages';
@@ -212,7 +215,7 @@ async function boot(): Promise<void> {
         { mode: r.mode, kills: r.me.kills, deaths: r.me.deaths, score: r.me.score, won: r.won },
         offlinePractice ? 0.5 : 1,
       );
-      res.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
+      levelUps(res?.levelsGained ?? []);
       if (r.won) ui.notify('Victory!', '#ffc93c', 4000);
       if (res.drop) ui.notify(`Skill drop: ${dropText(res.drop)}`, '#b77dff', 4500);
       if (res.chest) ui.notify(`${CHESTS[res.chest].name} earned! Open it in Chests.`, '#ffc93c', 4500);
@@ -375,7 +378,7 @@ async function boot(): Promise<void> {
     await endSession();
     offlinePractice = true;
     scene.setSource(
-      new OfflineSource(name, loadoutOf(), { mode, mapId }, progress.loadoutInstances(), progress.level.level),
+      new OfflineSource(name, loadoutOf(), { mode, mapId }, progress.loadoutInstances(), progress.level.level, offlineExtra()),
     );
     document.body.dataset.mode = 'offline';
     ui.showGame();
@@ -397,6 +400,7 @@ async function boot(): Promise<void> {
         { mode: 'dm', mapId: 'throne', seats: 4, training: true, roundTime: 600 },
         progress.loadoutInstances(),
         progress.level.level,
+        offlineExtra(),
       ),
     );
     document.body.dataset.mode = 'offline';
@@ -404,6 +408,48 @@ async function boot(): Promise<void> {
     ui.setInviteVisible(false);
     touch.setEnabled(true);
     ui.setObjective('Training ground: try every skill on the dummies. Press Q for auto skills. Use Leave to exit.');
+  };
+  /** Your stats and summon for offline matches. */
+  const offlineExtra = () => ({ stats: myStats(progress).combat, summon: activeSummon(progress) });
+  const levelUps = (levels: number[]) => {
+    if (levels.length) ui.showLevelUp(levels[levels.length - 1], levels.length);
+  };
+  /** Guild raid: 60 seconds against the raid boss; your damage counts toward the guild's daily total. */
+  const startRaid = async () => {
+    const name = readNick(ui.nickValue());
+    await endSession();
+    campaignActive = true;
+    scene.suppressBoard = true;
+    const src = new OfflineSource(
+      name,
+      loadoutOf(),
+      { mode: 'dm', mapId: 'throne', seats: 2, autoRestart: false, boss: true, bossName: 'Raid Boss', bossHp: 60, bossColor: 0xff4d5e, botLevel: 200, bossSkillScale: 0.2, roundTime: 60, noRespawn: true },
+      progress.loadoutInstances(),
+      progress.level.level,
+      offlineExtra(),
+    );
+    scene.setSource(src);
+    document.body.dataset.mode = 'raid';
+    ui.showGame();
+    ui.setInviteVisible(false);
+    touch.setEnabled(true);
+    ui.setObjective('Guild raid: deal as much damage as you can in 60 seconds');
+    const t = window.setInterval(() => {
+      const boss = Array.from(src.sim.players.values()).find((p) => p.boss);
+      const me = src.sim.players.get(src.localId);
+      if (!boss || !me) return;
+      const done = src.sim.phase === 'scoreboard' || !me.alive || !boss.alive;
+      if (!done) return;
+      window.clearInterval(t);
+      src.paused = true;
+      const dmg = (boss.maxHp - Math.max(0, boss.hp)) * 10;
+      void raidHit(dmg).then((r) =>
+        ui.showOverlayHtml(
+          `<h2 style="margin:0;color:#ffc93c">Raid over</h2><div class="reward">You dealt ${dmg} damage</div>${r.ok ? `<div class="sub">Guild total: ${r.max - r.hp} / ${r.max}${r.defeated ? ' &middot; BOSS DEFEATED! Claim your reward in Guilds.' : ''}</div>` : `<div class="sub">${r.reason ?? ''}</div>`}`,
+          [{ label: 'Guilds', onClick: () => void toMenu().then(() => pages.open('guild')) }],
+        ),
+      );
+    }, 300);
   };
   const startLevel = async (level: LevelDef) => {
     const name = readNick(ui.nickValue());
@@ -428,9 +474,18 @@ async function boot(): Promise<void> {
         bossKit: level.id === CHAMPION_LEVEL_ID ? progress.championKit() : level.bossKit,
         bossDomain: level.bossDomain,
         bossFinal: level.bossFinal,
+        // Campaign worlds: arena effect, element bonus and enemies that get tougher level by level.
+        ...(level.id <= 88
+          ? (() => {
+              const w = WORLDS[worldOfLevel(level.id).world];
+              return { effect: w.effect, effectElement: w.element >= 0 ? w.element : undefined, botLevel: 1 + (level.id - 1) * 7 + (level.boss ? 15 : 0) };
+            })()
+          : { botLevel: level.id === CHAMPION_LEVEL_ID ? 1000 : 300 }),
+        bossSkillScale: level.id === CHAMPION_LEVEL_ID ? 1 : 0.3,
       },
       progress.loadoutInstances(),
       progress.level.level,
+      offlineExtra(),
     );
     scene.setSource(src);
     document.body.dataset.mode = 'campaign';
@@ -470,7 +525,7 @@ async function boot(): Promise<void> {
       );
       if (reward?.drop) ui.notify(`Skill drop: ${dropText(reward.drop)}`, '#b77dff', 4500);
       if (reward?.chest) ui.notify(`${CHESTS[reward.chest].name} earned! Open it in Chests.`, '#ffc93c', 4500);
-      reward?.levelsGained.forEach((l) => ui.notify(`Level up! Level ${l}`, '#ffc93c', 4000));
+      levelUps(reward?.levelsGained ?? []);
       if (res.won && level.id === CHAMPION_LEVEL_ID) {
         // The new champion chooses one skill from the champion's kit.
         const kit = progress.championKit();
@@ -496,6 +551,11 @@ async function boot(): Promise<void> {
     intentionalLeave = false;
     const src = new OnlineSource(room);
     scene.setSource(src);
+    room.onMessage('rated', (r: { mode: string; rating: number; delta: number; tier: string; rank: number }) => {
+      if (r.mode === '1v1') progress.data.ranked.rating = r.rating;
+      progress.commit();
+      ui.notify(`Ranked ${r.mode}: ${r.delta >= 0 ? '+' : ''}${r.delta} (${r.rating}, ${r.tier}) &middot; world #${r.rank}`, '#ffc93c', 5000);
+    });
     document.body.dataset.mode = 'online';
     document.body.dataset.room = room.roomId;
     ui.hideOverlay();
@@ -561,7 +621,14 @@ async function boot(): Promise<void> {
     ui.showGame();
     ui.setInviteVisible(false);
     ui.showOverlay('Connecting...');
-    const full: JoinTarget = { ...target, loadout: loadoutOf(), level: progress.level.level };
+    const full: JoinTarget = {
+      ...target,
+      loadout: loadoutOf(),
+      level: progress.level.level,
+      token: accountToken(),
+      gear: equippedGear(progress),
+      summon: activeSummon(progress),
+    };
     try {
       const { room, serverIndex } = await joinArena(name, full);
       if (mySession !== sessionId) {
@@ -617,7 +684,19 @@ async function boot(): Promise<void> {
     },
     playTeam2v2: () => {
       pages.close();
-      void startOnline(ui.nickValue(), { ranked: true });
+      void startOnline(ui.nickValue(), { rankedMode: '2v2' });
+    },
+    playRankedArena: (mode) => {
+      pages.close();
+      void startOnline(ui.nickValue(), { rankedMode: mode });
+    },
+    startRaid: () => {
+      pages.close();
+      void startRaid();
+    },
+    joinWar: () => {
+      pages.close();
+      void startOnline(ui.nickValue(), { war: true });
     },
     watchAd: () => showRewardedAd(platform, adCallbacks()),
   });
@@ -715,6 +794,21 @@ async function boot(): Promise<void> {
       nick = sanitizeNick(progress.data.nick);
       ui.setNick(nick);
     }
+    facts.cls = progress.data.profile.cls;
+    facts.level = progress.level.level;
+    void fetchMe().then((r) => {
+      if (!r.ok) return;
+      setGuildBonus(r.player.guild?.buff?.bonus);
+      if (r.player.pending?.length)
+        void claimHold().then((c) => {
+          if (!c.ok) return;
+          for (const rw of c.rewards) {
+            const d = rw.rank === 'U' ? progress.grantUnique() : progress.grantSkillOfRank(rw.rank as never);
+            ui.notify(`World rank reward (top ${rw.bracket} for 30 days): ${getSkill(d.skillId).name}`, '#ffc93c', 7000);
+          }
+          progress.commit();
+        });
+    });
     // Reserve the name now if it could not be checked earlier (offline).
     if (!progress.data.profile.registered && progress.data.nick) void claimName(progress, progress.data.nick);
     ui.showMenu();

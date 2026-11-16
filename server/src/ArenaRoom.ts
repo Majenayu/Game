@@ -414,6 +414,9 @@ export class ArenaRoom extends Room<ArenaState> {
       ps.acc = v.acc;
       ps.hold = Math.round(v.hold * 10) / 10;
       ps.form = v.form;
+      ps.lv = v.lv;
+      ps.atk = v.atk;
+      ps.def = v.def;
       ps.ready = v.bot || this.ready.has(p.id);
     }
 

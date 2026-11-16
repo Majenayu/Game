@@ -57,7 +57,7 @@ export const CHESTS: Record<ChestKind, ChestDef> = {
     color: 0xff4da6,
     coins: [800, 1500],
     skills: 5,
-    odds: { B: 30, A: 45, S: 22, U: 3 },
+    odds: { B: 30, A: 45, S: 25 },
     weapon: 60,
     acc: 60,
     from: 'Login day 30 and beating the champion',

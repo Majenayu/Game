@@ -655,3 +655,19 @@ CrazyGames rules do not allow a separate login. The backend must use the CrazyGa
   - The bottom bar is smaller on small screens.
   - A privacy note explains the stored name and rating.
 - **Skill descriptions:** they are readable sentences now, for example "Shoots a toxin laser that hits everything in a line that poisons enemies over time."
+
+## 22. Skill World v3 (built)
+
+- Campaign: 8 maps x (10 single enemies + that map's bestiary boss) = 88 levels, one enemy at a time, no time limit. Lose when your HP hits 0. Stars from HP left: >75% = 3, >50% = 2, any win = 1. Difficulty rises 0.15 -> 0.85. Each map has an arena effect (storm, toxic, void, fire, dark, snow) and an element bonus. Map star milestones at 10 / 20 / 33 stars. Bosses drop their own uniques (12% first clear, 2% replay).
+- Level cap 1000; every level raises HP, MP, attack, defence, special attack, speed, reload and aim. Level-up panel shows the gains.
+- Gear: 8 slots x 30 designs x 12 colours x 8 ranks = 23,040 items with stat buffs (U = 10x F), plus 10,000 cosmetic accessories. Gear stock in the market; market refresh costs 100 x (refreshes today + 1).
+- Trails and bullet styles give buffs. Characters have avatar icons.
+- Summons: 768 creatures (beasts, robots, dragons, animals, fish, mermaids, drones...), eggs, upgrades to level 50, skill cards. Not used in ranked.
+- Lucky draw: 6 wheels; 1, 10 or 100 spins; prize cards appear after the wheel stops. No uniques on wheels.
+- Fusion: fixed recipe per pair (order does not matter), never lower than the best parent, same-rank 20% rank-up, S+S 3% unique. One free per week, then 1 stone + 500 coins.
+- Encyclopedia of every skill with how to get it.
+- Ranked: arena deathmatch 1v1 (120 s) and 2v2 (150 s), separate ratings, tier leaderboards. Shadow duel stays as an unranked mode. World score = rating + rating2 + level; holding a bracket 30 days pays U / S / A / B / C / D.
+- Max 4 players in every format. Slower game, skills hit 2x, skill name banner + voice, target lock (right-click / Tab).
+- Guilds: 5 members, guild level, class buffs (Harmony for 5 classes, Legion for 5 of one class), shown in the lobby; daily raid boss; 5v5 guild war room.
+- Majen: challenge from level 50; battle pauses on each form change and shows the new stats; final form is a golden dragon.
+- Not built: champion replacement shared across all players (local only), real guild-vs-guild wars need two online guilds to test.

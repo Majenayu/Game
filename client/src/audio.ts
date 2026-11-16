@@ -100,6 +100,24 @@ class Sfx {
   reward(): void {
     [523, 659, 784, 1046].forEach((fr, i) => this.tone(fr, fr, 0.25, 'triangle', 0.7, i * 0.09));
   }
+  private lastSay = 0;
+  /** Speaks a short line (skill names, boss forms) with the browser's built-in voice. */
+  say(text: string, force = false): void {
+    if (this.muted || typeof speechSynthesis === 'undefined') return;
+    const now = performance.now();
+    if (!force && now - this.lastSay < 700) return;
+    this.lastSay = now;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.15;
+      u.pitch = 0.9;
+      u.volume = 0.8;
+      speechSynthesis.speak(u);
+    } catch {
+      /* speech not available */
+    }
+  }
   click(): void {
     this.tone(500, 400, 0.04, 'square', 0.3);
   }

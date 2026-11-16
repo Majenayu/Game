@@ -8,8 +8,10 @@ import {
   getMap,
   getSkill,
   usableInBattle,
+  bonusText,
   type PlayerView,
 } from '@orb/shared';
+import { getGuildBonus } from '../meta/inventory';
 import { sfx } from '../audio';
 import type { Progress } from '../meta/economy';
 import type { Ui } from '../ui/ui';
@@ -90,7 +92,8 @@ export class LobbyPanel {
     const w = WEAPONS[p.weapon] ?? WEAPONS[0];
     const tag = p.id === me.id ? ' <span class="tag">You</span>' : p.bot ? ' <span class="tag">Bot</span>' : ' <span class="tag">Player</span>';
     return `<div class="lp" style="border-color:${hex(p.color)}"><b style="color:${hex(p.color)}">${esc(p.name)}</b>${tag}${p.boss ? ' <span class="tag" style="color:#ff1744">BOSS</span>' : ''}
-      <div>${esc(ch?.name ?? p.char)} &middot; ${p.maxHp} HP &middot; ${esc(w.name)}: ${esc(w.desc)}</div>${this.skillLines(p.skills)}</div>`;
+      <div>${esc(ch?.name ?? p.char)} &middot; ${p.maxHp} HP &middot; ${esc(w.name)}: ${esc(w.desc)}</div>
+      <div class="sub" style="margin:0">Lv ${p.lv} &middot; Attack ${p.atk} &middot; Defence ${p.def}%</div>${this.skillLines(p.skills)}</div>`;
   }
 
   private html(snap: Snapshot, me: PlayerView, players: PlayerView[]): string {
@@ -104,6 +107,11 @@ export class LobbyPanel {
       <div class="sub">${esc(MODES[snap.mode].name)} on ${esc(getMap(snap.mapId).name)} &middot; starts in <b id="lobbytime">25</b>s or when everyone confirms</div>
       <div class="lbar"><button data-lconfirm="1">Confirm</button><span class="sub" style="margin:0">Study the enemy skills below, then confirm. The match starts with 3, 2, 1, GO.</span></div>
       <h3>You</h3><div class="lteam">${this.card(me, me)}</div>
+      ${(() => {
+        const g = getGuildBonus();
+        const t = g ? bonusText(g) : '';
+        return t ? `<div class="sub" style="color:#7dff6b">Guild class buff active: ${esc(t)}</div>` : '';
+      })()}
       ${this.editing ? this.editor() : '<button class="ghost" data-ledit="1">Change skills / weapon</button>'}
       ${group(team ? 'Your team' : '', allies)}
       ${group(team ? 'Enemy team' : 'Opponents', enemies)}`;

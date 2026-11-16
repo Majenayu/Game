@@ -35,9 +35,11 @@ describe('boss tower progress', () => {
 });
 
 describe('champion, weapons and accessories', () => {
-  it('anyone can challenge the champion from level 1; the winner picks a skill from his kit and takes the crown', async () => {
+  it('the champion opens at level 50; the winner picks a skill from his kit and takes the crown', async () => {
     const p = await fresh();
     const majen = BOSS_LEVELS[8];
+    expect(p.levelUnlocked(majen)).toBe(false);
+    for (let i = 0; i < 400 && p.level.level < 50; i++) p.addXp(5000);
     expect(p.levelUnlocked(majen)).toBe(true);
     p.finishLevel(majen, 1);
     const kit = p.championKit();
@@ -51,13 +53,13 @@ describe('champion, weapons and accessories', () => {
   });
   it('opens chests and lists every item, and out-of-battle skills boost rewards', async () => {
     const p = await fresh();
+    expect(p.passives.coins).toBe(0);
     p.data.chests.gold = 1;
     const coins = p.data.coins;
     const r = p.openChest('gold')!;
     expect(r.items.length).toBeGreaterThanOrEqual(5);
     expect(p.data.coins).toBeGreaterThanOrEqual(coins + 300);
     expect(p.openChest('gold')).toBeNull();
-    expect(p.passives.coins).toBe(0);
     const { firstIdOfRank, skillCount, getSkill } = await import('@orb/shared');
     const st = firstIdOfRank('S');
     for (let k = 0; k < skillCount('S'); k++)

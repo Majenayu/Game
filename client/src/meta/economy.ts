@@ -16,6 +16,7 @@ import {
   RANKS,
   UNIQUES,
   WEAPONS,
+  getGear,
   LEVEL_COPIES,
   duelUsable,
   getSkill,
@@ -35,6 +36,13 @@ import {
   fusionsLeft,
   makeInstance,
   randomSkillOfRank,
+  randomGear,
+  GEAR_SLOTS,
+  STAR_MILESTONES,
+  bossUniques,
+  worldOfLevel,
+  BOSS_UNIQUE_FIRST,
+  BOSS_UNIQUE_REPEAT,
   rankOf,
   rollDrop,
   rollStarterPack,
@@ -50,6 +58,7 @@ import {
   type SkillInstance,
 } from '@orb/shared';
 import type { Platform } from '../platform/crazygames';
+import { addGear, dropGear, grantDailyExtra } from './inventory';
 import { SAVE_KEY, defaultSave, parseSave, type QuestState, type SaveData } from './save';
 
 // ---- tables -----------------------------------------------------------------
@@ -100,12 +109,12 @@ export const SPINS_PER_DAY = 10;
 /** Accessories you may pick for free when you create your profile. */
 export const FREE_ACCS = [0, 2, 5, 6, 8];
 /** Level needed to challenge the champion (1 = anyone). */
-export const CHAMPION_MIN_LEVEL = 1;
+export const CHAMPION_MIN_LEVEL = 50;
 
 export interface WheelSegment {
   label: string;
   weight: number;
-  kind: 'coins' | 'cosmetic' | 'skill' | 'unique' | 'weapon' | 'acc';
+  kind: 'coins' | 'cosmetic' | 'skill' | 'unique' | 'weapon' | 'acc' | 'gear' | 'egg' | 'stones';
   value: number;
   color: string;
 }
@@ -118,12 +127,11 @@ export const WHEEL: WheelSegment[] = [
   { label: 'Skill C', weight: 14, kind: 'skill', value: 3, color: '#1f7a6a' },
   { label: 'Skill B', weight: 8, kind: 'skill', value: 4, color: '#5a2a9a' },
   { label: 'Skill A', weight: 2.5, kind: 'skill', value: 5, color: '#a0521f' },
-  { label: 'Skill S', weight: 0.5, kind: 'skill', value: 6, color: '#a08a1f' },
-  { label: 'UNIQUE', weight: 0.2, kind: 'unique', value: 7, color: '#c0206a' },
+  { label: 'Skill S', weight: 0.6, kind: 'skill', value: 6, color: '#a08a1f' },
 ];
 
 export const EXTRA_SPIN_COST = 150;
-export type WheelKind = 'coins' | 'skills' | 'weapons' | 'accs';
+export type WheelKind = 'coins' | 'skills' | 'weapons' | 'accs' | 'gear' | 'summons';
 const WCOL = ['#2a3a7a', '#1f5f8f', '#5a2a9a', '#2f7a4a', '#8a6a1f', '#a02a2a', '#1f7a6a', '#7a2a6a'];
 /** Separate wheels on the Lucky Draw page. All share the 10 free spins a day. */
 export const WHEELS: Record<WheelKind, WheelSegment[]> = {
@@ -138,6 +146,24 @@ export const WHEELS: Record<WheelKind, WheelSegment[]> = {
     { label: '1000', weight: 1, kind: 'coins', value: 1000, color: '#a02a2a' },
   ],
   skills: WHEEL,
+  gear: [
+    { label: 'Gear F', weight: 26, kind: 'gear', value: 0, color: '#4a5070' },
+    { label: 'Gear E', weight: 22, kind: 'gear', value: 1, color: '#2f7a4a' },
+    { label: 'Gear D', weight: 18, kind: 'gear', value: 2, color: '#1f4f9f' },
+    { label: 'Gear C', weight: 14, kind: 'gear', value: 3, color: '#1f7a6a' },
+    { label: 'Gear B', weight: 9, kind: 'gear', value: 4, color: '#5a2a9a' },
+    { label: 'Gear A', weight: 3, kind: 'gear', value: 5, color: '#a0521f' },
+    { label: 'Gear S', weight: 0.8, kind: 'gear', value: 6, color: '#a08a1f' },
+    { label: 'Gear U', weight: 0.1, kind: 'gear', value: 7, color: '#c0206a' },
+  ],
+  summons: [
+    { label: 'Egg', weight: 18, kind: 'egg', value: 1, color: '#1f7a6a' },
+    { label: '2 Eggs', weight: 6, kind: 'egg', value: 2, color: '#5a2a9a' },
+    { label: 'Stone', weight: 30, kind: 'stones', value: 1, color: '#2a3a7a' },
+    { label: '3 Stones', weight: 12, kind: 'stones', value: 3, color: '#1f4f9f' },
+    { label: '100', weight: 30, kind: 'coins', value: 100, color: '#2f7a4a' },
+    { label: '5 Eggs', weight: 1, kind: 'egg', value: 5, color: '#a0521f' },
+  ],
   weapons: WEAPONS.slice(1).map((w, i) => ({
     label: w.name,
     weight: Math.max(1, 12 - w.level),
@@ -555,6 +581,19 @@ export class Progress {
         items.push(`Accessory: ${a.name}`);
       }
     }
+    // Gear (accessories with stats) and fusion stones.
+    const gearRank: Rank = kind === 'legend' ? 'S' : kind === 'gold' ? 'A' : kind === 'silver' ? 'C' : 'E';
+    const gid = dropGear(this, luckyRank(gearRank, this.passives.luck, rng), rng);
+    items.push(`Gear: ${getGear(gid).name} (${getGear(gid).rank})`);
+    const stones = { wood: 0, silver: 1, gold: 2, legend: 5 }[kind];
+    if (stones) {
+      this.data.stones += stones;
+      items.push(`${stones} fusion stone(s)`);
+    }
+    if (kind === 'legend') {
+      this.data.eggs += 1;
+      items.push('A summon egg');
+    }
     this.commit();
     return { coins, items, drops };
   }
@@ -681,7 +720,7 @@ export class Progress {
     return { canClaim, nextDay: canClaim ? (streak % 30) + 1 : (d.streak % 30) + 1, streak };
   }
 
-  claimDaily(): { coins: number; day: number; levels: number[]; chest?: ChestKind } | null {
+  claimDaily(): { coins: number; day: number; levels: number[]; chest?: ChestKind; extra?: string } | null {
     const st = this.dailyStatus();
     if (!st.canClaim) return null;
     const day = st.nextDay;
@@ -690,9 +729,10 @@ export class Progress {
     this.data.daily = { last: dateKey(), streak: st.streak + 1 };
     this.addCoins(coins);
     if (cal.chest) this.data.chests[cal.chest] += 1;
-    const levels = this.addXp(30);
+    const extra = grantDailyExtra(this, day);
+    const levels = this.addXp(30 + day * 5);
     this.commit();
-    return { coins, day, levels, chest: cal.chest };
+    return { coins, day, levels, chest: cal.chest, extra };
   }
 
   // ---- quests ---------------------------------------------------------------
@@ -727,10 +767,14 @@ export class Progress {
     const def = this.questDef(q.id);
     if (!def || q.claimed || q.progress < def.target) return null;
     q.claimed = true;
-    this.addCoins(def.coins);
-    const levels = this.addXp(def.xp);
+    // Quests pay well: coins, XP, fusion stones and a chest (Silver for weekly quests).
+    const weekly = this.data.quests.weekList.includes(q);
+    this.addCoins(def.coins * 2);
+    const levels = this.addXp(def.xp * 2);
+    this.data.stones += weekly ? 3 : 1;
+    this.data.chests[weekly ? 'silver' : 'wood'] += 1;
     this.commit();
-    return { coins: def.coins, levels };
+    return { coins: def.coins * 2, levels };
   }
 
   // ---- lucky draw -----------------------------------------------------------
@@ -800,6 +844,22 @@ export class Progress {
   /** Grants the prize of the segment. Returns a text describing it. */
   grantPrize(index: number, rng: () => number = Math.random, wheel: WheelKind = 'coins'): string {
     const seg = WHEELS[wheel][index];
+    if (seg.kind === 'gear') {
+      const id = dropGear(this, luckyRank(RANKS[seg.value], this.passives.luck, rng), rng);
+      if (rng() * 100 < this.passives.double) addGear(this, id);
+      this.commit();
+      return `${getGear(id).name} (${getGear(id).rank})`;
+    }
+    if (seg.kind === 'egg') {
+      this.data.eggs += seg.value;
+      this.commit();
+      return `${seg.value} summon egg(s)`;
+    }
+    if (seg.kind === 'stones') {
+      this.data.stones += seg.value;
+      this.commit();
+      return `${seg.value} fusion stone(s)`;
+    }
     if (seg.kind === 'weapon' || seg.kind === 'acc') {
       const k: ShopKind = seg.kind;
       if (this.owns(k, seg.value)) {
@@ -889,11 +949,18 @@ export class Progress {
       const mapLevels = LEVELS.filter((x) => x.map === level.map);
       const mapStars = mapLevels.reduce((sum, x) => sum + (this.data.campaign[String(x.id)] ?? 0), 0);
       const claimed = this.data.campaignBonuses[level.map] ?? 0;
-      const milestones = [
-        { stars: 10, bit: 1, reward: 'extra silver chest', grant: () => { this.data.chests.silver += 1; } },
-        { stars: 20, bit: 2, reward: 'bonus skill', grant: () => { this.dropSkill('story'); } },
-        { stars: 30, bit: 4, reward: 'extra gold chest', grant: () => { this.data.chests.gold += 1; } },
-      ];
+      // Map star milestones (10 / 20 / all 33 stars), the same list the map tracker shows.
+      const milestones = STAR_MILESTONES.map((m, i) => ({
+        stars: m.stars,
+        bit: 1 << i,
+        reward: m.text,
+        grant: () => {
+          this.data.chests[m.reward] += 1;
+          this.data.stones += m.stones;
+          if (m.egg) this.data.eggs += 1;
+          if (m.sRank) this.addSkill(makeInstance(randomSkillOfRank('S', Math.random), Math.random, this.newUid()));
+        },
+      }));
       for (const milestone of milestones) {
         if (mapStars >= milestone.stars && !(claimed & milestone.bit)) {
           milestone.grant();
@@ -901,6 +968,16 @@ export class Progress {
           bonus = bonus ? `${bonus}, ${milestone.reward}` : milestone.reward;
         }
 
+      }
+    }
+    // Map bosses can drop one of their own unique skills: 12% on the first clear, 2% on replays.
+    let unique: SkillDrop | undefined;
+    if (level.boss && !tower && level.id !== CHAMPION_LEVEL_ID) {
+      const pool = bossUniques(worldOfLevel(level.id).world);
+      const pct = prev === 0 ? BOSS_UNIQUE_FIRST : BOSS_UNIQUE_REPEAT;
+      if (pool.length && Math.random() * 100 < pct) {
+        unique = this.addSkill(makeInstance(pool[Math.floor(Math.random() * pool.length)], Math.random, this.newUid()));
+        bonus = bonus ? `${bonus}, UNIQUE skill ${getSkill(unique.skillId).name}!` : `UNIQUE skill ${getSkill(unique.skillId).name}!`;
       }
     }
     // Every win against a boss or a campaign level pays a chest (better on the first clear).
@@ -965,7 +1042,54 @@ export class Progress {
   marketToday(now = Date.now()): Array<MarketOffer & { sold: boolean }> {
     const day = this.marketDay(now);
     const bought = this.data.market.day === day ? this.data.market.bought : [];
-    return marketOffers(day).map((o, i) => ({ ...o, sold: bought.includes(i) }));
+    const r = this.data.marketRefresh.day === String(day) ? this.data.marketRefresh.n : 0;
+    return marketOffers(day * 101 + r * 7919).map((o, i) => ({ ...o, sold: bought.includes(i) }));
+  }
+  /** Today's gear stock: one item per slot, new every day and on each refresh. */
+  gearOffers(now = Date.now()): Array<{ id: number; price: number; sold: boolean }> {
+    const day = this.marketDay(now);
+    const bought = this.data.market.day === day ? this.data.market.bought : [];
+    const r = this.data.marketRefresh.day === String(day) ? this.data.marketRefresh.n : 0;
+    let s = (day * 101 + r * 7919 + 13) >>> 0;
+    const rng = () => {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const ranks: Rank[] = ['D', 'D', 'C', 'C', 'B', 'B', 'A', 'S'];
+    return GEAR_SLOTS.map((slot, i) => {
+      const id = randomGear(ranks[Math.floor(rng() * ranks.length)], rng, slot);
+      return { id, price: getGear(id).price, sold: bought.includes(100 + i) };
+    });
+  }
+  buyGearOffer(index: number, now = Date.now()): { ok: boolean; reason?: string } {
+    const o = this.gearOffers(now)[index];
+    if (!o || o.sold) return { ok: false, reason: 'Sold out' };
+    if (this.data.coins < o.price) return { ok: false, reason: `Costs ${o.price} coins` };
+    const day = this.marketDay(now);
+    if (this.data.market.day !== day) this.data.market = { day, bought: [] };
+    this.addCoins(-o.price);
+    this.data.market.bought.push(100 + index);
+    addGear(this, o.id);
+    this.commit();
+    return { ok: true };
+  }
+  /** New market stock for coins (cost grows with each refresh that day). */
+  refreshCost(now = Date.now()): number {
+    const day = String(this.marketDay(now));
+    return 100 * ((this.data.marketRefresh.day === day ? this.data.marketRefresh.n : 0) + 1);
+  }
+  refreshMarket(now = Date.now()): { ok: boolean; reason?: string } {
+    const cost = this.refreshCost(now);
+    if (this.data.coins < cost) return { ok: false, reason: `Refreshing costs ${cost} coins` };
+    const day = String(this.marketDay(now));
+    this.addCoins(-cost);
+    this.data.marketRefresh = { day, n: (this.data.marketRefresh.day === day ? this.data.marketRefresh.n : 0) + 1 };
+    this.data.market = { day: this.marketDay(now), bought: [] };
+    this.commit();
+    return { ok: true };
   }
   buyOffer(index: number, now = Date.now()): { ok: boolean; reason?: string; drop?: SkillDrop } {
     const offers = this.marketToday(now);

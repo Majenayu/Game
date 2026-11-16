@@ -62,10 +62,19 @@ export interface GuildSummary {
 }
 
 export const checkName = (n: string) => call<{ available: boolean }>(`/name?n=${encodeURIComponent(n)}`);
-export const registerName = (name: string) => call<{ player: PublicPlayer }>('/register', { token: accountToken(), name });
-export const fetchMe = () => call<{ player: PublicPlayer }>('/me', { token: accountToken() });
+/** Class and level sent with account calls (for guild buffs and the world score). */
+export const facts: { cls?: string; level?: number } = {};
+export const registerName = (name: string) => call<{ player: PublicPlayer }>('/register', { token: accountToken(), name, ...facts });
+export const fetchMe = () => call<{ player: PublicPlayer & { guild: (PublicPlayer['guild'] & { buff?: { bonus: Record<string, number>; lines: string[] } }) | null; pending?: Array<{ rank: string; bracket: number }> } }>('/me', { token: accountToken(), ...facts });
 export const fetchLeaderboard = () => call<{ total: number; top: PublicPlayer[] }>('/leaderboard?limit=50');
 export const fetchGuilds = () => call<{ guilds: GuildSummary[] }>('/guilds');
+export const fetchBoard = (mode: string, tier: string) =>
+  call<{ total: number; top: PublicPlayer[] }>(`/leaderboard?limit=100&mode=${encodeURIComponent(mode)}&tier=${encodeURIComponent(tier)}`);
+export const fetchRaid = () =>
+  call<{ raid: { name: string; hp: number; max: number; myHits: number; maxHits: number; defeated: boolean; claimed: boolean } }>('/raid', { token: accountToken() });
+export const raidHit = (dmg: number) => call<{ hp: number; max: number; defeated: boolean }>('/raid/hit', { token: accountToken(), dmg });
+export const raidClaim = () => call<{ reward: { chest: string; stones: number } }>('/raid/claim', { token: accountToken() });
+export const claimHold = () => call<{ rewards: Array<{ bracket: number; rank: string }> }>('/claim', { token: accountToken() });
 export const fetchGuild = (id: string) =>
   call<{ guild: GuildSummary; members: Array<{ name: string; rating: number; tier: string; owner: boolean }> }>(`/guild/${encodeURIComponent(id)}`);
 export const createGuild = (name: string, tag: string) => call<{ guild: GuildSummary }>('/guild/create', { token: accountToken(), name, tag });

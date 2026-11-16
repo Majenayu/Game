@@ -44,6 +44,8 @@ export interface ZoneView {
 }
 
 export interface PetView {
+  /** Creature id when this pet is a summon (-1 otherwise). */
+  creature?: number;
   id: string;
   x: number;
   y: number;
@@ -70,6 +72,8 @@ export interface Snapshot {
   hillHolder: string;
   /** Seconds left to confirm in the lobby; 0 once the match has started. */
   lobby: number;
+  /** Arena effect (snow, fire, storm, toxic, void, dark) or ''. */
+  effect: string;
   /** Active domain expansion (fills the arena). */
   domain: { name: string; color: number; owner: string } | null;
 }

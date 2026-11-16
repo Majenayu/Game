@@ -29,25 +29,27 @@ export const STAT_LABELS: Record<keyof StatSheet, string> = {
 export const STAT_KEYS = Object.keys(STAT_LABELS) as Array<keyof StatSheet>;
 
 /** Base sheet at a level (before gear and buffs). Grows a little every level. */
+const r1 = (n: number) => Math.round(n * 10) / 10;
 export function levelSheet(level: number): StatSheet {
   const l = Math.max(1, Math.min(MAX_PLAYER_LEVEL, Math.floor(level))) - 1;
   return {
     hp: Math.round(300 + l * 2.2),
-    mp: Math.round(100 + l * 0.3),
-    attack: Math.round(50 + l * 0.35),
-    defence: Math.round(30 + l * 0.3),
-    spAttack: Math.round(50 + l * 0.4),
-    speed: Math.round(100 + l * 0.02),
-    reload: Math.round(100 + l * 0.04),
-    aim: Math.round(60 + l * 0.03),
+    mp: r1(100 + l * 0.3),
+    attack: r1(50 + l * 0.35),
+    defence: r1(30 + l * 0.3),
+    spAttack: r1(50 + l * 0.4),
+    speed: r2(100 + l * 0.02),
+    reload: r2(100 + l * 0.04),
+    aim: r2(60 + l * 0.03),
   };
 }
+const r2 = (n: number) => Math.round(n * 100) / 100;
 /** What one level up gives (for the level-up panel). */
 export function levelUpGains(newLevel: number): StatSheet {
   const a = levelSheet(newLevel - 1);
   const b = levelSheet(newLevel);
   const out = {} as StatSheet;
-  for (const k of STAT_KEYS) out[k] = b[k] - a[k];
+  for (const k of STAT_KEYS) out[k] = r2(b[k] - a[k]);
   return out;
 }
 

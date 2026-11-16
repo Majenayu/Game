@@ -23,6 +23,7 @@ import {
   type SimConfig,
   type SimEvent,
   type SkillInstance,
+  type CombatStats,
 } from '@orb/shared';
 import { INTERP_DELAY_MS, SnapshotBuffer } from './interp';
 import type { GameSource, Snapshot } from './types';
@@ -45,6 +46,7 @@ export class OfflineSource implements GameSource {
     config: Partial<SimConfig> = {},
     instances: SkillInstance[] = [],
     level = 1,
+    extra: { stats?: CombatStats; summon?: { id: number; level: number; cards: number[] } } = {},
   ) {
     this.sim = new Sim(Math.random, { countdown: COUNTDOWN_SECONDS, ...config });
     this.sim.addPlayer(this.localId, name, false, {
@@ -57,6 +59,8 @@ export class OfflineSource implements GameSource {
       weapon: loadout.weapon,
       acc: loadout.acc,
       level,
+      stats: extra.stats,
+      summon: extra.summon,
     });
     this.sim.rebalanceBots();
     // Same lobby as online: up to 25 seconds to look at the enemies and confirm, then 3, 2, 1, GO.
@@ -131,7 +135,8 @@ export class OfflineSource implements GameSource {
         armed: s.time >= m.armedAt,
       })),
       zones: s.zones.map((z) => ({ id: String(z.id), x: z.x, y: z.y, r: z.r, kind: z.kind, owner: z.owner })),
-      pets: s.pets.map((q) => ({ id: String(q.id), x: q.x, y: q.y, owner: q.owner, color: q.color })),
+      pets: s.pets.map((q) => ({ id: String(q.id), x: q.x, y: q.y, owner: q.owner, color: q.color, creature: q.creature ?? -1 })),
+      effect: s.cfg.effect ?? '',
       phase: s.phase,
       mode: s.mode,
       mapId: s.map.id,
@@ -247,6 +252,9 @@ export class OnlineSource implements GameSource {
         acc: p.acc ?? 0,
         hold: p.hold ?? 0,
         form: p.form ?? 0,
+        lv: p.lv ?? 1,
+        atk: p.atk ?? 50,
+        def: p.def ?? 0,
       });
     });
     const bullets: Snapshot['bullets'] = [];
@@ -287,6 +295,7 @@ export class OnlineSource implements GameSource {
       teamScore: [state.teamScore0, state.teamScore1],
       hillHolder: state.hillHolder,
       lobby: state.lobby ?? 0,
+      effect: '',
       domain: state.domainName ? { name: state.domainName, color: state.domainColor, owner: state.domainOwner } : null,
     };
     this.latestAt = now;

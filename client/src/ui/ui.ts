@@ -1,4 +1,8 @@
 import {
+  STAT_KEYS,
+  STAT_LABELS,
+  levelSheet,
+  levelUpGains,
   EFFECTS,
   EMOTES,
   ELEMENTS,
@@ -185,6 +189,44 @@ export class Ui {
       }),
     );
     window.setTimeout(() => this.nextMerge(), up ? 2300 : 1600);
+  }
+  /** Level-up panel: "You grew to Lv. 72!" with the stat gains, like a classic RPG. */
+  showLevelUp(level: number, count = 1): void {
+    const gains = STAT_KEYS.map((k) => {
+      let n = 0;
+      for (let l = level - count + 1; l <= level; l++) n += levelUpGains(l)[k];
+      return { k, n };
+    });
+    const sheet = levelSheet(level);
+    const box = $('levelup');
+    box.innerHTML = `<div class="lvbox"><div class="lvtitle">LEVEL UP!</div><div class="lvrows">${gains
+      .map((g) => `<div><span>${STAT_LABELS[g.k]}</span><b>${+sheet[g.k].toFixed(2)}</b><i>+${+g.n.toFixed(2)}</i></div>`)
+      .join('')}</div><div class="lvmsg">You grew to Lv. ${level}!</div></div>`;
+    box.hidden = false;
+    window.clearTimeout(this.lvTimer);
+    this.lvTimer = window.setTimeout(() => (box.hidden = true), 4200);
+    box.onclick = () => (box.hidden = true);
+  }
+  private lvTimer = 0;
+  private bannerTimer = 0;
+  /** The name of the skill you just cast, at the top of the screen (does not cover the arena centre). */
+  skillBanner(text: string, color: string): void {
+    const b = $('skillbanner');
+    b.textContent = text;
+    b.style.color = color;
+    b.hidden = false;
+    b.style.animation = 'none';
+    void b.offsetWidth;
+    b.style.animation = '';
+    window.clearTimeout(this.bannerTimer);
+    this.bannerTimer = window.setTimeout(() => (b.hidden = true), 1400);
+  }
+  /** Boss form change: the battle pauses and the new form and stats are shown. */
+  showForm(boss: string, form: string, stats: string[], ms = 2500): void {
+    const b = $('formfx');
+    b.innerHTML = `<div class="fbox"><div class="sub" style="font-size:20px">${esc(boss)}</div><div class="fname">${esc(form)}</div><div class="fstats">${stats.map(esc).join('<br/>')}</div></div>`;
+    b.hidden = false;
+    window.setTimeout(() => (b.hidden = true), ms);
   }
   /** Reserves a strip at the bottom (desktop) or the right (touch) for buttons, so they never cover the arena. */
   setInGame(on: boolean): void {

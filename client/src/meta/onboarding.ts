@@ -1,4 +1,5 @@
 import { ACCESSORIES, CHARACTERS, CLASSES, COLORS, classById, validName } from '@orb/shared';
+import { avatar } from '../art/icons2';
 import { checkName, registerName } from '../account';
 import { accIcon } from '../art/icons';
 import { sfx } from '../audio';
@@ -97,11 +98,11 @@ export function showOnboarding(pr: Progress, defaultNick: string): Promise<void>
       const cls = classById(pick.cls)!;
       const classes = CLASSES.map(
         (c) =>
-          `<div class="card ${c.id === pick.cls ? 'sel' : ''}" data-ocls="${c.id}"><b>${esc(c.name)}</b><div class="d">${esc(c.desc)}</div></div>`,
+          `<div class="card ${c.id === pick.cls ? 'sel' : ''}" data-ocls="${c.id}">${avatar(c.char)}<b>${esc(c.name)}</b><div class="d">${esc(c.desc)}</div></div>`,
       ).join('');
       const chars = Array.from(new Set([cls.char, 'nova']))
         .map((id) => CHARACTERS[id])
-        .map((c) => `<button class="ghost ${c.id === pick.char ? 'on' : ''}" data-ochar="${c.id}">${esc(c.name)}</button>`)
+        .map((c) => `<button class="ghost ${c.id === pick.char ? 'on' : ''}" data-ochar="${c.id}">${avatar(c.id)}${esc(c.name)}</button>`)
         .join('');
       const colors = COLORS.slice(0, 8)
         .map(

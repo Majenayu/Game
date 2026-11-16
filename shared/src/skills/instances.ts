@@ -177,7 +177,9 @@ export function pairRng(a: number, b: number): Rng {
 }
 /** Percent of S + S pairs that create a unique skill. */
 export const UNIQUE_FUSION_PCT = 3;
-export function fuse(a: SkillInstance, b: SkillInstance, _rng?: Rng): FusionResult {
+export function fuse(x: SkillInstance, y: SkillInstance, _rng?: Rng): FusionResult {
+  // Same pair, same result: order the parents so picking them the other way round gives the same recipe.
+  const [a, b] = x.skillId <= y.skillId ? [x, y] : [y, x];
   const rng = pairRng(a.skillId, b.skillId);
   if (a.uid === b.uid) return { ok: false, reason: 'Pick two different skills' };
   if (a.skillId === b.skillId) return { ok: false, reason: 'Duplicates merge automatically' };

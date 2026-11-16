@@ -1,6 +1,8 @@
 import {
   DEFAULT_LOADOUT,
   RANKED_START,
+  isCreatureId,
+  isGearId,
   rankOf,
   type ChestKind,
   type Loadout,
@@ -57,6 +59,17 @@ export interface SaveData {
   champion: { name: string; isYou: boolean; kit: number[]; since: number; defences: number };
   /** Summons owned by the player and their upgrade levels. */
   summons: { owned: number[]; levels: Record<string, number> };
+  /** Gear (accessories with stats): owned item ids (duplicates allowed) and what is equipped per slot. */
+  gear: { owned: number[]; equip: Record<string, number> };
+  /** Creature summons (carry skill cards). `active` is the uid fighting beside you. */
+  creatures: { list: Array<{ uid: string; id: number; level: number; cards: number[] }>; active: string };
+  /** Fusion stones and summon eggs. */
+  stones: number;
+  eggs: number;
+  /** Fusion recipes you discovered: "idA-idB" -> result skill id. */
+  recipes: Record<string, number>;
+  /** Market refreshes bought today. */
+  marketRefresh: { day: string; n: number };
 }
 
 /** Bumped to start everyone fresh with the Skill World update. */
@@ -95,6 +108,12 @@ export function defaultSave(): SaveData {
     duelSkills: [],
     champion: { name: 'Majen', isYou: false, kit: [], since: 0, defences: 0 },
     summons: { owned: [], levels: {} },
+    gear: { owned: [], equip: {} },
+    creatures: { list: [], active: '' },
+    stones: 3,
+    eggs: 1,
+    recipes: {},
+    marketRefresh: { day: '', n: 0 },
   };
 }
 
@@ -237,6 +256,30 @@ export function parseSave(raw: string | null | undefined): SaveData | null {
             .map(([k, v]) => [k, Math.max(1, Math.min(20, Math.floor(v as number)))]),
         ),
       },
+      gear: {
+        owned: nums(j.gear?.owned, []).filter(isGearId).slice(0, 2000),
+        equip: Object.fromEntries(
+          Object.entries((j.gear?.equip ?? {}) as Record<string, unknown>).filter(([k, v]) => /^[a-z]+$/.test(k) && isGearId(v)),
+        ) as Record<string, number>,
+      },
+      creatures: {
+        list: (Array.isArray(j.creatures?.list) ? j.creatures.list : [])
+          .filter((c: any) => c && typeof c.uid === 'string' && isCreatureId(c.id))
+          .slice(0, 300)
+          .map((c: any) => ({
+            uid: String(c.uid).slice(0, 40),
+            id: c.id as number,
+            level: Math.max(1, Math.min(50, Math.floor(num(c.level, 1)))),
+            cards: nums(c.cards, []).filter((n) => !!rankOf(n)).slice(0, 2),
+          })),
+        active: typeof j.creatures?.active === 'string' ? j.creatures.active.slice(0, 40) : '',
+      },
+      stones: Math.max(0, Math.floor(num(j.stones, 3))),
+      eggs: Math.max(0, Math.floor(num(j.eggs, 1))),
+      recipes: Object.fromEntries(
+        Object.entries((j.recipes ?? {}) as Record<string, unknown>).filter(([k, v]) => /^\d+-\d+$/.test(k) && typeof v === 'number' && !!rankOf(v)),
+      ) as Record<string, number>,
+      marketRefresh: { day: String(j.marketRefresh?.day ?? ''), n: Math.max(0, Math.floor(num(j.marketRefresh?.n, 0))) },
     };
   } catch {
     return null;

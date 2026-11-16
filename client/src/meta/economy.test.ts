@@ -262,8 +262,9 @@ describe('daily reward, quests, lucky draw', () => {
     p.track(def.type, def.target);
     expect(q.progress).toBe(def.target);
     const coins = p.data.coins;
-    expect(p.claimQuest(q)!.coins).toBe(def.coins);
-    expect(p.data.coins).toBe(coins + def.coins);
+    // Quests pay double coins (plus stones and a chest).
+    expect(p.claimQuest(q)!.coins).toBe(def.coins * 2);
+    expect(p.data.coins).toBe(coins + def.coins * 2);
     expect(p.claimQuest(q)).toBeNull();
   });
 
@@ -287,14 +288,15 @@ describe('daily reward, quests, lucky draw', () => {
     const before = p.data.coins;
     expect(p.grantPrize(WHEELS.coins.findIndex((w) => w.kind === 'coins' && w.value === 50))).toBe('50 coins');
     expect(p.data.coins).toBe(before + 50);
-    const skills = p.data.skills.length;
+    const lvSum = () => p.data.skills.reduce((a, s) => a + s.level + 1, 0);
+    const skills = lvSum();
     p.grantPrize(WHEEL.findIndex((w) => w.kind === 'skill'), Math.random, 'skills');
-    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'unique'), Math.random, 'skills');
+    // Uniques are never on the wheels: they come only from bosses and fusion.
+    expect(WHEEL.some((w) => w.kind === 'unique')).toBe(false);
     const wi = p.data.owned.weapons.length;
     p.grantPrize(0, Math.random, 'weapons');
     expect(p.data.owned.weapons.length).toBe(wi + 1);
-    expect(p.data.skills.length).toBeGreaterThanOrEqual(skills + 1);
-    expect(p.data.skills.some((s) => s.skillId > 1_000_000)).toBe(true);
+    expect(lvSum()).toBeGreaterThan(skills);
     const skinIdx = WHEELS.coins.findIndex((w) => w.kind === 'cosmetic');
     const owned = p.data.owned.colors.length + p.data.owned.trails.length + p.data.owned.bfx.length;
     p.grantPrize(skinIdx);

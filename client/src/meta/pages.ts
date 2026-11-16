@@ -20,6 +20,10 @@ import {
   MP_COST_SCALE,
   RANKED_START,
   dmgFromPower,
+  BFX_BUFFS,
+  TRAIL_BUFFS,
+  bonusText,
+  getGear,
   duelUsable,
   effectiveStats,
   validName,
@@ -53,6 +57,7 @@ import {
 } from '@orb/shared';
 import { ALL_FIGURES, MAJEN, uniqueSvg } from '../art/bestiary';
 import { accIcon, chestIcon, skillIcon, weaponIcon } from '../art/icons';
+import { fuseV2, knownRecipe } from './inventory';
 import {
   createGuild,
   fetchGuild,
@@ -65,6 +70,10 @@ import {
   type PublicPlayer,
 } from '../account';
 import { claimName } from './onboarding';
+import { MorePages } from './pages2';
+import { avatar, gearIcon } from '../art/icons2';
+import { fetchRaid, raidClaim } from '../account';
+import { equippedGear } from './inventory';
 import { sfx } from '../audio';
 import { ENABLE_ADS } from '../platform/crazygames';
 import type { Ui } from '../ui/ui';
@@ -85,15 +94,20 @@ export interface PageActions {
   playOnline(mode: ModeId | 'mix', map: string): void;
   playOffline(mode: ModeId, map: string): void;
   startLevel(level: LevelDef): void;
-  /** Joins the online ranked 1v1 duel queue. */
+  /** Joins the online shadow duel (unranked). */
   playRanked(): void;
+  /** Ranked 1v1 or 2v2 deathmatch in the arena. */
+  playRankedArena(mode: '1v1' | '2v2'): void;
+  /** Guild raid fight and guild war. */
+  startRaid(): void;
+  joinWar(): void;
   /** Offline practice duel against a bot. */
   playDuelPractice(): void;
   /** Unranked 2v2 team match in the top-down arena. */
   playTeam2v2(): void;
   /** Opens the training ground (harmless dummies). */
   playTraining(): void;
-  /** 1v1 against the champion Majen. Open to everyone. */
+  /** 1v1 against the champion Majen (from level 50). */
   challengeChampion(): void;
   /** Shows the rewarded-ad flow for an extra spin. Resolves true when granted. */
   watchAd(): Promise<boolean>;
@@ -118,7 +132,9 @@ export type PageName =
   | 'profile'
   | 'chests'
   | 'guild'
-  | 'summons';
+  | 'summons'
+  | 'gear'
+  | 'encyclopedia';
 
 const TITLES: Record<PageName, string> = {
   arenas: 'Arenas & Modes',
@@ -133,13 +149,15 @@ const TITLES: Record<PageName, string> = {
   dex: 'Powerup Collection',
   bestiary: 'Bestiary',
   tower: 'Boss Tower',
-  ranked: 'Ranked Duel',
+  ranked: 'Ranked Battles',
   market: 'Market',
   training: 'Training Ground',
   profile: 'Profile',
   chests: 'Treasure Chests',
   guild: 'Guilds',
   summons: 'Summons',
+  gear: 'Accessories & Gear',
+  encyclopedia: 'Skill Encyclopedia',
 };
 
 export class Pages {
@@ -155,16 +173,32 @@ export class Pages {
   private guilds: { offline: boolean; guilds: GuildSummary[] } | null = null;
   private guildDetail: { guild: GuildSummary; members: Array<{ name: string; rating: number; tier: string; owner: boolean }> } | null = null;
   private spinMsg = '';
+  /** Prize cards shown after the wheel stops (one card per spin). */
+  private spinCards: string[] = [];
   private fuseA = '';
   private fuseB = '';
   private fuseMsg = '';
   private skillFilter: 'all' | 'attack' | 'defence' | 'healing' | 'buff' | 'summon' = 'all';
 
+  readonly more: MorePages;
+  private raid: { name: string; hp: number; max: number; myHits: number; maxHits: number; defeated: boolean; claimed: boolean } | null = null;
   constructor(
     private ui: Ui,
     private pr: Progress,
     private actions: PageActions,
-  ) {}
+  ) {
+    this.more = new MorePages({
+      ui,
+      pr,
+      render: () => this.render(),
+      startLevel: (id) => this.actions.startLevel(LEVELS.find((l) => l.id === id)!),
+      showSkill: (id) => this.showSkill(id),
+      playRanked: (m) => this.actions.playRankedArena(m),
+      playShadow: (o) => (o ? this.actions.playRanked() : this.actions.playDuelPractice()),
+      startRaid: () => this.actions.startRaid(),
+      joinWar: () => this.actions.joinWar(),
+    });
+  }
 
   open(name: PageName): void {
     this.current = name;
@@ -176,6 +210,7 @@ export class Pages {
       this.guilds = null;
       this.loadGuilds();
     }
+    if (name === 'ranked') this.more.loadBoard();
     this.render();
   }
 
@@ -222,7 +257,7 @@ export class Pages {
       case 'tower':
         return this.towerHtml();
       case 'ranked':
-        return this.rankedHtml();
+        return this.more.rankedHtml();
       case 'market':
         return this.marketHtml();
       case 'training':
@@ -234,7 +269,11 @@ export class Pages {
       case 'guild':
         return this.guildHtml();
       case 'summons':
-        return this.summonsHtml();
+        return this.more.creaturesHtml() + '<h3>Shop summons</h3>' + this.summonsHtml();
+      case 'gear':
+        return this.more.gearHtml();
+      case 'encyclopedia':
+        return this.more.encyclopediaHtml();
     }
   }
 
@@ -278,7 +317,8 @@ export class Pages {
         <button data-lvl="${l.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? 'Play' : 'Locked'}</button>
       </div>`;
     }).join('');
-    return `<p class="sub">Stars earned: ${this.pr.totalStars()} / ${LEVELS.length * 3}. Campaign battles are HP-based: defeat one enemy at a time and fail if your hero reaches 0 HP. Stars: 3 above 75% HP, 2 above 50% HP, 1 for any clear.</p>${rows}`;
+    void rows;
+    return `<p class="sub">Stars earned: ${this.pr.totalStars()} / ${LEVELS.length * 3}. 8 worlds, each with 10 one-on-one fights and its boss. Battles are decided by HP only: if your hero reaches 0 HP the level fails. Stars: 3 above 75% HP, 2 above 50% HP, 1 for any clear. Every world has its own arena effect, and enemies get tougher as you go.</p>${this.more.worldMapHtml()}`;
   }
 
   private loadoutHtml(): string {
@@ -288,7 +328,7 @@ export class Pages {
       .map(
         (
           c,
-        ) => `<div class="card ${l.char === c.id ? 'sel' : ''}"><b>${esc(c.name)}</b><div class="d">${esc(c.desc)}<br />HP ${c.hp} &middot; Speed ${Math.round(c.speed * 100)}%</div>
+        ) => `<div class="card ${l.char === c.id ? 'sel' : ''}">${avatar(c.id)}<b>${esc(c.name)}</b><div class="d">${esc(c.desc)}<br />HP ${c.hp} &middot; Speed ${Math.round(c.speed * 100)}%</div>
         <button data-equip="char:${c.id}" ${l.char === c.id ? 'disabled' : ''}>${l.char === c.id ? 'Equipped' : 'Equip'}</button></div>`,
       )
       .join('');
@@ -301,7 +341,7 @@ export class Pages {
         .map(
           (
             c,
-          ) => `<div class="card ${cur === c.id ? 'sel' : ''}">${c.hex !== undefined ? `<span class="swatch" style="color:${hex(c.hex)};background:${hex(c.hex)}"></span>` : ''}<b>${esc(c.name)}</b>
+          ) => `<div class="card ${cur === c.id ? 'sel' : ''}">${c.hex !== undefined ? `<span class="swatch" style="color:${hex(c.hex)};background:${hex(c.hex)}"></span>` : ''}<b>${esc(c.name)}</b>${kind === 'trail' ? `<div class="d">${esc(bonusText(TRAIL_BUFFS[c.id] ?? {}) || 'No buff')}</div>` : kind === 'bfx' ? `<div class="d">${esc(bonusText(BFX_BUFFS[c.id] ?? {}) || 'No buff')}</div>` : ''}
           <button data-equip="${kind}:${c.id}" ${cur === c.id ? 'disabled' : ''}>${cur === c.id ? 'Equipped' : 'Equip'}</button></div>`,
         )
         .join('');
@@ -399,7 +439,7 @@ export class Pages {
         <div class="d">${have ? 'Owned' : 'Not owned'}</div></div>`;
     }).join('');
     return `<h3>Unique skills (${owned} / ${UNIQUES.length})</h3>
-      <p class="sub">Uniques are the strongest skills. Get one by beating the champion Majen for the first time, or by hitting the UNIQUE slice in the Lucky Draw.</p>
+      <p class="sub">Uniques are the strongest skills. They never appear on the wheels. Each campaign map boss can drop its own uniques (12% on the first win, 2% on replays), beating the champion Majen lets you pick one from his kit, and an S + S fusion has a small chance to create one.</p>
       <div class="cards">${list}</div>`;
   }
   private skillSlotsHtml(): string {
@@ -475,8 +515,21 @@ export class Pages {
       (r) =>
         `<div class="row"><div class="grow"><b>${esc(r.name)}</b><div class="sub" style="margin:0">${esc(r.hint)}</div></div><span class="tag">Secret recipe</span></div>`,
     ).join('');
-    const ready = !!this.fuseA && !!this.fuseB && st.left > 0;
-    return `<p class="sub">Fuse two different skills of the same or neighbouring rank (both at level ${FUSION_MIN_LEVEL}+) into a new one. The two parents are used up. Fusions left this week: ${st.left}.</p>
+    void st;
+    const ready = !!this.fuseA && !!this.fuseB;
+    const sa = pr.data.skills.find((s) => s.uid === this.fuseA);
+    const sb = pr.data.skills.find((s) => s.uid === this.fuseB);
+    const known = sa && sb ? knownRecipe(pr, sa.skillId, sb.skillId) : undefined;
+    const knownLine = known !== undefined ? `<p style="color:#7dff6b">Known recipe: these two make <b>${esc(getSkill(known).name)} (${getSkill(known).rank})</b>.</p>` : '';
+    const book = Object.entries(pr.data.recipes)
+      .slice(-12)
+      .map(([k, v]) => {
+        const [x, y] = k.split('-').map(Number);
+        return `<div class="sub">${esc(getSkill(x).name)} + ${esc(getSkill(y).name)} = <b>${esc(getSkill(v).name)} (${getSkill(v).rank})</b></div>`;
+      })
+      .join('');
+    return `${this.more.fusionInfo()}<p class="sub">Fuse two different skills of the same or neighbouring rank into a new one. The two parents are used up.</p>${knownLine}
+      ${book ? `<h3>Your recipe book</h3>${book}` : ''}
       <div style="text-align:center"><button data-fuse="1" ${ready ? '' : 'disabled'}>Fuse</button>
       <div class="sub" style="min-height:22px;color:var(--gold)">${esc(this.fuseMsg)}</div></div>
       <h3>Pick two skills</h3><div class="cards">${cards || '<p class="sub">No skills to fuse.</p>'}</div>
@@ -528,7 +581,7 @@ export class Pages {
       items = TRAILS.map((c) => ({
         id: c.id,
         name: c.name,
-        desc: 'Leaves a trail behind your orb.',
+        desc: `Leaves a trail behind your orb. ${bonusText(TRAIL_BUFFS[c.id] ?? {}) || 'No buff.'}`,
         price: c.price,
         level: c.level,
       }));
@@ -536,7 +589,7 @@ export class Pages {
       items = BULLET_FX.map((c) => ({
         id: c.id,
         name: c.name,
-        desc: 'Bullet style.',
+        desc: `Bullet style. ${bonusText(BFX_BUFFS[c.id] ?? {}) || 'No buff.'}`,
         price: c.price,
         level: c.level,
       }));
@@ -560,7 +613,13 @@ export class Pages {
             ? `<button disabled>Level ${it.level}</button>`
             : `<button data-buy="${this.shopTab}:${it.id}" ${pr.data.coins < it.price ? 'class="ghost"' : ''}>&#9679; ${it.price}</button>`;
         const icon =
-          this.shopTab === 'weapon' ? weaponIcon(Number(it.id)) : this.shopTab === 'acc' ? accIcon(Number(it.id)) : '';
+          this.shopTab === 'weapon'
+            ? weaponIcon(Number(it.id))
+            : this.shopTab === 'acc'
+              ? accIcon(Number(it.id))
+              : this.shopTab === 'char'
+                ? avatar(String(it.id))
+                : '';
         return `<div class="card ${locked ? 'locked' : ''}">${icon}${it.swatch !== undefined ? `<span class="swatch" style="color:${hex(it.swatch)};background:${hex(it.swatch)}"></span>` : ''}
           <b>${esc(it.name)}</b><div class="d">${esc(it.desc)}</div>${btn}</div>`;
       })
@@ -601,7 +660,7 @@ export class Pages {
 
   private spinHtml(): string {
     const st = this.pr.spinStatus();
-    const names: Record<WheelKind, string> = { coins: 'Coins & skins', skills: 'Skills', weapons: 'Weapons', accs: 'Accessories' };
+    const names: Record<WheelKind, string> = { coins: 'Coins & skins', skills: 'Skills', weapons: 'Weapons', accs: 'Looks', gear: 'Gear', summons: 'Summons' };
     const tabs = (Object.keys(WHEELS) as WheelKind[])
       .map((k) => `<button class="${k === this.wheel ? 'on' : ''}" data-wheel="${k}">${names[k]}</button>`)
       .join('');
@@ -609,10 +668,11 @@ export class Pages {
     const prizes = WHEELS[this.wheel]
       .map((w) => `<span class="tag" style="border-color:${w.color}">${esc(w.label)} ${((w.weight / total) * 100).toFixed(w.weight / total < 0.01 ? 1 : 0)}%</span>`)
       .join(' ');
-    return `<div class="tabs">${tabs}</div><div class="wheelbox"><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all four wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
+    return `<div class="tabs">${tabs}</div><div class="wheelbox"><p class="sub">${SPINS_PER_DAY} free spins every day, shared by all wheels (${st.left} left today). Extra spins cost ${EXTRA_SPIN_COST} coins${ENABLE_ADS ? ' or a short ad' : ''}.</p>
       <p>${prizes}</p>
       <div id="wheelwrap"><div id="pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
       <div id="spinresult" style="min-height:26px;color:var(--gold);font-size:18px">${esc(this.spinMsg)}</div>
+      ${this.spinCards.length ? `<div class="prizecards">${this.spinCards.map((p, i) => `<div class="prizecard" style="animation-delay:${Math.min(i, 40) * 25}ms"><span class="pcn">#${i + 1}</span><span class="pci">${prizeIcon(p)}</span><b>${esc(p)}</b></div>`).join('')}</div>` : ''}
       <div class="row"><button data-spin-count="1">${st.free ? `Spin (free, ${st.left} left)` : `Spin (${EXTRA_SPIN_COST} coins)`}</button>
       <button class="ghost" data-spin-count="10">10 spins</button><button class="ghost" data-spin-count="100">100 spins</button></div>
       ${!st.free && ENABLE_ADS ? '<button class="ghost" data-spinad="1">Watch ad for a spin</button>' : ''}</div>`;
@@ -637,21 +697,6 @@ export class Pages {
       </div>`;
     }).join('');
     return `<p class="sub">Climb eight boss floors (they open after campaign level ${TOWER_UNLOCK_LEVEL}). Each boss fights with five unique skills, changes form every 25% of HP (stronger attack and defence each time), opens a domain expansion over the whole arena at half HP, and reaches its final form below 25%. The champion Majen can be challenged by anyone level ${CHAMPION_MIN_LEVEL}+: a 1v1 in an empty arena. In his final form his attack and defence go to the maximum. Beat him to take the crown and choose one skill from his kit.</p>${rows}`;
-  }
-  private rankedHtml(): string {
-    const r = this.pr.data.ranked;
-    const t = rankedTier(r.rating);
-    const losses = r.games - r.wins;
-    const tiers = RANKED_TIERS.map(
-      (x) => `<span class="tag" style="color:${hex(x.color)};border-color:${hex(x.color)}">${esc(x.name)} ${x.min}+</span>`,
-    ).join(' ');
-    return `<div class="row"><div class="grow"><b style="font-size:22px;color:${hex(t.color)}">${esc(t.name)}</b>
-        <div class="sub" style="margin:0">Rating ${r.rating} &middot; best ${r.best} &middot; ${r.wins} wins, ${losses} losses</div></div>
-        <button data-ranked="1">Find ranked duel</button></div>
-      <div class="row"><div class="grow"><b>Practice duel</b><div class="sub" style="margin:0">Same fight against a bot, offline. No rating change.</div></div><button class="ghost" data-duelpractice="1">Practice</button></div>
-      <div class="row"><div class="grow"><b>2v2 team match</b><div class="sub" style="margin:0">Unranked team battle in the arena.</div></div><button class="ghost" data-team2="1">Play 2v2</button></div>
-      <p class="sub">Ranked is a 1v1 side-view duel: walk, jump, block, punch and kick combos, plus your skills. Best of three rounds. Win to gain rating, lose to drop a little. You never lose levels or skills. If nobody else is queueing, a ranked bot steps in after 12 seconds. Summons, mines, stealth, portals, zones and out-of-battle skills do not work in duels. Every fifth ranked win pays a ranked skill drop; every win pays a Silver Chest.</p>
-      <h3>Tiers</h3><p>${tiers}</p>`;
   }
   private profileHtml(): string {
     const pr = this.pr;
@@ -706,6 +751,8 @@ export class Pages {
         ${stat(world?.me ? `#${world.me.rank}` : '-', 'World rank')}${stat(pr.totalStars(), 'Campaign stars')}${stat(d.skills.length, 'Skills owned')}
         ${stat(Object.values(d.chests).reduce((a, b) => a + b, 0), 'Chests to open')}
       </div>
+      <h3>Your stats (level, gear, cosmetics, guild)</h3>${this.more.statsHtml()}
+      <p class="sub">${equippedGear(pr).length} / 8 gear slots filled. <button class="ghost" data-goto="gear">Gear</button></p>
       <h3>Loadout</h3>
       <div class="row">${weaponIcon(l.weapon)}${accIcon(l.acc)}<div class="grow"><b>${esc(w.name)}</b><div class="sub" style="margin:0">${esc(w.desc)}</div></div><button data-goto="loadout">Edit loadout</button></div>
       <p class="sub">Passive bonuses from out-of-battle skills (automatic): +${pv.xp}% XP &middot; +${pv.coins}% coins &middot; ${pv.luck}% luckier drops &middot; ${pv.double}% double drops.</p>
@@ -754,9 +801,10 @@ export class Pages {
           `<tr><td>${i + 1}</td><td>[${esc(x.tag)}] ${esc(x.name)}</td><td>${x.members}/30</td><td>${x.power}</td><td>${mine ? '' : `<button class="ghost" data-gjoin="${esc(x.id)}">Join</button>`}</td></tr>`,
       )
       .join('');
-    return `<p class="sub">Guilds are teams of up to 30 players. Guild power is the total ranked points of all members, so every ranked win helps your guild climb the world guild ranking.</p>
+    return `<p class="sub">Guilds are teams of up to 5 players. Guild power is the total ranked points of all members, so every ranked win helps your guild climb the world guild ranking.</p>
       ${me ? '' : '<p class="sub" style="color:#ff8a9a">Reserve your name first (Profile) to create or join a guild.</p>'}
       ${myBox}
+      ${this.more.guildExtraHtml(det ? (det.guild as any) : null, this.raid)}
       <h3>World guild ranking</h3>
       <div id="board"><table><tr><th>#</th><th>Guild</th><th>Members</th><th>Power</th><th></th></tr>${list || '<tr><td colspan="5">No guilds yet. Create the first one!</td></tr>'}</table></div>`;
   }
@@ -766,9 +814,13 @@ export class Pages {
       this.guilds = gl.ok ? { offline: false, guilds: gl.guilds } : { offline: true, guilds: [] };
       const mine = this.world?.me?.guild;
       if (mine) {
-        const det = await fetchGuild(mine.id);
+        const [det, raid] = await Promise.all([fetchGuild(mine.id), fetchRaid()]);
         this.guildDetail = det.ok ? { guild: det.guild, members: det.members } : null;
-      } else this.guildDetail = null;
+        this.raid = raid.ok ? raid.raid : null;
+      } else {
+        this.guildDetail = null;
+        this.raid = null;
+      }
       if (this.current === 'guild') this.render();
     });
   }
@@ -859,8 +911,17 @@ export class Pages {
       .filter((s) => !s.bound && !equipped.has(s.skillId))
       .map((s) => this.skillCard(s, `<button class="ghost" data-sell="${s.skillId}">Sell ${pr.sellValue(s.skillId)}</button>`))
       .join('');
-    return `<p class="sub">The Starforge broker trades skills for coins only. New stock every day. Uniques are never sold here. Starter skills are bound and cannot be sold. Player-to-player auctions arrive with accounts.</p>
-      <h3>Today's stock</h3><div class="cards">${offers}</div>
+    return `<p class="sub">The Starforge broker trades skills for coins only. New stock every day. Uniques are never sold here. Starter skills are bound and cannot be sold.</p>
+      <div class="row"><div class="grow"><b>Today's stock</b></div><button class="ghost" data-mrefresh="1">Refresh stock (${this.pr.refreshCost()} coins)</button></div>
+      <div class="cards">${offers}</div>
+      <h3>Gear stock</h3><div class="cards">${pr
+        .gearOffers()
+        .map((g, i) => {
+          const d = getGear(g.id);
+          return `<div class="card">${gearIcon(g.id)}<b style="color:${hex(RANK_INFO[d.rank].color)}">[${d.rank}] ${esc(d.name)}</b><div class="d">${esc(bonusText(d.bonus))}</div>
+            ${g.sold ? '<button disabled>Sold</button>' : `<button data-gbuy="${i}" ${pr.data.coins >= g.price ? '' : 'disabled'}>Buy ${g.price}</button>`}</div>`;
+        })
+        .join('')}</div>
       <h3>Sell your skills</h3><div class="cards">${sellable || '<p class="sub">Nothing to sell. Equipped and starter skills are kept.</p>'}</div>`;
   }
   private bestiaryHtml(): string {    const card = (f: (typeof ALL_FIGURES)[number]) => `
@@ -926,19 +987,46 @@ export class Pages {
       on('[data-online]', (el) => this.actions.playOnline(this.mode, el.dataset.online!));
       on('[data-offline]', (el) => this.actions.playOffline(this.mode, el.dataset.offline!));
     }
-    if (name === 'campaign')
-      on('[data-lvl]', (el) =>
-        this.actions.startLevel(LEVELS.find((l) => l.id === Number(el.dataset.lvl))!),
+    if (name === 'campaign') {
+      on('[data-lvl]', (el) => this.actions.startLevel(LEVELS.find((l) => l.id === Number(el.dataset.lvl))!));
+      this.more.bindWorldMap(body);
+    }
+    if (name === 'gear') this.more.bindGear(body, note);
+    if (name === 'summons') this.more.bindCreatures(body, note);
+    if (name === 'encyclopedia') this.more.bindEncyclopedia(body);
+    if (name === 'ranked') this.more.bindRanked(body);
+    if (name === 'guild') {
+      this.more.bindGuildExtra(body);
+      on('[data-rclaim]', () =>
+        void raidClaim().then((r) => {
+          if (r.ok) {
+            pr.data.chests.gold += 1;
+            pr.data.stones += r.reward.stones;
+            pr.commit();
+            note('Raid reward: Gold Chest + 5 fusion stones', '#ffc93c');
+          } else note(r.reason ?? 'Cannot claim', '#ff8a9a');
+          this.loadGuilds();
+        }),
       );
+    }
+    if (name === 'market')
+      on('[data-gbuy]', (el) => {
+        const r = pr.buyGearOffer(Number(el.dataset.gbuy));
+        if (r.ok) {
+          sfx.reward();
+          note('Gear bought! Equip it on the Gear page.', '#7dff6b');
+        } else note(r.reason ?? 'Cannot buy', '#ff8a9a');
+        this.render();
+      });
+      on('[data-mrefresh]', () => {
+        const r = pr.refreshMarket();
+        if (!r.ok) note(r.reason ?? 'Cannot refresh', '#ff8a9a');
+        this.render();
+      });
     if (name === 'tower')
       on('[data-tower]', (el) =>
         this.actions.startLevel(BOSS_LEVELS.find((l) => l.id === Number(el.dataset.tower))!),
       );
-    if (name === 'ranked') {
-      on('[data-ranked]', () => this.actions.playRanked());
-      on('[data-duelpractice]', () => this.actions.playDuelPractice());
-      on('[data-team2]', () => this.actions.playTeam2v2());
-    }
     if (name === 'training') on('[data-train]', () => this.actions.playTraining());
     if (name === 'profile') {
       on('[data-goto]', (el) => this.open(el.dataset.goto as PageName));
@@ -1062,7 +1150,7 @@ export class Pages {
         this.render();
       });
       on('[data-fuse]', () => {
-        const r = pr.fuseSkills(this.fuseA, this.fuseB);
+        const r = fuseV2(pr, this.fuseA, this.fuseB);
         if (r.ok && r.drop) {
           sfx.reward();
           this.fuseA = '';
@@ -1203,6 +1291,7 @@ export class Pages {
         this.wheel = el.dataset.wheel as WheelKind;
         this.wheelRot = 0;
         this.spinMsg = '';
+        this.spinCards = [];
         this.render();
       }),
     );
@@ -1219,15 +1308,23 @@ export class Pages {
           note(batch.reason ?? 'Unable to spin', '#ff8a9a');
           return;
         }
-        this.spinMsg = 'Spinning...';
+        // One fast spin of the wheel, then every reward appears as a card.
+        rotation += 360 * 4 + Math.floor(Math.random() * 360);
+        this.wheelRot = rotation % 360;
+        canvas.style.transition = 'transform 2s cubic-bezier(0.15, 0.8, 0.25, 1)';
+        void canvas.offsetWidth;
+        canvas.style.transform = `rotate(${rotation}deg)`;
+        this.spinCards = [];
+        this.spinMsg = `Spinning ${count} times...`;
         result.textContent = this.spinMsg;
         window.setTimeout(() => {
           sfx.reward();
-          this.spinMsg = batch.prizes.map((p, i) => `${i + 1}. ${p}`).join('  ·  ');
+          this.spinMsg = `${count} rewards:`;
+          this.spinCards = batch.prizes;
           note(`Lucky Draw: ${count} rewards`, '#ffc93c');
           this.wheelBusy = false;
           this.render();
-        }, 1200);
+        }, 2100);
         return;
       }
       const idx = this.pr.rollSpin(Math.random, this.wheel);
@@ -1240,9 +1337,13 @@ export class Pages {
       void canvas.offsetWidth;
       canvas.style.transform = `rotate(${rotation}deg)`;
       this.spinMsg = 'Spinning...';
+      this.spinCards = [];
       result.textContent = this.spinMsg;
+      body.querySelector('.prizecards')?.remove();
       window.setTimeout(() => {
         sfx.reward();
+        // The prize card only appears once the wheel has stopped.
+        this.spinCards = [prize];
         this.spinMsg = `You won: ${prize}!`;
         result.textContent = this.spinMsg;
         note(`Lucky Draw: ${prize}`, '#ffc93c');
@@ -1273,3 +1374,17 @@ export class Pages {
 }
 
 export const QUEST_COUNT = DAILY_POOL.length + WEEKLY_POOL.length;
+
+/** A small icon for a lucky-draw prize text. */
+function prizeIcon(p: string): string {
+  const t = p.toLowerCase();
+  if (t.includes('coin')) return '&#9679;';
+  if (t.includes('egg') || t.includes('summon')) return '&#129370;';
+  if (t.includes('stone')) return '&#128142;';
+  if (t.includes('chest')) return '&#128230;';
+  if (t.includes('xp')) return '&#11088;';
+  if (/sword|weapon|blade|bow|staff|gun/.test(t)) return '&#9876;';
+  if (/hat|glove|armor|armour|pants|shoe|bag|vehicle|gear/.test(t)) return '&#127890;';
+  if (/skill|rank/.test(t)) return '&#10024;';
+  return '&#127873;';
+}
