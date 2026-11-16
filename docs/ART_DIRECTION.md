@@ -1,6 +1,7 @@
 # Orb Arena — art direction proposal
 
-**For approval with the upgrade audit; not yet implemented.**
+**Implemented direction.** The original proposal is retained below as the design
+record. See `UPGRADE_IMPLEMENTATION.md` for scope, checks, evidence and release limits.
 
 ## North star: refined Starforge
 

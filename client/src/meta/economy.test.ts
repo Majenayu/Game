@@ -116,11 +116,14 @@ describe('levels and rewards', () => {
 
   it('records match rewards and tracks quest progress', async () => {
     const p = await fresh();
+    const fullCoins = Math.round((5 + 10 + 25) * (1 + p.passives.coins / 100));
     const r = p.recordMatch({ mode: 'dm', kills: 5, deaths: 2, score: 5, won: true });
-    expect(r.coins).toBe(5 + 10 + 25);
+    expect(r.coins).toBe(fullCoins);
     expect(p.data.stats.wins).toBe(1);
+    // The first match can drop a passive coin skill; capture it before the next reward.
+    const halfCoins = Math.round(20 * (1 + p.passives.coins / 100));
     const half = p.recordMatch({ mode: 'dm', kills: 5, deaths: 2, score: 5, won: true }, 0.5);
-    expect(half.coins).toBe(20);
+    expect(half.coins).toBe(halfCoins);
   });
 });
 

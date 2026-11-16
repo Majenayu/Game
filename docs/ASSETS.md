@@ -2,6 +2,29 @@
 
 ## Scope
 
+**Implementation update:** the four-phase upgrade uses original vector/procedural
+work and the already installed packs and fonts. No dependency or remotely fetched
+image/audio asset was added. The audit inventory below remains as provenance.
+
+### Upgrade additions
+
+| Work | Source | Distribution |
+| --- | --- | --- |
+| Seven orb-core silhouettes, visors, expressions, signature armor, cosmetic accent and gear assembly | `client/src/art/hero.ts` | Original construction; existing gear silhouettes retain the Game Icons attribution below |
+| Cached arena surfaces, architectural details, hazard edge treatments | `client/src/art/arena.ts` | Original procedural artwork; no collision geometry changes |
+| Twenty skill-kind cast/end glyphs and pickup/status symbols | `client/src/art/lifecycle.ts`, `skillanim.ts` | Original procedural artwork |
+| Lobby identity, navigation line icons, shared Starforge UI, Journey view | `client/src/ui/hub.ts`, `starforge.css`, `journey.ts` | Original vector/CSS work, not an external icon package |
+| Weapon-sensitive synth feedback and separate audio mix | `client/src/audio.ts` | Original WebAudio synthesis; browser voices remain optional and off by default |
+| Before/after evidence | `docs/audit/after/`, `e2e/capture-upgrade.mjs` | Documentation only; not included in the release zip |
+
+Settings → Credits & Licenses now links the existing art sources and licenses
+and describes recoloring/scaling/assembly. Redistributable Cinzel, Rajdhani,
+Bangers and Phaser notices are in `client/public/licenses/` (byte-compared with
+the installed package notices). The Fluent MIT copyright/permission notice is
+also distributed there. Game Icons attribution and its CC BY 3.0 link are in
+the credits surface. Existing selected-icon individual-author verification in
+the inventory remains a release-review consideration; no new pack was imported.
+
 Inventory for the upgrade audit. **No third-party assets or dependencies were
 added in this audit.** Do not treat the user's suggested resource list as a
 cleared license list. Check each selected asset's actual license/version before
