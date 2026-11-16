@@ -36,12 +36,19 @@ import { accountToken, claimHold, facts, fetchMe, raidHit } from './account';
 import { activeSummon, equippedGear, myStats, setGuildBonus } from './meta/inventory';
 import { Ui as UiClass } from './ui/ui';
 import { Progress, type SkillDrop } from './meta/economy';
-import { Pages, type PageName } from './meta/pages';
+import type { PageName } from './meta/pages';
+import { LazyPages } from './meta/lazy-pages';
 import { joinArena, joinDuel, reconnect, serverUrls, type JoinTarget } from './net';
 import { DuelScene, OfflineDuel, OnlineDuel, type DuelSource } from './game/duel';
 import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './platform/crazygames';
 import { TouchControls, isTouchDevice, setTouchDevice } from './ui/touch';
 import { Ui } from './ui/ui';
+import { mountSettings } from './ui/settings';
+import { mountHub } from './ui/hub';
+import './ui/polish.css';
+import './ui/starforge.css';
+import { presentation } from './presentation';
+import { mountJourney } from './ui/journey';
 
 /**
  * Removes data from older versions (old save, old nickname). Opening the game with ?reset=1 wipes everything
@@ -62,6 +69,7 @@ function cleanStorage(): void {
 
 async function boot(): Promise<void> {
   cleanStorage();
+  presentation.reload();
   const platform = await createPlatform();
   platform.loadingStart();
   await Promise.all([
@@ -75,6 +83,9 @@ async function boot(): Promise<void> {
   await progress.init();
 
   const ui = new Ui();
+  mountSettings(ui);
+  mountHub(ui, progress);
+  mountJourney(ui, progress);
   const touch = new TouchControls();
 
   const scene = new GameScene();
@@ -134,6 +145,8 @@ async function boot(): Promise<void> {
   const syncMute = () => {
     sfx.setPlatformMuted(platform.muteAudio);
     ui.setMuted(sfx.muted);
+    ui.chatAllowed = !platform.disableChat;
+    ui.setEmoteVisible(!document.body.classList.contains('in-menu'));
   };
   syncMute();
   platform.onSettingsChange(syncMute);
@@ -660,7 +673,7 @@ async function boot(): Promise<void> {
   };
 
   // ---- pages --------------------------------------------------------------------
-  const pages: Pages = new Pages(ui, progress, {
+  const pages = new LazyPages(ui, progress, {
     playOnline: (mode, map) => {
       pages.close();
       void startOnline(ui.nickValue(), { mode, map });
@@ -734,6 +747,7 @@ async function boot(): Promise<void> {
   ui.setAuto(scene.autoSkills);
   ui.chatAllowed = !platform.disableChat;
   window.addEventListener('keydown', (e) => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || !document.getElementById('modal')!.hidden) return;
     if ((e.key === 't' || e.key === 'T') && scene.hasSource && !pages.current) {
       ui.toggleEmotes();
       return;
@@ -784,7 +798,11 @@ async function boot(): Promise<void> {
   if (invite) void startOnline(nick, invite);
   else if (platform.isInstantMultiplayer) void startOnline(nick, { createPrivate: true });
   else {
-    progress.onSkill((d) => ui.showSkillGain(d));
+    progress.onSkill((d) => {
+      // The starter kit is granted normally, but its five reveals must not cover
+      // a new player's zero-click tutorial or fighter creation screen.
+      if (progress.data.profile.onboarded) ui.showSkillGain(d);
+    });
     if (progress.needsProfile) {
       // CrazyGames: new players land in gameplay immediately. Start the tutorial right away with a
       // default kit; the "create your fighter" screen opens when they leave it.
@@ -794,7 +812,9 @@ async function boot(): Promise<void> {
         if (err) void claimName(progress, (progress.data.nick + Math.floor(Math.random() * 999)).slice(0, 16));
       });
       void startTraining().then(() => {
-        ui.showHint(UiClass.keycaps() + '<br />Try your skills on the dummies! Press <b>Leave</b> when you are ready.', 15000);
+        ui.showHint((isTouchDevice()
+          ? '<b>Drag left</b> to move · <b>Drag right</b> to aim and fire · Tap skills below'
+          : UiClass.keycaps()) + '<br />Your starter skills are equipped. Try them on the dummies! Leave when ready.', 15000);
       });
       return;
     }

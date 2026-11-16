@@ -5,7 +5,7 @@ import { flPart, frame, giPart, hx, nextId, shade } from './render';
 
 /** Character avatar: the full-body hero (default outfit), inside a card frame. */
 export function avatar(charId: string, _color = 0x4dd2ff, gear: number[] = []): string {
-  const inner = heroSvg({ char: charId, gear }).replace('<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">', '<svg x="7" y="2" width="50" height="60" viewBox="0 0 100 120">');
+  const inner = heroSvg({ char: charId, gear, accent: _color }).replace('<svg ', '<svg x="7" y="2" width="50" height="60" ');
   return frame(inner, '#4a5aa8', '#1b2148');
 }
 

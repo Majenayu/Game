@@ -1,0 +1,183 @@
+{
+  "capturedAt": "2026-11-16T11:38:59.423Z",
+  "environment": "Headless system Chromium, sandbox software GPU. Not physical device certification.",
+  "screenshots": [
+    "menu-1366.png",
+    "settings-1366.png",
+    "journey-1366.png",
+    "arenas-1366.png",
+    "campaign-1366.png",
+    "loadout-1366.png",
+    "gear-1366.png",
+    "profile-1366.png",
+    "collection-1366.png",
+    "fusion-1366.png",
+    "encyclopedia-1366.png",
+    "shop-1366.png",
+    "market-1366.png",
+    "auction-1366.png",
+    "daily-1366.png",
+    "quests-1366.png",
+    "spin-1366.png",
+    "summons-1366.png",
+    "dex-1366.png",
+    "bestiary-1366.png",
+    "ranked-1366.png",
+    "chests-1366.png",
+    "guild-1366.png",
+    "training-1366.png",
+    "active-match-1366.png",
+    "active-grayscale-1366.png",
+    "arena-neon.png",
+    "arena-crossfire.png",
+    "arena-pillars.png",
+    "arena-fortress.png",
+    "arena-lava.png",
+    "arena-maze.png",
+    "arena-glacier.png",
+    "menu-1920.png",
+    "active-match-1920.png",
+    "menu-390.png",
+    "destinations-390.png",
+    "active-match-390.png",
+    "menu-844.png",
+    "destinations-844.png",
+    "active-match-844.png",
+    "first-run-1366.png",
+    "first-run-390.png"
+  ],
+  "quality": [
+    {
+      "quality": "low",
+      "seconds": 10,
+      "combatants": 4,
+      "meanFps": 25.151708719258554,
+      "p95ms": 50.100000000000364,
+      "phaserFps": 25.637565961282235,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "particleSlots": 280,
+      "textSlots": 3,
+      "peaks": {
+        "particles": 36,
+        "texts": 3,
+        "effects": 5,
+        "images": 4,
+        "bullets": 10
+      },
+      "initialHeap": 36235295,
+      "finalHeap": 36607246
+    },
+    {
+      "quality": "medium",
+      "seconds": 10,
+      "combatants": 4,
+      "meanFps": 24.29514097180564,
+      "p95ms": 50.100000000000364,
+      "phaserFps": 24.53587342373794,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "particleSlots": 280,
+      "textSlots": 3,
+      "peaks": {
+        "particles": 34,
+        "texts": 3,
+        "effects": 3,
+        "images": 4,
+        "bullets": 8
+      },
+      "initialHeap": 35572449,
+      "finalHeap": 36884416
+    },
+    {
+      "quality": "high",
+      "stress": "8-seat disposable fixture; 60 seconds",
+      "seconds": 60,
+      "combatants": 8,
+      "meanFps": 21.686048642040145,
+      "p95ms": 50.10000000000582,
+      "phaserFps": 22.55596216475427,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "particleSlots": 280,
+      "textSlots": 9,
+      "peaks": {
+        "particles": 96,
+        "texts": 9,
+        "effects": 11,
+        "images": 8,
+        "bullets": 15
+      },
+      "initialHeap": 39133862,
+      "finalHeap": 66226723
+    },
+    {
+      "quality": "high",
+      "seconds": 10,
+      "combatants": 4,
+      "meanFps": 25.930506243268045,
+      "p95ms": 50.100000000000364,
+      "phaserFps": 26.585393512854353,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "particleSlots": 280,
+      "textSlots": 5,
+      "peaks": {
+        "particles": 60,
+        "texts": 5,
+        "effects": 4,
+        "images": 4,
+        "bullets": 9
+      },
+      "initialHeap": 35414419,
+      "finalHeap": 37872732
+    }
+  ],
+  "coldLoads": [
+    {
+      "run": 1,
+      "menuReadyMs": 734.2304069999955,
+      "navigationMs": 238.5,
+      "resources": 10,
+      "transferBytes": 2651589,
+      "lazyPagesRequested": false
+    },
+    {
+      "run": 2,
+      "menuReadyMs": 729.0888859999832,
+      "navigationMs": 228.70000000018626,
+      "resources": 9,
+      "transferBytes": 2651289,
+      "lazyPagesRequested": false
+    },
+    {
+      "run": 3,
+      "menuReadyMs": 711.5246679999982,
+      "navigationMs": 225.69999999925494,
+      "resources": 9,
+      "transferBytes": 2651289,
+      "lazyPagesRequested": false
+    }
+  ],
+  "errors": [],
+  "bundles": [
+    {
+      "name": "index-DlWIU3An.css",
+      "raw": 27393,
+      "gzip": 7166
+    },
+    {
+      "name": "index-IgWEeIpJ.js",
+      "raw": 2521476,
+      "gzip": 745031
+    },
+    {
+      "name": "licenses-DPyVcdYb.js",
+      "raw": 1571,
+      "gzip": 705
+    },
+    {
+      "name": "pages-zSC9E8Ja.js",
+      "raw": 73306,
+      "gzip": 24778
+    }
+  ],
+  "zipBytes": 986898,
+  "productionColdLoadMethod": "Three fresh browser contexts, local uncompressed static build, no throttling. Menu-ready sampling, not field TTI; not comparable to the development baseline."
+}

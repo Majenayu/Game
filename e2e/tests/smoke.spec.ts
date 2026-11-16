@@ -1,4 +1,4 @@
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page } from './fixtures';
 import { seed } from './seed';
 
 test.beforeEach(async ({ page }) => seed(page));
@@ -41,11 +41,16 @@ test('two browsers join the same room and see each other', async ({ browser }) =
   const base = await humans(a);
 
   // invite button produces a link containing the room id, and opening it joins the same room
+  await a.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: async (text: string) => { (window as any).__copiedInvite = text; },
+    } });
+  });
   await a.locator('#invite').click();
-  await expect(a.locator('#toast')).toContainText(roomA!);
+  await expect.poll(() => a.evaluate(() => (window as any).__copiedInvite)).toContain(roomA!);
   const c = await newPage(browser);
-  await c.goto('/?roomId=' + roomA + '&server=0');
-  await expect(c.locator('body')).toHaveAttribute('data-room', roomA!, { timeout: 15_000 });
+  await c.goto(await a.evaluate(() => (window as any).__copiedInvite));
+  await expect(c.locator('body')).toHaveAttribute('data-room', roomA!, { timeout: 30_000 });
   await expect.poll(() => humans(a), { timeout: 15_000 }).toBe(base + 1);
   await c.locator('#leave').click();
   await expect.poll(() => humans(a), { timeout: 15_000 }).toBe(base);

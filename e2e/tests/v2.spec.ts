@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { seed } from './seed';
 
 test.beforeEach(async ({ page }) => seed(page));
@@ -39,10 +39,16 @@ test('menu shows progress and every page opens', async ({ page }) => {
     await page.locator(`[data-page="${name}"]`).click();
     await expect(page.locator('#page')).toBeVisible();
     await expect(page.locator('#pagebody')).not.toBeEmpty();
+    await expect(page.locator('.page-intro')).toBeInViewport();
+    if (name === 'campaign') {
+      await page.locator('[data-next-node]').click();
+      await expect(page.locator('.mnode.next').first()).toBeInViewport();
+    }
     // merged pages: every tab opens too
     for (const tab of await page.locator('[data-pgtab]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.pgtab!))) {
       await page.locator(`[data-pgtab="${tab}"]`).click();
       await expect(page.locator('#pagebody')).not.toBeEmpty();
+      await expect(page.locator('.page-intro')).toBeInViewport();
     }
     await page.locator('#pageclose').click();
     await expect(page.locator('#menu')).toBeVisible();
@@ -137,7 +143,7 @@ test('skills can be used with the keyboard and show a cooldown', async ({ page }
   await page.locator('#practice').click();
   await expect(page.locator('#sk0')).toBeVisible({ timeout: 8_000 });
   await page.locator('[data-lconfirm]').click();
-  await page.waitForTimeout(3600);
+  await page.waitForFunction(() => { const s = (window as any).__orbGame.scene.getScene('game').activeSource; return s && s.view(performance.now()).players.find((p: any) => p.id === s.localId)?.hold <= 0; }, null, { timeout: 30000 });
   await page.keyboard.press('Digit1');
   await expect(page.locator('#sk0 .cdn')).not.toHaveText('', { timeout: 10_000 });
 });
@@ -157,7 +163,7 @@ test('lobby shows every orb with skills, waits for confirm, then counts down 3 2
   await expect(page.locator('#lobby')).toBeHidden();
   await expect(page.locator('#countdown')).toBeVisible();
   await expect(page.locator('#countdown')).toHaveText(/^[123]$/);
-  await expect(page.locator('#countdown')).toHaveText('GO!', { timeout: 5_000 });
+  await expect(page.locator('#countdown')).toHaveText('GO!', { timeout: 30_000 });
 });
 test('training starts at once; auto toggles', async ({ page }) => {
   await page.goto('/');
@@ -182,7 +188,7 @@ test('shadow duel vs bot: lobby shows both fighters, confirm, countdown, fight',
   await expect(page.locator('#lobby .lp')).toHaveCount(2);
   await page.locator('[data-lconfirm]').click();
   await expect(page.locator('#lobby')).toBeHidden();
-  await page.waitForTimeout(3500);
+  await page.waitForFunction(() => (window as any).__orbGame.scene.getScene('duel').src.view().phase === 'fight', null, { timeout: 30000 });
   const st = await page.evaluate(() => {
     const g = (window as any).__orbGame;
     const d = g.scene.getScene('duel');

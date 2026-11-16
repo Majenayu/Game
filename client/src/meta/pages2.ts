@@ -100,7 +100,12 @@ export class MorePages {
         this.c.render();
       }),
     );
-    body.querySelector('.mnode.next')?.scrollIntoView({ block: 'center' });
+    const next = body.querySelector('.mnode.next');
+    const jump = body.querySelector<HTMLButtonElement>('[data-next-node]');
+    if (jump) {
+      jump.disabled = !next;
+      jump.onclick = () => next?.scrollIntoView({ block: 'center' });
+    }
   }
 
   // ---- gear (accessories with stats) ------------------------------------------------------
