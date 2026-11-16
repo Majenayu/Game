@@ -4,7 +4,6 @@ import { ALL_FIGURES } from '../art/bestiary';
 import { heroSvg } from '../art/hero';
 import { BOSS_ART, CREATURE_ART, FL, GI } from '../art/packs.gen';
 import { hx, shade } from '../art/render';
-import { presentation } from '../presentation';
 
 /**
  * Turns the SVG art (heroes, bosses, summons) into Phaser textures and draws them in the arena.
@@ -15,7 +14,6 @@ export class ArenaArt {
   private loading = new Set<string>();
   private imgs = new Map<string, Phaser.GameObjects.Image>();
   private used = new Set<string>();
-  private poses = new Map<string, { x: number; y: number; hp: number; hit: number; born: number; freeze: number }>();
 
   constructor(private scene: Phaser.Scene) {}
 
@@ -52,61 +50,32 @@ export class ArenaArt {
   end(): void {
     for (const [id, im] of this.imgs) {
       if (this.used.has(id)) continue;
-      im.destroy();
-      this.imgs.delete(id);
-      this.poses.delete(id);
-    }
-    if (this.ready.size > 128) {
-      const active = new Set([...this.imgs.values()].map(im => im.texture.key));
-      for (const key of this.ready) {
-        if (this.ready.size <= 96) break;
-        if (active.has(key)) continue;
-        this.scene.textures.remove(key);
-        this.ready.delete(key);
-        this.loading.delete(key);
-      }
+      im.setVisible(false);
+      if (!this.scene.children.exists(im)) this.imgs.delete(id);
     }
   }
   /** Half the height of what is drawn for this player (to place the HP bar above it). */
   topOf(p: PlayerView): number {
     if (p.boss) return PLAYER_RADIUS * ((4.6 + p.form * 0.9) * (p.form >= 3 ? 1.35 : 1) * 0.5 + 0.3);
-    return PLAYER_RADIUS * 1.7;
+    return PLAYER_RADIUS * 2.75;
   }
 
   /** Draws a hero or a boss. Returns false while the art is still loading. */
   drawPlayer(p: PlayerView, alpha: number, now: number): boolean {
     if (p.boss) return this.drawBoss(p, alpha, now);
     const gear = p.look ? p.look.split(',').map(Number).filter(Number.isFinite) : [];
-    const hurt = p.hp < p.maxHp * 0.35;
-    const blink = presentation.prefs.motion && (now + p.char.length * 173) % 3400 < 110;
-    const key = `hero:${p.char}:${p.look}:${p.color}:${hurt}:${blink}`;
-    if (!this.ensure(key, () => heroSvg({ char: p.char, gear, weapon: p.weapon, accent: p.color }, { combat: true, hurt, blink }), 150, 180)) return false;
+    // The weapon is drawn as a live arena layer so it follows the authoritative aim
+    // angle. Baking it into this left/right sprite made diagonal aiming unreadable.
+    const key = `hero:${p.char}:${p.look}`;
+    if (!this.ensure(key, () => heroSvg({ char: p.char, gear }), 120, 144)) return false;
     const im = this.image(p.id, key);
-    let pose = this.poses.get(p.id);
-    if (!pose) {
-      pose = { x: p.x, y: p.y, hp: p.hp, hit: 0, born: now, freeze: now };
-      this.poses.set(p.id, pose);
-    }
-    if (p.hp < pose.hp) {
-      pose.hit = now;
-      pose.freeze = now;
-    }
-    const dx = p.x - pose.x;
-    const moving = Math.hypot(dx, p.y - pose.y) > 0.1;
-    const motion = presentation.prefs.motion;
-    // Animation-only hit-stop. Position, input, server ticks and collisions never pause.
-    const poseTime = motion && now - pose.hit < 55 ? pose.freeze : now;
-    const step = motion ? Math.sin(poseTime / (moving ? 90 : 360)) * (moving ? 2 : 0.7) : 0;
-    const appear = motion ? Math.min(1, (now - pose.born) / 240) : 1;
-    const h = PLAYER_RADIUS * 3.3 * (0.6 + appear * 0.4);
+    const step = Math.sin(now / 110 + p.x * 0.05) * (p.spd > 0 ? 1.5 : 0);
+    const h = PLAYER_RADIUS * 4.6;
     im.setDisplaySize(h * (100 / 120), h)
-      .setPosition(p.x, p.y - PLAYER_RADIUS * 0.15 + step)
-      .setRotation(motion && moving ? Math.max(-0.12, Math.min(0.12, dx * 0.025)) : 0)
+      .setPosition(p.x, p.y - PLAYER_RADIUS * 0.55 + step)
       .setFlipX(Math.cos(p.aim) < 0)
       .setAlpha(alpha)
       .clearTint();
-    if (now - pose.hit < 100) im.setTintFill(0xdff7ff);
-    Object.assign(pose, { x: p.x, y: p.y, hp: p.hp });
     return true;
   }
 
@@ -135,7 +104,7 @@ export class ArenaArt {
     if (!this.ensure(key, svg, 240, 240)) return false;
     const im = this.image(p.id, key);
     const size = PLAYER_RADIUS * (4.6 + p.form * 0.9) * (p.form >= 3 ? 1.35 : 1);
-    const breathe = presentation.prefs.motion ? 1 + Math.sin(now / 260) * 0.03 : 1;
+    const breathe = 1 + Math.sin(now / 260) * 0.03;
     const tint = [0xffffff, 0xaee8ff, 0xd9b8ff, 0xffffff][p.form] ?? 0xffffff;
     im.setDisplaySize(size * breathe, size * breathe).setPosition(p.x, p.y - PLAYER_RADIUS * 0.3).setAlpha(alpha).setFlipX(Math.cos(p.aim) < 0);
     if (tint === 0xffffff) im.clearTint();
@@ -151,7 +120,7 @@ export class ArenaArt {
     if (!this.ensure(key, () => creatureSvg(art, c.color), 128, 128)) return false;
     const im = this.image(`pet${petId}`, key);
     const size = 52 + (creature % 8) * 5;
-    im.setDisplaySize(size, size).setPosition(x, y + (presentation.prefs.motion ? Math.sin(now / 180 + x * 0.01) * 3 : 0)).setAlpha(1).clearTint();
+    im.setDisplaySize(size, size).setPosition(x, y + Math.sin(now / 180 + x * 0.01) * 3).setAlpha(1).clearTint();
     return true;
   }
 }

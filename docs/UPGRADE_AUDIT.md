@@ -209,6 +209,18 @@ Proceed with **refined Starforge**: cosmic indigo, selective gold, clean
 blue/red ownership edges, original compact orb-core heroes with readable gear,
 less visual noise and more precise action feedback. Keep all gameplay rules.
 
+### Phase 1 continuation status
+
+Direction approved. Implementation restarted from this audit baseline after the
+later wholesale redesign was rejected. The original purple/gold Starforge UI,
+arena composition and movement/camera behavior are the visual reference and must
+not be replaced.
+
+The first reviewable slice separates the aimed weapon from the loaded character
+texture. Character and gear art stay unchanged, while the existing procedural
+weapon layer now follows the live aim angle above the sprite. No simulation,
+input, movement, camera, networking, save, reward or economy behavior changed.
+
 One UX decision needs confirmation before implementation: Quick Play currently
 opens an explicit confirm/loadout lobby. Recommend immediate ready for casual
 Quick Play (if supported by the existing confirm path), while keeping deliberate

@@ -2070,37 +2070,16 @@
         <button id="champbtn" class="ghost">Meet the champion</button>
       </div>
       <div id="menu" class="panel center" hidden>
-        <header class="hub-head">
-          <div class="brand"><span class="brand-orb" aria-hidden="true"></span><div><h1>Orb Arena</h1><small>FORGE YOUR LEGEND</small></div></div>
-          <div class="status">
-            <span class="lvl">LV <b data-level>1</b></span>
-            <div class="xp" aria-label="Level progress"><div data-xpbar></div></div>
-            <span class="coins">&#9679; <b data-coins>0</b></span>
-          </div>
-        </header>
-        <div class="hub-content">
-          <div class="hub-welcome"><span id="hub-greeting">Your arena. Your legend.</span><span class="hub-online">BUILT FOR THE NEXT ROUND</span></div>
-          <section class="hero-deck" aria-label="Play arena">
-            <div class="hero-copy">
-              <div class="eyebrow">SMALL ORBS. BIG ENERGY.</div>
-              <h2>Enter the arena.<br><span>Own the moment.</span></h2>
-              <p>Outplay your rivals. Master your skills.<br>Find your edge. Forge your legend.</p>
-              <div class="play-row">
-                <label for="nick">PLAYER HANDLE</label>
-                <input id="nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nickname" />
-                <button id="play">Quick Play <span aria-hidden="true">&#8599;</span></button>
-              </div>
-              <div class="play-detail"><span>Find an online arena</span><button id="practice" class="ghost">Practice offline</button></div>
-            </div>
-            <div class="orb-stage">
-              <div class="orb-orbit" aria-hidden="true"></div><div id="hub-wing" aria-hidden="true"></div>
-              <div id="hub-hero" aria-hidden="true"></div>
-              <div class="hero-identity"><b id="hub-hero-name">Your hero</b><small id="hub-kit">Your equipped loadout</small></div>
-            </div>
-            <div id="champion-slot"></div>
-          </section>
-          <div class="section-heading"><h3>YOUR NEXT MOVE</h3><span>EXPLORE THE ARENA</span></div>
-          <nav class="grid" aria-label="Game destinations">
+        <h1>Orb Arena</h1>
+        <p class="sub">Shoot glowing orbs. Collect powerups. Rule the arena.</p>
+        <div class="status">
+          <span class="lvl">Lv <b data-level>1</b></span>
+          <div class="xp"><div data-xpbar></div></div>
+          <span class="coins">&#9679; <b data-coins>0</b></span>
+        </div>
+        <input id="nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nickname" />
+        <button id="play">Quick Play</button>
+        <div class="grid">
           <button class="tile" data-page="arenas"><span class="ic">&#9876;</span>Arenas</button>
           <button class="tile" data-page="campaign"><span class="ic">&#9733;</span>Campaign</button>
           <button class="tile" data-page="loadout"><span class="ic">&#129466;</span>Hero</button>
@@ -2120,9 +2099,13 @@
           <button class="tile" data-page="chests"><span class="ic">&#128230;</span>Chests</button>
           <button class="tile" data-page="guild"><span class="ic">&#128737;</span>Guilds</button>
           <button class="tile" data-page="training"><span class="ic">&#127919;</span>Training</button>
-          </nav>
         </div>
-        <footer class="hub-footer"><div class="hub-rewards"><span id="hub-daily">Daily rewards</span><span id="hub-spins">Free daily spins</span></div><button id="howto" class="ghost">How to play &#8599;</button></footer>
+        <button id="practice" class="ghost">Practice offline</button>
+        <div class="sub" style="font-size:11px;opacity:.7;margin-top:4px">Art: Fluent Emoji by Microsoft (MIT) &middot; icons from game-icons.net by Lorc, Delapouite and contributors (CC BY 3.0)</div>
+        <div class="controls" id="controls">
+          WASD / arrows: move &middot; Mouse: aim &middot; Click: shoot &middot; 1-5 (or Space / E): skills<br />Touch:
+          left stick moves, right stick aims and fires, buttons use skills
+        </div>
       </div>
       <div id="page" class="panel center" hidden>
         <div id="pagehead">
@@ -2165,10 +2148,10 @@
         <button id="sk4" class="skill" hidden></button>
         <button id="autobtn" class="skill auto" hidden title="Auto skills (X): casts attack and defence skills and aims them for you">AUTO</button>
       </div>
-      <button id="mute" aria-label="Mute" hidden></button>
+      <button id="mute" aria-label="Mute" hidden>&#128266;</button>
       <button id="leave" class="ghost" hidden>Leave</button>
       <button id="invite" class="ghost" hidden>Invite friends</button>
-    <button id="emotebtn" class="ghost" hidden aria-label="Quick chat (T)">Chat</button>
+    <button id="emotebtn" class="ghost" hidden aria-label="Quick chat (T)">&#128172;</button>
     <div id="emotes" hidden></div>
     <div id="countdown" hidden></div>
     <div id="modal" hidden></div>
@@ -2182,7 +2165,7 @@
     <div id="lobby" class="panel" hidden></div>
     </div>
     <div id="touch"></div>
-    <div id="rotate" hidden></div>
+    <div id="rotate">Please rotate your phone to landscape<br />to play Orb Arena</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

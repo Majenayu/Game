@@ -37,15 +37,10 @@ export class TouchControls {
 
   constructor() {
     const r = this.root;
-    document.body.classList.toggle('touchdev', isTouchDevice());
     r.addEventListener('pointerdown', (e) => this.down(e));
     r.addEventListener('pointermove', (e) => this.move(e));
     r.addEventListener('pointerup', (e) => this.up(e));
     r.addEventListener('pointercancel', (e) => this.up(e));
-    window.addEventListener('blur', () => this.releaseAll());
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) this.releaseAll();
-    });
   }
 
   get enabled(): boolean {
@@ -78,9 +73,8 @@ export class TouchControls {
     s.dx = 0;
     s.dy = 0;
     s.el.hidden = false;
-    const bounds = this.root.getBoundingClientRect();
-    s.el.style.left = `${s.ox - bounds.left}px`;
-    s.el.style.top = `${s.oy - bounds.top}px`;
+    s.el.style.left = `${s.ox}px`;
+    s.el.style.top = `${s.oy}px`;
     s.knob.style.transform = 'translate(0,0)';
     this.root.setPointerCapture?.(e.pointerId);
     this.sync();
@@ -130,7 +124,6 @@ export class TouchControls {
     const r = this.right;
     this.state.moveX = l.dx / RADIUS;
     this.state.moveY = l.dy / RADIUS;
-    this.state.active = l.id !== null || r.id !== null;
     this.state.aiming = r.id !== null && Math.hypot(r.dx, r.dy) > 8;
     if (this.state.aiming) this.state.aimAngle = Math.atan2(r.dy, r.dx);
   }

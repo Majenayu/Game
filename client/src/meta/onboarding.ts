@@ -5,7 +5,6 @@ import { accIcon } from '../art/icons';
 import { sfx } from '../audio';
 import { esc, hex } from '../ui/ui';
 import { FREE_ACCS, type Progress } from './economy';
-import { heroSvg } from '../art/hero';
 
 /** Reserves a unique name on the server. Returns an error text, or '' when done (or when offline). */
 export async function claimName(pr: Progress, name: string): Promise<string> {
@@ -39,17 +38,15 @@ export function showOnboarding(pr: Progress, defaultNick: string): Promise<void>
   let nameMsg = '';
   let nameOk = true;
   let checkTimer = 0;
-  let checkGeneration = 0;
   let busy = false;
   return new Promise((resolve) => {
     const orb = () => {
-      return heroSvg({ char: pick.char, gear: [], accent: COLORS[pick.color]?.hex }).replace('<svg ', '<svg width="110" height="120" ');
+      const c = hex(COLORS[pick.color]?.hex ?? 0x4dd2ff);
+      return `<svg viewBox="0 0 120 120" width="110" height="110"><circle cx="60" cy="66" r="40" fill="${c}"/><circle cx="46" cy="52" r="12" fill="#fff" opacity=".4"/><circle cx="50" cy="64" r="5" fill="#1b0a3a"/><circle cx="70" cy="64" r="5" fill="#1b0a3a"/><path d="M50 80 Q60 88 70 80" stroke="#1b0a3a" stroke-width="3" fill="none"/></svg>`;
     };
     const finish = async (quick: boolean) => {
       if (busy) return;
       busy = true;
-      checkGeneration++;
-      window.clearTimeout(checkTimer);
       sfx.unlock();
       if (quick) pick.cls = CLASSES[Math.floor(Math.random() * CLASSES.length)].id;
       const err = await claimName(pr, pick.nick);
@@ -68,7 +65,6 @@ export function showOnboarding(pr: Progress, defaultNick: string): Promise<void>
       resolve();
     };
     const check = () => {
-      const generation = ++checkGeneration;
       window.clearTimeout(checkTimer);
       const v = validName(pick.nick);
       if (!v.ok) {
@@ -81,9 +77,6 @@ export function showOnboarding(pr: Progress, defaultNick: string): Promise<void>
       paintName();
       checkTimer = window.setTimeout(async () => {
         const r = await checkName(v.name);
-        // A slow response for the previous input must never replace local
-        // validation or the availability result for the current name.
-        if (generation !== checkGeneration || root.hidden || busy) return;
         if (r.offline) {
           nameMsg = 'Offline: the name is reserved when you are back online';
           nameOk = true;
@@ -105,7 +98,7 @@ export function showOnboarding(pr: Progress, defaultNick: string): Promise<void>
       const cls = classById(pick.cls)!;
       const classes = CLASSES.map(
         (c) =>
-          `<button type="button" class="card class-option ${c.id === pick.cls ? 'sel' : ''}" data-ocls="${c.id}" aria-label="${esc(c.name)}" aria-pressed="${c.id === pick.cls}">${avatar(c.char)}<b>${esc(c.name)}</b><span class="d">${esc(c.desc)}</span></button>`,
+          `<div class="card ${c.id === pick.cls ? 'sel' : ''}" data-ocls="${c.id}">${avatar(c.char)}<b>${esc(c.name)}</b><div class="d">${esc(c.desc)}</div></div>`,
       ).join('');
       const chars = Array.from(new Set([cls.char, 'nova']))
         .map((id) => CHARACTERS[id])

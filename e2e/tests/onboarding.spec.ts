@@ -1,27 +1,7 @@
-import { expect, test } from './fixtures';
+import { expect, test } from '@playwright/test';
 import { seed } from './seed';
 
 const uniq = () => 'T' + Math.random().toString(36).slice(2, 10);
-
-test('a stale availability response cannot overwrite a newer invalid name', async ({ page }) => {
-  let release!: () => void;
-  const gate = new Promise<void>(resolve => { release = resolve; });
-  await page.route('**/api/name?*', async route => {
-    await gate;
-    await route.fulfill({ status:200, contentType:'application/json', headers:{'access-control-allow-origin':'*'}, body:JSON.stringify({ok:true,available:false,reason:'That name is taken'}) });
-  });
-  await page.goto('/');
-  const requested = page.waitForRequest('**/api/name?*');
-  await page.locator('#leave').click({timeout:15000});
-  await requested;
-  await page.locator('#onick').fill('ab');
-  await expect(page.locator('#onamemsg')).toContainText('3 to 16');
-  const response = page.waitForResponse('**/api/name?*');
-  release();
-  await (await response).finished();
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  await expect(page.locator('#onamemsg')).toContainText('3 to 16');
-});
 
 test('first run lands straight in a tutorial, then asks for a unique name, class and look', async ({ page }) => {
   await page.goto('/');
@@ -35,9 +15,7 @@ test('first run lands straight in a tutorial, then asks for a unique name, class
   const name = uniq();
   await page.locator('#onick').fill(name);
   await expect(page.locator('#onamemsg')).toContainText('free', { timeout: 8_000 });
-  await page.locator('[data-ocls="mage"]').focus();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('[data-ocls="mage"]')).toHaveAttribute('aria-pressed','true');
+  await page.locator('[data-ocls="mage"]').click();
   await page.locator('[data-ocol="3"]').click();
   await page.locator('[data-oacc="6"]').click();
   await page.locator('[data-ostart]').click();
@@ -75,8 +53,7 @@ test('skill details, merge animation, guilds, world ranking and pause', async ({
   await page.locator('[data-page="collection"]').click();
   await page.locator('[data-dailydrop]').click();
   await expect(page.locator('#mergefx')).toBeVisible();
-  await page.locator('#pagebody [data-skill-detail]').first().focus();
-  await page.keyboard.press('Enter');
+  await page.locator('#pagebody [data-skill]').first().click();
   await expect(page.locator('#modal')).toBeVisible();
   await expect(page.locator('#modal')).toContainText('Cooldown');
   await page.locator('#modal [data-mclose]').click();

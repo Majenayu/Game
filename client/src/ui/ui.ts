@@ -20,7 +20,6 @@ import {
 import { MAJEN, uniqueSvg } from '../art/bestiary';
 import { skillIcon } from '../art/icons';
 import type { Snapshot } from '../game/types';
-import { navIcon } from './hub';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -58,23 +57,6 @@ export class Ui {
   private skillBtns = [0, 1, 2, 3, 4].map((i) => $<HTMLButtonElement>('sk' + i));
   private lastHud = 0;
   private hintTimer = 0;
-  private modalFocus: HTMLElement | null = null;
-
-  killFeed(by: string, victim: string, ally: boolean): void {
-    let feed = document.getElementById('killfeed');
-    if (!feed) {
-      feed = document.createElement('div');
-      feed.id = 'killfeed';
-      feed.setAttribute('aria-live', 'polite');
-      this.hud.appendChild(feed);
-    }
-    const row = document.createElement('div');
-    row.className = ally ? 'ally' : 'enemy';
-    row.textContent = `${by}  /  ${victim}`;
-    feed.appendChild(row);
-    while (feed.children.length > 3) feed.firstElementChild?.remove();
-    window.setTimeout(() => row.remove(), 4000);
-  }
 
   onPlay: (name: string) => void = () => {};
   onPractice: (name: string) => void = () => {};
@@ -126,7 +108,6 @@ export class Ui {
     });
     this.nick.maxLength = MAX_NICK;
     this.muteBtn.hidden = false;
-    this.emoteBtn.textContent = 'Chat';
   }
 
   setNick(n: string): void {
@@ -138,9 +119,7 @@ export class Ui {
   }
 
   setMuted(m: boolean): void {
-    this.muteBtn.innerHTML = navIcon(m ? 'muted' : 'sound');
-    this.muteBtn.setAttribute('aria-label', m ? 'Unmute' : 'Mute');
-    this.muteBtn.setAttribute('aria-pressed', String(m));
+    this.muteBtn.textContent = m ? '\u{1F507}' : '\u{1F50A}';
   }
 
   setInviteVisible(v: boolean): void {
@@ -158,40 +137,18 @@ export class Ui {
   /** Opens a centred window above everything. `html` is trusted markup built by the game. */
   modal(html: string): HTMLElement {
     const m = $('modal');
-    if (m.hidden) this.modalFocus = document.activeElement as HTMLElement | null;
     m.innerHTML = `<div class="box panel"><button class="ghost mclose" data-mclose="1">Close</button>${html}</div>`;
-    const dialog = m.querySelector<HTMLElement>('.box')!;
-    dialog.setAttribute('role', 'dialog');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('aria-label', 'Game details');
     m.hidden = false;
     m.querySelector('[data-mclose]')!.addEventListener('click', () => this.closeModal());
     m.onclick = (e) => {
       if (e.target === m) this.closeModal();
     };
-    m.onkeydown = e => {
-      if (e.key === 'Escape') { e.preventDefault(); this.closeModal(); return; }
-      if (e.key !== 'Tab') return;
-      const items = Array.from(m.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,a[href]'));
-      const first = items[0], last = items[items.length - 1];
-      if ((e.shiftKey && document.activeElement === first) || (!e.shiftKey && document.activeElement === last)) {
-        e.preventDefault();
-        (e.shiftKey ? last : first)?.focus();
-      }
-    };
-    const title = dialog.querySelector<HTMLElement>('h2,h3');
-    if (title) {
-      title.id ||= 'modal-title';
-      dialog.setAttribute('aria-labelledby', title.id);
-    }
-    dialog.querySelector<HTMLElement>('button')?.focus();
     return m.querySelector<HTMLElement>('.box')!;
   }
   closeModal(): void {
     const m = $('modal');
     m.hidden = true;
     m.innerHTML = '';
-    this.modalFocus?.focus();
   }
   // ---- skill gain / merge animation -----------------------------------------------
   private mergeQueue: Array<{ skillId: number; merged: boolean; level: number; prevLevel: number; copies: number; nextAt: number }> = [];
@@ -459,8 +416,7 @@ export class Ui {
   showHint(html: string, ms = 9000): void {
     const h = $('hint');
     window.clearTimeout(this.hintTimer);
-    h.innerHTML = html + '<button class="ghost hint-dismiss" aria-label="Dismiss tutorial hint">Got it</button>';
-    h.querySelector('button')!.addEventListener('click', () => this.hideHint());
+    h.innerHTML = html;
     h.style.opacity = '1';
     h.hidden = false;
     this.hintTimer = window.setTimeout(() => {
@@ -515,7 +471,6 @@ export class Ui {
       pips = `<div class="hpbar"><div style="width:${(me.hp / me.maxHp) * 100}%"></div></div><span class="hpnum">${me.hp}/${me.maxHp}</span>`;
     }
     $('hpbox').innerHTML = pips;
-    $('hpbox').setAttribute('aria-label', `Health ${me.hp} of ${me.maxHp}`);
     const label = SCORE_LABEL[snap.mode] ?? 'Score';
     $('kills').textContent =
       `${label} ${me.score}${snap.mode === 'coins' || snap.mode === 'hill' ? `  \u00b7  Kills ${me.kills}` : ''}`;
@@ -580,7 +535,6 @@ export class Ui {
       const col = hex(RANK_INFO[rank].color);
       const elCol = ELEMENTS[def.element] ? hex(ELEMENTS[def.element].color) : col;
       b.hidden = false;
-      b.setAttribute('aria-label', `${def.name}, ${rem > 0 ? `ready in ${Math.ceil(rem)} seconds` : 'ready'}, slot ${i + 1}`);
       b.style.setProperty('--cd', `${Math.min(1, rem / tot) * 100}%`);
       b.style.borderColor = elCol;
       b.style.color = elCol;

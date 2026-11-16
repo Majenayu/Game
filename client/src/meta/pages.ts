@@ -1,4 +1,3 @@
-import { pageIntro } from '../ui/hub';
 import {
   BULLET_FX,
   CHARACTER_LIST,
@@ -264,17 +263,7 @@ export class Pages {
       ? `<div class="tabs pgtabs">${group.tabs.map(([n, t]) => `<button class="${n === name ? 'on' : ''}" data-pgtab="${n}">${t}</button>`).join('')}</div>`
       : '';
     const hero = group?.title === 'Hero' ? this.heroPreview() : '';
-    const page = document.getElementById('page')!;
-    const resetScroll = page.hidden || page.dataset.view !== name;
-    const body = this.ui.showPage(title, pageIntro(name) + tabs + hero + this.html(name));
-    page.dataset.view = name;
-    if (resetScroll) {
-      page.scrollTop = 0;
-      body.scrollTop = 0;
-    }
-    body.querySelectorAll<HTMLButtonElement>('.pgtabs button').forEach(b => {
-      b.setAttribute('aria-pressed', String(b.dataset.pgtab === name));
-    });
+    const body = this.ui.showPage(title, tabs + hero + this.html(name));
     body.querySelectorAll<HTMLElement>('[data-pgtab]').forEach((el) =>
       el.addEventListener('click', () => {
         sfx.click();
@@ -378,7 +367,7 @@ export class Pages {
       </div>`;
     }).join('');
     void rows;
-    return `<button class="ghost" data-next-node>Jump to next fight</button><p class="sub">Stars earned: ${this.pr.totalStars()} / ${LEVELS.length * 3}. 8 worlds, each with 10 one-on-one fights and its boss. Battles are decided by HP only: if your hero reaches 0 HP the level fails. Stars: 3 above 75% HP, 2 above 50% HP, 1 for any clear. Every world has its own arena effect, and enemies get tougher as you go.</p>${this.more.worldMapHtml()}`;
+    return `<p class="sub">Stars earned: ${this.pr.totalStars()} / ${LEVELS.length * 3}. 8 worlds, each with 10 one-on-one fights and its boss. Battles are decided by HP only: if your hero reaches 0 HP the level fails. Stars: 3 above 75% HP, 2 above 50% HP, 1 for any clear. Every world has its own arena effect, and enemies get tougher as you go.</p>${this.more.worldMapHtml()}`;
   }
 
   private loadoutHtml(): string {
@@ -451,7 +440,7 @@ export class Pages {
       <div class="d">${esc(d.desc)}</div>${extra}
       <div class="d">${esc(d.category)}${el ? ` &middot; ${esc(el.name)}` : ''} &middot; ${esc(d.kind)}<br />
         Lv ${s.level} &middot; ${s.copies} cop${s.copies === 1 ? 'y' : 'ies'} &middot; Mastery ${masteryLevel(s.masteryXp)}<br />
-        ${tags}</div>${buttons}<button class="ghost" data-skill-detail="${s.skillId}" aria-label="Inspect ${esc(d.name)}">Full stats</button></div>`;
+        ${tags}</div>${buttons}</div>`;
   }
 
   private sortedSkills(): SkillInstance[] {
@@ -1068,14 +1057,12 @@ export class Pages {
     const note = (t: string, c = '#e8ecff') => this.ui.notify(t, c);
     const levelUps = (ls: number[]) => ls.forEach((l) => note(`Level up! You reached level ${l}`, '#ffc93c'));
     // Tap any skill card (not its buttons) to see the full stats.
-    body.onclick = (e) => {
+    body.addEventListener('click', (e) => {
       const t = e.target as HTMLElement;
-      const details = t.closest<HTMLElement>('[data-skill-detail]');
-      if (details) { this.showSkill(Number(details.dataset.skillDetail)); return; }
       if (t.closest('button')) return;
       const card = t.closest<HTMLElement>('[data-skill]');
       if (card) this.showSkill(Number(card.dataset.skill));
-    };
+    });
 
     if (name === 'arenas') {
       on('[data-mode]', (el) => {

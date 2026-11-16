@@ -1,6 +1,4 @@
-import type Phaser from 'phaser';
-import { drawCast, drawEnd, lifecyclePhase } from './lifecycle';
-import { presentation } from '../presentation';
+import Phaser from 'phaser';
 
 /**
  * Skill animation engine. Every skill plays two layers:
@@ -17,41 +15,14 @@ const hash = (i: number, seed: number) => {
 };
 
 export function drawSkillAnim(g: G, kind: string, element: number, x: number, y: number, angle: number, k: number, s: number, color: number, seed: number): void {
-  if (lifecyclePhase(k) === 'cast') {
-    drawCast(g, kind, x, y, angle, k / 0.18, color);
-    return;
-  }
-  if (lifecyclePhase(k) === 'end') {
-    drawEnd(g, kind, x, y, angle, (k - 0.78) / 0.22, color);
-    return;
-  }
-  if (!presentation.prefs.motion) {
-    drawCast(g, kind, x, y, angle, 0.65, color);
-    return;
-  }
   const a = Math.max(0, 1 - k);
-  const R = 52 * s;
+  const R = 120 * s;
   motion(g, kind, x, y, angle, k, a, R, color, seed);
-  if (presentation.budget.detail > 0.5) motif(g, element, x, y, angle, k, a * 0.65, R, color, seed);
-  else drawCast(g, kind, x, y, angle, k, color);
+  motif(g, element, x, y, angle, k, a, R, color, seed);
 }
 
 function motion(g: G, kind: string, x: number, y: number, ang: number, k: number, a: number, R: number, c: number, seed: number): void {
   switch (kind) {
-    case 'projectile':
-    case 'beam':
-    case 'volley':
-    case 'cleave': {
-      const count = kind === 'volley' ? 5 : kind === 'cleave' ? 3 : 1;
-      for (let i = 0; i < count; i++) {
-        const dir = ang + (i - (count - 1) / 2) * 0.22;
-        const dx = Math.cos(dir), dy = Math.sin(dir);
-        const length = kind === 'beam' ? R * 1.5 : R * 0.6;
-        g.lineStyle(kind === 'beam' ? 4 : 2, c, a).lineBetween(x + dx * 26, y + dy * 26, x + dx * (32 + length * k), y + dy * (32 + length * k));
-      }
-      if (kind === 'cleave') g.lineStyle(5, 0xe3f8ff, a).beginPath().arc(x, y, R * 0.7, ang - 0.9 + k, ang + 0.9 + k, false).strokePath();
-      break;
-    }
     case 'nova':
     case 'world': {
       // double shock wave with a bright core
@@ -60,7 +31,6 @@ function motion(g: G, kind: string, x: number, y: number, ang: number, k: number
         g.lineStyle(14 * (1 - q) + 2, c, (1 - q) * 0.9).strokeCircle(x, y, R * 1.4 * q);
       }
       g.fillStyle(0xffffff, 0.6 * a * a).fillCircle(x, y, R * 0.35 * (1 - k * 0.5));
-      if (kind === 'world') g.lineStyle(2, c, a).strokeEllipse(x, y, R * 2.6, R * 0.7).strokeEllipse(x, y, R * 0.7, R * 2.6);
       break;
     }
     case 'heal': {
@@ -82,7 +52,6 @@ function motion(g: G, kind: string, x: number, y: number, ang: number, k: number
       g.lineStyle(5, c, a).strokePoints(pts, true);
       g.lineStyle(2, 0xffffff, a * 0.8);
       for (const p of pts) g.lineBetween(x, y, p.x, p.y);
-      if (kind === 'barrier') g.lineStyle(3, c, a).strokeRoundedRect(x - r, y - r * 0.6, r * 2, r * 1.2, 7);
       break;
     }
     case 'buff':
@@ -95,7 +64,6 @@ function motion(g: G, kind: string, x: number, y: number, ang: number, k: number
         g.fillStyle(c, a).fillTriangle(px, py - 14, px - 9, py + 4, px + 9, py + 4);
       }
       g.lineStyle(4, c, a).strokeEllipse(x, y + 10, R * 1.1, R * 0.4);
-      if (kind === 'aura') g.lineStyle(2, c, a).strokeCircle(x, y, R * 0.75).strokeCircle(x, y, R * 0.9);
       break;
     }
     case 'dash':
@@ -110,8 +78,6 @@ function motion(g: G, kind: string, x: number, y: number, ang: number, k: number
       }
       g.lineStyle(6, 0xffffff, a).lineBetween(x - dx * R, y - dy * R, x, y);
       if (kind !== 'dash') g.fillStyle(0xffffff, 0.7 * a * a).fillCircle(x, y, R * 0.5 * (1 - a));
-      if (kind === 'blink') g.lineStyle(2, c, a).strokeTriangle(x, y - R * 0.7, x - R * 0.5, y + R * 0.35, x + R * 0.5, y + R * 0.35);
-      if (kind === 'ambush') g.lineStyle(3, c, a).lineBetween(x - R * 0.5, y - R * 0.3, x + R * 0.5, y + R * 0.3).lineBetween(x - R * 0.5, y + R * 0.3, x + R * 0.5, y - R * 0.3);
       break;
     }
     case 'pull':
@@ -125,10 +91,6 @@ function motion(g: G, kind: string, x: number, y: number, ang: number, k: number
         g.lineStyle(4, c, a).lineBetween(px, py, px - Math.cos(t) * 26, py - Math.sin(t) * 26);
       }
       g.lineStyle(3, c, a * 0.7).strokeCircle(x, y, R * 1.3 * (1 - k * 0.7));
-      if (kind === 'slow') {
-        g.lineStyle(3, c, a).lineBetween(x, y - R * 0.3, x, y).lineBetween(x, y, x + R * 0.2, y + R * 0.1);
-        g.strokeCircle(x, y, R * 0.5);
-      }
       break;
     }
     case 'summon':
@@ -144,7 +106,6 @@ function motion(g: G, kind: string, x: number, y: number, ang: number, k: number
         g.lineBetween(x + Math.cos(t1) * r * 0.75, y + Math.sin(t1) * r * 0.75, x + Math.cos(t2) * r * 0.75, y + Math.sin(t2) * r * 0.75);
       }
       if (kind === 'portal') g.fillStyle(0x000000, 0.5 * a).fillCircle(x, y, r * 0.5);
-      if (kind === 'mine') g.lineStyle(3, c, a).strokeTriangle(x, y - r * 0.5, x - r * 0.5, y + r * 0.4, x + r * 0.5, y + r * 0.4);
       break;
     }
     case 'stealth': {
