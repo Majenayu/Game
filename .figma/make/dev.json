@@ -1,0 +1,10 @@
+{
+  "installOn": [
+    "package.json",
+    "package-lock.json",
+    "client/package.json",
+    "server/package.json",
+    "shared/package.json",
+    "e2e/package.json"
+  ]
+}
