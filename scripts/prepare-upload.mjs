@@ -1,11 +1,15 @@
 // Builds the client for a store and fills its upload folder with files/, photos/ and videos/.
 //   node scripts/prepare-upload.mjs crazygames   -> craygames/
 //   node scripts/prepare-upload.mjs poki         -> poki/
+//   node scripts/prepare-upload.mjs itch         -> itch/  (files/ holds one ZIP, itch.io needs a ZIP)
 // Needs VITE_SERVER_URLS (wss://, not localhost), e.g. in PowerShell:
 //   $env:VITE_SERVER_URLS = "wss://YOUR-SERVICE.onrender.com"; npm run poki
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import archiver from 'archiver';
+import ffmpegPath from 'ffmpeg-static';
+import { createWriteStream } from 'node:fs';
 
 const TARGETS = {
   crazygames: {
@@ -26,6 +30,17 @@ const TARGETS = {
     ],
     // Poki's guide: initial download at most 5 MB, 8 MB in total.
     maxMb: 8,
+  },
+  itch: {
+    folder: 'itch',
+    // Plain web build: no Poki SDK, and the CrazyGames SDK only loads on CrazyGames domains.
+    env: {},
+    photos: [['e2e/poki', '.png']],
+    videos: [['e2e/videos', 'preview-landscape-1920x1080.mp4']],
+    maxMb: 50,
+    // itch.io wants a ZIP with index.html at its root, and a 630x500 cover image.
+    zip: 'orb-arena-html5.zip',
+    cover: { from: 'e2e/covers/landscape-1920x1080.png', name: 'cover-630x500.png' },
   },
 };
 
@@ -99,6 +114,42 @@ const size = (d) => {
 const files = size(join(out, 'files'));
 if (files.mb > target.maxMb)
   throw new Error(`Build is ${files.mb.toFixed(2)} MB, over the ${target.maxMb} MB limit`);
+if (target.cover) {
+  // Centre crop to 630:500, then scale (lanczos).
+  spawnSync(
+    ffmpegPath,
+    [
+      '-y',
+      '-loglevel',
+      'error',
+      '-i',
+      join(root, target.cover.from),
+      '-vf',
+      'crop=ih*630/500:ih,scale=630:500:flags=lanczos',
+      join(out, 'photos', target.cover.name),
+    ],
+    { stdio: 'inherit' },
+  );
+  if (!existsSync(join(out, 'photos', target.cover.name))) throw new Error('Cover image was not created');
+}
+if (target.zip) {
+  // Replace the loose build with one ZIP (index.html at the root of the ZIP).
+  const tmp = join(out, '.build');
+  rmSync(tmp, { recursive: true, force: true });
+  cpSync(join(out, 'files'), tmp, { recursive: true });
+  rmSync(join(out, 'files'), { recursive: true, force: true });
+  mkdirSync(join(out, 'files'));
+  await new Promise((res, rej) => {
+    const stream = createWriteStream(join(out, 'files', target.zip));
+    const zip = archiver('zip', { zlib: { level: 9 } });
+    stream.on('close', res);
+    zip.on('error', rej);
+    zip.pipe(stream);
+    zip.directory(tmp, false);
+    zip.finalize();
+  });
+  rmSync(tmp, { recursive: true, force: true });
+}
 for (const d of ['files', 'photos', 'videos']) {
   const s = size(join(out, d));
   console.log(`${target.folder}/${d.padEnd(7)} ${s.c} files, ${s.mb.toFixed(2)} MB`);

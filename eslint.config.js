@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', 'e2e/test-results/**', 'e2e/covers/**', 'craygames/**', 'poki/**', '**/*.mjs'] },
+  { ignores: ['**/dist/**', '**/node_modules/**', 'e2e/test-results/**', 'e2e/covers/**', 'craygames/**', 'poki/**', 'itch/**', '**/*.mjs'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

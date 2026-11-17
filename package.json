@@ -17,6 +17,7 @@
     "build": "npm run build -w client",
     "crazygames": "node scripts/prepare-upload.mjs crazygames",
     "poki": "node scripts/prepare-upload.mjs poki",
+    "itch": "node scripts/prepare-upload.mjs itch",
     "poki:media": "npm run poki-shots -w e2e",
     "build:zip": "npm run build -w client && node scripts/build-zip.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",

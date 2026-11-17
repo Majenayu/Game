@@ -15,3 +15,7 @@ e2e/poki
 poki/files
 poki/photos
 poki/videos
+itch/files
+itch/photos
+itch/videos
+itch/.build
