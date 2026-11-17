@@ -114,6 +114,7 @@ export class Ui {
       }),
     );
     $('pageclose').addEventListener('click', () => this.onPageClose());
+    this.initMore();
     this.menu
       .querySelectorAll<HTMLButtonElement>('[data-page]')
       .forEach((b) => b.addEventListener('click', () => this.onPage(b.dataset.page!)));
@@ -372,6 +373,26 @@ export class Ui {
   setBadge(page: string, on: boolean): void {
     const key = page;
     this.menu.querySelector<HTMLElement>(`[data-page="${key}"] .dot`)?.classList.toggle('on', on);
+    // The More tile shows a dot when a hidden tile has one.
+    $('moretile').querySelector('.dot')?.classList.toggle('on', !!this.menu.querySelector('.tile.more .dot.on'));
+  }
+  /** The main menu shows the most used tiles; More opens the rest and remembers the choice. */
+  private initMore(): void {
+    const grid = this.menu.querySelector<HTMLElement>('.grid');
+    const btn = $('moretile');
+    if (!grid) return;
+    const apply = (open: boolean) => {
+      grid.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', String(open));
+      const label = btn.querySelector('.mlabel');
+      if (label) label.textContent = open ? 'Less' : 'More';
+    };
+    apply(localStorage.getItem('orb.menuMore') === '1');
+    btn.addEventListener('click', () => {
+      const open = !grid.classList.contains('open');
+      localStorage.setItem('orb.menuMore', open ? '1' : '0');
+      apply(open);
+    });
   }
 
   showMenu(): void {

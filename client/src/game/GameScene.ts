@@ -109,6 +109,8 @@ export class GameScene extends Phaser.Scene {
   private source: GameSource | null = null;
   private predictor = new Predictor();
   private bg!: Phaser.GameObjects.Graphics;
+  /** The arena art, drawn once per map (static, so it costs nothing per frame). */
+  private bgTex!: Phaser.GameObjects.RenderTexture;
   private g!: Phaser.GameObjects.Graphics;
   /** Drawn above the characters: skill effects, HP bars, particles. */
   private gt!: Phaser.GameObjects.Graphics;
@@ -147,6 +149,8 @@ export class GameScene extends Phaser.Scene {
   private lockId = '';
   private lastPlayers: PlayerView[] = [];
   private snow: Array<{ x: number; y: number; s: number }> = [];
+  /** Slow dust (or embers on fiery maps) drifting over the floor, for a living arena. */
+  private motes: Array<{ x: number; y: number; vx: number; vy: number; r: number; ph: number }> = [];
   private autoTarget: { x: number; y: number } | null = null;
   private autoAim = 0;
   private autoAimUntil = 0;
@@ -161,7 +165,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.bg = this.add.graphics().setDepth(0);
+    this.bg = this.make.graphics({}, false);
+    this.bgTex = this.add.renderTexture(0, 0, WORLD_W, WORLD_H).setOrigin(0, 0).setDepth(0);
     this.g = this.add.graphics().setDepth(10);
     this.gt = this.add.graphics().setDepth(11);
     this.art = new ArenaArt(this);
@@ -404,6 +409,8 @@ export class GameScene extends Phaser.Scene {
     this.map = getMap(id);
     this.predictor.obstacles = this.map.obstacles;
     drawArena(this.bg, this.map);
+    this.bgTex.clear().draw(this.bg);
+    this.bg.clear();
   }
 
   // ---- events --------------------------------------------------------------
@@ -414,14 +421,20 @@ export class GameScene extends Phaser.Scene {
     switch (ev.t) {
       case 'hit':
         this.burst(ev.x, ev.y, 0xff5e8a, 8);
+        // A quick white spark so every hit reads clearly.
+        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: ev.by === me ? 44 : 32, color: 0xffffff, born: performance.now(), ms: 240 });
         if (ev.id === me || ev.by === me) this.pop(ev.x, ev.y - 34, 'HIT!', '#ffffff', 26);
         if (ev.id === me) {
           sfx.hit();
           this.shake(120, 0.006);
         } else if (ev.by === me) sfx.hit();
         break;
-      case 'kill':
+      case 'kill': {
         this.burst(ev.x, ev.y, 0xffffff, 26);
+        // Shockwave: a wide white ring and a slower one in the arena colour.
+        const kt = performance.now();
+        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: 190, color: 0xffffff, born: kt, ms: 420 });
+        this.fxs.push({ kind: 'ring', x: ev.x, y: ev.y, angle: 0, size: 280, color: this.map.theme.accent, born: kt + 60, ms: 700 });
         this.pop(ev.x, ev.y - 40, 'K.O.!', '#ffe58a', 44);
         if (ev.id === me) {
           this.streak = 0;
@@ -438,6 +451,7 @@ export class GameScene extends Phaser.Scene {
           this.ui.killFeed(this.lastPlayers.find(p => p.id === ev.by)?.name ?? 'Arena', this.lastPlayers.find(p => p.id === ev.id)?.name ?? 'Orb', this.isAlly(ev.by));
         }
         break;
+      }
       case 'pickup': {
         this.burst(ev.x, ev.y, 0xffc93c, 14);
         if (ev.id === me) {
@@ -994,6 +1008,21 @@ export class GameScene extends Phaser.Scene {
   }
   /** Arena effects drawn on top: falling snow, darkness around you. */
   private drawOverlays(g: Phaser.GameObjects.Graphics, snap: Snapshot, me: PlayerView | undefined, now: number, dt: number): void {
+    if (presentation.prefs.motion) {
+      const fiery = /lava|dunes|canyon|foundry|solar/.test(this.map.id);
+      while (this.motes.length < 46)
+        this.motes.push({ x: Math.random() * WORLD_W, y: Math.random() * WORLD_H, vx: (Math.random() - 0.5) * 14, vy: fiery ? -20 - Math.random() * 25 : (Math.random() - 0.5) * 10, r: 1 + Math.random() * 2, ph: Math.random() * 6.28 });
+      const col = fiery ? 0xff9a3c : this.map.theme.accent;
+      for (const m of this.motes) {
+        m.x += m.vx * dt;
+        m.y += (fiery ? m.vy : m.vy + Math.sin(now / 1500 + m.ph) * 6) * dt;
+        if (m.y < -10) m.y = WORLD_H + 10;
+        if (m.y > WORLD_H + 10) m.y = -10;
+        if (m.x < -10) m.x = WORLD_W + 10;
+        if (m.x > WORLD_W + 10) m.x = -10;
+        g.fillStyle(col, 0.22 + 0.18 * Math.sin(now / 600 + m.ph)).fillCircle(m.x, m.y, m.r);
+      }
+    }
     if (snap.effect === 'snow') {
       if (this.snow.length < 140) this.snow.push({ x: Math.random() * WORLD_W, y: -10, s: 40 + Math.random() * 60 });
       for (const f of this.snow) {

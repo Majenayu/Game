@@ -10,7 +10,7 @@ Online orb arena shooter. Grab 1000+ powerups, use skills, unlock characters and
 
 ## Long description
 
-Orb Arena is a fast online shooter for up to 8 players. You are a glowing orb in a neon arena. Move, aim, shoot and use skills to win every round.
+Orb Arena is a fast online shooter for up to 8 players. Pick a hero, then move, aim, shoot and fire skills to win every round.
 
 Play four modes: Deathmatch, Team Battle, Coin Rush and King of the Hill. Quick Play changes the mode and the arena every round, so every match feels new. Six arenas include walls, mazes and lava.
 

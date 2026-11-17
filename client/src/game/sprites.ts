@@ -15,6 +15,8 @@ export class ArenaArt {
   private loading = new Set<string>();
   private imgs = new Map<string, Phaser.GameObjects.Image>();
   private used = new Set<string>();
+  /** Soft outline in the player's colour so heroes stand out from the floor (WebGL only). */
+  private glows = new Map<string, { fx: Phaser.FX.Glow; color: number }>();
 
   constructor(private scene: Phaser.Scene) {}
 
@@ -43,6 +45,19 @@ export class ArenaArt {
     this.used.add(id);
     return im.setVisible(true);
   }
+  private outline(id: string, im: Phaser.GameObjects.Image, color: number): void {
+    const cur = this.glows.get(id);
+    if (cur) {
+      if (cur.color !== color) {
+        cur.fx.color = color;
+        cur.color = color;
+      }
+      return;
+    }
+    if (!im.preFX) return;
+    const fx = im.preFX.addGlow(color, 2.2, 0, false, 0.1, 6);
+    this.glows.set(id, { fx, color });
+  }
   /** Call once per frame before drawing. */
   begin(): void {
     this.used.clear();
@@ -52,7 +67,10 @@ export class ArenaArt {
     for (const [id, im] of this.imgs) {
       if (this.used.has(id)) continue;
       im.setVisible(false);
-      if (!this.scene.children.exists(im)) this.imgs.delete(id);
+      if (!this.scene.children.exists(im)) {
+        this.imgs.delete(id);
+        this.glows.delete(id);
+      }
     }
   }
   /** Half the height of what is drawn for this player (to place the HP bar above it). */
@@ -70,6 +88,7 @@ export class ArenaArt {
     const key = `hero:${p.char}:${p.look}`;
     if (!this.ensure(key, () => heroSvg({ char: p.char, gear }), 120, 144)) return false;
     const im = this.image(p.id, key);
+    this.outline(p.id, im, p.color);
     const moving = p.spd > 0;
     const step = presentation.prefs.motion ? Math.sin(now / 135 + p.x * 0.05) * (moving ? 1.5 : 0.7) : 0;
     const lean = presentation.prefs.motion && moving ? Math.sin(p.aim) * 2.5 : 0;

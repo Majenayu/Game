@@ -5,5 +5,7 @@ export async function seed(target: Page | BrowserContext, extra: Record<string, 
   const save = JSON.stringify({ profile: { cls: 'warrior', created: 1, onboarded: true }, ...extra });
   await target.addInitScript((s) => {
     if (!localStorage.getItem('orb.save3')) localStorage.setItem('orb.save3', s);
+    // Tests click every menu tile, so open the More section.
+    if (!localStorage.getItem('orb.menuMore')) localStorage.setItem('orb.menuMore', '1');
   }, save);
 }

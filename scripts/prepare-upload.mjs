@@ -15,7 +15,11 @@ const TARGETS = {
   crazygames: {
     folder: 'craygames',
     env: {},
-    photos: [['e2e/covers', '.png']],
+    photos: [
+      ['e2e/covers', 'landscape-1920x1080.png'],
+      ['e2e/covers', 'portrait-800x1200.png'],
+      ['e2e/covers', 'square-800x800.png'],
+    ],
     videos: [['e2e/videos', '.mp4']],
     maxMb: 50,
   },
@@ -40,7 +44,7 @@ const TARGETS = {
     maxMb: 50,
     // itch.io wants a ZIP with index.html at its root, and a 630x500 cover image.
     zip: 'orb-arena-html5.zip',
-    cover: { from: 'e2e/covers/landscape-1920x1080.png', name: 'cover-630x500.png' },
+    cover: { from: 'e2e/covers/itch-630x500.png', name: 'cover-630x500.png' },
   },
 };
 
