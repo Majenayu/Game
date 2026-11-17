@@ -18,12 +18,12 @@ const TARGETS = {
   poki: {
     folder: 'poki',
     env: { VITE_PLATFORM: 'poki' },
-    // Poki: 3 gameplay screenshots plus a square thumbnail; square 1:1 animated thumbnail video.
-    photos: [
-      ['e2e/poki', '.png'],
-      ['e2e/covers', 'square-800x800.png'],
+    // Poki: exactly the 3 gameplay screenshots the submission form asks for; square 1:1 animated thumbnail video.
+    photos: [['e2e/poki', '.png']],
+    videos: [
+      ['e2e/poki', '.mp4'],
+      ['e2e/videos', 'preview-landscape-1920x1080.mp4'],
     ],
-    videos: [['e2e/poki', '.mp4']],
     // Poki's guide: initial download at most 5 MB, 8 MB in total.
     maxMb: 8,
   },
