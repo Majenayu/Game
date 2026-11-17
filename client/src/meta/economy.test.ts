@@ -270,8 +270,11 @@ describe('daily reward, quests, lucky draw', () => {
     expect(q.progress).toBe(def.target);
     const coins = p.data.coins;
     // Quests pay double coins (plus stones and a chest).
-    expect(p.claimQuest(q)!.coins).toBe(def.coins * 2);
-    expect(p.data.coins).toBe(coins + def.coins * 2);
+    const claim = p.claimQuest(q)!;
+    expect(claim.coins).toBe(def.coins * 2);
+    // Quest XP can level you up, and every level pays 50 + 10 x level coins.
+    const levelCoins = claim.levels.reduce((a, l) => a + 50 + 10 * l, 0);
+    expect(p.data.coins).toBe(coins + def.coins * 2 + levelCoins);
     expect(p.claimQuest(q)).toBeNull();
   });
 
@@ -293,11 +296,17 @@ describe('daily reward, quests, lucky draw', () => {
     counts.forEach((n) => expect(n).toBeGreaterThan(0));
     expect(counts[0]).toBeGreaterThan(counts[7]);
     const before = p.data.coins;
-    expect(p.grantPrize(WHEELS.coins.findIndex((w) => w.kind === 'coins' && w.value === 50))).toBe('50 coins');
+    expect(p.grantPrize(WHEELS.coins.findIndex((w) => w.kind === 'coins' && w.value === 50))).toBe(
+      '50 coins',
+    );
     expect(p.data.coins).toBe(before + 50);
     const lvSum = () => p.data.skills.reduce((a, s) => a + s.level + 1, 0);
     const skills = lvSum();
-    p.grantPrize(WHEEL.findIndex((w) => w.kind === 'skill'), Math.random, 'skills');
+    p.grantPrize(
+      WHEEL.findIndex((w) => w.kind === 'skill'),
+      Math.random,
+      'skills',
+    );
     // Uniques are never on the wheels: they come only from bosses and fusion.
     expect(WHEEL.some((w) => w.kind === 'unique')).toBe(false);
     const wi = p.data.owned.weapons.length;

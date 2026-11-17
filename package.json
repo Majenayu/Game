@@ -15,6 +15,7 @@
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client",
+    "crazygames": "node scripts/prepare-crazygames.mjs",
     "build:zip": "npm run build -w client && node scripts/build-zip.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",

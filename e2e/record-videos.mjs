@@ -80,17 +80,21 @@ for (const c of CLIPS) {
     viewport: { width: c.w, height: c.h },
     recordVideo: { dir: dir('./'), size: { width: c.w, height: c.h } },
   });
+  // A returning player (profile done) so the game opens on the menu, not the first-run tutorial.
+  await ctx.addInitScript((s) => localStorage.setItem('orb.save3', s), JSON.stringify({ profile: { cls: 'warrior', created: 1, onboarded: true } }));
   const page = await ctx.newPage();
   const t0 = Date.now();
   await page.goto('http://localhost:5173/');
   await page.addStyleTag({
-    content: `#hint,#leave,#invite,#toast,#mute{display:none!important} *{cursor:none!important}
+    content: `#hint,#leave,#invite,#toast,#mute,#skillbanner{display:none!important} *{cursor:none!important}
       ${c.zoom ? '#game canvas{position:absolute!important;height:100%!important;width:178%!important;left:50%!important;top:0!important;margin:0!important;transform:translateX(-50%)!important}' : ''}`,
   });
   await page.click('#practice');
-  await page.waitForTimeout(500);
+  // The pre-match lobby ('Get ready') waits for Confirm; press it, then let the 3, 2, 1 countdown run.
+  await page.waitForSelector('[data-lconfirm]', { timeout: 10000 }).catch(() => {});
+  await page.click('[data-lconfirm]', { timeout: 3000 }).catch(() => {});
   await page.evaluate(AUTOPILOT);
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(4500);
   const startMs = Date.now() - t0;
   await page.waitForTimeout(GAME_SECONDS * 1000 + 800);
   const webm = await page.video().path();

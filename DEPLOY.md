@@ -89,3 +89,7 @@ npm run dev -w server
 ```
 
 The server stores the whole game database as one JSON row. That is fine for a beta. Move to separate tables (players, guilds, matches) before ranked has many players.
+
+## CrazyGames upload folder
+
+Run `npm run crazygames` with `VITE_SERVER_URLS` set to your `wss://` server. It builds the client and fills `craygames/files`, `craygames/photos` and `craygames/videos`. See `craygames/README.md`.

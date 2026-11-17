@@ -4,8 +4,11 @@
  * Docs: https://docs.crazygames.com/sdk/intro/ and https://docs.crazygames.com/sdk/game/
  */
 
-/** Basic Launch intentionally does not initialize the CrazyGames SDK or monetization. */
-export const BASIC_IMPLEMENTATION = true;
+/**
+ * When true the SDK is never loaded and every call is a no-op, so CrazyGames cannot detect updateRoom, the join
+ * listener or inviteLink. Keep it false for the CrazyGames build. Ads stay off through ENABLE_ADS.
+ */
+export const BASIC_IMPLEMENTATION = false;
 export const ENABLE_ADS = false;
 const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
 
