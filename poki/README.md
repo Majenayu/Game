@@ -8,7 +8,12 @@
 
 ## Submission form answers
 
-**Build or video link (required).** The form wants a URL, not a file. Use one of these:
+**Build or video link (required).** Use the live build: **https://majenayu.github.io/orb-arena-play/**
+It is this `files/` folder published from the public repo `Majenayu/orb-arena-play` (GitHub Pages), talking to
+`wss://orb-arena-server.onrender.com`. To update it after `npm run poki`, replace that repo's files with the new
+`files/` contents and push; Pages redeploys in about a minute.
+
+Other options if you ever need them:
 - a hosted browser build of `files/` that opens without a login (see "Hosting the build" below), or
 - `videos/preview-landscape-1920x1080.mp4` uploaded as an unlisted YouTube video or a shared Google Drive link.
 
