@@ -18,10 +18,14 @@ import type { Ui } from '../ui/ui';
 import { esc, hex } from '../ui/ui';
 import type { GameSource, Snapshot } from './types';
 
+/** The match starts by itself this long after the lobby opens, unless the player opens the details. */
+export const LOBBY_AUTO_MS = 3500;
+
 /**
- * Pre-match lobby: shows every orb in the match with its character, weapon and five skills (with descriptions),
- * lets you change your own skills and weapon, and waits for Confirm. The match starts when everyone confirmed
- * or after 25 seconds.
+ * Pre-match lobby. By default a small bar at the top (mode, map, `Fight!`) that confirms by itself after
+ * LOBBY_AUTO_MS, so players reach the action in seconds. `Opponents` opens every orb with its character, weapon
+ * and skills; `Loadout` lets you change your skills and weapon. Opening either one stops the auto start, and the
+ * match then starts when everyone confirmed or after the server's 25 seconds.
  */
 export class LobbyPanel {
   private src: GameSource | null = null;
@@ -30,6 +34,9 @@ export class LobbyPanel {
   private lastRender = 0;
   private editing = false;
   private picks: number[] = [];
+  /** 'bar' is the compact strip; 'opponents' shows every orb. Editing the loadout also counts as open. */
+  private view: 'bar' | 'opponents' = 'bar';
+  private autoAt = 0;
 
   constructor(
     private ui: Ui,
@@ -41,6 +48,8 @@ export class LobbyPanel {
     this.src = src;
     this.confirmed = false;
     this.editing = false;
+    this.view = 'bar';
+    this.autoAt = 0;
     this.key = '';
     this.ui.hideLobby();
   }
@@ -54,22 +63,29 @@ export class LobbyPanel {
       return;
     }
     const now = performance.now();
+    if (!this.autoAt) this.autoAt = now + LOBBY_AUTO_MS;
+    const open = this.view !== 'bar' || this.editing;
+    if (!open && now >= this.autoAt) {
+      this.confirm();
+      return;
+    }
     if (now - this.lastRender < 250) return;
     this.lastRender = now;
     const left = Math.ceil(snap.lobby > 0 ? snap.lobby : me.hold - COUNTDOWN_SECONDS);
     const key = JSON.stringify([
       players.map((p) => [p.id, p.name, p.team, p.char, p.weapon, p.skills]),
       this.editing,
+      this.view,
       this.picks,
       this.pr.data.loadout.weapon,
     ]);
     if (key !== this.key || !this.ui.lobbyVisible) {
       this.key = key;
-      const body = this.ui.showLobby(this.html(snap, me, players));
+      const body = this.ui.showLobby(this.html(snap, me, players), !open);
       this.bind(body, me);
     }
     const t = document.getElementById('lobbytime');
-    if (t) t.textContent = String(Math.max(0, left));
+    if (t) t.textContent = String(Math.max(0, open ? left : Math.ceil((this.autoAt - now) / 1000)));
   }
 
   private skillLines(csv: string): string {
@@ -99,24 +115,25 @@ export class LobbyPanel {
   private html(snap: Snapshot, me: PlayerView, players: PlayerView[]): string {
     const team = MODES[snap.mode].team;
     const others = players.filter((p) => p.id !== me.id);
+    const where = `${esc(MODES[snap.mode].name)} &middot; ${esc(getMap(snap.mapId).name)}`;
+    const buttons = `<button data-lconfirm="1">Fight!</button>
+      <button class="ghost${this.view === 'opponents' ? ' on' : ''}" data-lopp="1">Opponents (${others.length})</button>
+      <button class="ghost${this.editing ? ' on' : ''}" data-ledit="1">Loadout</button>`;
+    if (this.view === 'bar' && !this.editing)
+      return `<div class="lbar"><span class="lwhere">${where}</span><span class="sub lstart">Starting in <b id="lobbytime">${Math.ceil(LOBBY_AUTO_MS / 1000)}</b></span>${buttons}</div>`;
     const allies = team ? others.filter((p) => p.team === me.team) : [];
     const enemies = team ? others.filter((p) => p.team !== me.team) : others;
     const group = (title: string, list: PlayerView[]) =>
       list.length ? `<h3>${title}</h3><div class="lteam">${list.map((p) => this.card(p, me)).join('')}</div>` : '';
-    return `<h2>Get ready</h2>
-      <div class="sub">${esc(MODES[snap.mode].name)} on ${esc(getMap(snap.mapId).name)} &middot; starts in <b id="lobbytime">25</b>s or when everyone confirms</div>
-      <div class="lbar"><button data-lconfirm="1">Confirm</button><span class="sub" style="margin:0">Study the enemy skills below, then confirm. The match starts with 3, 2, 1, GO.</span></div>
-      <h3>You</h3><div class="lteam">${this.card(me, me)}</div>
-      ${(() => {
-        const g = getGuildBonus();
-        const t = g ? bonusText(g) : '';
-        return t ? `<div class="sub" style="color:#7dff6b">Guild class buff active: ${esc(t)}</div>` : '';
-      })()}
-      ${this.editing ? this.editor() : '<button class="ghost" data-ledit="1">Change skills / weapon</button>'}
-      ${group(team ? 'Your team' : '', allies)}
-      ${group(team ? 'Enemy team' : 'Opponents', enemies)}`;
+    const guild = (() => {
+      const g = getGuildBonus();
+      const t = g ? bonusText(g) : '';
+      return t ? `<div class="sub" style="color:#7dff6b">Guild class buff active: ${esc(t)}</div>` : '';
+    })();
+    return `<div class="lbar"><span class="lwhere">${where}</span><span class="sub lstart">Starts in <b id="lobbytime">25</b>s or when everyone is ready</span>${buttons}</div>
+      ${this.editing ? this.editor() : ''}
+      ${this.view === 'opponents' ? `<h3>You</h3><div class="lteam">${this.card(me, me)}</div>${guild}${group(team ? 'Your team' : '', allies)}${group(team ? 'Enemy team' : 'Opponents', enemies)}` : ''}`;
   }
-
   private editor(): string {
     const owned = this.pr.data.skills.filter((s) => usableInBattle(s.skillId));
     const skills = owned
@@ -137,6 +154,12 @@ export class LobbyPanel {
       <button data-lapply="1">Use this loadout</button> <button class="ghost" data-lcancel="1">Cancel</button>`;
   }
 
+  private confirm(): void {
+    this.confirmed = true;
+    this.src?.confirm();
+    this.ui.hideLobby();
+  }
+
   private bind(body: HTMLElement, me: PlayerView): void {
     const on = (sel: string, fn: (el: HTMLElement) => void) =>
       body.querySelectorAll<HTMLElement>(sel).forEach((el) =>
@@ -145,12 +168,13 @@ export class LobbyPanel {
           fn(el);
         }),
       );
-    on('[data-lconfirm]', () => {
-      this.confirmed = true;
-      this.src?.confirm();
-      this.ui.hideLobby();
-    });
+    on('[data-lconfirm]', () => this.confirm());
+    on('[data-lopp]', () => (this.view = this.view === 'opponents' ? 'bar' : 'opponents'));
     on('[data-ledit]', () => {
+      if (this.editing) {
+        this.editing = false;
+        return;
+      }
       this.editing = true;
       this.picks = me.skills ? me.skills.split(',').map(Number).filter((id) => this.pr.skillBySkillId(id)) : [];
     });

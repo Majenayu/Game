@@ -34,13 +34,13 @@ import { LevelRunner } from './meta/campaign';
 import { claimName, showOnboarding } from './meta/onboarding';
 import { accountToken, claimHold, facts, fetchMe, raidHit } from './account';
 import { activeSummon, equippedGear, myStats, setGuildBonus } from './meta/inventory';
-import { Ui as UiClass } from './ui/ui';
 import { Progress, type SkillDrop } from './meta/economy';
 import { Pages, type PageName } from './meta/pages';
 import { joinArena, joinDuel, reconnect, serverUrls, type JoinTarget } from './net';
 import { DuelScene, OfflineDuel, OnlineDuel, type DuelSource } from './game/duel';
 import { createPlatform, showMidgameAd, showRewardedAd, type Platform } from './platform/crazygames';
 import { TouchControls, isTouchDevice, setTouchDevice } from './ui/touch';
+import { runCoach } from './ui/coach';
 import { Ui } from './ui/ui';
 import { presentation } from './presentation';
 import { mountSettings } from './ui/settings';
@@ -265,12 +265,17 @@ async function boot(): Promise<void> {
   let sessionId = 0;
   let runner: LevelRunner | null = null;
 
+  /** One line of controls for a first online match (the tutorial already taught the details). */
   const showHowTo = () =>
     ui.showHint(
-      (isTouchDevice()
-        ? '<b>Left stick</b> to move &middot; <b>Right stick</b> to aim and shoot &middot; buttons for skills'
-        : UiClass.keycaps()) + '<br />Grab glowing powerups. Highest score wins!',
+      isTouchDevice()
+        ? '<b>Left thumb</b> move &middot; <b>right thumb</b> aim and shoot &middot; tap skills'
+        : '<b>WASD</b> move &middot; <b>mouse</b> aim &middot; <b>click</b> shoot &middot; <b>1-5</b> skills',
+      6000,
+      'coach',
     );
+  /** Stops the first-match coach when the player leaves the tutorial. */
+  let stopCoach: (() => void) | null = null;
 
   /**
    * Poki: call commercialBreak() whenever the player heads back into gameplay. The first match of a session
@@ -282,6 +287,8 @@ async function boot(): Promise<void> {
     if (platform.name === 'poki' && matchesStarted > 1) await showMidgameAd(platform, adCallbacks());
   };
   const endSession = async () => {
+    stopCoach?.();
+    stopCoach = null;
     sessionId++;
     intentionalLeave = true;
     runner?.stop();
@@ -435,7 +442,7 @@ async function boot(): Promise<void> {
     ui.showGame();
     ui.setInviteVisible(false);
     touch.setEnabled(true);
-    ui.setObjective('Training ground: try every skill on the dummies. Press Q for auto skills. Use Leave to exit.');
+    ui.setObjective('Training ground: try your skills on the dummies');
   };
   /** Your stats and summon for offline matches. */
   const offlineExtra = () => ({ stats: myStats(progress).combat, summon: activeSummon(progress), gear: equippedGear(progress) });
@@ -832,7 +839,7 @@ async function boot(): Promise<void> {
         if (err) void claimName(progress, (progress.data.nick + Math.floor(Math.random() * 999)).slice(0, 16));
       });
       void startTraining().then(() => {
-        ui.showHint(UiClass.keycaps() + '<br />Try your skills on the dummies! Press <b>Leave</b> when you are ready.', 15000);
+        stopCoach = runCoach(ui);
       });
       return;
     }

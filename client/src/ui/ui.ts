@@ -27,6 +27,11 @@ export function hex(c: number): string {
   return `#${c.toString(16).padStart(6, '0')}`;
 }
 
+/** Skill names are 'Variant Element Kind'; the button shows the last two words, the full name is the tooltip. */
+export function buttonName(name: string): string {
+  const w = name.split(' ');
+  return w.length > 2 ? w.slice(-2).join(' ') : name;
+}
 export function esc(s: string): string {
   return s.replace(
     /[&<>"']/g,
@@ -325,7 +330,8 @@ export class Ui {
     if (text && this.countdownEl.textContent !== text) this.countdownEl.textContent = text;
   }
   /** Shows the pre-match lobby. `html` is trusted markup built by the lobby module. */
-  showLobby(html: string): HTMLElement {
+  showLobby(html: string, compact = false): HTMLElement {
+    this.lobbyEl.classList.toggle('compact', compact);
     this.lobbyEl.innerHTML = html;
     this.lobbyEl.hidden = false;
     return this.lobbyEl;
@@ -457,10 +463,12 @@ export class Ui {
   }
 
   /** Shows a short how-to-play hint, then fades it out. */
-  showHint(html: string, ms = 9000): void {
+  showHint(html: string, ms = 9000, variant: '' | 'coach' = ''): void {
     const h = $('hint');
     window.clearTimeout(this.hintTimer);
-    h.innerHTML = `${html}<button class="ghost hint-dismiss" aria-label="Dismiss tutorial hint">Got it</button>`;
+    h.className = variant;
+    const label = variant === 'coach' ? 'Skip' : 'Got it';
+    h.innerHTML = `<span class="hmsg">${html}</span><button class="ghost hint-dismiss" aria-label="Dismiss tutorial hint">${label}</button>`;
     h.querySelector('button')!.addEventListener('click', () => this.hideHint());
     h.style.opacity = '1';
     h.hidden = false;
@@ -581,6 +589,7 @@ export class Ui {
       const col = hex(RANK_INFO[rank].color);
       const elCol = ELEMENTS[def.element] ? hex(ELEMENTS[def.element].color) : col;
       b.hidden = false;
+      b.title = def.name;
       b.setAttribute('aria-label', `${def.name}, ${rem > 0 ? `ready in ${Math.ceil(rem)} seconds` : 'ready'}, slot ${i + 1}`);
       b.style.setProperty('--cd', `${Math.min(1, rem / tot) * 100}%`);
       b.style.borderColor = elCol;
@@ -588,7 +597,7 @@ export class Ui {
       b.classList.toggle('ready', rem <= 0 && me.alive && me.mp >= def.base.mp * MP_COST_SCALE);
       b.classList.toggle('nomp', me.mp < def.base.mp * MP_COST_SCALE);
       const key = i === 0 ? 'Space / 1' : i === 1 ? 'E / 2' : String(i + 1);
-      b.innerHTML = `<span class="rk" style="color:${col}">${rank}</span><span class="skn" style="color:var(--text)">${esc(def.name)}</span><span class="key">${key}</span><span class="cdn">${rem > 0 ? Math.ceil(rem) : ''}</span><span class="el" style="background:${elCol}"></span>`;
+      b.innerHTML = `<span class="rk" style="color:${col}">${rank}</span><span class="skn" style="color:var(--text)">${esc(buttonName(def.name))}</span><span class="key">${key}</span><span class="cdn">${rem > 0 ? Math.ceil(rem) : ''}</span><span class="el" style="background:${elCol}"></span>`;
     });
   }
 

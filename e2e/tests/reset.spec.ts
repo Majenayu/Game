@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures';
+import { expect, test } from '@playwright/test';
 
 test('old nickname keys are removed, and ?reset=1 wipes everything', async ({ page }) => {
   await page.addInitScript(() => {

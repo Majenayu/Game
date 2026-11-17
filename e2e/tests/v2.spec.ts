@@ -142,14 +142,28 @@ test('skills can be used with the keyboard and show a cooldown', async ({ page }
   await expect(page.locator('#sk0 .cdn')).not.toHaveText('', { timeout: 10_000 });
 });
 
-test('lobby shows every orb with skills, waits for confirm, then counts down 3 2 1', async ({ page }) => {
+test('lobby is a small bar that starts the match by itself', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#practice').click();
+  await expect(page.locator('#lobby.compact')).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator('#lobby')).toContainText('Fight!');
+  await expect(page.locator('#lobby .lp')).toHaveCount(0);
+  // No click: the bar confirms on its own and the 3, 2, 1 countdown starts.
+  await expect(page.locator('#lobby')).toBeHidden({ timeout: 8_000 });
+  await expect(page.locator('#countdown')).toBeVisible();
+});
+test('lobby opponents view shows every orb with skills, waits for confirm, then counts down 3 2 1', async ({ page }) => {
   await page.goto('/');
   await page.locator('#practice').click();
   await expect(page.locator('#lobby')).toBeVisible({ timeout: 8_000 });
+  await page.locator('[data-lopp]').click();
   await expect(page.locator('#lobby .lp')).toHaveCount(4);
   await expect(page.locator('#lobby')).toContainText('Attack');
   await expect(page.locator('#lobby .lsk').first()).toBeVisible();
   await expect(page.locator('#lobbytime')).toHaveText(/^(2[0-5]|1\d)$/);
+  // With the details open the match waits for the player.
+  await page.waitForTimeout(4500);
+  await expect(page.locator('#lobby')).toBeVisible();
   await page.locator('[data-ledit]').click();
   await expect(page.locator('[data-lpick]').first()).toBeVisible();
   await page.locator('[data-lcancel]').click();
@@ -209,6 +223,7 @@ test('ranked 1v1 joins a two orb arena deathmatch', async ({ page }) => {
   await page.locator('[data-rplay="1v1"]').click();
   await expect(page.locator('#hud')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('#lobby')).toBeVisible({ timeout: 15_000 });
+  await page.locator('[data-lopp]').click();
   await expect(page.locator('#lobby .lp')).toHaveCount(2, { timeout: 15_000 });
 });
 test('chests list their contents and opening one shows what you got', async ({ page }) => {
@@ -283,6 +298,7 @@ test('2v2 ranked joins a four orb team match and quick chat works', async ({ pag
   await expect(page.locator('#hud')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('#overlay')).toBeHidden({ timeout: 20_000 });
   await expect(page.locator('#lobby')).toBeVisible({ timeout: 10_000 });
+  await page.locator('[data-lopp]').click();
   await expect(page.locator('#lobby .lp')).toHaveCount(4);
   await page.locator('[data-lconfirm]').click();
   await expect(page.locator('#emotebtn')).toBeVisible();
