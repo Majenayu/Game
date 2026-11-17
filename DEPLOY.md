@@ -93,3 +93,7 @@ The server stores the whole game database as one JSON row. That is fine for a be
 ## CrazyGames upload folder
 
 Run `npm run crazygames` with `VITE_SERVER_URLS` set to your `wss://` server. It builds the client and fills `craygames/files`, `craygames/photos` and `craygames/videos`. See `craygames/README.md`.
+
+## Poki upload folder
+
+Run `npm run poki` with `VITE_SERVER_URLS` set. It builds with `VITE_PLATFORM=poki` (Poki SDK, ads on) and fills `poki/files`, `poki/photos` and `poki/videos`. `npm run poki:media` makes the screenshots and square video. See `poki/README.md`.

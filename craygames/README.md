@@ -1,4 +1,4 @@
-﻿# CrazyGames upload folder
+# CrazyGames upload folder
 
 | Folder | What to upload |
 | --- | --- |
@@ -13,6 +13,6 @@ The text for the form (title, descriptions, controls, tags) is in `../STORE_TEXT
 $env:VITE_SERVER_URLS = "wss://YOUR-SERVICE.onrender.com"
 npm run crazygames
 ```
-The script refuses localhost or non-wss addresses, builds the client, checks that the server address is inside the build,
+`npm run crazygames` runs `scripts/prepare-upload.mjs crazygames`. It refuses localhost or non-wss addresses, builds the client, checks that the server address is inside the build,
 and refills these three folders. Photos and videos are copied from `e2e/covers` and `e2e/videos`
 (`npm run covers`, `npm run videos`).

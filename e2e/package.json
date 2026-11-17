@@ -6,7 +6,8 @@
   "scripts": {
     "test": "playwright test",
     "covers": "node render-covers.mjs",
-    "videos": "node record-videos.mjs"
+    "videos": "node record-videos.mjs",
+    "poki-shots": "node poki-shots.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

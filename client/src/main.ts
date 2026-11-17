@@ -164,6 +164,12 @@ async function boot(): Promise<void> {
     if (want) platform.gameplayStart();
     else platform.gameplayStop();
   };
+  /** Poki and CrazyGames want audio muted and input off while an ad plays. */
+  const setAdInput = (on: boolean) => {
+    game.input.enabled = on;
+    if (game.input.keyboard) game.input.keyboard.enabled = on;
+    document.body.classList.toggle('ad-playing', !on);
+  };
   const adCallbacks = () => {
     let wasPlaying = false;
     return {
@@ -171,15 +177,18 @@ async function boot(): Promise<void> {
         wasPlaying = sdkPlaying;
         if (wasPlaying) platform.gameplayStop();
         sfx.setPlatformMuted(true);
+        setAdInput(false);
       },
       adFinished: () => {
+        setAdInput(true);
         sfx.setPlatformMuted(platform.muteAudio);
         if (wasPlaying) applyPlaying();
       },
       adError: (error?: unknown) => {
+        setAdInput(true);
         sfx.setPlatformMuted(platform.muteAudio);
         if (wasPlaying) applyPlaying();
-        if (error) console.warn('[CrazyGames ad]', error);
+        if (error) console.warn(`[${platform.name} ad]`, error);
       },
     };
   };
@@ -263,6 +272,15 @@ async function boot(): Promise<void> {
         : UiClass.keycaps()) + '<br />Grab glowing powerups. Highest score wins!',
     );
 
+  /**
+   * Poki: call commercialBreak() whenever the player heads back into gameplay. The first match of a session
+   * starts without one. Poki decides whether an ad actually plays.
+   */
+  let matchesStarted = 0;
+  const breakBeforePlay = async () => {
+    matchesStarted++;
+    if (platform.name === 'poki' && matchesStarted > 1) await showMidgameAd(platform, adCallbacks());
+  };
   const endSession = async () => {
     sessionId++;
     intentionalLeave = true;
@@ -299,6 +317,7 @@ async function boot(): Promise<void> {
   const startDuel = async (online: boolean) => {
     const name = readNick(ui.nickValue());
     await endSession();
+    await breakBeforePlay();
     const mySession = sessionId;
     let src: DuelSource;
     let room: Room | null = null;
@@ -383,6 +402,7 @@ async function boot(): Promise<void> {
   const startOffline = async (rawName: string, mode: ModeId, mapId: string) => {
     const name = readNick(rawName);
     await endSession();
+    await breakBeforePlay();
     offlinePractice = true;
     scene.setSource(
       new OfflineSource(name, loadoutOf(), { mode, mapId }, progress.loadoutInstances(), progress.level.level, offlineExtra()),
@@ -398,6 +418,7 @@ async function boot(): Promise<void> {
   const startTraining = async () => {
     const name = readNick(ui.nickValue());
     await endSession();
+    await breakBeforePlay();
     offlinePractice = true;
     campaignActive = true;
     scene.setSource(
@@ -425,6 +446,7 @@ async function boot(): Promise<void> {
   const startRaid = async () => {
     const name = readNick(ui.nickValue());
     await endSession();
+    await breakBeforePlay();
     campaignActive = true;
     scene.suppressBoard = true;
     const src = new OfflineSource(
@@ -461,6 +483,7 @@ async function boot(): Promise<void> {
   const startLevel = async (level: LevelDef) => {
     const name = readNick(ui.nickValue());
     await endSession();
+    await breakBeforePlay();
     campaignActive = true;
     scene.suppressBoard = true;
     const src = new OfflineSource(
@@ -595,7 +618,7 @@ async function boot(): Promise<void> {
   };
 
   const shareInvite = async (room: Room, serverIndex: number) => {
-    const link = platform.inviteLink({ roomId: room.roomId, server: String(serverIndex) });
+    const link = await platform.inviteLink({ roomId: room.roomId, server: String(serverIndex) });
     if (!link) return ui.toast('Invite link not available');
     try {
       await navigator.clipboard.writeText(link);
@@ -633,6 +656,7 @@ async function boot(): Promise<void> {
   const startOnline = async (rawName: string, target: JoinTarget = {}) => {
     const name = readNick(rawName);
     await endSession();
+    await breakBeforePlay();
     const mySession = sessionId;
     ui.showGame();
     ui.setInviteVisible(false);

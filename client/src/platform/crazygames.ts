@@ -9,7 +9,10 @@
  * listener or inviteLink. Keep it false for the CrazyGames build. Ads stay off through ENABLE_ADS.
  */
 export const BASIC_IMPLEMENTATION = false;
-export const ENABLE_ADS = false;
+/** Build target: 'poki' for the Poki upload, anything else is the CrazyGames / web build. */
+export const IS_POKI = import.meta.env.VITE_PLATFORM === 'poki';
+/** Ads are off for CrazyGames until Full Launch. Poki's SDK is how Poki games earn, so ads are on there. */
+export const ENABLE_ADS = IS_POKI;
 const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
 
 export interface PlatformUser {
@@ -24,7 +27,7 @@ export interface AdCallbacks {
 }
 
 export interface Platform {
-  readonly name: 'crazygames' | 'stub';
+  readonly name: 'crazygames' | 'poki' | 'stub';
   init(): Promise<void>;
   loadingStart(): void;
   loadingStop(): void;
@@ -44,7 +47,7 @@ export interface Platform {
   loadData(key: string): Promise<string | null>;
   saveData(key: string, value: string): void;
   /** Link a friend can open to join this room, or null when unavailable. */
-  inviteLink(params: Record<string, string>): string | null;
+  inviteLink(params: Record<string, string>): string | null | Promise<string | null>;
   onJoinRoom(cb: (params: Record<string, string>) => void): void;
   showMidgameAd(callbacks?: AdCallbacks): Promise<void>;
   showRewardedAd(callbacks?: AdCallbacks): Promise<boolean>;
@@ -264,6 +267,12 @@ class CrazyPlatform implements Platform {
 
 /** Creates the platform. SDK failures fall back to the stub so the game still runs. */
 export async function createPlatform(): Promise<Platform> {
+  if (IS_POKI) {
+    const { PokiPlatform } = await import('./poki');
+    const p = new PokiPlatform();
+    await p.init();
+    return p;
+  }
   if (BASIC_IMPLEMENTATION || !onCrazyGames()) return new StubPlatform();
   const p = new CrazyPlatform();
   try {
