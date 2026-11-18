@@ -46,6 +46,9 @@ import { presentation } from './presentation';
 import { mountSettings } from './ui/settings';
 import { mountJourney } from './ui/journey';
 import './ui/refined-starforge.css?phase=5';
+import './ui/lobby.css';
+import './ui/pages.css';
+import { mountLobbyHero } from './ui/lobbyHero';
 
 /**
  * Removes data from older versions (old save, old nickname). Opening the game with ?reset=1 wipes everything
@@ -82,6 +85,7 @@ async function boot(): Promise<void> {
   const ui = new Ui();
   mountSettings(ui);
   mountJourney(ui, progress);
+  mountLobbyHero(ui, progress);
   const touch = new TouchControls();
 
   const scene = new GameScene();

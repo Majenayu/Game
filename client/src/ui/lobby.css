@@ -1,0 +1,777 @@
+/* ===== Home screen: a game lobby instead of a form =====
+   Layout follows popular arena games: profile and currency on top, your hero in the centre on a lit stage,
+   feature buttons on side rails, one big Play button bottom right. */
+
+#menu.lobby {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  transform: none;
+  overflow: hidden;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  text-align: center;
+  pointer-events: none;
+}
+#menu.lobby[hidden] {
+  display: none;
+}
+#menu.lobby > * {
+  pointer-events: auto;
+}
+#menu.lobby::before,
+#menu.lobby::after {
+  display: none;
+}
+
+/* ---- top bar ---- */
+#menu .lb-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 172px 10px 16px;
+  background: linear-gradient(180deg, rgba(5, 4, 20, 0.92), rgba(5, 4, 20, 0));
+  pointer-events: none;
+}
+#menu .lb-top > * {
+  pointer-events: auto;
+}
+#menu .lb-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 16px 5px 5px;
+  border-radius: 40px;
+  background: rgba(13, 14, 42, 0.88);
+  border: 2px solid #4b3f97;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+#menu .lb-avatar {
+  flex: none;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, #4b3fb5, #120e33);
+  border: 3px solid #ffc93c;
+  box-shadow: 0 0 14px rgba(255, 201, 60, 0.45);
+}
+#menu .lb-avatar img {
+  display: block;
+  width: 170%;
+  margin: -6% 0 0 -35%;
+}
+#menu .lb-who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+}
+#menu #nick {
+  width: 170px;
+  margin: 0;
+  padding: 1px 4px;
+  font-family: var(--f-ui);
+  font-size: 19px;
+  font-weight: 800;
+  text-align: left;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px dashed transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+#menu #nick:hover,
+#menu #nick:focus {
+  border-bottom-color: rgba(255, 255, 255, 0.35);
+  outline: none;
+}
+#menu .lb-who .status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  width: auto;
+}
+#menu .lb-who .lvl {
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1b0f45;
+  background: linear-gradient(180deg, #9fe7ff, #4dd2ff);
+  border: 0;
+  border-radius: 8px;
+}
+#menu .lb-who .xp {
+  width: 150px;
+  height: 8px;
+  margin: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+#menu .lb-who .xp div {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #4dd2ff, #b77dff);
+}
+#menu .lb-brand {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+#menu .lb-brand h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+#menu .lb-brand .sub {
+  margin: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+#menu .lb-cur .coins {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px 5px 5px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffe9a8;
+  background: rgba(13, 14, 42, 0.88);
+  border: 2px solid #7a6420;
+  border-radius: 30px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+#menu .coin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff6c4, #ffc93c 45%, #b07a00);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25), 0 0 10px rgba(255, 201, 60, 0.5);
+}
+
+/* ---- side rails ---- */
+#menu .rail {
+  position: absolute;
+  top: 98px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 3;
+}
+#menu .rail-l {
+  left: 18px;
+}
+#menu .rail-r {
+  right: 18px;
+}
+#menu .rail .tile,
+#menu .moregrid .tile {
+  position: relative;
+  width: 96px;
+  height: 86px;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  --tc: #6c5ad6;
+  --tb: #3b2f9a;
+  --td: #1c1660;
+  background: linear-gradient(180deg, var(--tb), var(--td));
+  border: 2px solid var(--tc);
+  border-radius: 18px;
+  box-shadow: 0 5px 0 rgba(6, 4, 30, 0.9), 0 10px 20px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s;
+}
+#menu .rail .tile:hover,
+#menu .moregrid .tile:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.12);
+}
+#menu .rail .tile:active,
+#menu .moregrid .tile:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgba(6, 4, 30, 0.9), 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+#menu .tile .ic {
+  display: block;
+  margin: 0;
+  font-size: 32px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+}
+#menu .tile .tl {
+  line-height: 1.05;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+#menu .tile .dot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+}
+#menu .tile[data-page='daily'] {
+  --tc: #ffb84d;
+  --tb: #c2621b;
+  --td: #5a2309;
+}
+#menu .tile[data-page='quests'] {
+  --tc: #5ff0d0;
+  --tb: #13806e;
+  --td: #073a35;
+}
+#menu .tile[data-page='spin'] {
+  --tc: #ff7ad9;
+  --tb: #a8268f;
+  --td: #45093d;
+}
+#menu .tile[data-page='shop'] {
+  --tc: #8cff6b;
+  --tb: #2f8f1e;
+  --td: #11400a;
+}
+#menu .tile[data-page='loadout'] {
+  --tc: #7fe3ff;
+  --tb: #1f74b8;
+  --td: #0b2c55;
+}
+#menu .tile[data-page='campaign'] {
+  --tc: #9aa8ff;
+  --tb: #3f49c9;
+  --td: #161b5e;
+}
+#menu .tile[data-page='ranked'] {
+  --tc: #ffd36e;
+  --tb: #b5841a;
+  --td: #4a3208;
+}
+
+/* "More" opens a panel next to the right rail. */
+#menu .moregrid {
+  display: none;
+}
+#menu .moregrid.open {
+  position: absolute;
+  top: 98px;
+  right: 134px;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(4, 96px);
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  background: rgba(12, 12, 40, 0.96);
+  border: 2px solid #6c5ad6;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  animation: lbPop 0.16s ease-out;
+}
+#menu .moregrid.open .tile.more {
+  display: flex;
+}
+#menu #moretile[aria-expanded='true'] {
+  --tc: #fff;
+  filter: brightness(1.2);
+}
+
+/* ---- hero stage ---- */
+#menu .lb-stage {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  transform: translate(-50%, -50%);
+  width: min(40vw, 440px);
+  height: min(64vh, 500px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+#menu .lb-stage::before {
+  content: '';
+  position: absolute;
+  inset: -12% -30% 6%;
+  background: radial-gradient(closest-side at 50% 45%, rgba(124, 92, 255, 0.4), rgba(124, 92, 255, 0.12) 55%, rgba(124, 92, 255, 0) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+#menu .lb-hero {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 84%;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: lbIdle 3.4s ease-in-out infinite;
+}
+#menu .lb-hero img {
+  height: 100%;
+  width: auto;
+  filter: drop-shadow(0 0 22px rgba(98, 221, 244, 0.55)) drop-shadow(0 16px 12px rgba(0, 0, 0, 0.55));
+  transition: transform 0.15s;
+}
+#menu .lb-hero:hover img {
+  transform: scale(1.03);
+}
+#menu .lb-plate {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 10%;
+  width: 72%;
+  height: 70px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(98, 221, 244, 0.6), rgba(98, 221, 244, 0.1) 58%, rgba(98, 221, 244, 0) 72%);
+  box-shadow: 0 0 46px rgba(98, 221, 244, 0.3);
+}
+#menu .lb-plate::after {
+  content: '';
+  position: absolute;
+  inset: 18% 14%;
+  border: 2px solid rgba(160, 235, 255, 0.55);
+  border-radius: 50%;
+}
+#menu .lb-heroname {
+  position: relative;
+  z-index: 3;
+  margin-top: 6px;
+  padding: 6px 20px;
+  border-radius: 14px;
+  background: rgba(13, 14, 42, 0.9);
+  border: 2px solid #4b3f97;
+  pointer-events: auto;
+}
+#menu .lb-heroname b {
+  display: block;
+  font-family: var(--f-display);
+  font-size: 22px;
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+#menu .lb-heroname span {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+/* ---- play ---- */
+#menu .lb-play {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  z-index: 4;
+  width: 310px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+#menu .lb-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-shadow: 0 2px 4px #000;
+}
+#menu .lb-mode b {
+  font-size: 18px;
+  color: #ffe9a8;
+}
+#menu .lb-mode span {
+  font-size: 12px;
+  color: var(--dim);
+}
+#menu #play {
+  width: auto;
+  height: 86px;
+  margin: 0;
+  padding: 0 18px;
+  font-family: var(--f-display);
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #3a1d00;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.55);
+  background: linear-gradient(180deg, #ffe680 0%, #ffbe1a 55%, #f39200 100%);
+  border: 3px solid #fff3b8;
+  border-radius: 20px;
+  box-shadow: 0 7px 0 #9c5600, 0 14px 30px rgba(255, 168, 0, 0.35);
+  animation: lbPulse 2.6s ease-in-out infinite;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+#menu #play:hover {
+  filter: brightness(1.06);
+}
+#menu #play:active {
+  transform: translateY(5px);
+  box-shadow: 0 2px 0 #9c5600, 0 6px 14px rgba(255, 168, 0, 0.35);
+}
+#menu #practice {
+  margin: 0;
+  padding: 8px;
+  font-size: 13px;
+}
+
+/* ---- champion card: compact, bottom left ---- */
+body #champ {
+  position: fixed;
+  left: 18px;
+  right: auto;
+  top: auto;
+  bottom: 22px;
+  transform: none;
+  width: 260px;
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  grid-template-areas: 'art h' 'art nm' 'art ttl' 'f f' 'b b';
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 12px 12px;
+  text-align: left;
+  z-index: 21;
+}
+body #champ[hidden] {
+  display: none;
+}
+body #champ h4 {
+  grid-area: h;
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+body #champ .art {
+  grid-area: art;
+  width: 74px;
+  height: 74px;
+  margin: 0;
+}
+body #champ .art svg {
+  width: 100%;
+  height: 100%;
+}
+body #champ .nm {
+  grid-area: nm;
+  margin: 0;
+  font-size: 22px;
+}
+body #champ .ttl {
+  grid-area: ttl;
+  margin: 0;
+  font-size: 11px;
+}
+body #champ #champfight {
+  grid-area: f;
+  margin: 10px 0 6px;
+  padding: 7px;
+  font-size: 12px;
+}
+body #champ #champbtn {
+  grid-area: b;
+  margin: 0;
+  padding: 5px;
+  font-size: 11px;
+}
+
+/* ---- journey: a small bar under the hero that opens upward ---- */
+#menu #journey {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 5;
+  width: min(520px, 38vw);
+  margin: 0;
+  padding: 6px 14px;
+  transform: translateX(-50%);
+  background: rgba(13, 14, 42, 0.92);
+  border: 2px solid #4b3f97;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+#menu #journey[open] {
+  padding-bottom: 12px;
+}
+#menu .lb-foot {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  transform: translateX(-50%);
+  width: 60vw;
+  font-size: 9px;
+  color: var(--dim);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+@keyframes lbIdle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes lbPulse {
+  0%,
+  100% {
+    box-shadow: 0 7px 0 #9c5600, 0 14px 30px rgba(255, 168, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 7px 0 #9c5600, 0 14px 44px rgba(255, 200, 40, 0.65);
+  }
+}
+@keyframes lbPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- smaller desktops ---- */
+@media (max-width: 1100px) {
+  #menu .lb-brand .sub {
+    display: none;
+  }
+  #menu .lb-brand h1 {
+    font-size: 26px;
+  }
+  #menu .lb-play {
+    width: 260px;
+  }
+  #menu #play {
+    height: 72px;
+    font-size: 36px;
+  }
+}
+
+/* ---- phones in landscape ---- */
+@media (max-height: 520px) {
+  #menu .lb-top {
+    height: 56px;
+    padding: 6px 150px 6px 10px;
+  }
+  #menu .lb-profile {
+    padding: 3px 12px 3px 3px;
+    gap: 7px;
+  }
+  #menu .lb-avatar {
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+  }
+  #menu #nick {
+    width: 130px;
+    font-size: 15px;
+  }
+  #menu .lb-who .xp {
+    width: 100px;
+    height: 6px;
+  }
+  #menu .lb-brand {
+    display: none;
+  }
+  #menu .lb-cur .coins {
+    font-size: 15px;
+    padding: 3px 12px 3px 3px;
+  }
+  #menu .coin {
+    width: 22px;
+    height: 22px;
+  }
+  #menu .rail {
+    top: 64px;
+    gap: 7px;
+  }
+  #menu .rail-l {
+    left: 10px;
+  }
+  #menu .rail-r {
+    right: 10px;
+  }
+  #menu .rail .tile,
+  #menu .moregrid .tile {
+    width: 70px;
+    height: 58px;
+    padding: 3px 2px;
+    gap: 2px;
+    border-radius: 13px;
+    font-size: 10px;
+    box-shadow: 0 3px 0 rgba(6, 4, 30, 0.9);
+  }
+  #menu .tile .ic {
+    font-size: 21px;
+  }
+  #menu .moregrid.open {
+    top: 64px;
+    right: 90px;
+    grid-template-columns: repeat(4, 70px);
+    gap: 7px;
+    padding: 10px;
+  }
+  #menu .lb-stage {
+    top: 56%;
+    width: 40vw;
+    height: 74vh;
+  }
+  #menu .lb-heroname {
+    padding: 3px 12px;
+    margin-top: 2px;
+  }
+  #menu .lb-heroname b {
+    font-size: 15px;
+  }
+  #menu .lb-heroname span {
+    font-size: 10px;
+  }
+  #menu .lb-play {
+    right: 90px;
+    bottom: 12px;
+    width: 190px;
+    gap: 5px;
+  }
+  #menu .lb-mode span {
+    display: none;
+  }
+  #menu .lb-mode b {
+    font-size: 13px;
+  }
+  #menu #play {
+    height: 54px;
+    font-size: 28px;
+    border-radius: 14px;
+  }
+  #menu #practice {
+    padding: 4px;
+    font-size: 11px;
+  }
+  body #champ,
+  #menu #journey,
+  #menu .lb-foot {
+    display: none;
+  }
+}
+
+/* ---- phones in portrait ---- */
+@media (max-width: 650px) {
+  #menu.lobby {
+    width: auto;
+    max-height: none;
+    top: 0;
+    padding: 0;
+    transform: none;
+    overflow: hidden;
+  }
+  #menu .lb-top {
+    height: 64px;
+    padding: 8px 112px 8px 10px;
+  }
+  #menu .lb-brand,
+  #menu .lb-cur {
+    display: none;
+  }
+  #menu #nick {
+    width: 140px;
+    font-size: 16px;
+  }
+  #menu .lb-who .xp {
+    width: 110px;
+  }
+  #menu .lb-stage {
+    top: 36%;
+    width: 78vw;
+    height: 44vh;
+  }
+  #menu .rail {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  #menu .rail-l {
+    bottom: 214px;
+  }
+  #menu .rail-r {
+    bottom: 140px;
+  }
+  #menu .rail .tile,
+  #menu .moregrid .tile {
+    flex: 1;
+    width: auto;
+    height: 64px;
+    font-size: 11px;
+    border-radius: 14px;
+  }
+  #menu .tile .ic {
+    font-size: 24px;
+  }
+  #menu .moregrid.open {
+    top: 76px;
+    left: 10px;
+    right: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+  #menu .lb-play {
+    left: 10px;
+    right: 10px;
+    bottom: 14px;
+    width: auto;
+    gap: 6px;
+  }
+  #menu .lb-mode {
+    display: none;
+  }
+  #menu #play {
+    height: 70px;
+    font-size: 34px;
+  }
+  body #champ,
+  #menu #journey,
+  #menu .lb-foot {
+    display: none;
+  }
+}

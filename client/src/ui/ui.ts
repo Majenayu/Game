@@ -378,7 +378,7 @@ export class Ui {
   }
   /** The main menu shows the most used tiles; More opens the rest and remembers the choice. */
   private initMore(): void {
-    const grid = this.menu.querySelector<HTMLElement>('.grid');
+    const grid = this.menu.querySelector<HTMLElement>('.moregrid');
     const btn = $('moretile');
     if (!grid) return;
     const apply = (open: boolean) => {
