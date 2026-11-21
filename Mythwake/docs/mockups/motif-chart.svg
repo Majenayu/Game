@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" font-family="Trebuchet MS, Verdana, sans-serif">
+  <defs><marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#ffd27a"/></marker></defs>
+  <rect width="1280" height="900" fill="#14112a"/>
+  <text x="640" y="56" font-size="34" font-weight="900" fill="#fff" text-anchor="middle">Motif wheel</text>
+  <text x="640" y="88" font-size="18" fill="#cfcfe6" text-anchor="middle">Arrow = strong against (x1.5). The reverse direction is weak (x0.67). Every icon has its own shape, so colour is never needed.</text><text x="270" y="156" font-size="22" font-weight="900" fill="#ffd27a" text-anchor="middle">Life loop</text><line x1="292" y1="258.1051177665153" x2="369.24355652982143" y2="391.8948822334847" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><line x1="347.24355652982143" y1="430" x2="192.75644347017862" y2="430.00000000000006" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><line x1="170.75644347017862" y1="391.89488223348474" x2="248" y2="258.1051177665153" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><g transform="translate(270 220)">
+    <circle r="26" fill="#1b1630" stroke="#e8603c" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M0 -16 C 6 -8 3 -3 7 -1 C 9 -7 13 -5 12 3 C 12 11 6 15 0 15 C -6 15 -12 11 -12 3 C -12 -4 -8 -6 -6 -11 C -4 -5 -3 -7 0 -16 Z" fill="#e8603c" stroke="#e8603c" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="270" y="184" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Ember</text><g transform="translate(391.24355652982143 430)">
+    <circle r="26" fill="#1b1630" stroke="#4fae4f" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M-12 12 C -14 -6 0 -16 14 -14 C 14 2 4 14 -12 12 Z" fill="#4fae4f" stroke="#4fae4f" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="391.24355652982143" y="484" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Bloom</text><g transform="translate(148.75644347017862 430.00000000000006)">
+    <circle r="26" fill="#1b1630" stroke="#3d8fd1" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M0 -16 C 8 -4 12 2 12 7 A 12 12 0 0 1 -12 7 C -12 2 -8 -4 0 -16 Z" fill="#3d8fd1" stroke="#3d8fd1" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="148.75644347017862" y="484.00000000000006" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Tide</text><text x="1010" y="156" font-size="22" font-weight="900" fill="#ffd27a" text-anchor="middle">Sky loop</text><line x1="1032" y1="258.10511776651526" x2="1109.2435565298215" y2="391.89488223348474" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><line x1="1087.2435565298215" y1="430" x2="932.7564434701786" y2="430.00000000000006" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><line x1="910.7564434701786" y1="391.89488223348474" x2="988" y2="258.1051177665153" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><g transform="translate(1010 220)">
+    <circle r="26" fill="#1b1630" stroke="#9a8a74" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M0 -14 L12 -7 L12 7 L0 14 L-12 7 L-12 -7 Z" fill="#9a8a74" stroke="#9a8a74" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="1010" y="184" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Stone</text><g transform="translate(1131.2435565298215 430)">
+    <circle r="26" fill="#1b1630" stroke="#f2c94c" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M3 -16 L-9 2 L-1 2 L-4 16 L9 -3 L1 -3 Z" fill="#f2c94c" stroke="#f2c94c" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="1131.2435565298215" y="484" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Spark</text><g transform="translate(888.7564434701786 430.00000000000006)">
+    <circle r="26" fill="#1b1630" stroke="#8fd3c9" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M-14 -7 H4 A5 5 0 1 0 -1 -12 M-14 1 H9 A5 5 0 1 1 4 6 M-14 9 H-2" fill="none" stroke="#8fd3c9" stroke-width="3" stroke-linecap="round"/></g>
+  </g><text x="888.7564434701786" y="484.00000000000006" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Gale</text><text x="640" y="190" font-size="22" font-weight="900" fill="#ffd27a" text-anchor="middle">Day and night</text><g transform="translate(560 300)">
+    <circle r="26" fill="#1b1630" stroke="#f29e4c" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M0 -7 A 7 7 0 1 1 0 7 A 7 7 0 1 1 0 -7 Z M0 -16 V -11 M0 11 V 16 M-16 0 H -11 M11 0 H 16 M-11 -11 L -8 -8 M8 8 L 11 11 M-11 11 L -8 8 M8 -8 L 11 -11" fill="none" stroke="#f29e4c" stroke-width="3" stroke-linecap="round"/></g>
+  </g><text x="560" y="354" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Dawn</text><g transform="translate(720 300)">
+    <circle r="26" fill="#1b1630" stroke="#6b5bb5" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M6 -14 A 14 14 0 1 0 6 14 A 10 10 0 1 1 6 -14 Z" fill="#6b5bb5" stroke="#6b5bb5" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="720" y="354" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Dusk</text><line x1="604" y1="290" x2="676" y2="290" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><line x1="676" y1="312" x2="604" y2="312" stroke="#ffd27a" stroke-width="4" marker-end="url(#head)"/><text x="640" y="400" font-size="16" fill="#cfcfe6" text-anchor="middle">Strong against each other.</text><text x="640" y="422" font-size="16" fill="#cfcfe6" text-anchor="middle">Dawn +10% by day, Dusk +10% by night.</text><g transform="translate(640 520)">
+    <circle r="26" fill="#1b1630" stroke="#d8d2c4" stroke-width="3"/>
+    <g transform="scale(1.3)"><path d="M0 -12 A 12 12 0 1 1 0 12 A 12 12 0 1 1 0 -12 Z" fill="#d8d2c4" stroke="#d8d2c4" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="640" y="574" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Plain</text><text x="640" y="604" font-size="16" fill="#cfcfe6" text-anchor="middle">Neutral to all. Plain Verses deal +25% while your Chorus is half full or more.</text><text x="640" y="660" font-size="20" font-weight="800" fill="#fff" text-anchor="middle">Bridges between loops (x1.5)</text><g transform="translate(160 700)">
+    <circle r="17.875" fill="#1b1630" stroke="#3d8fd1" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M0 -16 C 8 -4 12 2 12 7 A 12 12 0 0 1 -12 7 C -12 2 -8 -4 0 -16 Z" fill="#3d8fd1" stroke="#3d8fd1" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="240" y="706" font-size="17" fill="#ffd27a" text-anchor="middle">erodes</text><g transform="translate(320 700)">
+    <circle r="17.875" fill="#1b1630" stroke="#9a8a74" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M0 -14 L12 -7 L12 7 L0 14 L-12 7 L-12 -7 Z" fill="#9a8a74" stroke="#9a8a74" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="160" y="740" font-size="14" fill="#fff" text-anchor="middle">Tide</text><text x="320" y="740" font-size="14" fill="#fff" text-anchor="middle">Stone</text><g transform="translate(560 700)">
+    <circle r="17.875" fill="#1b1630" stroke="#4fae4f" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M-12 12 C -14 -6 0 -16 14 -14 C 14 2 4 14 -12 12 Z" fill="#4fae4f" stroke="#4fae4f" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="640" y="706" font-size="17" fill="#ffd27a" text-anchor="middle">grounds</text><g transform="translate(720 700)">
+    <circle r="17.875" fill="#1b1630" stroke="#f2c94c" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M3 -16 L-9 2 L-1 2 L-4 16 L9 -3 L1 -3 Z" fill="#f2c94c" stroke="#f2c94c" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="560" y="740" font-size="14" fill="#fff" text-anchor="middle">Bloom</text><text x="720" y="740" font-size="14" fill="#fff" text-anchor="middle">Spark</text><g transform="translate(960 700)">
+    <circle r="17.875" fill="#1b1630" stroke="#e8603c" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M0 -16 C 6 -8 3 -3 7 -1 C 9 -7 13 -5 12 3 C 12 11 6 15 0 15 C -6 15 -12 11 -12 3 C -12 -4 -8 -6 -6 -11 C -4 -5 -3 -7 0 -16 Z" fill="#e8603c" stroke="#e8603c" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="1040" y="706" font-size="17" fill="#ffd27a" text-anchor="middle">eats the air</text><g transform="translate(1120 700)">
+    <circle r="17.875" fill="#1b1630" stroke="#8fd3c9" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M-14 -7 H4 A5 5 0 1 0 -1 -12 M-14 1 H9 A5 5 0 1 1 4 6 M-14 9 H-2" fill="none" stroke="#8fd3c9" stroke-width="3" stroke-linecap="round"/></g>
+  </g><text x="960" y="740" font-size="14" fill="#fff" text-anchor="middle">Ember</text><text x="1120" y="740" font-size="14" fill="#fff" text-anchor="middle">Gale</text><g transform="translate(160 786)">
+    <circle r="17.875" fill="#1b1630" stroke="#9a8a74" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M0 -14 L12 -7 L12 7 L0 14 L-12 7 L-12 -7 Z" fill="#9a8a74" stroke="#9a8a74" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="240" y="792" font-size="17" fill="#ffd27a" text-anchor="middle">smothers</text><g transform="translate(320 786)">
+    <circle r="17.875" fill="#1b1630" stroke="#e8603c" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M0 -16 C 6 -8 3 -3 7 -1 C 9 -7 13 -5 12 3 C 12 11 6 15 0 15 C -6 15 -12 11 -12 3 C -12 -4 -8 -6 -6 -11 C -4 -5 -3 -7 0 -16 Z" fill="#e8603c" stroke="#e8603c" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="160" y="826" font-size="14" fill="#fff" text-anchor="middle">Stone</text><text x="320" y="826" font-size="14" fill="#fff" text-anchor="middle">Ember</text><g transform="translate(560 786)">
+    <circle r="17.875" fill="#1b1630" stroke="#f2c94c" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M3 -16 L-9 2 L-1 2 L-4 16 L9 -3 L1 -3 Z" fill="#f2c94c" stroke="#f2c94c" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="640" y="792" font-size="17" fill="#ffd27a" text-anchor="middle">charges</text><g transform="translate(720 786)">
+    <circle r="17.875" fill="#1b1630" stroke="#3d8fd1" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M0 -16 C 8 -4 12 2 12 7 A 12 12 0 0 1 -12 7 C -12 2 -8 -4 0 -16 Z" fill="#3d8fd1" stroke="#3d8fd1" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="560" y="826" font-size="14" fill="#fff" text-anchor="middle">Spark</text><text x="720" y="826" font-size="14" fill="#fff" text-anchor="middle">Tide</text><g transform="translate(960 786)">
+    <circle r="17.875" fill="#1b1630" stroke="#8fd3c9" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M-14 -7 H4 A5 5 0 1 0 -1 -12 M-14 1 H9 A5 5 0 1 1 4 6 M-14 9 H-2" fill="none" stroke="#8fd3c9" stroke-width="3" stroke-linecap="round"/></g>
+  </g><text x="1040" y="792" font-size="17" fill="#ffd27a" text-anchor="middle">strips</text><g transform="translate(1120 786)">
+    <circle r="17.875" fill="#1b1630" stroke="#4fae4f" stroke-width="3"/>
+    <g transform="scale(0.89375)"><path d="M-12 12 C -14 -6 0 -16 14 -14 C 14 2 4 14 -12 12 Z" fill="#4fae4f" stroke="#4fae4f" stroke-width="1.5" stroke-linecap="round"/></g>
+  </g><text x="960" y="826" font-size="14" fill="#fff" text-anchor="middle">Gale</text><text x="1120" y="826" font-size="14" fill="#fff" text-anchor="middle">Bloom</text><text x="640" y="878" font-size="16" fill="#cfcfe6" text-anchor="middle">Each loop Motif is strong against 2 and weak against 2. Same Motif against itself: x0.8. Full table in docs/MOTIFS.md.</text></svg>
