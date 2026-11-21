@@ -1,0 +1,30 @@
+{
+  "name": "talewild",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Talewild: a single-player creature-adventure RPG for the browser",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node tools/size-report.mjs dist",
+    "build:crazygames": "tsc --noEmit && vite build --mode crazygames && node tools/size-report.mjs dist",
+    "preview": "vite preview --port 4180 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test --project=smoke",
+    "shots": "playwright test --project=shots",
+    "mockups": "node docs/mockups/make-mockups.mjs"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "typescript": "5.9.3",
+    "vite": "6.4.6",
+    "vitest": "3.2.7"
+  }
+}
