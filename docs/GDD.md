@@ -1,8 +1,7 @@
-# Lanternfall: Game Design Document (Phase 0 draft)
+# Sunfetch: Game Design Document (Phase 0, decisions locked)
 
-Status: concept lock draft, waiting for the owner's decisions in [DECISIONS.md](DECISIONS.md).
-"Lanternfall" and the character names are working names. Several clash with existing games (see DECISIONS.md, D1 and
-D3). All numbers below are first-pass tuning values; Phase 6 balance bots will change them.
+Status: concept locked. The owner's answers are recorded in [DECISIONS.md](DECISIONS.md).
+All numbers below are first-pass tuning values; Phase 6 balance bots will change them.
 
 ---
 
@@ -63,7 +62,7 @@ faster enemies and higher risk. The player keeps choosing between pushing for re
 - You keep your Flames and your **banked** Embers. Embers you carry but have not banked drop by half.
 - Embers are banked at Wells, at the Hearth and when the run ends.
 - Each run has a number of Sparks (lives): Cozy 5, Normal 3, Radiant 1. The run ends when the last Spark is used.
-  This rule is **DECISION D5**.
+  Decided in D5.
 - Rewarded ad option: once per run, revive in place at Light 50 without using a Spark.
 
 ### 2.3 Readability rules (never broken)
@@ -91,10 +90,10 @@ ad starts. One-handed mode puts the Charm on a long-press of the move finger.
 
 ## 4. Run structure
 
-### 4.1 One run = one world (recommended, DECISION D4)
+### 4.1 One run = one world (decided in D4)
 
-The brief asks for runs of 6 to 10 minutes **and** five worlds of six stages, which cannot fit in one run. The
-recommended answer: a run covers one world. The five worlds form the campaign on the star map. Endless Dusk later
+The brief asks for runs of 6 to 10 minutes **and** five worlds of six stages, which cannot fit in one run. Decision:
+a run covers one world. The five worlds form the campaign on the star map. Endless Dusk later
 chains worlds into one long run.
 
 | Step | Stage                                | Target time | Notes                                                   |
@@ -129,15 +128,14 @@ Hold the Well (survive 45 s), Chase the Thief (catch a Glint Thief), Carry the S
 
 | # | Spirit   | Shape and feel              | Max Light | Speed | Signature passive                                              | Unlock          |
 | - | -------- | --------------------------- | --------- | ----- | -------------------------------------------------------------- | --------------- |
-| 1 | Wick     | Round candle flame, curious | 100       | 100%  | Wells refill 30% faster                                        | Start           |
+| 1 | Tindle     | Round candle flame, curious | 100       | 100%  | Wells refill 30% faster                                        | Start           |
 | 2 | Sparrow  | Bird-shaped flame, quick    | 80        | 120%  | Light is a narrow beam in the move direction; tap to dash       | Clear World 1   |
-| 3 | Ember    | Heavy coal golem, slow      | 130       | 80%   | Huge slow aura; contact deals damage                           | 400 Embers      |
+| 3 | Clinker  | Heavy coal golem, slow      | 130       | 80%   | Huge slow aura; contact deals damage                           | 400 Embers      |
 | 4 | Prism    | Crystal sprite              | 90        | 100%  | Light splits into 3 orbiting shards steered by movement         | Clear World 2   |
 | 5 | Moth     | Ghost moth, fragile         | 75        | 110%  | Passes through weak shadows; steals 3 Light per kill            | Find 6 Souls    |
 | 6 | Flare*   | Pulsing star                | 100       | 100%  | Light pulses on a beat; hits on the beat deal double damage     | Finish the game |
 
-\* The brief calls this Spirit "Nova". Nova is already a character in Orb Arena in this workspace, and the brief forbids
-reusing names, so it is renamed. See D3.
+\* Called "Nova" in the brief; renamed because Nova is a character in Orb Arena. See D3.
 
 Every Spirit has idle, move, attack, hit, death, special and win animations, 4 emotes (happy, scared, proud, sleepy),
 and a one-paragraph bio (in STORY.md).
@@ -151,7 +149,7 @@ and a one-paragraph bio (in STORY.md).
 | Old Lamp    | Mentor at the Hearth. Gentle and funny, explains the world in short lines                    |
 | Cinder      | Rival spirit who wants the last sun for herself. Meets you 3 times, is the World 4 boss      |
 | Tolliver    | Shy moth shopkeeper. Sells Charms and Relics for Embers at the Hearth and in Shop rooms       |
-| The Hush    | The antagonist. A quiet, lonely darkness that wants light so it can finally see its own shape |
+| The Quiet    | The antagonist. A quiet, lonely darkness that wants light so it can finally see its own shape |
 
 ---
 
@@ -163,7 +161,7 @@ and a one-paragraph bio (in STORY.md).
 | 2 | Glass Caverns    | Violet and ice blue crystals     | Falling shards; mirror walls that bounce beams  | Geode Golem    | Mirror Queen    |
 | 3 | Drowned Bell     | Teal water, brass bells          | Currents push you; tolling waves (bubbles are safe) | Lantern Fish | The Tide Choir |
 | 4 | Ash Orchard      | Charcoal and ember orange        | Fire spreads if your radius is wide; ash clouds | Charred Stag   | Cinder's Crown  |
-| 5 | The Silent Spire | Monochrome; colour returns as you win | Silence zones (no Charms); grey zones (extra drain) | Hollow Jester | The Hush |
+| 5 | The Silent Spire | Monochrome; colour returns as you win | Silence zones (no Charms); grey zones (extra drain) | Hollow Jester | The Quiet |
 
 Each world: 6 stages, at least 10 room layouts, 5 enemy types plus shared ones, 2 hazards, 1 secret room with a Lost
 Soul, its own music loop and a boss variant.
@@ -176,7 +174,7 @@ Soul, its own music loop and a boss variant.
 | Mirror Queen    | 3      | Splits into 3 copies; only the real one casts a shadow; shard fans; mirror beam sweep   | Reading light and shadow   |
 | The Tide Choir  | 2      | Wave rings from three singers; safe bubbles appear; current changes direction           | Rhythm and safe pockets    |
 | Cinder's Crown  | 2      | Cinder races around lighting fires; phase 2 she steals your radius for 5 s              | Managing radius size       |
-| The Hush        | 3      | Darkness rings, silence zones, mirrored Charms; final phase is a light puzzle (see STORY) | Everything, then mercy     |
+| The Quiet        | 3      | Darkness rings, silence zones, mirrored Charms; final phase is a light puzzle (see STORY) | Everything, then mercy     |
 
 ---
 
@@ -330,7 +328,7 @@ come from Tolliver and the Lighthouse.
 | Dash             | 3 s      | A short dash with brief invulnerability                                |
 | Lantern Toss     | 10 s     | Throw your lantern; it lights the landing area for 4 s                 |
 | Sanctuary        | 20 s     | Place a small Well for 6 s                                             |
-| Time Hush        | 25 s     | Shadows slow to 30% for 3 s                                            |
+| Time Still        | 25 s     | Shadows slow to 30% for 3 s                                            |
 | Flare Burst      | 12 s     | Three quick bursts around you                                          |
 | Beam             | 14 s     | A 1.5 s beam in the move direction                                     |
 | Glow Rope        | 12 s     | Pull nearby enemies into your radius                                   |
@@ -475,7 +473,7 @@ Flame pick: the cards wiggle; first telegraph: a short slow-motion).
 against deep indigo and teal. Round friendly forms for allies, jagged spiky forms for shadows. Everything is drawn in
 code (SVG and Canvas) and baked into textures at load. Tween-based animation with squash, stretch and secondary motion.
 Lighting is the hero: the world is dark, your light reveals it, shadows outside the light are eyes only. The palette is
-**DECISION D2** (mockups in `docs/mockups/`).
+palette A, Paper Lantern (D2, mockup in `docs/mockups/palette-A.png`).
 
 **Juice:** hit-stop 40 to 80 ms on heavy hits, screen shake (can be turned off), bloom flicker on damage, damage numbers,
 combo counter, camera zoom pulses on boss phase changes, particles under a global cap, squash on button press, number
@@ -498,9 +496,9 @@ controls.
 
 ---
 
-## 19. Technical plan (DECISION D6)
+## 19. Technical plan (decided in D6)
 
-- **Stack (recommended):** TypeScript, Vite, Phaser 3. A pure TypeScript simulation (`src/sim`) for combat, loot and
+- **Stack:** TypeScript, Vite, Phaser 3. A pure TypeScript simulation (`src/sim`) for combat, loot and
   balance, so it can be unit-tested and run headless for balance bots.
 - **Structure:** `src/core` (loop, input, save, i18n, audio), `src/sim` (rules), `src/content` (typed data tables for
   Spirits, enemies, Flames, worlds, story), `src/render` (art generation and effects), `src/scenes`, `src/ui`,
@@ -513,8 +511,11 @@ controls.
   users, localStorage for guests.
 - **Size budget:** our own target is under 8 MB initial download. CrazyGames today requires an initial download of
   50 MB or less, and 20 MB or less for the mobile homepage
-  ([CrazyGames technical requirements](https://docs.crazygames.com/requirements/technical/)). Worlds and music
-  lazy-load.
+  ([CrazyGames technical requirements](https://docs.crazygames.com/requirements/technical/)), and 250 MB in total.
+  Worlds, music and story art lazy-load from folders named `lazy/`.
+- **Build size check:** `scripts/check-size.mjs <build-dir>` fails the build (exit code 1) when the initial download
+  is over 8 MB (our limit), 20 MB (CrazyGames mobile homepage) or 50 MB (CrazyGames hard limit), or the total is over
+  250 MB. Phase 1 runs it after every build for every platform folder and saves the size report next to the build.
 - **Builds:** `dist/crazygames`, `dist/poki`, `dist/itch`, each with its SDK wrapper and a size report.
 
 ---
@@ -530,7 +531,7 @@ pick, first boss, run length, quit points, day-1 return. No personal data.
 
 | Risk                                                         | Plan                                                              |
 | ------------------------------------------------------------ | ----------------------------------------------------------------- |
-| Name clashes (title and main characters)                     | Owner picks new names in Phase 0 (D1, D3)                         |
+| Name clashes (title and main characters)                     | Renamed in D1 and D3; owner does a trademark check before launch  |
 | Content volume (60 Flames, 30 enemies, 5 bosses) is large    | Data tables, shared behaviours, build World 1 fully first         |
 | Darkness and glow cost on low-end phones                     | One render texture, quality levels, test early on a real device   |
 | Auto-attack games can feel passive                           | Positioning, Light risk and Charms carry the skill; bots measure it |

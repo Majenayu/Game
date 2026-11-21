@@ -40,7 +40,20 @@ checked by eye.
 - Content volume is large; the plan is data tables and building World 1 fully before the rest.
 - Darkness rendering on low-end phones is unproven until Phase 1 runs on a device.
 
+## Update after the owner's decisions
+
+- All decisions recorded in `docs/DECISIONS.md`: title **Sunfetch**, palette A, renames (Tindle, The Quiet, Clinker,
+  Time Still, Flare), one world per run, lives 5/3/1, TypeScript + Vite + Phaser 3, own GitHub repo, player chooses
+  Cinder's side, secret ending at 10 of 12 Souls. The studio name is still open.
+- GDD and STORY updated to the new names and rules.
+- `docs/ASSETS.md` now has the list of our original names (with what they replace) and the Credits plan.
+- New `scripts/check-size.mjs` with 5 unit tests (`node --test scripts/check-size.test.mjs`, all pass). It enforces
+  the 8 MB own target and the CrazyGames limits (20 MB mobile homepage, 50 MB initial, 250 MB total).
+- Name check: no game called Sunfetch found on CrazyGames, Steam, itch.io or Google Play; a South African solar
+  installer uses "Sunfetch Tech". A trademark search is still the owner's job.
+
 ## Next step
 
-Owner answers D1 to D8 in `docs/DECISIONS.md`. Then Phase 1: the vertical slice (project setup, Wick, Hollow Meadow
-rooms 1 to 3, the Light mechanic, 6 enemies, 10 Flames, Thornback, basic UI, music and SFX).
+1. Owner: send the GitHub URL for the new repo and the studio name.
+2. Phase 1: the vertical slice (project setup, Tindle, Hollow Meadow rooms 1 to 3, the Light mechanic, 6 enemies,
+   10 Flames, Thornback, basic UI, music and SFX), with the size check wired into the build.
