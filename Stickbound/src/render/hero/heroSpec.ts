@@ -4,7 +4,7 @@
 export const REF_H = 142;
 
 export const SPEC = {
-  head: 0.115, // head RADIUS (diameter 0.23 H)
+  head: 0.11, // head RADIUS (diameter 0.23 H)
   chest: 0.2, // torso width at the shoulders
   hip: 0.15, // torso width at the hips
   limb: 0.09, // limb thickness (fill)

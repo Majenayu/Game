@@ -43,3 +43,19 @@ Images: docs/reference-art/compare-v4/ (side by side and 50% overlay, same size 
 | Readability at fight size | 4 | 4 |
 
 Still NOT PASSED. Biggest remaining gaps: the sheets' arms and torso form a wider silhouette than ours; Fire's super flame edge is jagged and polygonal; Lightning's hair is a comb of spikes, not the sheet's bold swept shape; super bolts are straighter and thinner than the sheet's glowing clusters.
+
+## Hybrid renderer, Lightning (compare-v5: image parts from the owner's kit on code-drawn tubes)
+
+Images: docs/reference-art/compare-v5/ (side by side, 50% overlay, fight screenshots at 1366x768 and 844x390). The overlay shows head, visor and hair within a few pixels of the sheet.
+
+| Score | Lightning it.1 |
+| --- | --- |
+| Proportions | 4 |
+| Outline (tube colour and width sampled from the head image) | 4 |
+| Fill (#0B0D17, no tint) | 4 |
+| Face (kit heads: normal, attack/hurt, knocked out) | 4 |
+| Hair (kit hair is cream with a yellow edge; the sheet's figures show dark spiky hair) | 3 |
+| Pose | 3 |
+| Effects (bolts thinner and straighter than the sheet) | 3 |
+
+NOT PASSED yet: hair colour differs from the sheet figures (it follows the kit), arms and torso of the sheet are slimmer with longer swing, bolts need more glow bursts. Fire has no parts kit yet; it keeps the code-drawn head.

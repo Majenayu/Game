@@ -8,7 +8,8 @@ import { drawHands, drawHat, drawSuit, drawTech } from '../rig';
 import { BODIES } from '../../content/looks';
 import { FILL, REF_H, SPEC, STYLE } from './heroSpec';
 import { fireAura, fireHead } from './fire';
-import { lightningAura, lightningHead } from './lightning';
+import { getParts, type PartSet } from './parts';
+import { lightningArcs, lightningAura, lightningHead } from './lightning';
 
 export const NEW_RENDERER = new Set<string>(['fire', 'lightning']);
 
@@ -106,12 +107,17 @@ export function drawHero(pen: Pen, j: Joints, face: number, s: number, o: DrawOp
   const sp = STYLE[style];
   const H = REF_H * s;
   const a = o.alpha ?? 1;
-  const neon = o.element;
-  const hot = o.elementLight;
+  const ps = o.el ? getParts(o.el) : null;
+  const img = !!(ps && pen.part);
+  const base = img ? ps!.frames.head_normal!.outline : o.element;
+  const neon = o.flash ? mixc(base, 0xffffff, 0.7) : base;
+  const hot = img ? mixc(base, 0xffffff, 0.55) : o.elementLight;
   const cast = o.aura >= 1 ? 1 : 0;
   const lw = SPEC.limb * H * sp.limb * (o.weight ?? 1);
-  const ow = SPEC.outline * H;
   const r = SPEC.head * H * [1, 1.08, 0.95, 0.9][o.look.head % 4]!;
+  // image parts: the tube outline matches the outline drawn in the head image (scaled to the head size), within limits
+  const hf = img ? ps!.frames.head_normal! : null;
+  const ow = hf ? Math.max(0.011 * H, Math.min(0.019 * H, (hf.outlinePx * r * 2.1) / hf.w)) : SPEC.outline * H;
   const cloth = o.cloth ?? [];
   // head sits directly on the torso (no neck)
   const hx = j.neck[0] + (j.head[0] - j.neck[0]) * 0.7;
@@ -132,20 +138,20 @@ export function drawHero(pen: Pen, j: Joints, face: number, s: number, o: DrawOp
   const arm = (sh: V2, e0: V2, h0: V2): Shape[] => {
     const e: V2 = [sh[0] + (e0[0] - sh[0]) * 1.22, sh[1] + (e0[1] - sh[1]) * 1.22];
     const h: V2 = [sh[0] + (h0[0] - sh[0]) * 1.22, sh[1] + (h0[1] - sh[1]) * 1.22];
-    return [
-      { k: 'tube', pts: curve(sh, e, h, 8), w: lw, skip: 2 },
-      { k: 'dot', x: h[0], y: h[1], r: lw * SPEC.hand * 0.5 },
-    ];
+    const out: Shape[] = [{ k: 'tube', pts: curve(sh, e, h, 8), w: lw, skip: 2 }];
+    if (!img) out.push({ k: 'dot', x: h[0], y: h[1], r: lw * SPEC.hand * 0.5 });
+    else hands.push(h);
+    return out;
   };
+  const hands: V2[] = [];
   const leg = (p: V2, k: V2, f: V2): Shape[] => {
     const ft: V2 = [f[0], f[1] - lift];
-    return [
-      { k: 'tube', pts: curve(p, k, ft, 8), w: lw, skip: 0 },
-      { k: 'tube', pts: [ft, [ft[0] + face * lw * SPEC.toe, ft[1]]], w: lw, skip: 0 },
-    ];
+    const out: Shape[] = [{ k: 'tube', pts: curve(p, k, ft, 8), w: lw, skip: 0 }];
+    if (!img) out.push({ k: 'tube', pts: [ft, [ft[0] + face * lw * SPEC.toe, ft[1]]], w: lw, skip: 0 });
+    return out;
   };
-  const torsoW = SPEC.hip * H * sp.torso;
-  const chestW = SPEC.chest * H * sp.torso;
+  const torsoW = lw * 1.25;
+  const chestW = lw * 1.25;
   const torso: Shape = { k: 'taper', a: j.pelvis, b: [j.neck[0], j.neck[1] + r * 0.2], w0: torsoW, w1: chestW };
 
   // glows along the limbs and torso (baked sprites, no additive stroke overlap)
@@ -164,6 +170,14 @@ export function drawHero(pen: Pen, j: Joints, face: number, s: number, o: DrawOp
   layer(c, arm(sA, j.aEl, j.aHand), fill);
   if (style === 'striker') strikerBlades(c);
 
+  if (img && ps) {
+    heroParts(c, ps, hands);
+    if (el === 'lightning') lightningArcs(c);
+    if (o.look.suit) drawSuit(pen, j, s, lw, o, neon, hot, a);
+    if (el === 'lightning') lightningAura(c, 'front');
+    return;
+  }
+
   // chest core
   core(c);
 
@@ -174,7 +188,6 @@ export function drawHero(pen: Pen, j: Joints, face: number, s: number, o: DrawOp
   pen.circle(hx, hy, r + ow, el === 'lightning' ? 0x39c8ff : neon, null, 0, a);
   pen.circle(hx, hy, r + SPEC.hot * H, el === 'lightning' ? 0xbff2ff : hot, null, 0, a);
   pen.circle(hx, hy, r, fill, null, 0, a);
-  if (o.teamColor !== undefined) pen.circle(hx, hy, r + ow + lw * 0.45, null, o.teamColor, lw * 0.3, a * 0.9);
   if (el === 'fire') fireHead(c);
   else if (el === 'lightning') lightningHead(c);
 
@@ -268,4 +281,57 @@ function strikerBlades(c: HC): void {
     pen.poly([base1[0] - nx * bw * 0.3, base1[1] - ny * bw * 0.3, tip[0], tip[1], base2[0] + nx * bw * 0.2, base2[1] + ny * bw * 0.2], c.hot, 0.95 * a);
   }
   pen.add?.(false);
+}
+
+/** Image parts on the rig: feet on the ankles, fists on the hands, core on the chest, head with a state face, ear disc, hair. */
+function heroParts(c: HC, ps: PartSet, hands: V2[]): void {
+  const { pen, j, H, a, face, back, r, lw } = c;
+  const fr = ps.frames;
+  const glow = c.o.flash ? 1 : 0.55;
+  const part = pen.part!.bind(pen);
+  // feet: the boot's shaft sits over the end of the leg, the toe points forward
+  const foot = fr.foot;
+  if (foot) {
+    const fh = 0.13 * H;
+    const fw = fh * (foot.w / foot.h);
+    for (const [kn, ft] of [[j.bKn, j.bFoot], [j.aKn, j.aFoot]] as [V2, V2][]) {
+      const tilt = -Math.atan2(ft[0] - kn[0], ft[1] - kn[1]) * 0.5;
+      part(ps, 'foot', ft[0] + face * fw * 0.3, ft[1] - fh * 0.5 + lw * 0.12, fw, fh, tilt, face < 0, a, glow * 0.6);
+    }
+  }
+  // fists
+  const fist = fr.fist;
+  if (fist) {
+    const fw = lw * 1.75;
+    const fh = fw * (fist.h / fist.w);
+    for (const h of hands) part(ps, 'fist', h[0], h[1], fw, fh, 0, face < 0, a, glow * 0.6);
+  }
+  // chest core
+  const core = fr.core;
+  if (core) {
+    const cx = j.neck[0] + (j.pelvis[0] - j.neck[0]) * SPEC.coreAt;
+    const cy = j.neck[1] + (j.pelvis[1] - j.neck[1]) * SPEC.coreAt;
+    const d = (c.cast ? 0.24 : 0.125) * H * (0.95 + 0.05 * Math.sin(c.t * 8));
+    part(ps, 'core', cx, cy, d, d * (core.h / core.w), c.t * 0.4, false, a, c.cast ? 1 : 0.7);
+  }
+  // head: the face follows the state (normal, attack/hurt, knocked out)
+  const e = c.o.expression;
+  const name = e === 'dizzy' ? 'head_ko' : e === 'angry' || e === 'determined' || e === 'hurt' || e === 'shocked' || e === 'scared' ? 'head_attack' : 'head_normal';
+  const hf = fr[name] ?? fr.head_normal;
+  if (hf) {
+    const d = r * 2.1;
+    const tilt = Math.atan2(j.head[0] - j.neck[0], -(j.head[1] - j.neck[1]));
+    part(ps, fr[name] ? name : 'head_normal', c.hx, c.hy, d, d * (hf.h / hf.w), tilt, face < 0, a, glow);
+    const ear = fr.ear;
+    if (ear) {
+      const ew = d * 0.24;
+      part(ps, 'ear', c.hx + back * d * 0.42, c.hy + d * 0.02, ew, ew * (ear.h / ear.w), tilt, face > 0, a, glow * 0.5);
+    }
+    const hair = fr.hair;
+    if (hair) {
+      const hw = d * 1.15;
+      const hh = hw * (hair.h / hair.w);
+      part(ps, 'hair', c.hx + back * d * 0.04, c.hy - d * 0.2 - hh * 0.45, hw, hh, tilt, face > 0, a, glow * 0.7);
+    }
+  }
 }

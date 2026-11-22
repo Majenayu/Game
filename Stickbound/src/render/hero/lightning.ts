@@ -36,7 +36,7 @@ function bolt(c: HC, x0: number, y0: number, x1: number, y1: number, segs: numbe
 }
 
 export function lightningHead(c: HC): void {
-  const { pen, hx, hy, r, face, back, a, o, t, H } = c;
+  const { pen, hx, hy, r, face, back, a, o, t } = c;
   const f = face;
   // swept spiky hair: dark fill, yellow outline
   const tipU = [0.8, 0.4, 0.0, -0.4, -0.8];
@@ -111,7 +111,12 @@ export function lightningHead(c: HC): void {
     for (const u of [-0.4, 0, 0.4]) pen.line(gx + u * wide * r, gy - r * 0.02, gx + u * wide * r, gy + r * 0.2 * (1 - u * u), r * 0.035, 0x1a1a2a, 0.85 * a);
   }
 
-  // crackling arcs over the body
+  lightningArcs(c);
+}
+
+/** crackling arcs jumping over the limbs (also drawn with the image-part head) */
+export function lightningArcs(c: HC): void {
+  const { pen, o, t, H, a } = c;
   const act = c.cast ? 6 : o.aura > 0.3 ? 2 : 0;
   const fr = Math.floor(t * 20);
   pen.add?.(true);

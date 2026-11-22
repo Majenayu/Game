@@ -61,3 +61,10 @@ The owner's autonomous build directive says: never ask, pick the best option, lo
 - Already in src/render/hero/: capsule limbs with round caps, glow then outline then fill passes, depth groups so front limbs keep their outline. Added: fill #0B0D17 with no element tint, idle/stride/punchWide poses with weight and feet on the ground.
 - Not taken: one visor for all heroes, triangle hair, Gemini bone lengths and pose numbers.
 - Fire ribbon tails are about 0.5 H long like the sheet, not the 1.2 H in the directive (the sheet wins).
+
+## D-art5: hybrid hero renderer
+- Parts are drawn through Pen.part (Phaser: pooled images at depth 3 above the Graphics layer, so parts sit above the body and below additive effects; Canvas: drawImage). Back and front fists both draw above the body.
+- Face states: normal (idle, walk, happy), attack (angry, determined, hurt, shocked), knocked out (dizzy). The kit has no separate hurt face, so hurt uses the attack face.
+- Tube outline colour is sampled from the head image; its width is the head image outline scaled to the head size, clamped to 0.011 to 0.019 H so it stays readable.
+- Camera: max zoom cap raised from 1.3x to 1.75x of the fit zoom so fighters are about 30% of the screen height; fighters far apart still fit.
+- Legs are 0.43 to 0.44 H (rig lengths unchanged), a little short of the 0.45 H target.

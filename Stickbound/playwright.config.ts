@@ -22,6 +22,7 @@ export default defineConfig({
     { name: 'smoke', testMatch: /smoke\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
     { name: 'firstrun', testMatch: /firstrun\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
     { name: 'herocmp', testMatch: /herocmp\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1400, height: 800 }, deviceScaleFactor: 1 } },
+    { name: 'herofight', testMatch: /herofight\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'shots', testMatch: /shots\.spec\.ts/ },
     { name: 'diag-headless', testMatch: /diag\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'arenas', testMatch: /(arenas|diag|rigs)\.spec\.ts/, use: { ...devices['Desktop Chrome'], channel: 'chrome', headless: false } },

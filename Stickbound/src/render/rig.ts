@@ -173,6 +173,8 @@ export interface DrawOpts {
   cloth?: { x: number; y: number }[];
   /** recoloured outline for team identity (optional) */
   teamColor?: number;
+  /** brighten the outline for 2 frames on a hit */
+  flash?: boolean;
   zombie?: boolean;
   time: number;
   /** line weight multiplier (pulses during casts) */
@@ -734,11 +736,6 @@ function drawSignature(pen: Pen, j: Joints, face: number, s: number, r: number, 
     }
   }
 }
-/** a mixed toward b by k (0..1) */
-function tint(a: number, b: number, k: number): number {
-  const m = (sh: number) => Math.round(((a >> sh) & 255) * (1 - k) + ((b >> sh) & 255) * k) << sh;
-  return m(16) | m(8) | m(0);
-}
 function ellipseRing(pen: Pen, cx: number, cy: number, rx: number, ry: number, w: number, c: number, a: number): void {
   let px = cx + rx;
   let py = cy;
@@ -776,7 +773,7 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   if (o.el && !o.zombie && !o.boss && !LEGACY_ART && NEW_RENDERER.has(o.el)) return drawHero(pen, j, face, s, o);
   const style = o.style ?? 'classic';
   // the default body takes a faint tint of the element, as on the sheets (bronze earth, violet gravity, teal time)
-  const body = o.zombie ? 0x0e1a10 : o.el && o.look.body === 0 ? tint(BODIES[0]!, o.element, 0.12) : BODIES[o.look.body % BODIES.length]!;
+  const body = o.zombie ? 0x0e1a10 : BODIES[o.look.body % BODIES.length]!;
   const wMul = style === 'striker' ? 0.86 : style === 'warden' ? 1.16 : 1;
   const w = THICKNESS[o.look.thick % THICKNESS.length]! * s * (o.weight ?? 1) * 1.22 * wMul;
   const a = o.alpha ?? 1;
@@ -790,7 +787,7 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   // aura glow
   if (o.aura > 0 && pen.glow) {
     pen.add?.(true);
-    pen.glow(j.pelvis[0], j.pelvis[1] - 18 * s, (62 + 20 * cast) * s, neon, (0.18 + 0.12 * cast) * o.aura * a);
+    pen.glow(j.pelvis[0], j.pelvis[1] - 18 * s, (38 + 20 * cast) * s, neon, (0.07 + 0.1 * cast) * o.aura * a);
     pen.add?.(false);
   }
   // Warden: an orbiting barrier of light shards behind the body
@@ -828,7 +825,7 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   const group = (segs: [V2, V2, number][]) => {
     if (pen.add) {
       pen.add(true);
-      for (const [p1, p2, k] of segs) pen.line(p1[0], p1[1], p2[0], p2[1], w * k + ow * 2 + 7 * s, neon, 0.16 * a);
+      for (const [p1, p2, k] of segs) pen.line(p1[0], p1[1], p2[0], p2[1], w * k + ow * 2 + 5 * s, neon, 0.07 * a);
       pen.add(false);
     }
     for (const [p1, p2, k] of segs) pen.line(p1[0], p1[1], p2[0], p2[1], w * k + ow * 2, neon, a);
@@ -892,7 +889,7 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   const cy = (j.pelvis[1] + j.neck[1] * 2.2) / 3.2;
   const cr = w * (o.boss ? 1.1 : 0.85) * (1 + cast * 0.5);
   pen.add?.(true);
-  pen.glow?.(cx, cy, (12 + 26 * cast + 10 * mp) * s, neon, (0.45 + 0.2 * mp + 0.35 * cast) * a);
+  pen.glow?.(cx, cy, (8 + 18 * cast + 4 * mp) * s, neon, (0.3 + 0.1 * mp + 0.3 * cast) * a);
   pen.poly([cx, cy - cr, cx + cr * 0.25, cy - cr * 0.25, cx + cr, cy, cx + cr * 0.25, cy + cr * 0.25, cx, cy + cr, cx - cr * 0.25, cy + cr * 0.25, cx - cr, cy, cx - cr * 0.25, cy - cr * 0.25], hot, a);
   pen.circle(cx, cy, cr * 0.3, 0xffffff, null, 0, a);
   pen.add?.(false);
@@ -906,7 +903,7 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   }
   pen.circle(hx, hy, r + ow, neon, null, 0, a);
   pen.circle(hx, hy, r, body, null, 0, a);
-  if (o.teamColor !== undefined) pen.circle(hx, hy, r + ow + w * 0.45, null, o.teamColor, w * 0.3, a * 0.9);
+  
   // the default eye styles (0, 1, 6) take the element's face from its sheet; the other styles stay cosmetic
   drawFace(pen, hx, hy, r, face, o, body, !!o.el && VISOR[o.el] && (o.look.eyes <= 1 || o.look.eyes === 6));
   if (o.zombie) {

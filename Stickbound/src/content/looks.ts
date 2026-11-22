@@ -21,7 +21,7 @@ export const HEADS = ['Round', 'Wide', 'Tall', 'Small'];
 export const EYES = ['Dots', 'Bright', 'Narrow', 'Sleepy', 'Wide', 'Fierce', 'Calm', 'Star'];
 export const MOUTHS = ['Line', 'Smile', 'Grin', 'Small O', 'Smirk', 'Teeth'];
 /** Line colours for the stick body (dark, so figures stay readable on light arenas). */
-export const BODIES = [0x16161d, 0x2a2f45, 0x3b2a20, 0x1f3b2a, 0x3a1f3b, 0x40201f];
+export const BODIES = [0x0b0d17, 0x2a2f45, 0x3b2a20, 0x1f3b2a, 0x3a1f3b, 0x40201f];
 export const BODY_NAMES = ['Coal Black', 'Night Blue', 'Cocoa', 'Forest', 'Plum', 'Brick'];
 export const THICKNESS = [6, 8, 10];
 export const THICK_NAMES = ['Thin', 'Normal', 'Bold'];

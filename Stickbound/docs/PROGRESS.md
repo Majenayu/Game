@@ -85,3 +85,8 @@ Pushed: `9e29c8d` and the final docs/media commit after it. Published to Pages: 
 | Memory soak, 100 bot matches with the new effects | heap 10.3 to 11.2 MB after GC, DOM 183 nodes throughout |
 | Build size | 1.76 MB initial (437 KB gzipped), Power Lab is a separate lazy chunk |
 | Screenshots at 4 sizes | `docs/shots/` (incl. both squad avatars' power lists and the style picker) |
+
+## Hybrid hero renderer
+- Done: quick fixes (no team rings, a triangle marker above the head in duels; torso 1.25x limb width; fill #0B0D17 with no tint on both renderers; weaker glow on the old renderer; hit flash on the outline only; tighter fight zoom so fighters are about 30% of the screen height), tools/cut-parts.mjs, image-part renderer for Lightning.
+- Elements with a parts kit: lightning. Code-drawn heads (no kit yet): fire (new tube renderer), water, ice, wind, earth, leaf, light, gravity, time (old renderer), zombies, bosses.
+- To add an element: save the kit as gemini/parts/<element>/kit.png, copy gemini/parts/lightning/parts.json and fix region, erase and order, run node tools/cut-parts.mjs <element>.

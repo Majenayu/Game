@@ -9,6 +9,7 @@ import type { Controller } from '../core/input';
 import { arenaById, FLOOR_Y, WORLD_H, WORLD_W, type ArenaDef } from '../render/arenas';
 import { elementColors, lookOf, poseFor, type ViewState } from '../render/fighterView';
 import { bakeGlow, PhaserPen } from '../render/pen';
+import { loadParts, registerParts } from '../render/hero/parts';
 import { FxRenderer } from '../render/fx';
 import { ArenaView } from '../render/arenaView';
 import { TintPen } from '../render/rimPen';
@@ -122,6 +123,8 @@ export class FightScene extends Phaser.Scene {
     this.g = this.add.graphics().setDepth(2);
     this.gAdd = this.add.graphics().setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
     this.pen = new PhaserPen(this.g, this.gAdd, this, 5);
+    // image parts for elements that have a parts kit (lazy, a few KB each); code-drawn heads until loaded
+    for (const el of new Set(this.m.fighters.map((f) => f.spec.element))) void loadParts(el).then((set) => set && this.sys.isActive() && registerParts(this, set));
     this.trail.clear();
     this.qFrames = 0;
     this.qSum = 0;
@@ -184,7 +187,7 @@ export class FightScene extends Phaser.Scene {
     const span = Math.max(420, maxX - minX + 360);
     const fitAll = Math.min(vw / WORLD_W, vh / WORLD_H);
     // portrait screens zoom in on the fighters instead of showing the whole arena tiny
-    let zoom = vw < vh ? Math.min(vw / span, (vh * 0.55) / 360) : Math.max(fitAll, Math.min(vw / span, fitAll * 1.3));
+    let zoom = vw < vh ? Math.min(vw / span, (vh * 0.55) / 360) : Math.max(fitAll, Math.min(vw / span, fitAll * 1.75));
     zoom *= 1 + this.zoomPulse;
     zoom = Math.max(0.2, zoom);
     cam.setZoom(zoom);
@@ -585,7 +588,7 @@ export class FightScene extends Phaser.Scene {
       mp: f.mp / 1000,
       time,
       weight,
-      teamColor: this.m.mode === 'duel' ? (f.team === 0 ? 0x2f8cff : 0xff4d6d) : undefined,
+      flash: f.st === 'stun' && f.sf <= 2,
     };
     // Time powers leave ghost afterimages of recent positions
     const A = this.arenaView!.react;
@@ -607,6 +610,13 @@ export class FightScene extends Phaser.Scene {
     }
     drawStick(this.pen, j, f.face, s, opts);
     this.fx.drawOnFighter(this.pen, this.m, f, j, time);
+    if (this.m.mode === 'duel' && f.st !== 'ko') {
+      // team marker: a small triangle above the head (no ring around the head)
+      const mc = f.team === 0 ? 0x2f8cff : 0xff4d6d;
+      const mx = j.head[0];
+      const my = j.head[1] - 44 * s - 4 * Math.sin(time * 5);
+      this.pen.poly([mx - 7 * s, my - 8 * s, mx + 7 * s, my - 8 * s, mx, my + 2 * s], mc, 0.95);
+    }
     if (f.st === 'guard') this.pen.circle(j.aHand[0] + f.face * 10, j.aHand[1], 26 * s, null, 0x9fd8ff, 4, 0.6);
   }
   /** Colour grade from the arena reactions. Rebuilt only when the rounded values change. */

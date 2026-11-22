@@ -3,6 +3,7 @@
 // a baked radial texture (no per-frame gradients).
 
 import type Phaser from 'phaser';
+import type { PartSet } from './hero/parts';
 
 export interface Pen {
   line(x1: number, y1: number, x2: number, y2: number, w: number, color: number, alpha?: number): void;
@@ -12,6 +13,8 @@ export interface Pen {
   add?(on: boolean): void;
   /** soft radial light of radius r */
   glow?(x: number, y: number, r: number, color: number, alpha?: number): void;
+  /** an image part centred at (x, y), size w x h, rotated by rot (radians), mirrored if flip, with its baked glow */
+  part?(set: PartSet, name: string, x: number, y: number, w: number, h: number, rot: number, flip: boolean, alpha: number, glow: number): void;
 }
 
 // Unit-circle tables for triangle fans (8 to 24 segments).
@@ -52,6 +55,8 @@ export class PhaserPen implements Pen {
   private cur: Phaser.GameObjects.Graphics;
   private pool: Phaser.GameObjects.Image[] = [];
   private used = 0;
+  private partPool: Phaser.GameObjects.Image[] = [];
+  private partUsed = 0;
   /** glow sprites drawn this frame (adaptive quality reads it) */
   glows = 0;
   maxGlows = 140;
@@ -75,12 +80,17 @@ export class PhaserPen implements Pen {
     this.used = 0;
     this.glows = 0;
     this.cur = this.g;
+    for (let i = 0; i < this.partUsed; i++) this.partPool[i]!.setVisible(false);
+    this.partUsed = 0;
   }
   /** Destroys the pooled glow sprites (the graphics belong to the caller). */
   destroy(): void {
     for (const im of this.pool) im.destroy();
     this.pool.length = 0;
     this.used = 0;
+    for (const im of this.partPool) im.destroy();
+    this.partPool.length = 0;
+    this.partUsed = 0;
   }
 
   add(on: boolean): void {
@@ -119,6 +129,27 @@ export class PhaserPen implements Pen {
     this.disc(x2, y2, w / 2);
   }
 
+
+  /** Image part (hybrid hero renderer). Parts sit above the Graphics layer (depth 3) in draw order. */
+  part(set: PartSet, name: string, x: number, y: number, w: number, h: number, rot: number, flip: boolean, alpha: number, glow: number): void {
+    const sc = this.scene;
+    const f = set.frames[name];
+    if (!sc || !f || !sc.textures.exists(set.key)) return;
+    const k = w / f.w;
+    const one = (key: string, fw: number, fh: number, add: boolean, a: number) => {
+      let img = this.partPool[this.partUsed];
+      if (!img) {
+        img = sc.add.image(0, 0, set.key, name);
+        this.partPool.push(img);
+      }
+      const seq = this.partUsed++;
+      img.setTexture(key, name).setVisible(true).setPosition(x, y).setRotation(rot).setFlipX(flip).setAlpha(Math.min(1, a)).setBlendMode(add ? 1 : 0).setDepth(3 + seq * 0.0004);
+      img.setDisplaySize(fw * k, fh * k);
+    };
+    if (glow > 0.01 && sc.textures.exists(set.glowKey)) one(set.glowKey, f.w + set.pad * 2, f.h + set.pad * 2, true, glow);
+    one(set.key, f.w, f.h, false, alpha);
+    void h;
+  }
   /** A ring as a triangle strip (strokeCircle goes through Phaser's path code, which is slow). */
   private ring(x: number, y: number, r: number, w: number): void {
     if (r <= 0.5) return;
@@ -243,6 +274,27 @@ export class CanvasPen implements Pen {
     }
   }
 
+  part(set: PartSet, name: string, x: number, y: number, w: number, h: number, rot: number, flip: boolean, alpha: number, glow: number): void {
+    const f = set.frames[name];
+    if (!f) return;
+    const c = this.ctx;
+    const k = w / f.w;
+    c.save();
+    c.translate(x, y);
+    c.rotate(rot);
+    c.scale(flip ? -1 : 1, 1);
+    if (glow > 0.01) {
+      c.globalCompositeOperation = 'lighter';
+      c.globalAlpha = Math.min(1, glow);
+      const gw = (f.w + set.pad * 2) * k;
+      const gh = (f.h + set.pad * 2) * k;
+      c.drawImage(set.glow, f.x - set.pad, f.y - set.pad, f.w + set.pad * 2, f.h + set.pad * 2, -gw / 2, -gh / 2, gw, gh);
+    }
+    c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = Math.min(1, alpha);
+    c.drawImage(set.img, f.x, f.y, f.w, f.h, -w / 2, -h / 2, w, h);
+    c.restore();
+  }
   poly(points: number[], fill: number, alpha = 1): void {
     const c = this.ctx;
     c.fillStyle = css(fill, alpha);

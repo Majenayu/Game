@@ -3,6 +3,7 @@
 import { ELEMENT_IDS, ELEMENTS } from '../content/elements';
 import { AURA_NAMES, AURAS, BACKS, DEFAULT_LOOK, HANDS, HATS, SUITS, WIN_POSES, type Look } from '../content/looks';
 import { CanvasPen } from '../render/pen';
+import { loadParts } from '../render/hero/parts';
 import { drawStick, POSES, solve, type Pose } from '../render/rig';
 import { makeCanvas } from './powerPreview';
 export function showRigSheet(): void {
@@ -109,7 +110,8 @@ export function showHeroSheet(): void {
 }
 /** Reference-size compare page (?powers=1&rigs=compare&el=fire|lightning&style=classic): draws the game hero at the
  *  same height and the same panel positions as the Gemini sheet (1376x768), so tools/herocompare3.ps1 can overlay them. */
-export function showCompareSheet(elId: string, style: 'classic' | 'striker' | 'warden'): void {
+export async function showCompareSheet(elId: string, style: 'classic' | 'striker' | 'warden'): Promise<void> {
+  if (!/legacyart|noparts/.test(location.search)) await loadParts(elId);
   document.body.dataset.screen = 'lab';
   document.getElementById('game')!.style.display = 'none';
   const W = 1376;
