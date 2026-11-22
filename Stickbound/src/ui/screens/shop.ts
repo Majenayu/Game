@@ -1,7 +1,7 @@
 // Shop: coins only (earned by playing). No real money, no loot boxes: every item shows exactly what you get.
 import { audio } from '../../audio/synth';
 import { ELEMENT_IDS, ELEMENTS } from '../../content/elements';
-import { AURA_NAMES, BACKS, EXTRAS, HATS, LOCKED, WIN_POSES, type Look } from '../../content/looks';
+import { AURA_NAMES, BACKS, EXTRAS, HANDS, HATS, LOCKED, SUITS, WIN_POSES, type Look } from '../../content/looks';
 import { app, saveProfile } from '../../app/state';
 import { buy, ELEMENT_PRICE, MAX_SLOTS, SLOT_PRICE, slotsFor, unlockElement } from '../../meta/profile';
 import { elementIcon } from '../../render/icons';
@@ -10,8 +10,8 @@ import { frame, refreshCoins, show } from '../router';
 import { lookKey } from './avatars';
 import { showLobby } from './lobby';
 
-const NAMES: Partial<Record<keyof Look, string[]>> = { hat: HATS, back: BACKS, extra: EXTRAS, aura: AURA_NAMES, pose: WIN_POSES };
-const KIND: Partial<Record<keyof Look, string>> = { hat: 'Hat', back: 'Back', extra: 'Extra', aura: 'Aura', pose: 'Win pose' };
+const NAMES: Partial<Record<keyof Look, string[]>> = { hat: HATS, back: BACKS, suit: SUITS, hand: HANDS, extra: EXTRAS, aura: AURA_NAMES, pose: WIN_POSES };
+const KIND: Partial<Record<keyof Look, string>> = { hat: 'Headgear', back: 'Back', suit: 'Suit', hand: 'Hands', extra: 'Extra', aura: 'Aura', pose: 'Win pose' };
 
 export function showShop(): void {
   const p = app.profile;

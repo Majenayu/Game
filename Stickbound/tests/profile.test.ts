@@ -12,6 +12,7 @@ import {
   giveXp,
   newProfile,
   PROFILE_SCHEMA,
+  PROFILE_VERSION,
   rankTier,
   refreshQuests,
   rivals,
@@ -123,9 +124,32 @@ describe('fighting styles', () => {
     for (let i = 0; i < body.length; i++) h = Math.imul(h ^ body.charCodeAt(i), 16777619);
     kv.setItem('ek.profile1', JSON.stringify({ sum: h >>> 0, body }));
     const loaded = s.read(1)!.data;
-    expect(loaded.version).toBe(2);
+    expect(loaded.version).toBe(PROFILE_VERSION);
     expect(loaded.avatars.map((a) => a.archetype)).toEqual(['classic', 'striker']);
     expect(squadClash(loaded)).toBe(false);
+  });
+  it('a v2 save (before the visual overhaul) loads with no suit pattern or hand effect, everything else kept', () => {
+    const kv = new MemoryKV();
+    const s = new SaveManager(kv, PROFILE_SCHEMA, 'ek');
+    const p = newProfile('Old', T0) as unknown as Record<string, unknown>;
+    chooseStarter(p as unknown as Parameters<typeof chooseStarter>[0], 'fire');
+    const avatars = (p.avatars as Record<string, unknown>[]).map((a) => {
+      const { suit: _s, hand: _h, ...look } = a.look as Record<string, unknown>;
+      return { ...a, look: { ...look, hat: 7, aura: 3 } };
+    });
+    const body = JSON.stringify({ ...p, version: 2, avatars, coins: 777 });
+    let h = 2166136261;
+    for (let i = 0; i < body.length; i++) h = Math.imul(h ^ body.charCodeAt(i), 16777619);
+    kv.setItem('ek.profile1', JSON.stringify({ sum: h >>> 0, body }));
+    const loaded = s.read(1)!.data;
+    expect(loaded.version).toBe(PROFILE_VERSION);
+    expect(loaded.coins).toBe(777);
+    for (const a of loaded.avatars) {
+      expect(a.look.suit).toBe(0);
+      expect(a.look.hand).toBe(0);
+      expect(a.look.hat).toBe(7);
+      expect(a.look.aura).toBe(3);
+    }
   });
 
   it('starter squad has two different power sets; the clash check works', () => {

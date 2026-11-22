@@ -35,6 +35,10 @@ export const POSES: Record<string, Pose> = {
   win1: P(40, 54, 20, 40, -40, 30, -50, 10, 10, -20, 20),
   win2: P(0, 62, -6, 100, -140, -100, 140, 12, 6, -12, 6),
   win3: P(4, 62, -4, 90, 0, 15, -90, 10, 6, -10, 6),
+  win4: P(0, 62, 0, 150, -135, 15, -20, 8, 4, -8, 4),
+  win5: P(-2, 62, -6, 70, -140, 60, -140, 10, 4, -10, 4),
+  win6: P(-6, 63, -14, 165, 0, -30, -120, 14, 6, -14, 6),
+  win7: P(4, 53, 0, 30, -60, -30, 60, 34, 12, -34, 12),
   swap: P(15, 66, 0, 150, 0, 120, 0, 40, 90, 10, 60),
   // attack keyframes: wind-up and strike
   jab1_w: P(4, 60, 0, 30, -120, 25, -100, 16, 18, -14, 16),
@@ -166,6 +170,10 @@ export interface DrawOpts {
   time: number;
   /** line weight multiplier (pulses during casts) */
   weight?: number;
+  /** 0..1 MP fill: the joint light strips pulse brighter with more MP */
+  mp?: number;
+  /** boss rig: shoulder plates and a heavier core */
+  boss?: boolean;
 }
 
 function drawFace(pen: Pen, hx: number, hy: number, r: number, face: number, o: DrawOpts, ink: number): void {
@@ -242,7 +250,7 @@ function drawFace(pen: Pen, hx: number, hy: number, r: number, face: number, o: 
   }
 }
 
-function drawHat(pen: Pen, j: Joints, r: number, face: number, hat: number, ink: number, el: number, w: number): void {
+function drawHat(pen: Pen, j: Joints, r: number, face: number, hat: number, ink: number, el: number, w: number, light: number): void {
   const [hx, hy] = j.head;
   switch (hat) {
     case 1: // headband
@@ -271,23 +279,292 @@ function drawHat(pen: Pen, j: Joints, r: number, face: number, hat: number, ink:
       pen.line(hx, hy - r, hx + face * r * 0.4, hy - r * 1.8, w * 0.5, ink);
       pen.circle(hx + face * r * 0.4, hy - r * 1.85, r * 0.22, el, null);
       break;
+    case 8: {
+      // visor: a tinted band over the eyes (eyes stay visible through it) with a bright scan line
+      const vy = hy - r * 0.1;
+      pen.poly([hx - r * 0.95, vy - r * 0.26, hx + r * 0.95, vy - r * 0.26, hx + r * 0.9, vy + r * 0.2, hx - r * 0.9, vy + r * 0.2], el, 0.38);
+      pen.add?.(true);
+      pen.line(hx - r * 0.9, vy - r * 0.02, hx + r * 0.9, vy - r * 0.02, w * 0.35, light, 0.9);
+      pen.add?.(false);
+      pen.line(hx - r * 0.98, vy - r * 0.27, hx + r * 0.98, vy - r * 0.27, w * 0.4, ink);
+      break;
+    }
+    case 9: {
+      // holo halo: a glowing ring floating above the head
+      pen.add?.(true);
+      for (let i = 0; i < 16; i++) {
+        const a0 = (i / 16) * Math.PI * 2;
+        const a1 = ((i + 1) / 16) * Math.PI * 2;
+        pen.line(hx + Math.cos(a0) * r * 0.85, hy - r * 1.45 + Math.sin(a0) * r * 0.22, hx + Math.cos(a1) * r * 0.85, hy - r * 1.45 + Math.sin(a1) * r * 0.22, w * 0.45, light, 0.85);
+      }
+      pen.glow?.(hx, hy - r * 1.45, r * 1.3, el, 0.35);
+      pen.add?.(false);
+      break;
+    }
+    case 10: {
+      // cyber helm: a shell over the top of the head, a light seam and an ear pod
+      pen.poly([hx - r * 1.05, hy - r * 0.1, hx - r * 0.85, hy - r * 0.8, hx - r * 0.3, hy - r * 1.12, hx + r * 0.4, hy - r * 1.1, hx + r * 0.95, hy - r * 0.7, hx + r * 1.05, hy - r * 0.1, hx + face * r * 0.2, hy - r * 0.42], ink);
+      pen.add?.(true);
+      pen.line(hx - r * 0.8, hy - r * 0.62, hx + r * 0.8, hy - r * 0.62, w * 0.35, light, 0.9);
+      pen.add?.(false);
+      pen.circle(hx - face * r * 0.75, hy - r * 0.05, r * 0.28, el, ink, w * 0.3);
+      break;
+    }
+    case 11:
+      // ear fins: two swept fins in the element colour
+      for (const sgn of [-1, 1]) pen.poly([hx + sgn * r * 0.85, hy - r * 0.35, hx + sgn * r * 0.95, hy + r * 0.15, hx + sgn * r * 1.75 - face * r * 0.5, hy - r * 0.85], el);
+      pen.add?.(true);
+      pen.line(hx - r * 0.9, hy - r * 0.2, hx - r * 1.5 - face * r * 0.4, hy - r * 0.7, w * 0.3, light, 0.8);
+      pen.line(hx + r * 0.9, hy - r * 0.2, hx + r * 1.5 - face * r * 0.4, hy - r * 0.7, w * 0.3, light, 0.8);
+      pen.add?.(false);
+      break;
+    case 12:
+      // crest: a raised fin along the top of the head
+      pen.poly([hx + face * r * 0.6, hy - r * 0.8, hx - face * r * 0.6, hy - r * 0.8, hx - face * r * 1.3, hy - r * 1.7, hx + face * r * 0.2, hy - r * 1.25], el);
+      pen.add?.(true);
+      pen.line(hx + face * r * 0.2, hy - r * 1.0, hx - face * r * 1.1, hy - r * 1.55, w * 0.3, light, 0.9);
+      pen.add?.(false);
+      break;
   }
 }
 
-/** Draws a stick figure. */
+
+type V2 = [number, number];
+/** part of a segment from t0 to t1 */
+function seg(pen: Pen, p1: V2, p2: V2, t0: number, t1: number, w: number, c: number, a: number): void {
+  pen.line(p1[0] + (p2[0] - p1[0]) * t0, p1[1] + (p2[1] - p1[1]) * t0, p1[0] + (p2[0] - p1[0]) * t1, p1[1] + (p2[1] - p1[1]) * t1, w, c, a);
+}
+/** short band across a segment at t */
+function band(pen: Pen, p1: V2, p2: V2, t: number, half: number, w: number, c: number, a: number): void {
+  const dx = p2[0] - p1[0];
+  const dy = p2[1] - p1[1];
+  const l = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / l) * half;
+  const ny = (dx / l) * half;
+  const x = p1[0] + dx * t;
+  const y = p1[1] + dy * t;
+  pen.line(x - nx, y - ny, x + nx, y + ny, w, c, a);
+}
+function hex(pen: Pen, x: number, y: number, r: number, w: number, c: number, a: number): void {
+  for (let i = 0; i < 6; i++) {
+    const a0 = (i / 6) * Math.PI * 2 + Math.PI / 6;
+    const a1 = ((i + 1) / 6) * Math.PI * 2 + Math.PI / 6;
+    pen.line(x + Math.cos(a0) * r, y + Math.sin(a0) * r, x + Math.cos(a1) * r, y + Math.sin(a1) * r, w, c, a);
+  }
+}
+
+/** Back pieces 4 to 8 (the futuristic ones); 1 to 3 are cloth and drawn with springs. */
+function drawTech(pen: Pen, j: Joints, face: number, s: number, w: number, o: DrawOpts, ink: number, el: number, light: number, a: number): void {
+  const back = o.look.back;
+  const t = o.time;
+  const sx = j.shoulder[0] - face * w * 0.9;
+  const sy = j.shoulder[1];
+  const mx = (j.shoulder[0] + j.pelvis[0]) / 2 - face * w * 1.1;
+  const my = (j.shoulder[1] + j.pelvis[1]) / 2;
+  if (back === 4) {
+    // jet pack: a housing on the back and two flickering thrusters
+    pen.poly([mx - 7 * s, my - 16 * s, mx + 7 * s, my - 16 * s, mx + 7 * s, my + 12 * s, mx - 7 * s, my + 12 * s], ink, a);
+    pen.line(mx - 7 * s, my - 4 * s, mx + 7 * s, my - 4 * s, w * 0.35, el, a);
+    pen.add?.(true);
+    const fl = 0.7 + 0.3 * Math.sin(t * 40);
+    for (const dx of [-4, 4]) {
+      pen.line(mx + dx * s, my + 13 * s, mx + dx * s, my + (22 + 8 * fl) * s, w * 0.7, light, 0.8 * a);
+      pen.glow?.(mx + dx * s, my + 18 * s, 10 * s, el, 0.6 * a * fl);
+    }
+    pen.add?.(false);
+  } else if (back === 5) {
+    // energy wings: two light blades fanning from the shoulders
+    const flap = Math.sin(t * 3) * 0.12;
+    pen.add?.(true);
+    for (let k = 0; k < 3; k++) {
+      const ang = (-0.9 + k * 0.45 + flap) * 1;
+      const len = (34 - k * 6) * s;
+      const ex = sx - face * Math.cos(ang) * len;
+      const ey = sy + Math.sin(ang) * len - 6 * s;
+      pen.poly([sx, sy - 2 * s, ex, ey, sx - face * 6 * s, sy + 6 * s], el, 0.32 * a);
+      pen.line(sx, sy, ex, ey, w * 0.3, light, 0.85 * a);
+    }
+    pen.add?.(false);
+  } else if (back === 6 && o.cloth) {
+    // holo cape: spring cloth in light, with scan lines
+    const pts = o.cloth;
+    while (pts.length < 5) pts.push({ x: j.shoulder[0], y: j.shoulder[1] });
+    let px = j.shoulder[0];
+    let py = j.shoulder[1];
+    pen.add?.(true);
+    for (let i = 0; i < 5; i++) {
+      const p = pts[i]!;
+      p.x += (px - face * 9 * s - p.x) * 0.35;
+      p.y += (py + 9 * s - p.y) * 0.35 + Math.sin(t * 6 + i) * 0.6;
+      const cw = w * 2.6 * (1 - i / 7);
+      pen.line(px, py, p.x, p.y, cw, el, 0.3 * a);
+      if ((i + Math.floor(t * 8)) % 2 === 0) pen.line(px, py, p.x, p.y, cw * 0.3, light, 0.6 * a);
+      px = p.x;
+      py = p.y;
+    }
+    pen.add?.(false);
+  } else if (back === 7 && o.cloth) {
+    // data tail: a spring chain of glowing blocks from the pelvis
+    const pts = o.cloth;
+    while (pts.length < 6) pts.push({ x: j.pelvis[0], y: j.pelvis[1] });
+    let px = j.pelvis[0];
+    let py = j.pelvis[1];
+    for (let i = 0; i < 6; i++) {
+      const p = pts[i]!;
+      p.x += (px - face * 8 * s - p.x) * 0.3;
+      p.y += (py + 2 * s - p.y) * 0.3 + Math.sin(t * 5 + i * 0.8) * 0.8;
+      const q = (4 - i * 0.45) * s;
+      pen.poly([p.x - q, p.y - q, p.x + q, p.y - q, p.x + q, p.y + q, p.x - q, p.y + q], i % 2 ? el : light, 0.85 * a);
+      px = p.x;
+      py = p.y;
+    }
+  } else if (back === 8) {
+    // shoulder pylons: two light rods standing off the shoulders
+    pen.add?.(true);
+    for (const k of [0, 1]) {
+      const bx = sx - face * k * 6 * s;
+      pen.line(bx, sy, bx - face * 4 * s, sy - 22 * s, w * 0.6, el, a);
+      pen.glow?.(bx - face * 4 * s, sy - 23 * s, 8 * s, light, 0.8 * a * (0.7 + 0.3 * Math.sin(t * 5 + k)));
+    }
+    pen.add?.(false);
+  }
+}
+
+/** Suit patterns: light strips on the dark body. */
+function drawSuit(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: number, light: number, a: number): void {
+  const suit = o.look.suit ?? 0;
+  if (!suit) return;
+  const sw = Math.max(1.2, w * 0.32);
+  pen.add?.(true);
+  switch (suit) {
+    case 1: // circuit
+      seg(pen, j.pelvis, j.neck, 0.15, 0.85, sw, light, 0.8 * a);
+      seg(pen, j.pelvis, j.aKn, 0.2, 0.8, sw, light, 0.6 * a);
+      band(pen, j.pelvis, j.neck, 0.55, w * 0.9, sw, light, 0.8 * a);
+      break;
+    case 2: {
+      // chevron on the chest
+      const cx = (j.pelvis[0] + j.neck[0] * 3) / 4;
+      const cy = (j.pelvis[1] + j.neck[1] * 3) / 4;
+      pen.line(cx - 6 * s, cy - 5 * s, cx, cy + 2 * s, sw * 1.2, light, 0.9 * a);
+      pen.line(cx, cy + 2 * s, cx + 6 * s, cy - 5 * s, sw * 1.2, light, 0.9 * a);
+      break;
+    }
+    case 3: // split tone: the back limbs glow faintly
+      seg(pen, j.pelvis, j.bKn, 0, 1, w * 0.6, el, 0.35 * a);
+      seg(pen, j.bKn, j.bFoot, 0, 1, w * 0.6, el, 0.35 * a);
+      seg(pen, j.shoulder, j.bEl, 0, 1, w * 0.6, el, 0.35 * a);
+      seg(pen, j.bEl, j.bHand, 0, 1, w * 0.6, el, 0.35 * a);
+      break;
+    case 4: // spine strip
+      seg(pen, j.pelvis, j.neck, 0.02, 0.98, sw * 1.3, light, 0.95 * a);
+      break;
+    case 5: {
+      // hex plates on the chest and knees
+      const cx = (j.pelvis[0] + j.neck[0] * 2) / 3;
+      const cy = (j.pelvis[1] + j.neck[1] * 2) / 3;
+      hex(pen, cx, cy - 6 * s, 6 * s, sw, light, 0.85 * a);
+      hex(pen, j.aKn[0], j.aKn[1], 4 * s, sw, light, 0.7 * a);
+      break;
+    }
+    case 6: // pin stripes along the upper limbs
+      for (const [p1, p2] of [[j.shoulder, j.aEl], [j.pelvis, j.aKn], [j.shoulder, j.bEl], [j.pelvis, j.bKn]] as [V2, V2][]) seg(pen, p1, p2, 0.15, 0.85, sw * 0.8, light, 0.6 * a);
+      break;
+    case 7: {
+      // pulse bands on forearms and shins
+      const k = 0.5 + 0.5 * Math.sin(o.time * 5);
+      for (const [p1, p2] of [[j.aEl, j.aHand], [j.bEl, j.bHand], [j.aKn, j.aFoot], [j.bKn, j.bFoot]] as [V2, V2][]) band(pen, p1, p2, 0.5, w * 0.75, sw * 1.2, light, (0.4 + 0.5 * k) * a);
+      break;
+    }
+    case 8: // arc lines: two thin lines curving around the torso
+      seg(pen, j.shoulder, j.pelvis, 0.1, 0.5, sw, el, 0.8 * a);
+      seg(pen, j.aKn, j.aFoot, 0.1, 0.6, sw, el, 0.6 * a);
+      seg(pen, j.aEl, j.aHand, 0.1, 0.7, sw, el, 0.6 * a);
+      break;
+  }
+  pen.add?.(false);
+}
+
+/** Hand effects. */
+function drawHands(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: number, light: number, a: number, cast: number): void {
+  const hand = o.look.hand ?? 0;
+  if (!hand) return;
+  const t = o.time;
+  pen.add?.(true);
+  for (const [hp, ep, k] of [[j.aHand, j.aEl, 1], [j.bHand, j.bEl, 0.7]] as [V2, V2, number][]) {
+    switch (hand) {
+      case 1:
+        pen.glow?.(hp[0], hp[1], (10 + 10 * cast) * s, el, (0.6 + 0.3 * cast) * a * k);
+        pen.circle(hp[0], hp[1], w * 0.55, light, null, 0, 0.8 * a);
+        break;
+      case 2: {
+        // energy claws pointing along the forearm
+        const dx = hp[0] - ep[0];
+        const dy = hp[1] - ep[1];
+        const l = Math.hypot(dx, dy) || 1;
+        for (let c = -1; c <= 1; c++) {
+          const ang = Math.atan2(dy, dx) + c * 0.28;
+          pen.line(hp[0], hp[1], hp[0] + Math.cos(ang) * (9 + 4 * cast) * s, hp[1] + Math.sin(ang) * (9 + 4 * cast) * s, w * 0.3, light, 0.9 * a * k);
+        }
+        void l;
+        break;
+      }
+      case 3:
+        band(pen, ep, hp, 0.78, w * 0.85, w * 0.35, light, 0.85 * a * k);
+        band(pen, ep, hp, 0.62, w * 0.75, w * 0.25, el, 0.7 * a * k);
+        break;
+      case 4:
+        for (let i = 0; i < 3; i++) {
+          const ang = t * 7 + i * 2.1 + k * 3;
+          pen.circle(hp[0] + Math.cos(ang) * 8 * s, hp[1] + Math.sin(ang * 1.3) * 8 * s, 1.4 * s, light, null, 0, 0.9 * a * k);
+        }
+        break;
+      case 5: {
+        const ang = t * 4 + k * 3;
+        const ox = hp[0] + Math.cos(ang) * 11 * s;
+        const oy = hp[1] + Math.sin(ang) * 6 * s;
+        pen.glow?.(ox, oy, 8 * s, el, 0.8 * a * k);
+        pen.circle(ox, oy, 2.4 * s, light, null, 0, a * k);
+        break;
+      }
+      case 6: {
+        // shock gauntlets: jagged arcs across the fist
+        const f = Math.floor(t * 18 + k * 5);
+        const jx = ((f * 37) % 7) - 3;
+        pen.line(hp[0] - 6 * s, hp[1] + jx * s, hp[0], hp[1] - jx * s, w * 0.25, light, 0.9 * a * k);
+        pen.line(hp[0], hp[1] - jx * s, hp[0] + 6 * s, hp[1] + jx * 0.5 * s, w * 0.25, light, 0.9 * a * k);
+        pen.circle(hp[0], hp[1], w * 1.05, null, el, w * 0.3, 0.8 * a * k);
+        break;
+      }
+    }
+  }
+  pen.add?.(false);
+}
+
+/** Draws a stick figure: dark core lines, light-strip joints that pulse with MP, a chest energy core that flares when
+ *  casting, suit patterns, hand effects, headgear and back pieces. */
 export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawOpts): void {
-  const ink = o.zombie ? 0x3b5a34 : BODIES[o.look.body % BODIES.length]!;
+  const ink = o.zombie ? 0x2c3a2a : BODIES[o.look.body % BODIES.length]!;
   const w = THICKNESS[o.look.thick % THICKNESS.length]! * s * (o.weight ?? 1);
   const a = o.alpha ?? 1;
   const r = 16 * s * [1, 1.12, 0.95, 0.85][o.look.head % 4]!;
   const auraC = o.element;
+  const light = o.zombie ? 0x9cff6a : o.elementLight;
+  const cast = o.aura >= 1 ? 1 : 0;
+  const mp = o.mp ?? 0.5;
   // aura glow
   if (o.aura > 0) {
-    pen.circle(j.pelvis[0], j.pelvis[1] - 18 * s, 62 * s, auraC, null, 0, 0.1 * o.aura * a);
-    pen.circle(j.pelvis[0], j.pelvis[1] - 18 * s, 46 * s, auraC, null, 0, 0.12 * o.aura * a);
+    if (pen.glow) {
+      pen.add?.(true);
+      pen.glow(j.pelvis[0], j.pelvis[1] - 18 * s, 70 * s, auraC, 0.22 * o.aura * a);
+      pen.add?.(false);
+    } else {
+      pen.circle(j.pelvis[0], j.pelvis[1] - 18 * s, 62 * s, auraC, null, 0, 0.1 * o.aura * a);
+      pen.circle(j.pelvis[0], j.pelvis[1] - 18 * s, 46 * s, auraC, null, 0, 0.12 * o.aura * a);
+    }
   }
   // back cloth (scarf/cape) with spring trail
-  if (o.look.back > 0 && o.cloth) {
+  if (o.look.back > 0 && o.look.back <= 3 && o.cloth) {
     const pts = o.cloth;
     const len = o.look.back === 3 ? 6 : 4;
     const anchor = o.look.back === 2 ? j.shoulder : j.neck;
@@ -300,23 +577,26 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
       p.x += (target.x - p.x) * 0.35;
       p.y += (target.y - p.y) * 0.35 + Math.sin(o.time * 6 + i) * 0.6;
       const cw = (o.look.back === 2 ? w * 2.4 : w * 1.1) * (1 - i / (len * 1.4));
-      pen.line(px, py, p.x, p.y, cw, o.elementLight === 0xffffff ? auraC : auraC, a);
+      pen.line(px, py, p.x, p.y, cw, auraC, a);
       px = p.x;
       py = p.y;
     }
-  }
-  const limb = (p1: [number, number], p2: [number, number], ww = w) => pen.line(p1[0], p1[1], p2[0], p2[1], ww, ink, a);
-  // back limbs slightly lighter for depth
+  } else if (o.look.back > 3) drawTech(pen, j, face, s, w, o, ink, auraC, light, a);
+  const limb = (p1: V2, p2: V2, ww = w) => pen.line(p1[0], p1[1], p2[0], p2[1], ww, ink, a);
   limb(j.pelvis, j.bKn);
   limb(j.bKn, j.bFoot);
   limb(j.shoulder, j.bEl);
   limb(j.bEl, j.bHand);
-  // torso and front limbs
   limb(j.pelvis, j.neck, w * 1.12);
   limb(j.pelvis, j.aKn);
   limb(j.aKn, j.aFoot);
   limb(j.shoulder, j.aEl);
   limb(j.aEl, j.aHand);
+  // boss rig: armoured shoulder plates
+  if (o.boss) {
+    pen.poly([j.shoulder[0] - 12 * s, j.shoulder[1] - 4 * s, j.shoulder[0] + 12 * s, j.shoulder[1] - 4 * s, j.shoulder[0] + 9 * s, j.shoulder[1] + 8 * s, j.shoulder[0] - 9 * s, j.shoulder[1] + 8 * s], ink, a);
+    pen.line(j.shoulder[0] - 11 * s, j.shoulder[1] - 4 * s, j.shoulder[0] + 11 * s, j.shoulder[1] - 4 * s, w * 0.3, light, a);
+  }
   // fists and feet
   pen.circle(j.aHand[0], j.aHand[1], w * 0.85, ink, null, 0, a);
   pen.circle(j.bHand[0], j.bHand[1], w * 0.8, ink, null, 0, a);
@@ -325,20 +605,41 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
     pen.circle(j.bHand[0], j.bHand[1], w * 0.9, null, auraC, w * 0.5, a);
   }
   if (o.look.extra === 2) pen.circle(j.pelvis[0], j.pelvis[1], w * 0.9, auraC, null, 0, a);
-  // element accent on the chest
+  drawSuit(pen, j, s, w, o, auraC, light, a);
+  // light-strip joints: elbows and knees glow, brighter with more MP
+  const pulse = (0.3 + 0.55 * mp) * (0.75 + 0.25 * Math.sin(o.time * 4 + j.pelvis[0] * 0.01));
+  pen.add?.(true);
+  for (const p of [j.aEl, j.bEl, j.aKn, j.bKn]) pen.circle(p[0], p[1], Math.max(1.3, w * 0.3), light, null, 0, pulse * a);
+  pen.add?.(false);
+  // chest energy core: a diamond that flares when casting
   const cx = (j.pelvis[0] + j.neck[0] * 2) / 3;
   const cy = (j.pelvis[1] + j.neck[1] * 2) / 3;
-  pen.circle(cx, cy, w * 0.55, auraC, null, 0, a);
+  const cr = w * (o.boss ? 0.95 : 0.75) * (1 + cast * 0.35);
+  pen.poly([cx, cy - cr, cx + cr * 0.75, cy, cx, cy + cr, cx - cr * 0.75, cy], auraC, a);
+  pen.add?.(true);
+  pen.circle(cx, cy, cr * 0.38, 0xffffff, null, 0, 0.9 * a);
+  pen.glow?.(cx, cy, (10 + 26 * cast + 6 * mp) * s, auraC, (0.45 + 0.4 * cast) * a);
+  pen.add?.(false);
+  drawHands(pen, j, s, w, o, auraC, light, a, cast);
   // head
   const [hx, hy] = j.head;
   pen.circle(hx, hy, r, o.zombie ? 0xb8d8a0 : 0xffffff, ink, w * 0.85, a);
   if (o.teamColor !== undefined) pen.circle(hx, hy, r + w * 0.9, null, o.teamColor, w * 0.35, a * 0.9);
   drawFace(pen, hx, hy, r, face, o, ink);
+  if (o.zombie) {
+    // cyber zombie: a glitching red eye-line and a circuit scar
+    const gl = Math.floor(o.time * 9 + hx) % 5 === 0 ? 2 * s : 0;
+    pen.add?.(true);
+    pen.line(hx - r * 0.7 + gl, hy - r * 0.1, hx + r * 0.75 + gl, hy - r * 0.1, w * 0.4, 0xff3355, 0.85 * a);
+    pen.glow?.(hx + face * r * 0.3, hy - r * 0.1, r * 0.9, 0xff3355, 0.35 * a);
+    pen.add?.(false);
+    pen.line(hx - face * r * 0.5, hy - r * 0.75, hx - face * r * 0.15, hy - r * 0.35, w * 0.25, 0x3a5a2a, a);
+  }
   if (o.look.extra === 3) {
     pen.line(hx - r * 0.8, hy - r * 0.42, hx + r * 0.8, hy - r * 0.42, w * 0.5, ink, a);
     pen.circle(hx + face * r * 0.28 - r * 0.2, hy - r * 0.42, r * 0.2, auraC, ink, w * 0.3, a);
     pen.circle(hx + face * r * 0.28 + r * 0.25, hy - r * 0.42, r * 0.2, auraC, ink, w * 0.3, a);
   }
   if (o.look.extra === 4) pen.line(hx + face * r * 0.05, hy - r * 0.08, hx + face * r * 0.85, hy - r * 0.1, w * 1.1, ink, a);
-  drawHat(pen, j, r, face, o.look.hat, ink, auraC, w);
+  drawHat(pen, j, r, face, o.look.hat, ink, auraC, w, light);
 }

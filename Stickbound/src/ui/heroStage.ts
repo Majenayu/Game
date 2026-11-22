@@ -9,6 +9,7 @@ import { FLOOR_Y } from '../render/arenas';
 import { elementColors, lookOf, poseFor, registerLook, type ViewState } from '../render/fighterView';
 import { FxRenderer } from '../render/fx';
 import { CanvasPen } from '../render/pen';
+import { mixC, RimPen } from '../render/rimPen';
 import { drawStick, POSES, solve, type Expression } from '../render/rig';
 import { createMatch, step } from '../sim/step';
 import { IN, type Fighter, type Match } from '../sim/types';
@@ -38,6 +39,7 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
   const hint = h('div', 'hero-hint', 'Tap a fighter');
   wrap.append(c, hint);
   const pen = new CanvasPen(ctx);
+  const rim = new RimPen(pen);
   const fx = new FxRenderer();
   fx.reset(99);
   fx.reduced = settings.reducedMotion;
@@ -56,8 +58,8 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
     m.effects = [];
   };
   reset();
-  let tint = 0xffb46b;
-  let tintTarget = 0xffb46b;
+  let tint = 0x3df5ff;
+  let tintTarget = 0x3df5ff;
   // render-only idle life
   const blinkT = [0, 0];
   const tauntT = [0, 0];
@@ -108,44 +110,41 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
   };
 
   const drawBackground = (time: number) => {
-    // dusk sky
+    // hangar bay: deep navy, a window strip with stars, wall panels with neon seams, a glossy floor with a grid
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#1b1f5a');
-    g.addColorStop(0.45, '#6a3d86');
-    g.addColorStop(0.75, '#e07a5f');
-    g.addColorStop(1, '#ffb46b');
+    g.addColorStop(0, '#05060f');
+    g.addColorStop(0.55, '#0f1236');
+    g.addColorStop(0.8, '#161a44');
+    g.addColorStop(1, '#070818');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
     const span = 520;
     const scale = W / span;
     const camX = 640 + px * 14;
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (W / 2 - camX * scale), dpr * (H * 0.8 - FLOOR_Y * scale));
-    // sun
-    pen.glow(560 - px * 30, FLOOR_Y - 190, 180, 0xffd08a, 0.7);
-    pen.circle(560 - px * 30, FLOOR_Y - 190, 46, 0xffe2a8, null, 0, 0.95);
-    // two skyline layers (parallax)
-    const layer = (depth: number, color: number, base: number, seedN: number, windows: boolean) => {
-      let x = 200 - px * depth * 40;
-      let s = seedN;
-      while (x < 1100) {
-        s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-        const w = 40 + (s % 60);
-        const hh = 60 + ((s >>> 8) % 170);
-        pen.poly([x, base, x, base - hh, x + w, base - hh, x + w, base], color);
-        if (windows)
-          for (let wy = base - hh + 12; wy < base - 12; wy += 18)
-            for (let wxp = x + 8; wxp < x + w - 8; wxp += 14)
-              if (((wxp * 7 + wy * 3 + seedN) & 7) < 2) pen.poly([wxp, wy, wxp + 6, wy, wxp + 6, wy + 8, wxp, wy + 8], 0xffd98a, 0.75);
-        x += w + 6;
-      }
-    };
-    layer(0.4, 0x4a2f6a, FLOOR_Y - 40, 11, false);
-    layer(1, 0x2a1c48, FLOOR_Y, 29, true);
-    // rooftop floor and ledge
-    pen.poly([0, FLOOR_Y, 1280, FLOOR_Y, 1280, FLOOR_Y + 300, 0, FLOOR_Y + 300], 0x1b1430);
-    pen.line(0, FLOOR_Y, 1280, FLOOR_Y, 5, 0x5a3a7a);
-    // spotlights from above, tinted by the mode card under the pointer
+    const wx0 = 200 - px * 16;
+    pen.poly([wx0, FLOOR_Y - 330, wx0 + 880, FLOOR_Y - 330, wx0 + 880, FLOOR_Y - 190, wx0, FLOOR_Y - 190], 0x03040e);
+    for (let i = 0; i < 40; i++) pen.circle(wx0 + ((i * 97) % 880), FLOOR_Y - 325 + ((i * 53) % 130), 0.8 + (i % 3) * 0.5, 0xcfe0ff, null, 0, 0.6);
+    for (let x = wx0; x <= wx0 + 880; x += 110) pen.line(x, FLOOR_Y - 335, x + 14, FLOOR_Y - 185, 12, 0x0a0c22);
+    pen.line(wx0, FLOOR_Y - 190, wx0 + 880, FLOOR_Y - 190, 8, 0x0a0c22);
+    pen.add(true);
+    pen.line(wx0, FLOOR_Y - 186, wx0 + 880, FLOOR_Y - 186, 2, 0x3df5ff, 0.6);
+    pen.add(false);
+    const wall = 250 - px * 34;
+    for (let k = 0; k < 7; k++) {
+      const x = wall + k * 120;
+      pen.poly([x, FLOOR_Y - 170, x + 108, FLOOR_Y - 170, x + 108, FLOOR_Y - 20, x, FLOOR_Y - 20], 0x0d1030);
+      pen.add(true);
+      pen.line(x + 8, FLOOR_Y - 40, x + 100, FLOOR_Y - 40, 1.6, k % 2 ? 0xff3ea5 : 0x3df5ff, 0.45);
+      pen.add(false);
+    }
+    pen.poly([0, FLOOR_Y, 1280, FLOOR_Y, 1280, FLOOR_Y + 300, 0, FLOOR_Y + 300], 0x0a0c24);
+    pen.add(true);
+    for (let k = -8; k <= 8; k++) pen.line(640 + k * 40, FLOOR_Y, 640 + k * 90, FLOOR_Y + 200, 1, 0x3df5ff, 0.14);
+    for (let i = 0; i < 5; i++) pen.line(0, FLOOR_Y + 8 + i * i * 7, 1280, FLOOR_Y + 8 + i * i * 7, 1, 0x3df5ff, 0.18 - i * 0.03);
+    pen.add(false);
+    pen.line(0, FLOOR_Y, 1280, FLOOR_Y, 3, 0x7adfff, 0.8);    // spotlights from above, tinted by the mode card under the pointer
     pen.add(true);
     for (const [sx, tx] of [
       [470, 560],
@@ -157,7 +156,8 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
     }
     // podium with a glowing floor ring
     pen.add(false);
-    pen.poly([500, FLOOR_Y, 520, FLOOR_Y - 16, 760, FLOOR_Y - 16, 780, FLOOR_Y], 0x2c2350);
+    pen.poly([500, FLOOR_Y, 520, FLOOR_Y - 16, 760, FLOOR_Y - 16, 780, FLOOR_Y], 0x141a48);
+    pen.line(520, FLOOR_Y - 16, 760, FLOOR_Y - 16, 2, 0x3df5ff, 0.8);
     pen.add(true);
     pen.glow(640, FLOOR_Y - 10, 190, tint, 0.35);
     const ringPulse = still ? 1 : 0.85 + 0.15 * Math.sin(time * 2.2);
@@ -188,7 +188,7 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
         pose = { ...pose, head: pose.head + Math.sin(time * 0.9 + i * 2) * 9 };
         if (tauntT[i]! > 0) {
           const t = tauntT[i]!;
-          pose = POSES[`win${v.look.pose % 4}`] ?? pose;
+          pose = POSES[`win${v.look.pose % 8}`] ?? pose;
           expr = t > 35 ? 'happy' : 'smug';
         } else expr = (i ? 'smug' : 'determined') as Expression;
         if (blinkT[i]! > 0) expr = 'happy';
@@ -199,7 +199,10 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
       const [elc, ell] = elementColors(f, v.look);
       pen.line(x - 36, y + 2, x + 36, y + 2, 8, 0, 0.25);
       fx.drawBehindFighter(pen, m, f, time);
-      drawStick(pen, j, f.face, 1.25, { look: v.look, element: elc, elementLight: ell, expression: expr, aura: 0.45, alpha, cloth: v.cloth, time, weight });
+      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: 0.45, alpha, cloth: v.cloth, time, weight, mp: f.mp / 1000 };
+      rim.color = mixC(ell, 0xffffff);
+      drawStick(rim, j, f.face, 1.25, opts);
+      drawStick(pen, j, f.face, 1.25, opts);
       fx.drawOnFighter(pen, m, f, j, time);
     });
     fx.drawOver(pen, m, time);
@@ -257,7 +260,7 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
   return {
     el: wrap,
     setTint(color) {
-      tintTarget = color ?? 0xffb46b;
+      tintTarget = color ?? 0x3df5ff;
       if (still) draw(1);
     },
     stop() {

@@ -76,6 +76,12 @@ export class PhaserPen implements Pen {
     this.glows = 0;
     this.cur = this.g;
   }
+  /** Destroys the pooled glow sprites (the graphics belong to the caller). */
+  destroy(): void {
+    for (const im of this.pool) im.destroy();
+    this.pool.length = 0;
+    this.used = 0;
+  }
 
   add(on: boolean): void {
     this.cur = on && this.gAdd ? this.gAdd : this.g;

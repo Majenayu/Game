@@ -18,6 +18,10 @@ class Synth {
   private timer: number | null = null;
   private muteReasons = new Set<string>();
   tension = 0;
+  /** music tint: semitones added to every song's root (the arena's colour) */
+  tint = 0;
+  private amb: { kind: Ambient; nodes: AudioNode[]; srcs: AudioScheduledSourceNode[] } | null = null;
+  private ambWanted: Ambient | null = null;
   musicVol = 0.5;
   sfxVol = 0.7;
 
@@ -47,6 +51,55 @@ class Synth {
     }
     this.applyVolumes();
     if (this.track) this.startScheduler();
+    if (this.ambWanted) this.ambient(this.ambWanted);
+  }
+
+  /** The arena's ambient layer: filtered noise (wind, steam, crowd) and a slow drone; null stops it. */
+  ambient(kind: Ambient | null): void {
+    this.ambWanted = kind;
+    const c = this.ctx;
+    if (!c) return;
+    if (this.amb?.kind === kind) return;
+    if (this.amb) {
+      for (const s of this.amb.srcs) s.stop(c.currentTime + 0.6);
+      const g = this.amb.nodes[this.amb.nodes.length - 1] as GainNode;
+      g.gain.setTargetAtTime(0, c.currentTime, 0.2);
+      this.amb = null;
+    }
+    this.tint = kind ? AMB[kind].tint : 0;
+    if (!kind) return;
+    const a = AMB[kind];
+    const out = c.createGain();
+    out.gain.setValueAtTime(0, c.currentTime);
+    out.gain.setTargetAtTime(1, c.currentTime, 0.8);
+    out.connect(this.musicBus);
+    const src = c.createBufferSource();
+    src.buffer = this.noise;
+    src.loop = true;
+    const flt = c.createBiquadFilter();
+    flt.type = a.filter;
+    flt.frequency.value = a.freq;
+    flt.Q.value = a.q;
+    const ng = c.createGain();
+    ng.gain.value = a.noise;
+    src.connect(flt).connect(ng).connect(out);
+    const osc = c.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = a.drone;
+    const dg = c.createGain();
+    dg.gain.value = a.droneVol;
+    // slow swell on the drone
+    const lfo = c.createOscillator();
+    lfo.frequency.value = a.lfo;
+    const lg = c.createGain();
+    lg.gain.value = a.droneVol * 0.6;
+    lfo.connect(lg).connect(dg.gain);
+    osc.connect(dg).connect(out);
+    const t = c.currentTime;
+    src.start(t);
+    osc.start(t);
+    lfo.start(t);
+    this.amb = { kind, nodes: [flt, ng, dg, lg, out], srcs: [src, osc, lfo] };
   }
 
   applyVolumes(): void {
@@ -277,7 +330,7 @@ class Synth {
     const b = this.musicBus;
     const pos = i % 16;
     const bar = Math.floor(i / 16) % s.bars;
-    const root = s.root * Math.pow(2, s.prog[bar % s.prog.length]! / 12);
+    const root = s.root * Math.pow(2, (s.prog[bar % s.prog.length]! + this.tint) / 12);
     if (s.kick[pos] === 'x') this.tone('sine', 140, 42, 0.14, 0.9, b, t);
     if (s.snare[pos] === 'x') this.hiss(0.1, 0.35, b, 'bandpass', 1800, 1200, t, 0.8);
     if (s.hat[pos] === 'x' || (this.tension > 0.5 && pos % 2 === 1)) this.hiss(0.03, 0.16 + this.tension * 0.1, b, 'highpass', 7000, 7000, t);
@@ -321,4 +374,28 @@ const SONGS: Record<Track, Song> = {
   victory: { bpm: 120, root: 262, mode: 'major', bars: 2, prog: [0, 5], kick: 'x.......x.......', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', bass: '0...4...0...4...', lead: '0.2.4.5.7.5.4.2.', leadWave: 'triangle', leadAlways: true },
 };
 
+export type Ambient = 'city' | 'hum' | 'reactor' | 'cold' | 'forest' | 'forge' | 'wind' | 'ruins' | 'data' | 'void';
+interface AmbDef {
+  filter: BiquadFilterType;
+  freq: number;
+  q: number;
+  noise: number;
+  drone: number;
+  droneVol: number;
+  lfo: number;
+  tint: number;
+}
+/** Per-arena ambience: a noise colour, a drone pitch and the music tint in semitones. */
+const AMB: Record<Ambient, AmbDef> = {
+  city: { filter: 'lowpass', freq: 500, q: 0.7, noise: 0.18, drone: 55, droneVol: 0.12, lfo: 0.15, tint: 0 },
+  hum: { filter: 'bandpass', freq: 240, q: 3, noise: 0.1, drone: 60, droneVol: 0.2, lfo: 0.1, tint: -2 },
+  reactor: { filter: 'bandpass', freq: 120, q: 4, noise: 0.2, drone: 49, droneVol: 0.26, lfo: 0.6, tint: -3 },
+  cold: { filter: 'highpass', freq: 3500, q: 0.5, noise: 0.06, drone: 98, droneVol: 0.08, lfo: 0.08, tint: 2 },
+  forest: { filter: 'bandpass', freq: 1800, q: 0.6, noise: 0.07, drone: 73, droneVol: 0.07, lfo: 0.2, tint: 3 },
+  forge: { filter: 'lowpass', freq: 300, q: 1.2, noise: 0.24, drone: 41, droneVol: 0.22, lfo: 0.9, tint: -4 },
+  wind: { filter: 'bandpass', freq: 700, q: 0.4, noise: 0.22, drone: 65, droneVol: 0.06, lfo: 0.25, tint: 1 },
+  ruins: { filter: 'lowpass', freq: 800, q: 1, noise: 0.08, drone: 52, droneVol: 0.14, lfo: 0.05, tint: -1 },
+  data: { filter: 'highpass', freq: 5000, q: 2, noise: 0.05, drone: 110, droneVol: 0.08, lfo: 3, tint: 4 },
+  void: { filter: 'lowpass', freq: 200, q: 0.5, noise: 0.1, drone: 36, droneVol: 0.24, lfo: 0.07, tint: -5 },
+};
 export const audio = new Synth();

@@ -2,7 +2,7 @@
 // element matchup chart.
 import { audio } from '../../audio/synth';
 import { BEATS, ELEMENT_IDS, ELEMENTS, matchup, STRONG_PCT, WEAK_PCT, type ElementId } from '../../content/elements';
-import { AURA_NAMES, BACKS, BODY_NAMES, EXTRAS, EYES, HATS, HEADS, LOCKED, lookFromSeed, MOUTHS, THICK_NAMES, WIN_POSES, type Look } from '../../content/looks';
+import { AURA_NAMES, BACKS, BODY_NAMES, EXTRAS, EYES, HANDS, HATS, HEADS, LOCKED, SUITS, lookFromSeed, MOUTHS, THICK_NAMES, WIN_POSES, type Look } from '../../content/looks';
 import { ARCHETYPE_IDS, ARCHETYPES, mechanicOf, POWER_TEXT, POWER_UNLOCK_LEVELS, powersFor, RANK_MP_OFF, type Archetype } from '../../content/powers';
 import { app, saveProfile } from '../../app/state';
 import { addAvatar, avatarById, buy, choosePerk, cleanName, slotsFor, squadClash, suggestArchetype, xpToNext, type Avatar } from '../../meta/profile';
@@ -259,8 +259,10 @@ const FORGE: { key: keyof Look; label: string; names: string[] }[] = [
   { key: 'mouth', label: 'Mouth', names: MOUTHS },
   { key: 'body', label: 'Body colour', names: BODY_NAMES },
   { key: 'thick', label: 'Line', names: THICK_NAMES },
-  { key: 'hat', label: 'Hat / hair', names: HATS },
+  { key: 'hat', label: 'Headgear', names: HATS },
   { key: 'back', label: 'Back', names: BACKS },
+  { key: 'suit', label: 'Suit pattern', names: SUITS },
+  { key: 'hand', label: 'Hand effect', names: HANDS },
   { key: 'extra', label: 'Extra', names: EXTRAS },
   { key: 'aura', label: 'Aura', names: AURA_NAMES },
   { key: 'pose', label: 'Win pose', names: WIN_POSES },
@@ -288,7 +290,7 @@ function showForge(a: Avatar, previewPose = 'idle'): void {
       a.look = { ...a.look, [f.key]: (i + d + f.names.length) % f.names.length };
       // only owned options are saved; unowned ones are previewed until bought
       saveIfOwned(a);
-      showForge(a, f.key === 'pose' ? ['win0', 'win1', 'win2', 'win3'][a.look.pose]! : 'idle');
+      showForge(a, f.key === 'pose' ? `win${a.look.pose % 8}` : 'idle');
     };
     row.appendChild(h('span', 'f-label', f.label));
     const prevB = btn('‹', () => set(-1), 'btn arrow');

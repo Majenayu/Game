@@ -8,7 +8,7 @@ import type { FighterSpec } from '../sim/types';
 import { ARCHETYPE_IDS, POWER_UNLOCK_LEVELS, powersFor, type Archetype } from '../content/powers';
 import { SaveError, type Schema } from './save';
 
-export const PROFILE_VERSION = 2;
+export const PROFILE_VERSION = 3;
 export const START_SLOTS = 10;
 export const MAX_SLOTS = 20;
 
@@ -73,6 +73,18 @@ export const PROFILE_SCHEMA: Schema<Profile> = {
         if (!ARCHETYPE_IDS.includes(a.archetype as Archetype)) a.archetype = ARCHETYPE_IDS[n % ARCHETYPE_IDS.length];
       }
       return { ...d, avatars, version: 2 };
+    },
+    // v2 looks had no suit pattern or hand effect (visual overhaul): both start at none
+    2: (d) => {
+      const avatars = (Array.isArray(d.avatars) ? d.avatars : []) as Record<string, unknown>[];
+      for (const a of avatars) {
+        const look = a.look as Record<string, unknown> | undefined;
+        if (look && typeof look === 'object') {
+          if (typeof look.suit !== 'number') look.suit = 0;
+          if (typeof look.hand !== 'number') look.hand = 0;
+        }
+      }
+      return { ...d, avatars, version: 3 };
     },
   },
   validate: (d) => {

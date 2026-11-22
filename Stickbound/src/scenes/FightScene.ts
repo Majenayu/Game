@@ -61,7 +61,8 @@ export class FightScene extends Phaser.Scene {
   private frameMs = 16.7;
   private pen!: PhaserPen;
   private rim!: RimPen;
-  private arenaView!: ArenaView;
+  private arenaView: ArenaView | null = null;
+  private quality: 'high' | 'medium' | 'low' = 'high';
   /** floor reflection (null on Low or with reflections off) */
   private refl: { g: Phaser.GameObjects.Graphics; pen: PhaserPen; tint: TintPen } | null = null;
   /** full-screen grade: time desaturates, supers punch contrast (WebGL only) */
@@ -110,38 +111,24 @@ export class FightScene extends Phaser.Scene {
     this.finishing = false;
     this.hitboxes = !!setup.showHitboxes;
     this.texts = [];
+    // objects of the previous fight were destroyed with the scene
+    this.arenaView = null;
+    this.refl = null;
   }
 
   create(): void {
     document.body.dataset.screen = 'fight';
     document.body.dataset.arena = this.arena.id;
     bakeGlow(this);
-    const q = resolvedQuality();
-    this.arenaView = new ArenaView(this, this.arena, q);
-    this.arenaView.react.reduced = settings.reducedMotion;
-    this.fx.react = this.arenaView.react;
     this.g = this.add.graphics().setDepth(2);
     this.gAdd = this.add.graphics().setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
     this.pen = new PhaserPen(this.g, this.gAdd, this, 5);
     this.rim = new RimPen(this.pen);
-    this.refl = null;
-    if (q !== 'low' && settings.reflections) {
-      // mirrored about the floor line: y' = 2 * FLOOR_Y - y
-      const g = this.add.graphics().setDepth(0).setScale(1, -1).setPosition(0, FLOOR_Y * 2).setAlpha(0.2);
-      const pen = new PhaserPen(g);
-      this.refl = { g, pen, tint: new TintPen(pen) };
-    }
-    this.grade = null;
-    this.gradeKey = '';
-    const cam = this.cameras.main;
-    if (this.renderer.type === Phaser.WEBGL && q !== 'low') {
-      this.grade = cam.postFX.addColorMatrix();
-      if (q === 'high' && settings.bloom) cam.postFX.addBloom(0xffffff, 1, 1, 0.8, 0.3, 2);
-    }
     this.trail.clear();
     this.qFrames = 0;
     this.qSum = 0;
-    cam.setBackgroundColor(this.arena.bg);
+    this.applyQuality(resolvedQuality());
+    this.cameras.main.setBackgroundColor(this.arena.bg);
     this.fitCamera(true);
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => this.cleanup());
@@ -162,6 +149,7 @@ export class FightScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => this.togglePause());
     this.input.keyboard?.on('keydown-P', () => this.togglePause());
     audio.play(this.setup.music);
+    audio.ambient(this.arena.ambient);
     this.time0 = this.time.now;
   }
 
@@ -174,6 +162,7 @@ export class FightScene extends Phaser.Scene {
     this.cutinEl = null;
     this.scale.off('resize', this.onResize, this);
     audio.tension = 0;
+    audio.ambient(null);
   }
 
   private onResize(): void {
@@ -220,7 +209,8 @@ export class FightScene extends Phaser.Scene {
     const dt = Math.min(delta, 100);
     this.frameMs += (dt - this.frameMs) * 0.05;
     this.fx.adapt(this.frameMs, settings.lowGraphics || !settings.particles, dt);
-    this.measureQuality(dt);
+    // Phaser smooths and caps delta; the quality pick needs the real frame time
+    this.measureQuality(Math.min(250, this.game.loop.rawDelta || dt));
     if (this.cutinT > 0) {
       this.cutinT -= dt;
       if (this.cutinT <= 0) this.endCutin();
@@ -258,16 +248,46 @@ export class FightScene extends Phaser.Scene {
     if (me) audio.tension = this.m.phase === 'fight' ? Math.min(1, 1.2 - me.hp / me.hpMax + (this.m.timer < 600 ? 0.4 : 0)) : 0;
   }
 
-  /** Auto quality: the first fight on a device measures ~5 s of frame times and picks High, Medium or Low. */
+  /** Builds the quality-dependent parts: arena layers, floor reflection, colour grade and bloom. */
+  private applyQuality(q: 'high' | 'medium' | 'low'): void {
+    this.quality = q;
+    this.arenaView?.destroy();
+    this.arenaView = new ArenaView(this, this.arena, q);
+    this.arenaView.react.reduced = settings.reducedMotion;
+    this.fx.react = this.arenaView.react;
+    this.refl?.g.destroy();
+    this.refl = null;
+    if (q !== 'low' && settings.reflections) {
+      // mirrored about the floor line: y' = 2 * FLOOR_Y - y
+      const g = this.add.graphics().setDepth(0).setScale(1, -1).setPosition(0, FLOOR_Y * 2).setAlpha(0.2);
+      const pen = new PhaserPen(g);
+      this.refl = { g, pen, tint: new TintPen(pen) };
+    }
+    const cam = this.cameras.main;
+    this.grade = null;
+    this.gradeKey = '';
+    if (this.renderer.type === Phaser.WEBGL) {
+      cam.postFX.clear();
+      if (q !== 'low') {
+        this.grade = cam.postFX.addColorMatrix();
+        if (q === 'high' && settings.bloom) cam.postFX.addBloom(0xffffff, 1, 1, 0.8, 0.3, 2);
+      }
+    }
+  }
+  /** Auto quality: the first fight on a device measures about 4 s of frame times (after a 1.5 s warm-up) and picks
+   *  High, Medium or Low, then switches the running fight to it. A very slow start switches to Low at once. */
   private measureQuality(dt: number): void {
-    if (settings.quality !== 'auto' || settings.autoQuality || this.m.phase !== 'fight' || this.paused) return;
+    if (settings.quality !== 'auto' || settings.autoQuality || this.paused || this.holdT > 0 || this.cutinT > 0) return;
     this.qFrames++;
-    if (this.qFrames < 90) return;
+    if (this.qFrames < 4) return;
     this.qSum += dt;
-    if (this.qFrames < 390) return;
-    const avg = this.qSum / 300;
+    const n = this.qFrames - 3;
+    const avg = this.qSum / n;
+    const slowStart = n >= 5 && avg > 45;
+    if (!slowStart && this.qSum < 4000 + (this.qFrames < 30 ? 1500 : 0)) return;
     settings.autoQuality = avg > 26 ? 'low' : avg > 18.5 ? 'medium' : 'high';
     saveSettings();
+    if (settings.autoQuality !== this.quality) this.applyQuality(settings.autoQuality);
   }
   private tick(): void {
     const [c0, c1] = this.setup.controllers;
@@ -477,11 +497,12 @@ export class FightScene extends Phaser.Scene {
     this.refl?.pen.begin();
     const time = (this.time.now - this.time0) / 1000;
     const m = this.m;
-    const A = this.arenaView.react;
-    this.arenaView.update(time);
+    const view = this.arenaView!;
+    const A = view.react;
+    view.update(time);
     this.applyGrade(A.time, A.superK);
     // light pools under the fighters on the glossy floor
-    const fp = this.arenaView.floorPen;
+    const fp = view.floorPen;
     fp.add(true);
     for (const f of m.fighters) {
       if (!f.onField) continue;
@@ -560,12 +581,14 @@ export class FightScene extends Phaser.Scene {
       alpha,
       cloth: v.cloth,
       zombie: f.spec.kind !== 'stick',
+      boss: f.spec.kind === 'boss',
+      mp: f.mp / 1000,
       time,
       weight,
       teamColor: this.m.mode === 'duel' ? (f.team === 0 ? 0x2f8cff : 0xff4d6d) : undefined,
     };
     // Time powers leave ghost afterimages of recent positions
-    const A = this.arenaView.react;
+    const A = this.arenaView!.react;
     let tr = this.trail.get(f.id);
     if (!tr) this.trail.set(f.id, (tr = []));
     if (Math.round(time * 60) % 4 === 0) {

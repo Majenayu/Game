@@ -1093,3 +1093,138 @@ export const arenaById = (id: string): ArenaDef => {
   const real = LEGACY[id] ?? id;
   return ARENAS.find((a) => a.id === real) ?? ARENAS[0]!;
 };
+
+/** The lobby hangar: drawn behind the menus (BackdropScene), never fought in. Same layer system as the arenas. */
+export const HANGAR: ArenaDef = {
+  id: 'hangar',
+  name: 'Hangar',
+  bg: 0x05060f,
+  accent: 0x3df5ff,
+  accent2: 0x8a5cff,
+  props: [],
+  ambient: 'hum',
+  sky: [0x05060f, 0x101436],
+  dark: true,
+  layers: [
+    {
+      scroll: 0.04,
+      draw(p, r) {
+        // deep space through the hangar window, a planet rim and a nebula
+        sky(p, BAKE_Y, FLOOR_Y, [0x020310, 0x070a24, 0x10123a, 0x1a1040]);
+        stars(p, r, 140, BAKE_Y, 420, 0xcfe0ff);
+        p.add?.(true);
+        p.glow?.(300, 120, 420, 0x8a5cff, 0.25);
+        p.glow?.(1000, 60, 360, 0x2de2ff, 0.16);
+        p.add?.(false);
+        p.circle(900, 760, 520, 0x0a0c26, null);
+        ellipse(p, 900, 760, 520, 520, 6, 0x3df5ff, 0.55, Math.PI * 1.08, Math.PI * 1.92, 60);
+        p.add?.(true);
+        ellipse(p, 900, 760, 528, 528, 22, 0x3df5ff, 0.12, Math.PI * 1.08, Math.PI * 1.92, 60);
+        p.add?.(false);
+      },
+    },
+    {
+      scroll: 0.14,
+      draw(p) {
+        // distant cruisers parked in orbit
+        for (const [x, y, k] of [
+          [140, 210, 1],
+          [1180, 150, 0.7],
+          [620, 90, 0.5],
+        ] as const) {
+          p.poly([x - 120 * k, y, x + 90 * k, y - 14 * k, x + 140 * k, y, x + 90 * k, y + 14 * k], 0x0c1030);
+          p.line(x - 110 * k, y, x + 130 * k, y, 1.5, 0x5a7cff, 0.6);
+          p.glow?.(x - 120 * k, y, 14 * k, 0x3df5ff, 0.7);
+        }
+      },
+    },
+    {
+      scroll: 0.3,
+      draw(p) {
+        // the window frame: heavy struts with neon seams
+        const strut = (x0: number, y0: number, x1: number, y1: number, w: number) => {
+          p.line(x0, y0, x1, y1, w, 0x080a1c);
+          p.line(x0, y0, x1, y1, 2, 0x2a3a7a, 0.9);
+        };
+        rect(p, X0, BAKE_Y, X1 - X0, 40 - BAKE_Y, 0x070818);
+        for (let x = -600; x <= 1900; x += 310) strut(x, 40, x + 60, 470, 34);
+        strut(X0, 40, X1, 40, 26);
+        strut(X0, 470, X1, 470, 30);
+        glowLine(p, X0, 470, X1, 470, 2, 0x3df5ff, 0.6);
+        glowLine(p, X0, 40, X1, 40, 1.5, 0x8a5cff, 0.5);
+      },
+    },
+    {
+      scroll: 0.6,
+      draw(p) {
+        // side bays: walls with light panels, a catwalk, cargo crates
+        for (const side of [-1, 1]) {
+          const x = side < 0 ? -640 : 1360;
+          const w = 560;
+          const xl = side < 0 ? x : x - w + 560;
+          rect(p, xl, 80, w, 540, 0x0a0c22);
+          for (let y = 120; y < 460; y += 70) {
+            rect(p, xl + 40, y, w - 80, 46, 0x10142e);
+            p.line(xl + 40, y + 46, xl + w - 40, y + 46, 2, side < 0 ? 0x3df5ff : 0xff3ea5, 0.45);
+          }
+        }
+        // catwalk
+        p.line(X0, 400, X1, 400, 8, 0x0e1230);
+        for (let x = X0; x < X1; x += 40) p.line(x, 370, x, 400, 2, 0x1a2250);
+        p.line(X0, 370, X1, 370, 3, 0x2a3a7a);
+        // crates
+        for (const [x, w, h] of [
+          [-80, 130, 90],
+          [60, 90, 60],
+          [1180, 140, 100],
+          [1330, 90, 70],
+        ] as const) {
+          rect(p, x, 600 - h, w, h, 0x121634);
+          p.line(x, 600 - h, x + w, 600 - h, 2, 0x5a7cff, 0.7);
+          p.line(x + 10, 600 - h + 12, x + w - 10, 600 - h + 12, 4, 0xffd84a, 0.5);
+        }
+      },
+    },
+    {
+      scroll: 1,
+      draw(p, r) {
+        floor(p, r, 0x141838, 0x05060f, 0x3df5ff, 0x3df5ff, [300, 0x3df5ff, 640, 0x8a5cff, 980, 0xff3ea5]);
+        // the launch pad: concentric rings on the floor
+        p.add?.(true);
+        for (let i = 0; i < 3; i++) ellipse(p, 640, 640, 220 + i * 70, 34 + i * 11, 2.5 - i * 0.6, 0x3df5ff, 0.5 - i * 0.12, 0, Math.PI * 2, 56);
+        p.add?.(false);
+      },
+    },
+  ],
+  animMid(p, t, _A, q) {
+    // maintenance drones crossing the bay and blinking warning lights
+    p.add?.(true);
+    for (let i = 0; i < Math.round(4 * q) + 1; i++) {
+      const x = ((t * (40 + i * 13) + i * 700) % 2200) - 460;
+      const y = 180 + i * 50 + Math.sin(t * 1.3 + i) * 12;
+      p.circle(x, y, 4, 0x0a0c22, null);
+      p.glow?.(x, y, 10, i % 2 ? 0xff3ea5 : 0x3df5ff, 0.8);
+    }
+    const blink = Math.sin(t * 3) > 0.6 ? 1 : 0.2;
+    for (const x of [-300, 1580]) p.glow?.(x, 90, 18, 0xff4a2e, 0.8 * blink);
+    p.add?.(false);
+  },
+  animNear(p, t) {
+    // a slow holographic ring over the pad and a scanning light
+    p.add?.(true);
+    const k = (t * 0.25) % 1;
+    ellipse(p, 640, 640 - k * 240, 200 - k * 40, 30 - k * 6, 2, 0x3df5ff, 0.45 * (1 - k), 0, Math.PI * 2, 48);
+    const sx = 640 + Math.sin(t * 0.4) * 520;
+    beam(p, sx, -40, sx + Math.sin(t * 0.4) * 80, 600, 8, 90, 0x3df5ff, 0.03);
+    p.add?.(false);
+  },
+  fg(p, t, _A, q) {
+    p.add?.(true);
+    for (let i = 0; i < Math.round(20 * q); i++) {
+      const x = ((i * 137 + t * (8 + (i % 5) * 3)) % 1500) - 110;
+      const y = 120 + ((i * 71) % 460) + Math.sin(t * 0.6 + i) * 14;
+      p.circle(x, y, 1.4 + (i % 3) * 0.6, i % 3 ? 0xcfe8ff : 0x8a5cff, null, 0, 0.5);
+    }
+    p.add?.(false);
+  },
+};

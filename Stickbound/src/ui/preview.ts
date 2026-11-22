@@ -2,10 +2,11 @@
 import { ELEMENTS, type ElementId } from '../content/elements';
 import type { Look } from '../content/looks';
 import { CanvasPen } from '../render/pen';
+import { mixC, RimPen } from '../render/rimPen';
 import { drawStick, POSES, solve, type Expression } from '../render/rig';
 import { settings } from '../meta/settings';
 
-const AURA = [0, 0xffffff, 0xff4d8d, 0x00e0ff, 0xffd84a, 0x9b6bff, 0x55ff8a];
+import { AURAS as AURA } from '../content/looks';
 
 export interface PreviewOpts {
   look: Look;
@@ -41,6 +42,7 @@ export function stickPreview(o: PreviewOpts, w = 160, h = 200, cls = 'preview'):
   const ctx = c.getContext('2d');
   if (!ctx) return c;
   const pen = new CanvasPen(ctx);
+  const rim = new RimPen(pen);
   const s = (o.scale ?? 1) * (h / 200);
   const cloth: { x: number; y: number }[] = [];
   const draw = (time: number) => {
@@ -53,7 +55,10 @@ export function stickPreview(o: PreviewOpts, w = 160, h = 200, cls = 'preview'):
     const bob = o.live && !settings.reducedMotion ? Math.sin(time * 2.4) * 2 * s : 0;
     const pose = POSES[o.pose ?? 'idle'] ?? POSES.idle!;
     const j = solve(pose, w / 2, h - 16 * s + bob, o.face ?? 1, s * 1.15);
-    drawStick(pen, j, o.face ?? 1, s * 1.15, { look: o.look, element: aura, elementLight: light, expression: o.expression ?? 'happy', aura: 0.55, cloth, time });
+    const opts = { look: o.look, element: aura, elementLight: light, expression: o.expression ?? ('happy' as const), aura: 0.55, cloth, time };
+    rim.color = mixC(light, 0xffffff);
+    drawStick(rim, j, o.face ?? 1, s * 1.15, opts);
+    drawStick(pen, j, o.face ?? 1, s * 1.15, opts);
   };
   draw(0);
   if (o.live) {

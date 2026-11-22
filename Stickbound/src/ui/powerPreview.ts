@@ -203,7 +203,7 @@ export class PowerStage {
       const [elc, ell] = elementColors(f, v.look);
       pen.line(x - 30, FLOOR_Y + 2, x + 30, FLOOR_Y + 2, 7, 0, 0.2);
       fx.drawBehindFighter(pen, m, f, time);
-      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: f.team === 0 ? 0.4 : 0.1, alpha, cloth: v.cloth, time, weight };
+      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: f.team === 0 ? 0.4 : 0.1, alpha, cloth: v.cloth, time, weight, mp: f.mp / 1000 };
       this.rim.color = mixC(ell, 0xffffff);
       drawStick(this.rim, j, f.face, 1, opts);
       drawStick(pen, j, f.face, 1, opts);

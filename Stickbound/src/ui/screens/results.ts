@@ -60,7 +60,7 @@ export function showResults(o: ResultsOpts): void {
   if (win) app.platform.happytime();
   const top = h('div', 'res-top');
   const lead = o.squad[0];
-  if (lead) top.appendChild(stickPreview({ look: lead.look, element: lead.element, pose: win ? ['win0', 'win1', 'win2', 'win3'][lead.look.pose] : 'hurt', expression: win ? 'happy' : 'hurt', live: true }, 150, 190));
+  if (lead) top.appendChild(stickPreview({ look: lead.look, element: lead.element, pose: win ? `win${lead.look.pose % 8}` : 'hurt', expression: win ? 'happy' : 'hurt', live: true }, 150, 190));
   const info = h('div', 'res-info');
   if (o.sub) info.appendChild(h('p', 'res-sub', o.sub));
   const s = r.stats;

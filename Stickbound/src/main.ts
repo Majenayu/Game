@@ -1,6 +1,12 @@
 // Entry: platform, settings and profile, keyboard, the Phaser game (backdrop + fight scenes), DOM menus on top.
 import Phaser from 'phaser';
+import '@fontsource/orbitron/latin-700.css';
+import '@fontsource/orbitron/latin-900.css';
+import '@fontsource/rajdhani/latin-500.css';
+import '@fontsource/rajdhani/latin-600.css';
+import '@fontsource/rajdhani/latin-700.css';
 import './ui/styles.css';
+import './ui/theme.css';
 import { audio } from './audio/synth';
 import { attachKeyboard } from './core/input';
 import { createPlatform } from './platform';
@@ -56,6 +62,11 @@ async function boot(): Promise<void> {
   if (new URLSearchParams(location.search).has('powers')) {
     document.getElementById('boot')?.remove();
     platform.loadingStop();
+    if (new URLSearchParams(location.search).has('rigs')) {
+      const { showRigSheet } = await import('./ui/rigSheet');
+      showRigSheet();
+      return;
+    }
     const { showPowerLab } = await import('./ui/powerLab');
     showPowerLab();
     return;

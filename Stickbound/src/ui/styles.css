@@ -553,8 +553,8 @@ body[data-screen='lab'] .lab-sheet.show { position: static; }
 .lab.play .lab-info { display: none; }
 
 /* ---- fight screen post look: vignette and optional scanlines (CSS, so they cost the GPU almost nothing) ---- */
-body[data-screen='fight'] #game::after,
-body[data-screen='pause'] #game::after {
+html:not([data-quality='low']) body[data-screen='fight'] #game::after,
+html:not([data-quality='low']) body[data-screen='pause'] #game::after {
   content: '';
   position: absolute;
   inset: 0;

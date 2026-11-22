@@ -2,7 +2,7 @@
 // (walk phase, cloth springs, previous hand position for smear trails).
 
 import { ELEMENTS } from '../content/elements';
-import { DEFAULT_LOOK, lookFromSeed, type Look } from '../content/looks';
+import { AURAS, DEFAULT_LOOK, lookFromSeed, type Look } from '../content/looks';
 import { getMove } from '../sim/step';
 import type { Fighter } from '../sim/types';
 import { mix, POSES, walkPose, type Expression, type Pose } from './rig';
@@ -125,7 +125,7 @@ export function poseFor(f: Fighter, v: ViewState, time: number): { pose: Pose; e
       expr = 'dizzy';
       break;
     case 'win':
-      pose = POSES[`win${v.look.pose % 4}`] ?? POSES.win0!;
+      pose = POSES[`win${v.look.pose % 8}`] ?? POSES.win0!;
       expr = 'happy';
       break;
     case 'swapout':
@@ -149,6 +149,6 @@ export function poseFor(f: Fighter, v: ViewState, time: number): { pose: Pose; e
 
 export function elementColors(f: Fighter, look: Look): [number, number] {
   const [m, l] = ELEMENTS[f.spec.element].color;
-  const auraOverride = [0, 0xffffff, 0xff4d8d, 0x00e0ff, 0xffd84a, 0x9b6bff, 0x55ff8a][look.aura] ?? 0;
+  const auraOverride = AURAS[look.aura] ?? 0;
   return [auraOverride || m, l];
 }

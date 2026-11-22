@@ -8,3 +8,6 @@ release
 .env
 store/raw
 docs/videos/raw
+
+# owner's concept images (never shipped; ALLOW_AI_BACKGROUND_IMAGES = NO)
+gemini/

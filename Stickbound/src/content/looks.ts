@@ -11,6 +11,10 @@ export interface Look {
   extra: number;
   aura: number;
   pose: number;
+  /** suit pattern (light strips on the body); added in profile v3 */
+  suit: number;
+  /** hand effect; added in profile v3 */
+  hand: number;
 }
 
 export const HEADS = ['Round', 'Wide', 'Tall', 'Small'];
@@ -21,23 +25,27 @@ export const BODIES = [0x16161d, 0x2a2f45, 0x3b2a20, 0x1f3b2a, 0x3a1f3b, 0x40201
 export const BODY_NAMES = ['Coal Black', 'Night Blue', 'Cocoa', 'Forest', 'Plum', 'Brick'];
 export const THICKNESS = [6, 8, 10];
 export const THICK_NAMES = ['Thin', 'Normal', 'Bold'];
-export const HATS = ['None', 'Headband', 'Spiky hair', 'Cap', 'Beanie', 'Horns', 'Top bun', 'Antenna'];
-export const BACKS = ['None', 'Scarf', 'Cape', 'Long scarf'];
+export const HATS = ['None', 'Headband', 'Spiky hair', 'Cap', 'Beanie', 'Horns', 'Top bun', 'Antenna', 'Visor', 'Holo halo', 'Cyber helm', 'Ear fins', 'Crest'];
+export const BACKS = ['None', 'Scarf', 'Cape', 'Long scarf', 'Jet pack', 'Energy wings', 'Holo cape', 'Data tail', 'Shoulder pylons'];
+export const SUITS = ['Plain', 'Circuit', 'Chevron', 'Split tone', 'Spine strip', 'Hex plates', 'Pin stripes', 'Pulse bands', 'Arc lines'];
+export const HANDS = ['None', 'Glow fists', 'Energy claws', 'Ring bands', 'Spark trail', 'Plasma spheres', 'Shock gauntlets'];
 export const EXTRAS = ['None', 'Wristbands', 'Belt', 'Goggles', 'Shades'];
 /** 0 = element colour */
-export const AURAS = [0, 0xffffff, 0xff4d8d, 0x00e0ff, 0xffd84a, 0x9b6bff, 0x55ff8a];
-export const AURA_NAMES = ['Element', 'White', 'Pink', 'Cyan', 'Gold', 'Violet', 'Mint'];
-export const WIN_POSES = ['Fist up', 'Bow', 'Flex', 'Point'];
+export const AURAS = [0, 0xffffff, 0xff4d8d, 0x00e0ff, 0xffd84a, 0x9b6bff, 0x55ff8a, 0xff7a1f, 0x9fe8ff, 0xc04aff];
+export const AURA_NAMES = ['Element', 'White', 'Pink', 'Cyan', 'Gold', 'Violet', 'Mint', 'Plasma', 'Frost', 'Ultraviolet'];
+export const WIN_POSES = ['Fist up', 'Bow', 'Flex', 'Point', 'Salute', 'Arms crossed', 'Sky point', 'Power stance'];
 
-export const DEFAULT_LOOK: Look = { head: 0, eyes: 0, mouth: 1, body: 0, thick: 1, hat: 0, back: 1, extra: 0, aura: 0, pose: 0 };
+export const DEFAULT_LOOK: Look = { head: 0, eyes: 0, mouth: 1, body: 0, thick: 1, hat: 0, back: 1, extra: 0, aura: 0, pose: 0, suit: 0, hand: 0 };
 
 /** Options that must be bought in the Shop (index lists per slot). Everything else is free. */
 export const LOCKED: Partial<Record<keyof Look, Record<number, number>>> = {
-  hat: { 5: 300, 6: 200, 7: 350 },
-  back: { 2: 400, 3: 300 },
+  hat: { 5: 300, 6: 200, 7: 350, 8: 300, 9: 400, 10: 350, 11: 250, 12: 300 },
+  back: { 2: 400, 3: 300, 4: 450, 5: 500, 6: 400, 7: 350, 8: 300 },
+  suit: { 3: 150, 5: 250, 6: 150, 7: 300, 8: 200 },
+  hand: { 2: 300, 3: 200, 4: 250, 5: 350, 6: 300 },
   extra: { 3: 250, 4: 250 },
-  aura: { 2: 200, 3: 200, 4: 300, 5: 300, 6: 200 },
-  pose: { 2: 150, 3: 150 },
+  aura: { 2: 200, 3: 200, 4: 300, 5: 300, 6: 200, 7: 250, 8: 250, 9: 300 },
+  pose: { 2: 150, 3: 150, 4: 150, 5: 150, 6: 200, 7: 200 },
 };
 
 export function lookFromSeed(seed: number): Look {
@@ -46,5 +54,5 @@ export function lookFromSeed(seed: number): Look {
     s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
     return s % n;
   };
-  return { head: r(4), eyes: r(8), mouth: r(6), body: r(6), thick: 1, hat: r(5), back: r(3), extra: r(3), aura: 0, pose: r(2) };
+  return { head: r(4), eyes: r(8), mouth: r(6), body: r(6), thick: 1, hat: r(5), back: r(3), extra: r(3), aura: 0, pose: r(2), suit: [0, 1, 2, 4][r(4)]!, hand: r(2) };
 }

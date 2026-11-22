@@ -45,6 +45,16 @@ export class ArenaView {
     if (quality !== 'low' && arena.fg) this.fgHook = this.hook(1.08, 8);
   }
 
+  destroy(): void {
+    for (const { img } of this.images) img.destroy();
+    for (const h of [this.far, this.mid, this.near, this.fgHook]) {
+      if (!h) continue;
+      h.pen.destroy();
+      h.g.destroy();
+      h.gAdd.destroy();
+    }
+    this.images = [];
+  }
   /** pen on the floor plane under the fighters (valid after update) */
   get floorPen(): PhaserPen {
     return this.near.pen;

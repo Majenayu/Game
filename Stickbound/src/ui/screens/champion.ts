@@ -6,6 +6,8 @@ import { app, saveProfile } from '../../app/state';
 import { startFight, summary } from '../../app/fights';
 import { applyMatch, specFor, squadAvatars, unlockElement } from '../../meta/profile';
 import { elementIcon } from '../../render/icons';
+import { arenaById } from '../../render/arenas';
+const hexOf = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 import { lookFromSeed } from '../../content/looks';
 import { registerLook } from '../../render/fighterView';
 import { championTeam } from '../../content/championFight';
@@ -79,11 +81,16 @@ export function showChampionRoad(): void {
   }
   const { el, body } = frame('road', 'Champion Road', showLobby);
   body.appendChild(h('p', 'hint', 'Beat all five champions of a district to move on. District bosses unlock a new element.'));
-  const list = h('div', 'district-list');
+  const list = h('div', 'district-list road-map');
   DISTRICTS.forEach((d, di) => {
-    const box = h('div', 'panel district');
+    const box = h('div', 'panel district zone');
+    const ar = arenaById(d.arena);
+    box.style.setProperty('--dc', hexOf(ar.accent));
+    box.style.setProperty('--dc2', hexOf(ar.accent2));
     const cleared = d.champions.filter((_, k) => p.champion.cleared.includes(di * 5 + k)).length;
-    box.appendChild(html2(`<h3>${di + 1}. ${d.name}</h3><span class="d-count">${cleared}/5</span>`, 'd-head'));
+    if (cleared === 5) box.classList.add('cleared');
+    else if (isUnlocked(di * 5)) box.classList.add('open');
+    box.appendChild(html2(`<span class="d-node">${di + 1}</span><h3>${d.name}</h3><span class="d-arena">${esc(ar.name)}</span><span class="d-count">${cleared}/5</span>`, 'd-head'));
     box.appendChild(h('p', 'd-blurb', d.blurb));
     const row = h('div', 'champ-row');
     d.champions.forEach((c, k) => row.appendChild(champBtn(di * 5 + k, c)));
@@ -144,7 +151,10 @@ export function playChampion(i: number, back: () => void): void {
   theirs.appendChild(stickPreview({ look, element: c.elements[0], live: true, face: -1, expression: 'smug' }, 140, 180));
   theirs.appendChild(label(c.name, `${c.elements.map((e) => ELEMENTS[e].name).join(' + ')} · Lv ${c.level} · ${DIFFICULTY_NAMES[c.difficulty]}`));
   vs.append(mine, h('div', 'vs-mid', 'VS'), theirs);
+  vs.style.setProperty('--el', ELEMENTS[squad[0]?.element ?? 'fire'].css[0]);
+  vs.style.setProperty('--el2', ELEMENTS[c.elements[0]].css[0]);
   body.appendChild(vs);
+  body.appendChild(h('p', 'vs-arena', `Arena: ${arenaById(arenaOf(i)).name}`));
   const quote = h('div', 'panel quote');
   quote.innerHTML = `<p>“${esc(c.intro[0])}”</p><p>“${esc(c.intro[1])}”</p>`;
   body.appendChild(quote);
