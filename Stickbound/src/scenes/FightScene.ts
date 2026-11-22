@@ -110,7 +110,7 @@ export class FightScene extends Phaser.Scene {
     this.rim = new RimPen(this.pen, 0xdfe8ff);
     this.cameras.main.setBackgroundColor(this.arena.sky[0]);
     this.fitCamera(true);
-    this.scale.on('resize', () => this.fitCamera(true), this);
+    this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => this.cleanup());
 
     const ui = document.getElementById('ui')!;
@@ -137,14 +137,19 @@ export class FightScene extends Phaser.Scene {
     this.pad?.el.remove();
     this.tutorialEl?.remove();
     this.pauseEl?.remove();
-    this.scale.off('resize', undefined, this);
+    this.scale.off('resize', this.onResize, this);
     audio.tension = 0;
+  }
+
+  private onResize(): void {
+    if (this.sys.isActive()) this.fitCamera(true);
   }
 
   // ---- camera ---------------------------------------------------------------------------------------------
 
   private fitCamera(snap = false): void {
-    const cam = this.cameras.main;
+    const cam = this.cameras?.main;
+    if (!cam) return;
     const vw = this.scale.width;
     const vh = this.scale.height;
     const fs = this.m.fighters.filter((f) => f.onField && !f.down);
@@ -189,7 +194,11 @@ export class FightScene extends Phaser.Scene {
     }
     if (this.m.phase === 'over' && !this.ended) {
       this.endT += dt;
-      if (this.endT > 1700) this.finish(false);
+      if (this.endT > 1700) {
+        void this.finish(false);
+        // finish() may stop this scene; nothing below may touch its camera or objects then
+        if (this.ended) return;
+      }
     }
     this.shake = Math.max(0, this.shake - dt * 0.05);
     this.zoomPulse = Math.max(0, this.zoomPulse - dt * 0.0006);

@@ -34,7 +34,8 @@ export class BackdropScene extends Phaser.Scene {
   }
 
   private fit(): void {
-    const cam = this.cameras.main;
+    const cam = this.cameras?.main;
+    if (!cam) return;
     const z = Math.max(this.scale.width / WORLD_W, this.scale.height / WORLD_H);
     cam.setZoom(z);
     cam.centerOn(WORLD_W / 2, WORLD_H / 2 - 10);

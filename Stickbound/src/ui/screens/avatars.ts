@@ -222,10 +222,14 @@ function showForge(a: Avatar, previewPose = 'idle'): void {
       showForge(a, f.key === 'pose' ? ['win0', 'win1', 'win2', 'win3'][a.look.pose]! : 'idle');
     };
     row.appendChild(h('span', 'f-label', f.label));
-    row.appendChild(btn('‹', () => set(-1), 'btn arrow', `Previous ${f.label}`));
+    const prevB = btn('‹', () => set(-1), 'btn arrow');
+    prevB.setAttribute('aria-label', `Previous ${f.label}`);
+    row.appendChild(prevB);
     const name = h('span', `f-val ${owned ? '' : 'locked'}`, f.names[i] ?? String(i));
     row.appendChild(name);
-    row.appendChild(btn('›', () => set(1), 'btn arrow', `Next ${f.label}`));
+    const nextB = btn('›', () => set(1), 'btn arrow');
+    nextB.setAttribute('aria-label', `Next ${f.label}`);
+    row.appendChild(nextB);
     if (!owned) {
       const b = btn(`Buy ${price}`, () => {
         if (buy(app.profile, lookKey(f.key, i), price)) {

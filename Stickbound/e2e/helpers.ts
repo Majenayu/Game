@@ -16,7 +16,7 @@ export const hooks = <T>(page: Page, fn: (h: Hooks) => T): Promise<T> =>
 
 export async function boot(page: Page, query = ''): Promise<string[]> {
   const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('pageerror', (e) => errors.push(`${e.message}\n${e.stack ?? ''}`));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   await page.goto(`/${query}`);
   await page.waitForFunction(() => !!(window as unknown as { __ek?: unknown }).__ek, null, { timeout: 30_000 });
