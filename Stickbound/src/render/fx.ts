@@ -239,16 +239,16 @@ interface Pal {
   dark: number;
 }
 const PAL: Record<ElementId, Pal> = {
-  fire: { main: 0xff5a2c, light: 0xffc23d, hot: 0xfff2b0, dark: 0x8a1f0a },
-  water: { main: 0x2f8cff, light: 0x8fd7ff, hot: 0xe6f8ff, dark: 0x0b3f8a },
-  ice: { main: 0x5fd6f0, light: 0xe2fbff, hot: 0xffffff, dark: 0x2a6f9a },
+  fire: { main: 0xff6a1f, light: 0xffd23a, hot: 0xfff2b0, dark: 0x8a1f0a },
+  water: { main: 0x22c8ff, light: 0xc0f2ff, hot: 0xeefcff, dark: 0x0a4a8a },
+  ice: { main: 0xb8e6ff, light: 0xffffff, hot: 0xffffff, dark: 0x2a6f9a },
   lightning: { main: 0xffd21f, light: 0xfff6a8, hot: 0xffffff, dark: 0x8a6a00 },
-  wind: { main: 0x5ee39a, light: 0xd5ffe5, hot: 0xffffff, dark: 0x1f7a4a },
-  earth: { main: 0xb07a3c, light: 0xe3c08a, hot: 0xfff0d0, dark: 0x5a3a1a },
-  leaf: { main: 0x3fbf3a, light: 0xb9f27a, hot: 0xf2ffd8, dark: 0x1f5e1c },
-  light: { main: 0xffe46b, light: 0xfffbe0, hot: 0xffffff, dark: 0xb08a1f },
-  gravity: { main: 0x8b5cf6, light: 0xd6c4ff, hot: 0xf3eaff, dark: 0x2a1654 },
-  time: { main: 0xe86fd0, light: 0xffd6f4, hot: 0xffffff, dark: 0x6a1f5a },
+  wind: { main: 0x6ef0b0, light: 0xd8fff0, hot: 0xffffff, dark: 0x1f7a4a },
+  earth: { main: 0xd88a38, light: 0xffd08a, hot: 0xfff0d0, dark: 0x5a3a1a },
+  leaf: { main: 0x6ee05a, light: 0xd4ff9a, hot: 0xf2ffd8, dark: 0x1f5e1c },
+  light: { main: 0xffe8a0, light: 0xffffff, hot: 0xffffff, dark: 0xb08a1f },
+  gravity: { main: 0xc04cff, light: 0xf0c8ff, hot: 0xfbeaff, dark: 0x3a1060 },
+  time: { main: 0x2fe0c8, light: 0xc8fff4, hot: 0xffffff, dark: 0x0f5a50 },
 };
 export const palOf = (el: ElementId) => PAL[el];
 

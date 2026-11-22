@@ -11,7 +11,7 @@ import { elementColors, lookOf, poseFor, type ViewState } from '../render/fighte
 import { bakeGlow, PhaserPen } from '../render/pen';
 import { FxRenderer } from '../render/fx';
 import { ArenaView } from '../render/arenaView';
-import { mixC, RimPen, TintPen } from '../render/rimPen';
+import { TintPen } from '../render/rimPen';
 import { drawStick, solve } from '../render/rig';
 import { wx, wy } from '../render/vfx';
 import { botInput } from '../sim/ai';
@@ -60,7 +60,6 @@ export class FightScene extends Phaser.Scene {
   private cutinT = 0;
   private frameMs = 16.7;
   private pen!: PhaserPen;
-  private rim!: RimPen;
   private arenaView: ArenaView | null = null;
   private quality: 'high' | 'medium' | 'low' = 'high';
   /** floor reflection (null on Low or with reflections off) */
@@ -123,7 +122,6 @@ export class FightScene extends Phaser.Scene {
     this.g = this.add.graphics().setDepth(2);
     this.gAdd = this.add.graphics().setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
     this.pen = new PhaserPen(this.g, this.gAdd, this, 5);
-    this.rim = new RimPen(this.pen);
     this.trail.clear();
     this.qFrames = 0;
     this.qSum = 0;
@@ -582,6 +580,8 @@ export class FightScene extends Phaser.Scene {
       cloth: v.cloth,
       zombie: f.spec.kind !== 'stick',
       boss: f.spec.kind === 'boss',
+      el: f.spec.element,
+      style: f.spec.archetype,
       mp: f.mp / 1000,
       time,
       weight,
@@ -605,8 +605,6 @@ export class FightScene extends Phaser.Scene {
       this.refl.tint.color = ell;
       drawStick(this.refl.tint, j, f.face, s, { ...opts, aura: 0 });
     }
-    this.rim.color = mixC(ell, 0xffffff);
-    drawStick(this.rim, j, f.face, s, opts);
     drawStick(this.pen, j, f.face, s, opts);
     this.fx.drawOnFighter(this.pen, this.m, f, j, time);
     if (f.st === 'guard') this.pen.circle(j.aHand[0] + f.face * 10, j.aHand[1], 26 * s, null, 0x9fd8ff, 4, 0.6);

@@ -9,7 +9,6 @@ import { FLOOR_Y } from '../render/arenas';
 import { elementColors, lookOf, poseFor, registerLook, type ViewState } from '../render/fighterView';
 import { FxRenderer } from '../render/fx';
 import { CanvasPen } from '../render/pen';
-import { mixC, RimPen } from '../render/rimPen';
 import { drawStick, POSES, solve, type Expression } from '../render/rig';
 import { createMatch, step } from '../sim/step';
 import { IN, type Fighter, type Match } from '../sim/types';
@@ -39,7 +38,6 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
   const hint = h('div', 'hero-hint', 'Tap a fighter');
   wrap.append(c, hint);
   const pen = new CanvasPen(ctx);
-  const rim = new RimPen(pen);
   const fx = new FxRenderer();
   fx.reset(99);
   fx.reduced = settings.reducedMotion;
@@ -199,9 +197,7 @@ export function heroStage(squad: Avatar[], W: number, H: number): HeroStage {
       const [elc, ell] = elementColors(f, v.look);
       pen.line(x - 36, y + 2, x + 36, y + 2, 8, 0, 0.25);
       fx.drawBehindFighter(pen, m, f, time);
-      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: 0.45, alpha, cloth: v.cloth, time, weight, mp: f.mp / 1000 };
-      rim.color = mixC(ell, 0xffffff);
-      drawStick(rim, j, f.face, 1.25, opts);
+      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: 0.45, alpha, cloth: v.cloth, time, weight, mp: f.mp / 1000, el: f.spec.element, style: f.spec.archetype };
       drawStick(pen, j, f.face, 1.25, opts);
       fx.drawOnFighter(pen, m, f, j, time);
     });

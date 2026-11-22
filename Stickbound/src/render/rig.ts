@@ -4,6 +4,8 @@
 import type { Look } from '../content/looks';
 import { BODIES, THICKNESS } from '../content/looks';
 import type { Pen } from './pen';
+import type { ElementId } from '../content/elements';
+import type { Archetype } from '../content/archetypes';
 
 export interface Pose {
   lean: number; // torso, degrees from vertical (+ = forward)
@@ -174,82 +176,84 @@ export interface DrawOpts {
   mp?: number;
   /** boss rig: shoulder plates and a heavier core */
   boss?: boolean;
+  /** the element (picks the signature piece and face) */
+  el?: ElementId;
+  /** fighting style: Striker is sleeker with forearm blades, Warden bulkier with armour and a barrier */
+  style?: Archetype;
 }
 
-function drawFace(pen: Pen, hx: number, hy: number, r: number, face: number, o: DrawOpts, ink: number): void {
+/** Neon face (reference sheets R01 to R21): glowing white eye slits or a visor on a dark head. The shape of the eyes
+ *  carries the expression; a glowing mouth only for strong expressions. */
+function drawFace(pen: Pen, hx: number, hy: number, r: number, face: number, o: DrawOpts, ink: number, visor: boolean): void {
+  void ink;
   const e = o.expression;
-  const ex = hx + face * r * 0.28;
-  const sp = r * 0.32;
-  const ey = hy - r * 0.08;
-  const w = Math.max(1.6, r * 0.13);
-  const eyeL = ex - sp * 0.6;
-  const eyeR = ex + sp * 0.6;
+  const ex = hx + face * r * 0.22;
+  const ey = hy - r * 0.05;
+  const sp = r * 0.36;
+  const eyeL = ex - sp;
+  const eyeR = ex + sp;
+  const w = Math.max(1.8, r * 0.2);
+  const W = 0xffffff;
   const style = o.look.eyes;
-  const dot = (x: number, y: number, rr: number) => pen.circle(x, y, rr, ink, null);
+  pen.add?.(true);
+  pen.glow?.(ex, ey, r * 1.1, o.elementLight, 0.35);
+  pen.add?.(false);
+  const slit = (x: number, dir: number, tilt: number) => pen.line(x - r * 0.2, ey - tilt * dir * r, x + r * 0.2, ey + tilt * dir * r, w, W);
   if (e === 'dizzy') {
     for (const xx of [eyeL, eyeR]) {
-      pen.line(xx - r * 0.1, ey - r * 0.1, xx + r * 0.1, ey + r * 0.1, w, ink);
-      pen.line(xx - r * 0.1, ey + r * 0.1, xx + r * 0.1, ey - r * 0.1, w, ink);
+      pen.line(xx - r * 0.13, ey - r * 0.13, xx + r * 0.13, ey + r * 0.13, w * 0.7, W);
+      pen.line(xx - r * 0.13, ey + r * 0.13, xx + r * 0.13, ey - r * 0.13, w * 0.7, W);
     }
   } else if (e === 'hurt') {
-    pen.line(eyeL - r * 0.11, ey - r * 0.1, eyeL + r * 0.08, ey, w, ink);
-    pen.line(eyeL - r * 0.11, ey + r * 0.1, eyeL + r * 0.08, ey, w, ink);
-    pen.line(eyeR + r * 0.11, ey - r * 0.1, eyeR - r * 0.08, ey, w, ink);
-    pen.line(eyeR + r * 0.11, ey + r * 0.1, eyeR - r * 0.08, ey, w, ink);
+    pen.line(eyeL - r * 0.15, ey - r * 0.12, eyeL + r * 0.1, ey, w * 0.7, W);
+    pen.line(eyeL - r * 0.15, ey + r * 0.12, eyeL + r * 0.1, ey, w * 0.7, W);
+    pen.line(eyeR + r * 0.15, ey - r * 0.12, eyeR - r * 0.1, ey, w * 0.7, W);
+    pen.line(eyeR + r * 0.15, ey + r * 0.12, eyeR - r * 0.1, ey, w * 0.7, W);
+  } else if (e === 'shocked' || e === 'scared') {
+    pen.circle(eyeL, ey, r * 0.17, null, W, w * 0.55);
+    pen.circle(eyeR, ey, r * 0.17, null, W, w * 0.55);
   } else if (e === 'happy') {
     for (const xx of [eyeL, eyeR]) {
-      pen.line(xx - r * 0.1, ey + r * 0.04, xx, ey - r * 0.08, w, ink);
-      pen.line(xx, ey - r * 0.08, xx + r * 0.1, ey + r * 0.04, w, ink);
+      pen.line(xx - r * 0.16, ey + r * 0.06, xx, ey - r * 0.1, w * 0.75, W);
+      pen.line(xx, ey - r * 0.1, xx + r * 0.16, ey + r * 0.06, w * 0.75, W);
     }
-  } else if (e === 'shocked' || e === 'scared') {
-    for (const xx of [eyeL, eyeR]) pen.circle(xx, ey, r * 0.15, 0xffffff, ink, w * 0.8);
-    dot(eyeL, ey, r * 0.06);
-    dot(eyeR, ey, r * 0.06);
+  } else if (visor || style === 4) {
+    // visor band; its inner ends tilt down for anger
+    const k = e === 'angry' ? 0.16 : e === 'determined' ? 0.08 : 0;
+    const x0 = hx - r * 0.82;
+    const x1 = hx + r * 0.82;
+    const mid = ex;
+    pen.poly([x0, ey - r * 0.2, mid, ey - r * (0.2 - k), x1, ey - r * 0.2, x1, ey + r * 0.14, mid, ey + r * 0.14, x0, ey + r * 0.14], o.elementLight, 0.95);
+    pen.line(x0 + r * 0.1, ey - r * 0.04, x1 - r * 0.1, ey - r * 0.04, w * 0.45, W, 0.95);
   } else {
-    // style-dependent eyes for neutral / angry / determined / smug
-    const rr = [0.09, 0.12, 0.08, 0.1, 0.14, 0.1, 0.09, 0.11][style]! * r;
-    for (const xx of [eyeL, eyeR]) {
-      if (style === 2 || style === 3 || e === 'smug') pen.line(xx - r * 0.09, ey, xx + r * 0.09, ey, w * 1.1, ink);
-      else if (style === 7) {
-        pen.line(xx - rr, ey, xx + rr, ey, w * 0.8, ink);
-        pen.line(xx, ey - rr, xx, ey + rr, w * 0.8, ink);
-      } else dot(xx, ey, rr);
-      if (style === 1 || style === 4) pen.circle(xx + rr * 0.35, ey - rr * 0.35, rr * 0.35, 0xffffff, null);
-    }
-    if (e === 'angry' || e === 'determined' || style === 5) {
-      const tilt = e === 'determined' ? 0.08 : 0.14;
-      pen.line(eyeL - r * 0.14, ey - r * (0.2 + tilt), eyeL + r * 0.12, ey - r * 0.18, w, ink);
-      pen.line(eyeR + r * 0.14, ey - r * (0.2 + tilt), eyeR - r * 0.12, ey - r * 0.18, w, ink);
+    // eye slits; fierce styles slant inward, sleepy ones are flat and thin
+    const tilt = e === 'angry' ? 0.14 : e === 'determined' || style === 5 || style === 2 ? 0.09 : style === 3 ? 0 : 0.04;
+    if (style === 0 || style === 1 || style === 6) {
+      const rr = (style === 1 ? 0.17 : 0.13) * r;
+      pen.circle(eyeL, ey, rr, W, null);
+      pen.circle(eyeR, ey, rr, W, null);
+      if (tilt > 0.05) {
+        pen.line(eyeL - r * 0.2, ey - r * 0.22, eyeL + r * 0.16, ey - r * 0.1, w * 0.7, W);
+        pen.line(eyeR + r * 0.2, ey - r * 0.22, eyeR - r * 0.16, ey - r * 0.1, w * 0.7, W);
+      }
+    } else if (style === 7) {
+      for (const xx of [eyeL, eyeR]) {
+        pen.line(xx - r * 0.15, ey, xx + r * 0.15, ey, w * 0.6, W);
+        pen.line(xx, ey - r * 0.15, xx, ey + r * 0.15, w * 0.6, W);
+      }
+    } else {
+      slit(eyeL, 1, tilt);
+      slit(eyeR, -1, tilt);
     }
   }
-  // mouth
-  const my = hy + r * 0.36;
-  const mx = ex;
-  const m = e === 'happy' ? 2 : e === 'hurt' || e === 'angry' ? 5 : e === 'shocked' || e === 'scared' || e === 'dizzy' ? 3 : e === 'smug' ? 4 : o.look.mouth;
-  const mw = r * 0.26;
-  switch (m) {
-    case 1:
-      pen.line(mx - mw, my - r * 0.06, mx, my + r * 0.05, w, ink);
-      pen.line(mx, my + r * 0.05, mx + mw, my - r * 0.06, w, ink);
-      break;
-    case 2:
-      pen.poly([mx - mw, my - r * 0.07, mx + mw, my - r * 0.07, mx, my + r * 0.16], ink);
-      break;
-    case 3:
-      pen.circle(mx, my, r * 0.11, ink, null);
-      break;
-    case 4:
-      pen.line(mx - mw, my, mx + mw * 0.6, my - r * 0.06, w, ink);
-      break;
-    case 5:
-      pen.line(mx - mw, my, mx + mw, my, w * 1.8, ink);
-      pen.line(mx - mw * 0.9, my, mx + mw * 0.9, my, w * 0.6, 0xffffff);
-      break;
-    default:
-      pen.line(mx - mw * 0.8, my, mx + mw * 0.8, my, w, ink);
-  }
+  // mouth: only for big feelings (and the grin style)
+  const my = hy + r * 0.42;
+  if (e === 'happy' || (o.look.mouth === 2 && e !== 'hurt' && e !== 'shocked' && e !== 'scared' && e !== 'dizzy')) {
+    pen.poly([ex - r * 0.3, my - r * 0.08, ex + r * 0.3, my - r * 0.08, ex + r * 0.18, my + r * 0.12, ex - r * 0.18, my + r * 0.12], W, 0.95);
+  } else if (e === 'angry' || e === 'hurt') pen.line(ex - r * 0.26, my, ex + r * 0.26, my, w * 0.6, W, 0.9);
+  else if (e === 'shocked' || e === 'scared') pen.circle(ex, my, r * 0.12, null, W, w * 0.45);
+  else if (e === 'smug' || o.look.mouth === 4) pen.line(ex - r * 0.22, my + r * 0.02, ex + r * 0.2, my - r * 0.07, w * 0.5, W, 0.85);
 }
-
 function drawHat(pen: Pen, j: Joints, r: number, face: number, hat: number, ink: number, el: number, w: number, light: number): void {
   const [hx, hy] = j.head;
   switch (hat) {
@@ -541,27 +545,226 @@ function drawHands(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: n
   pen.add?.(false);
 }
 
-/** Draws a stick figure: dark core lines, light-strip joints that pulse with MP, a chest energy core that flares when
- *  casting, suit patterns, hand effects, headgear and back pieces. */
+/** Faces per element (reference sheets): eye slits for fire, ice and leaf, a visor for the rest. */
+const VISOR: Record<ElementId, boolean> = { fire: false, ice: false, leaf: false, water: true, lightning: true, wind: true, earth: true, light: true, gravity: true, time: true };
+
+/** Element signature pieces from the hero sheets, drawn on every avatar of that element. */
+function drawSignature(pen: Pen, j: Joints, face: number, s: number, r: number, w: number, o: DrawOpts, neon: number, hot: number, body: number, a: number, layer: 'back' | 'front'): void {
+  const el = o.el;
+  if (!el) return;
+  const behind = el === 'wind' || el === 'light' || el === 'gravity';
+  if (layer === 'back' && !behind) return;
+  const [hx, hy] = j.head;
+  const t = o.time;
+  const back = -face;
+  switch (el) {
+    case 'fire': {
+      // red headband with two tails, flame hair licking up
+      const by = hy - r * 0.42;
+      pen.line(hx - r * 0.98, by, hx + r * 0.98, by, w * 0.55, 0xff2d2d, a);
+      for (const k of [0, 1]) {
+        const sw = Math.sin(t * 9 + k * 1.7) * 3 * s;
+        pen.line(hx + back * r * 0.9, by, hx + back * r * (1.9 + k * 0.4), by + (4 + k * 7) * s + sw, w * (0.5 - k * 0.12), 0xff2d2d, a);
+      }
+      pen.add?.(true);
+      for (let i = 0; i < 4; i++) {
+        const fx = hx + (i - 1.5) * r * 0.42 + back * r * 0.12;
+        const fl = (0.75 + 0.25 * Math.sin(t * 13 + i * 2.3)) * r * (i === 1 || i === 2 ? 1.1 : 0.75);
+        pen.poly([fx - r * 0.2, hy - r * 0.75, fx + r * 0.2, hy - r * 0.75, fx + back * r * 0.18, hy - r * 0.75 - fl], i % 2 ? 0xffd23a : 0xff6a1f, 0.9 * a);
+      }
+      pen.add?.(false);
+      break;
+    }
+    case 'water': {
+      // wavy hair streaming back
+      for (let k = 0; k < 3; k++) {
+        let px = hx + face * r * (0.3 - k * 0.35);
+        let py = hy - r * (0.95 - k * 0.12);
+        for (let i = 1; i <= 4; i++) {
+          const nx = px + back * 5 * s;
+          const ny = py + Math.sin(t * 4 + i + k) * 2.5 * s + 1.5 * s;
+          pen.line(px, py, nx, ny, w * (0.55 - i * 0.08), neon, a);
+          px = nx;
+          py = ny;
+        }
+      }
+      break;
+    }
+    case 'ice': {
+      // crystal crown
+      for (let i = 0; i < 5; i++) {
+        const cx = hx + (i - 2) * r * 0.38;
+        const hgt = r * (i === 2 ? 1.05 : i === 1 || i === 3 ? 0.8 : 0.5);
+        pen.poly([cx - r * 0.2, hy - r * 0.72, cx + r * 0.2, hy - r * 0.72, cx + (i - 2) * r * 0.08, hy - r * 0.72 - hgt], 0xc8f4ff, 0.95 * a);
+        pen.line(cx, hy - r * 0.74, cx + (i - 2) * r * 0.08, hy - r * 0.72 - hgt, 1.2 * s, 0xffffff, a);
+      }
+      break;
+    }
+    case 'lightning': {
+      // swept spiky hair and crackling arcs
+      for (let i = 0; i < 4; i++) {
+        const bx = hx + face * r * (0.4 - i * 0.32);
+        pen.poly([bx - r * 0.25, hy - r * 0.7, bx + r * 0.25, hy - r * 0.8, bx + back * r * (0.9 + i * 0.15), hy - r * (1.35 - i * 0.12)], 0xffe46b, 0.95 * a);
+      }
+      pen.add?.(true);
+      const f = Math.floor(t * 14);
+      for (let k = 0; k < 2; k++) {
+        const ax = j.pelvis[0] + (((f * 37 + k * 53) % 40) - 20) * s;
+        const ay = j.pelvis[1] - (((f * 17 + k * 29) % 50) + 5) * s;
+        pen.line(ax, ay, ax + 7 * s, ay - 6 * s, 1.4 * s, hot, 0.9 * a);
+        pen.line(ax + 7 * s, ay - 6 * s, ax + 3 * s, ay - 13 * s, 1.4 * s, hot, 0.9 * a);
+      }
+      pen.add?.(false);
+      break;
+    }
+    case 'wind': {
+      // a long scarf (spring tail) and its knot
+      const pts = layer === 'back' ? o.cloth : undefined;
+      if (pts) {
+        while (pts.length < 18) pts.push({ x: j.neck[0], y: j.neck[1] });
+        let px = j.neck[0];
+        let py = j.neck[1] - 2 * s;
+        for (let i = 12; i < 18; i++) {
+          const p = pts[i]!;
+          p.x += (px + back * 10 * s - p.x) * 0.3;
+          p.y += (py + 2 * s - p.y) * 0.3 + Math.sin(t * 7 + i) * 0.9;
+          pen.line(px, py, p.x, p.y, w * (0.9 - (i - 12) * 0.1), neon, a);
+          px = p.x;
+          py = p.y;
+        }
+      }
+      if (layer === 'front') pen.line(j.neck[0] - 5 * s, j.neck[1] - 2 * s, j.neck[0] + 5 * s, j.neck[1] - 2 * s, w * 0.9, neon, a);
+      break;
+    }
+    case 'earth': {
+      // rock armour: shoulder boulders, fist rocks, a helmet crest
+      const rock = (x: number, y: number, rr: number) => {
+        pen.poly([x - rr, y, x - rr * 0.5, y - rr * 0.9, x + rr * 0.6, y - rr * 0.8, x + rr, y + rr * 0.1, x + rr * 0.4, y + rr * 0.8, x - rr * 0.6, y + rr * 0.7], 0x5a3a1c, a);
+        pen.line(x - rr * 0.5, y - rr * 0.9, x + rr * 0.6, y - rr * 0.8, 1.6 * s, neon, a);
+      };
+      rock(j.shoulder[0] + back * 3 * s, j.shoulder[1] + 1 * s, 10 * s);
+      rock(j.aHand[0], j.aHand[1], 6 * s);
+      pen.poly([hx - r * 0.9, hy - r * 0.45, hx - r * 0.5, hy - r * 1.02, hx + r * 0.5, hy - r * 1.02, hx + r * 0.9, hy - r * 0.45], 0x5a3a1c, a);
+      pen.line(hx - r * 0.9, hy - r * 0.45, hx + r * 0.9, hy - r * 0.45, 1.6 * s, neon, a);
+      break;
+    }
+    case 'leaf': {
+      // laurel crown: small leaves around the brow
+      for (let i = 0; i < 7; i++) {
+        const ang = Math.PI * (1.05 + i * 0.15);
+        const lx = hx + Math.cos(ang) * r * 1.02;
+        const ly = hy + Math.sin(ang) * r * 1.02;
+        const tx = lx + Math.cos(ang - 0.6) * r * 0.42;
+        const ty = ly + Math.sin(ang - 0.6) * r * 0.42;
+        pen.poly([lx, ly, (lx + tx) / 2 + 2 * s, (ly + ty) / 2 - 2 * s, tx, ty, (lx + tx) / 2 - 2 * s, (ly + ty) / 2 + 2 * s], i % 2 ? 0x7ee36a : 0x3fbf4a, a);
+      }
+      break;
+    }
+    case 'light': {
+      // floating halo and a short white cape
+      if (layer === 'back') {
+        capeTail(pen, j, face, s, w, o, 0xf6f0d8, 0.85 * a);
+        break;
+      }
+      pen.add?.(true);
+      ellipseRing(pen, hx, hy - r * 1.45 + Math.sin(t * 2) * 1.5 * s, r * 0.85, r * 0.24, w * 0.45, 0xfff2b0, 0.95 * a);
+      pen.glow?.(hx, hy - r * 1.45, r * 1.4, 0xffe46b, 0.4 * a);
+      pen.add?.(false);
+      break;
+    }
+    case 'gravity': {
+      // a ring orbiting the head, a dark cape
+      if (layer === 'back') {
+        capeTail(pen, j, face, s, w, o, 0x24103a, a);
+        break;
+      }
+      const tilt = Math.sin(t * 1.6) * 0.35;
+      pen.add?.(true);
+      ellipseRing(pen, hx, hy - r * 0.1, r * 1.5, r * (0.35 + tilt * 0.3), w * 0.4, neon, 0.9 * a);
+      const oa = t * 3;
+      pen.glow?.(hx + Math.cos(oa) * r * 1.5, hy - r * 0.1 + Math.sin(oa) * r * 0.35, 6 * s, hot, a);
+      pen.add?.(false);
+      break;
+    }
+    case 'time': {
+      // a gear crown
+      const gx = hx;
+      const gy = hy - r * 0.95;
+      const gr = r * 0.5;
+      const rot = t * 0.8;
+      for (let i = 0; i < 8; i++) {
+        const ang = rot + (i / 8) * Math.PI * 2;
+        pen.line(gx + Math.cos(ang) * gr * 0.7, gy + Math.sin(ang) * gr * 0.7, gx + Math.cos(ang) * gr * 1.15, gy + Math.sin(ang) * gr * 1.15, w * 0.45, 0xd8a24a, a);
+      }
+      pen.circle(gx, gy, gr * 0.78, 0xb8862a, neon, 1.4 * s, a);
+      pen.circle(gx, gy, gr * 0.3, body, null, 0, a);
+      break;
+    }
+  }
+}
+function ellipseRing(pen: Pen, cx: number, cy: number, rx: number, ry: number, w: number, c: number, a: number): void {
+  let px = cx + rx;
+  let py = cy;
+  for (let i = 1; i <= 20; i++) {
+    const ang = (i / 20) * Math.PI * 2;
+    const nx = cx + Math.cos(ang) * rx;
+    const ny = cy + Math.sin(ang) * ry;
+    pen.line(px, py, nx, ny, w, c, a);
+    px = nx;
+    py = ny;
+  }
+}
+/** short cape from the shoulders (light and gravity signatures), on spring points 6 to 11 */
+function capeTail(pen: Pen, j: Joints, face: number, s: number, w: number, o: DrawOpts, c: number, a: number): void {
+  const pts = o.cloth;
+  if (!pts) return;
+  while (pts.length < 12) pts.push({ x: j.shoulder[0], y: j.shoulder[1] });
+  let px = j.shoulder[0];
+  let py = j.shoulder[1];
+  for (let i = 6; i < 11; i++) {
+    const p = pts[i]!;
+    p.x += (px - face * 6 * s - p.x) * 0.32;
+    p.y += (py + 8 * s - p.y) * 0.32 + Math.sin(o.time * 5 + i) * 0.5;
+    pen.line(px, py, p.x, p.y, w * 2.3 * (1 - (i - 6) / 7), c, a);
+    px = p.x;
+    py = p.y;
+  }
+}
+
+/** Draws a stick figure in the neon hero style of the reference sheets: a solid dark body with a bright element
+ *  outline and soft glow, a dark head with glowing eyes or a visor, a star chest core that flares when casting, the
+ *  element's signature piece, the style's silhouette (Striker blades, Warden armour and barrier), light-strip joints
+ *  that pulse with MP, plus the Forge cosmetics. */
 export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawOpts): void {
-  const ink = o.zombie ? 0x2c3a2a : BODIES[o.look.body % BODIES.length]!;
-  const w = THICKNESS[o.look.thick % THICKNESS.length]! * s * (o.weight ?? 1);
+  const style = o.style ?? 'classic';
+  const body = o.zombie ? 0x0e1a10 : BODIES[o.look.body % BODIES.length]!;
+  const wMul = style === 'striker' ? 0.86 : style === 'warden' ? 1.16 : 1;
+  const w = THICKNESS[o.look.thick % THICKNESS.length]! * s * (o.weight ?? 1) * 1.22 * wMul;
   const a = o.alpha ?? 1;
   const r = 16 * s * [1, 1.12, 0.95, 0.85][o.look.head % 4]!;
-  const auraC = o.element;
-  const light = o.zombie ? 0x9cff6a : o.elementLight;
+  const neon = o.zombie ? (o.boss ? 0xff3355 : 0x6aff5a) : o.element;
+  const hot = o.zombie ? 0xd8ffc8 : o.elementLight;
   const cast = o.aura >= 1 ? 1 : 0;
   const mp = o.mp ?? 0.5;
+  const ow = Math.max(1.6, w * 0.3);
+  const t = o.time;
   // aura glow
-  if (o.aura > 0) {
-    if (pen.glow) {
-      pen.add?.(true);
-      pen.glow(j.pelvis[0], j.pelvis[1] - 18 * s, 70 * s, auraC, 0.22 * o.aura * a);
-      pen.add?.(false);
-    } else {
-      pen.circle(j.pelvis[0], j.pelvis[1] - 18 * s, 62 * s, auraC, null, 0, 0.1 * o.aura * a);
-      pen.circle(j.pelvis[0], j.pelvis[1] - 18 * s, 46 * s, auraC, null, 0, 0.12 * o.aura * a);
+  if (o.aura > 0 && pen.glow) {
+    pen.add?.(true);
+    pen.glow(j.pelvis[0], j.pelvis[1] - 18 * s, (62 + 20 * cast) * s, neon, (0.18 + 0.12 * cast) * o.aura * a);
+    pen.add?.(false);
+  }
+  // Warden: an orbiting barrier of light shards behind the body
+  if (style === 'warden' && !o.zombie) {
+    pen.add?.(true);
+    for (let i = 0; i < 3; i++) {
+      const ang = t * 1.4 + (i / 3) * Math.PI * 2;
+      if (Math.sin(ang) > 0) continue;
+      const bx = j.pelvis[0] + Math.cos(ang) * 34 * s;
+      const by = j.pelvis[1] - 26 * s + Math.sin(ang) * 8 * s;
+      hex(pen, bx, by, 6 * s, 1.6 * s, hot, 0.75 * a);
     }
+    pen.add?.(false);
   }
   // back cloth (scarf/cape) with spring trail
   if (o.look.back > 0 && o.look.back <= 3 && o.cloth) {
@@ -573,73 +776,110 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
     let py = anchor[1];
     for (let i = 0; i < len; i++) {
       const p = pts[i]!;
-      const target = { x: px - face * 9 * s, y: py + (o.look.back === 2 ? 9 : 3) * s };
-      p.x += (target.x - p.x) * 0.35;
-      p.y += (target.y - p.y) * 0.35 + Math.sin(o.time * 6 + i) * 0.6;
+      p.x += (px - face * 9 * s - p.x) * 0.35;
+      p.y += (py + (o.look.back === 2 ? 9 : 3) * s - p.y) * 0.35 + Math.sin(t * 6 + i) * 0.6;
       const cw = (o.look.back === 2 ? w * 2.4 : w * 1.1) * (1 - i / (len * 1.4));
-      pen.line(px, py, p.x, p.y, cw, auraC, a);
+      pen.line(px, py, p.x, p.y, cw, neon, a);
       px = p.x;
       py = p.y;
     }
-  } else if (o.look.back > 3) drawTech(pen, j, face, s, w, o, ink, auraC, light, a);
-  const limb = (p1: V2, p2: V2, ww = w) => pen.line(p1[0], p1[1], p2[0], p2[1], ww, ink, a);
-  limb(j.pelvis, j.bKn);
-  limb(j.bKn, j.bFoot);
-  limb(j.shoulder, j.bEl);
-  limb(j.bEl, j.bHand);
-  limb(j.pelvis, j.neck, w * 1.12);
-  limb(j.pelvis, j.aKn);
-  limb(j.aKn, j.aFoot);
-  limb(j.shoulder, j.aEl);
-  limb(j.aEl, j.aHand);
-  // boss rig: armoured shoulder plates
-  if (o.boss) {
-    pen.poly([j.shoulder[0] - 12 * s, j.shoulder[1] - 4 * s, j.shoulder[0] + 12 * s, j.shoulder[1] - 4 * s, j.shoulder[0] + 9 * s, j.shoulder[1] + 8 * s, j.shoulder[0] - 9 * s, j.shoulder[1] + 8 * s], ink, a);
-    pen.line(j.shoulder[0] - 11 * s, j.shoulder[1] - 4 * s, j.shoulder[0] + 11 * s, j.shoulder[1] - 4 * s, w * 0.3, light, a);
+  } else if (o.look.back > 3) drawTech(pen, j, face, s, w, o, body, neon, hot, a);
+  drawSignature(pen, j, face, s, r, w, o, neon, hot, body, a, 'back');
+  // limbs in three passes per depth group: soft glow, neon outline, dark body
+  const group = (segs: [V2, V2, number][]) => {
+    if (pen.add) {
+      pen.add(true);
+      for (const [p1, p2, k] of segs) pen.line(p1[0], p1[1], p2[0], p2[1], w * k + ow * 2 + 7 * s, neon, 0.16 * a);
+      pen.add(false);
+    }
+    for (const [p1, p2, k] of segs) pen.line(p1[0], p1[1], p2[0], p2[1], w * k + ow * 2, neon, a);
+    for (const [p1, p2, k] of segs) pen.line(p1[0], p1[1], p2[0], p2[1], w * k, body, a);
+  };
+  group([
+    [j.pelvis, j.bKn, 1],
+    [j.bKn, j.bFoot, 1],
+    [j.shoulder, j.bEl, 1],
+    [j.bEl, j.bHand, 1],
+  ]);
+  group([
+    [j.pelvis, j.neck, 1.15],
+    [j.pelvis, j.aKn, 1],
+    [j.aKn, j.aFoot, 1],
+    [j.shoulder, j.aEl, 1],
+    [j.aEl, j.aHand, 1],
+  ]);
+  // fists
+  for (const [hp, k] of [[j.aHand, 0.95], [j.bHand, 0.9]] as [V2, number][]) {
+    pen.circle(hp[0], hp[1], w * k + ow, neon, null, 0, a);
+    pen.circle(hp[0], hp[1], w * k, body, null, 0, a);
   }
-  // fists and feet
-  pen.circle(j.aHand[0], j.aHand[1], w * 0.85, ink, null, 0, a);
-  pen.circle(j.bHand[0], j.bHand[1], w * 0.8, ink, null, 0, a);
-  if (o.look.extra === 1) {
-    pen.circle(j.aHand[0], j.aHand[1], w * 0.95, null, auraC, w * 0.5, a);
-    pen.circle(j.bHand[0], j.bHand[1], w * 0.9, null, auraC, w * 0.5, a);
-  }
-  if (o.look.extra === 2) pen.circle(j.pelvis[0], j.pelvis[1], w * 0.9, auraC, null, 0, a);
-  drawSuit(pen, j, s, w, o, auraC, light, a);
-  // light-strip joints: elbows and knees glow, brighter with more MP
-  const pulse = (0.3 + 0.55 * mp) * (0.75 + 0.25 * Math.sin(o.time * 4 + j.pelvis[0] * 0.01));
-  pen.add?.(true);
-  for (const p of [j.aEl, j.bEl, j.aKn, j.bKn]) pen.circle(p[0], p[1], Math.max(1.3, w * 0.3), light, null, 0, pulse * a);
-  pen.add?.(false);
-  // chest energy core: a diamond that flares when casting
-  const cx = (j.pelvis[0] + j.neck[0] * 2) / 3;
-  const cy = (j.pelvis[1] + j.neck[1] * 2) / 3;
-  const cr = w * (o.boss ? 0.95 : 0.75) * (1 + cast * 0.35);
-  pen.poly([cx, cy - cr, cx + cr * 0.75, cy, cx, cy + cr, cx - cr * 0.75, cy], auraC, a);
-  pen.add?.(true);
-  pen.circle(cx, cy, cr * 0.38, 0xffffff, null, 0, 0.9 * a);
-  pen.glow?.(cx, cy, (10 + 26 * cast + 6 * mp) * s, auraC, (0.45 + 0.4 * cast) * a);
-  pen.add?.(false);
-  drawHands(pen, j, s, w, o, auraC, light, a, cast);
-  // head
-  const [hx, hy] = j.head;
-  pen.circle(hx, hy, r, o.zombie ? 0xb8d8a0 : 0xffffff, ink, w * 0.85, a);
-  if (o.teamColor !== undefined) pen.circle(hx, hy, r + w * 0.9, null, o.teamColor, w * 0.35, a * 0.9);
-  drawFace(pen, hx, hy, r, face, o, ink);
-  if (o.zombie) {
-    // cyber zombie: a glitching red eye-line and a circuit scar
-    const gl = Math.floor(o.time * 9 + hx) % 5 === 0 ? 2 * s : 0;
+  // Striker: light blades along the forearms
+  if (style === 'striker' && !o.zombie) {
     pen.add?.(true);
-    pen.line(hx - r * 0.7 + gl, hy - r * 0.1, hx + r * 0.75 + gl, hy - r * 0.1, w * 0.4, 0xff3355, 0.85 * a);
-    pen.glow?.(hx + face * r * 0.3, hy - r * 0.1, r * 0.9, 0xff3355, 0.35 * a);
+    for (const [e1, h1] of [[j.aEl, j.aHand], [j.bEl, j.bHand]] as [V2, V2][]) {
+      const dx = h1[0] - e1[0];
+      const dy = h1[1] - e1[1];
+      const l = Math.hypot(dx, dy) || 1;
+      const nx = (-dy / l) * 5 * s;
+      const ny = (dx / l) * 5 * s;
+      pen.poly([e1[0] + dx * 0.1, e1[1] + dy * 0.1, h1[0] + dx * 0.25 + nx * 0.2, h1[1] + dy * 0.25 + ny * 0.2, e1[0] + dx * 0.55 + nx, e1[1] + dy * 0.55 + ny], hot, 0.85 * a);
+    }
     pen.add?.(false);
-    pen.line(hx - face * r * 0.5, hy - r * 0.75, hx - face * r * 0.15, hy - r * 0.35, w * 0.25, 0x3a5a2a, a);
+  }
+  // Warden and bosses: armoured shoulder plates
+  if (style === 'warden' || o.boss) {
+    const sx = j.shoulder[0];
+    const sy = j.shoulder[1];
+    const k = o.boss ? 1.25 : 1;
+    pen.poly([sx - 13 * s * k, sy - 5 * s, sx + 13 * s * k, sy - 5 * s, sx + 10 * s * k, sy + 8 * s, sx - 10 * s * k, sy + 8 * s], neon, a);
+    pen.poly([sx - 11 * s * k, sy - 3 * s, sx + 11 * s * k, sy - 3 * s, sx + 8.5 * s * k, sy + 6 * s, sx - 8.5 * s * k, sy + 6 * s], body, a);
+    pen.line(sx - 10 * s * k, sy - 1 * s, sx + 10 * s * k, sy - 1 * s, 1.4 * s, hot, a);
+  }
+  if (o.look.extra === 1) {
+    pen.circle(j.aHand[0], j.aHand[1], w * 1.1, null, hot, w * 0.35, a);
+    pen.circle(j.bHand[0], j.bHand[1], w * 1.05, null, hot, w * 0.35, a);
+  }
+  if (o.look.extra === 2) pen.line(j.pelvis[0] - w * 1.2, j.pelvis[1] - 2 * s, j.pelvis[0] + w * 1.2, j.pelvis[1] - 2 * s, w * 0.5, neon, a);
+  drawSuit(pen, j, s, w, o, neon, hot, a);
+  // light-strip joints: elbows and knees glow, brighter with more MP
+  const pulse = (0.25 + 0.5 * mp) * (0.75 + 0.25 * Math.sin(t * 4 + j.pelvis[0] * 0.01));
+  pen.add?.(true);
+  for (const p of [j.aEl, j.bEl, j.aKn, j.bKn]) pen.circle(p[0], p[1], Math.max(1.2, w * 0.24), hot, null, 0, pulse * a);
+  pen.add?.(false);
+  // chest core: a four-point star that flares when casting
+  const cx = (j.pelvis[0] + j.neck[0] * 2.2) / 3.2;
+  const cy = (j.pelvis[1] + j.neck[1] * 2.2) / 3.2;
+  const cr = w * (o.boss ? 1.1 : 0.85) * (1 + cast * 0.5);
+  pen.add?.(true);
+  pen.glow?.(cx, cy, (12 + 26 * cast + 6 * mp) * s, neon, (0.55 + 0.35 * cast) * a);
+  pen.poly([cx, cy - cr, cx + cr * 0.25, cy - cr * 0.25, cx + cr, cy, cx + cr * 0.25, cy + cr * 0.25, cx, cy + cr, cx - cr * 0.25, cy + cr * 0.25, cx - cr, cy, cx - cr * 0.25, cy - cr * 0.25], hot, a);
+  pen.circle(cx, cy, cr * 0.3, 0xffffff, null, 0, a);
+  pen.add?.(false);
+  drawHands(pen, j, s, w, o, neon, hot, a, cast);
+  // head: dark with the neon outline, glowing eyes or visor
+  const [hx, hy] = j.head;
+  if (pen.add) {
+    pen.add(true);
+    pen.circle(hx, hy, r + ow + 5 * s, neon, null, 0, 0.14 * a);
+    pen.add(false);
+  }
+  pen.circle(hx, hy, r + ow, neon, null, 0, a);
+  pen.circle(hx, hy, r, body, null, 0, a);
+  if (o.teamColor !== undefined) pen.circle(hx, hy, r + ow + w * 0.45, null, o.teamColor, w * 0.3, a * 0.9);
+  drawFace(pen, hx, hy, r, face, o, body, !!o.el && VISOR[o.el] && o.look.eyes !== 0 && o.look.eyes !== 1);
+  if (o.zombie) {
+    // cyber zombie: glitching cracks on the head and body
+    const gl = Math.floor(t * 9 + hx) % 5 === 0 ? 2 * s : 0;
+    pen.add?.(true);
+    pen.line(hx - face * r * 0.5 + gl, hy - r * 0.75, hx - face * r * 0.1, hy - r * 0.3, w * 0.25, o.boss ? 0xff3355 : 0x9cff6a, a);
+    pen.line(cx - 4 * s, cy + 6 * s, cx + 3 * s, cy + 14 * s, w * 0.25, o.boss ? 0xff3355 : 0x9cff6a, 0.8 * a);
+    pen.add?.(false);
   }
   if (o.look.extra === 3) {
-    pen.line(hx - r * 0.8, hy - r * 0.42, hx + r * 0.8, hy - r * 0.42, w * 0.5, ink, a);
-    pen.circle(hx + face * r * 0.28 - r * 0.2, hy - r * 0.42, r * 0.2, auraC, ink, w * 0.3, a);
-    pen.circle(hx + face * r * 0.28 + r * 0.25, hy - r * 0.42, r * 0.2, auraC, ink, w * 0.3, a);
+    pen.circle(hx + face * r * 0.28 - r * 0.2, hy - r * 0.42, r * 0.2, null, hot, w * 0.25, a);
+    pen.circle(hx + face * r * 0.28 + r * 0.25, hy - r * 0.42, r * 0.2, null, hot, w * 0.25, a);
   }
-  if (o.look.extra === 4) pen.line(hx + face * r * 0.05, hy - r * 0.08, hx + face * r * 0.85, hy - r * 0.1, w * 1.1, ink, a);
-  drawHat(pen, j, r, face, o.look.hat, ink, auraC, w, light);
+  if (o.look.extra === 4) pen.line(hx + face * r * 0.0, hy - r * 0.08, hx + face * r * 0.9, hy - r * 0.1, w * 0.9, 0x05060f, a);
+  drawSignature(pen, j, face, s, r, w, o, neon, hot, body, a, 'front');
+  drawHat(pen, j, r, face, o.look.hat, body, neon, w, hot);
 }

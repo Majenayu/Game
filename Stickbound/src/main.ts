@@ -63,8 +63,9 @@ async function boot(): Promise<void> {
     document.getElementById('boot')?.remove();
     platform.loadingStop();
     if (new URLSearchParams(location.search).has('rigs')) {
-      const { showRigSheet } = await import('./ui/rigSheet');
-      showRigSheet();
+      const sheets = await import('./ui/rigSheet');
+      if (new URLSearchParams(location.search).get('rigs') === 'heroes') sheets.showHeroSheet();
+      else sheets.showRigSheet();
       return;
     }
     const { showPowerLab } = await import('./ui/powerLab');

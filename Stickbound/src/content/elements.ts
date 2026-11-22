@@ -56,14 +56,14 @@ const E = (id: ElementId, name: string, main: number, light: number, icon: IconS
 });
 
 export const ELEMENTS: Record<ElementId, ElementInfo> = {
-  fire: E('fire', 'Fire', 0xff5a2c, 0xffc23d, 'flame', 'Burns last 1 second longer.'),
-  water: E('water', 'Water', 0x2f8cff, 0x8fd7ff, 'drop', 'Damage you deal also refills a little MP.'),
-  ice: E('ice', 'Ice', 0x5fd6f0, 0xe2fbff, 'flake', 'Basic hits slow the foe a little.'),
+  fire: E('fire', 'Fire', 0xff6a1f, 0xffd23a, 'flame', 'Burns last 1 second longer.'),
+  water: E('water', 'Water', 0x22c8ff, 0xc0f2ff, 'drop', 'Damage you deal also refills a little MP.'),
+  ice: E('ice', 'Ice', 0xb8e6ff, 0xffffff, 'flake', 'Basic hits slow the foe a little.'),
   lightning: E('lightning', 'Lightning', 0xffd21f, 0xfff6a8, 'bolt', 'Dashes are faster.'),
-  wind: E('wind', 'Wind', 0x5ee39a, 0xd5ffe5, 'swirl', 'Double jump.'),
-  earth: E('earth', 'Earth', 0xb07a3c, 0xe3c08a, 'rock', 'Guard takes 10% less damage.'),
-  leaf: E('leaf', 'Leaf', 0x3fbf3a, 0xb9f27a, 'leaf', 'Slowly heals when not hit for 3 seconds.'),
-  light: E('light', 'Light', 0xffe46b, 0xfffbe0, 'sun', 'Projectiles fly faster.'),
-  gravity: E('gravity', 'Gravity', 0x8b5cf6, 0xd6c4ff, 'well', 'Knockback pulls foes a little closer.'),
-  time: E('time', 'Time', 0xe86fd0, 0xffd6f4, 'glass', 'Faster MP regen after a perfect guard.'),
+  wind: E('wind', 'Wind', 0x6ef0b0, 0xd8fff0, 'swirl', 'Double jump.'),
+  earth: E('earth', 'Earth', 0xd88a38, 0xffd08a, 'rock', 'Guard takes 10% less damage.'),
+  leaf: E('leaf', 'Leaf', 0x6ee05a, 0xd4ff9a, 'leaf', 'Slowly heals when not hit for 3 seconds.'),
+  light: E('light', 'Light', 0xffe8a0, 0xffffff, 'sun', 'Projectiles fly faster.'),
+  gravity: E('gravity', 'Gravity', 0xc04cff, 0xf0c8ff, 'well', 'Knockback pulls foes a little closer.'),
+  time: E('time', 'Time', 0x2fe0c8, 0xc8fff4, 'glass', 'Faster MP regen after a perfect guard.'),
 };

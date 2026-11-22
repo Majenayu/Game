@@ -10,7 +10,6 @@ const CLOSE = new Set(['flurry', 'rising', 'melee', 'spin', 'armor', 'aura', 'bu
 import { arenaById, FLOOR_Y, type ArenaDef } from '../render/arenas';
 import { ArenaReact } from '../render/arenaReact';
 import { drawArenaCanvas, type Quality } from '../render/arenaBake';
-import { mixC, RimPen } from '../render/rimPen';
 import { elementColors, lookOf, poseFor, registerLook, type ViewState } from '../render/fighterView';
 import { CanvasPen } from '../render/pen';
 import { drawStick, solve } from '../render/rig';
@@ -50,7 +49,6 @@ export class PowerStage {
   onLabel: (text: string) => void = () => {};
   arena: ArenaDef | null = null;
   readonly react = new ArenaReact();
-  private rim: RimPen;
   setArena(id: string | null): void {
     this.arena = id ? arenaById(id) : null;
     const r = new ArenaReact(this.arena?.props ?? []);
@@ -68,7 +66,6 @@ export class PowerStage {
     readonly o: StageOpts,
   ) {
     this.pen = new CanvasPen(ctx);
-    this.rim = new RimPen(this.pen);
     this.setArena(o.arena ?? null);
     this.set = powersFor(o.element, o.archetype);
     this.lookId = `stage:${o.element}:${o.archetype}:${Math.random().toString(36).slice(2, 6)}`;
@@ -203,9 +200,7 @@ export class PowerStage {
       const [elc, ell] = elementColors(f, v.look);
       pen.line(x - 30, FLOOR_Y + 2, x + 30, FLOOR_Y + 2, 7, 0, 0.2);
       fx.drawBehindFighter(pen, m, f, time);
-      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: f.team === 0 ? 0.4 : 0.1, alpha, cloth: v.cloth, time, weight, mp: f.mp / 1000 };
-      this.rim.color = mixC(ell, 0xffffff);
-      drawStick(this.rim, j, f.face, 1, opts);
+      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: f.team === 0 ? 0.4 : 0.1, alpha, cloth: v.cloth, time, weight, mp: f.mp / 1000, el: f.spec.element, style: f.spec.archetype };
       drawStick(pen, j, f.face, 1, opts);
       fx.drawOnFighter(pen, m, f, j, time);
     }
