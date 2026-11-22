@@ -61,7 +61,7 @@ export interface BalanceReport {
 }
 
 /** Each element's win rate counts every match a squad with that element played (a squad of two of the same counts once). */
-export function runBalance(n: number, seed0 = 1, level = 20, difficulty = 3): BalanceReport {
+export async function runBalance(n: number, seed0 = 1, level = 20, difficulty = 3): Promise<BalanceReport> {
   const t0 = performance.now();
   const wins = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0])) as Record<ElementId, number>;
   const games = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0])) as Record<ElementId, number>;
@@ -70,6 +70,8 @@ export function runBalance(n: number, seed0 = 1, level = 20, difficulty = 3): Ba
   let timeouts = 0;
   let draws = 0;
   for (let i = 0; i < n; i++) {
+    // yield now and then so the test worker can talk to the runner (long sync loops time out its RPC)
+    if (i % 100 === 99) await new Promise((r) => setTimeout(r, 0));
     const s = playOne(seed0 + i, { level, difficulty });
     roundSum += s.roundFrames.reduce((x, y) => x + y, 0);
     rounds += s.rounds;

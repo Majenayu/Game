@@ -2,7 +2,7 @@
 // Run: npx playwright test --project=perf   Results go to docs/perf.json. Numbers are from headless Chromium on the
 // build machine (software rendering may apply), so they are a floor, not a promise.
 import { expect, test, type Page } from '@playwright/test';
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fresh, hooks, waitScreen } from './helpers';
 
 type Ek = { botFight: (i: number) => void; inFight: () => boolean; app: { profile: { tutorialDone: boolean } } };
@@ -89,5 +89,8 @@ test('memory soak: 100 bot matches, heap and DOM stay flat', async ({ page }) =>
 
 test.afterAll(({}, testInfo) => {
   if (!Object.keys(results).length) return;
-  writeFileSync(`docs/perf-${testInfo.project.name}.json`, JSON.stringify({ date: new Date().toISOString(), ...results }, null, 2));
+  // merge, so running only the fps test or only the soak keeps the other result
+  const file = `docs/perf-${testInfo.project.name}.json`;
+  const old = existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : {};
+  writeFileSync(file, JSON.stringify({ ...old, date: new Date().toISOString(), ...results }, null, 2));
 });

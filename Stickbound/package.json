@@ -15,9 +15,11 @@
     "preview": "vite preview --port 4190 --strictPort",
     "typecheck": "tsc --noEmit",
     "test": "vitest run tests",
-    "balance": "vitest run tools/balance.test.ts",
-    "e2e": "playwright test --project=smoke",
+    "balance": "vitest run tools/balance.test.ts tools/walkthrough.test.ts tools/element-wheel.test.ts",
+    "e2e": "playwright test --project=smoke --project=firstrun",
     "shots": "playwright test --project=shots",
+    "perf": "playwright test --project=perf-gpu",
+    "media": "playwright test --project=media && node tools/make-videos.mjs",
     "package": "node tools/package.mjs"
   },
   "dependencies": {

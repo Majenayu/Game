@@ -14,7 +14,7 @@ function summary(mode: MatchSummary['mode'], win: boolean): MatchSummary {
   return { mode, win, roundsWon: win ? 2 : 0, kos: 0, falls: 0, hits: 0, powers: 0, perfect: 0, swaps: 0, damage: 0, powerUse: {} };
 }
 
-it('a fresh profile clears all 41 Champion Road fights', () => {
+it('a fresh profile clears all 41 Champion Road fights', async () => {
   const p = newProfile('Walker', 0);
   chooseStarter(p, 'fire');
   p.tutorialDone = true;
@@ -27,6 +27,7 @@ it('a fresh profile clears all 41 Champion Road fights', () => {
     let attempts = 0;
     let streak = 0;
     for (;;) {
+      await new Promise((r) => setTimeout(r, 0));
       expect(attempts, `stuck on ${c.name}`).toBeLessThan(80);
       attempts++;
       fights++;

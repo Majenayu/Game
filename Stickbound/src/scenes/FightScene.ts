@@ -164,7 +164,7 @@ export class FightScene extends Phaser.Scene {
     const span = Math.max(420, maxX - minX + 360);
     const fitAll = Math.min(vw / WORLD_W, vh / WORLD_H);
     // portrait screens zoom in on the fighters instead of showing the whole arena tiny
-    let zoom = vw < vh ? Math.min(vw / span, (vh * 0.55) / 360) : Math.max(fitAll, Math.min(vw / span, fitAll * 1.12));
+    let zoom = vw < vh ? Math.min(vw / span, (vh * 0.55) / 360) : Math.max(fitAll, Math.min(vw / span, fitAll * 1.3));
     zoom *= 1 + this.zoomPulse;
     zoom = Math.max(0.2, zoom);
     cam.setZoom(zoom);

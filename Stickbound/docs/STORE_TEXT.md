@@ -1,6 +1,6 @@
 # Elementick store text
 
-Use this text when submitting. It says Elementick everywhere (the working title "Stickbound" is not used, see DECISIONS_LOG D1).
+Use this text when submitting. It says Elementick everywhere (the old working title is not used, see DECISIONS_LOG D1).
 
 ## Title
 

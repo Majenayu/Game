@@ -2,7 +2,7 @@
 import { it } from 'vitest';
 import { formatReport, runBalance } from './balanceLib';
 
-it('probe', () => {
+it('probe', async () => {
   const n = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.EK_N ?? 400);
-  console.log(formatReport(runBalance(n, 1)));
+  console.log(formatReport(await runBalance(n, 1)));
 }, 3_600_000);

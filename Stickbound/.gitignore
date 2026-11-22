@@ -6,3 +6,4 @@ playwright-report
 release
 *.log
 .env
+store/raw

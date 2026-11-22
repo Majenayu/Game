@@ -43,7 +43,7 @@ Each element is strong against exactly 2 (125% damage) and weak against exactly 
 | Gravity | Light, Wind | Knockback pulls foes a little closer. |
 | Time | Earth, Gravity | Faster MP regen after a perfect guard. |
 
-Base stats differ a little per element but every element has the same stat total.
+Base stats differ a little per element but every element has the same stat total. Power damage is tuned per element from bot balance runs (DECISIONS_LOG D17).
 
 ## 5. Powers
 
@@ -74,7 +74,7 @@ Base stats differ a little per element but every element has the same stat total
 
 - **Champion Road:** 40 champions in 8 districts, then Null. Story panels, tag partners, rising bot difficulty, first-win bonuses, element unlocks, two endings (STORY.md).
 - **Ranked Ladder:** rating (Elo, K = 32), 6 tiers (Bronze 0, Silver 1100, Gold 1250, Platinum 1400, Diamond 1550, Champion 1700), monthly seasons (rating moves halfway back to 1000, tier reward paid), leaderboard of 25 **AI ranked rivals, clearly labeled AI** everywhere. Stats are normalized: level gives at most about +15%. Quitting counts as a loss.
-- **Zombie Survival** (solo): endless waves of 7 zombie kinds (walker, runner, spitter, brute, bomber, shield, boss every 5th wave), health / MP / boost drops, local leaderboard of best runs, one opt-in rewarded revive per run.
+- **Zombie Survival** (solo): endless waves of 7 zombie kinds (walker, runner, spitter, brute, bomber, shield, boss every 5th wave), health / MP / boost drops, local leaderboard of best runs, one revive per run at half health (150 coins or an opt-in rewarded ad).
 - **Training:** dummy element and behaviour (stand, guard, jump, fight back), no timer, the dummy heals, hitbox view.
 - **Local 2P:** two players on one keyboard (or two gamepads), any elements, even level 20 with normalized stats.
 
@@ -98,10 +98,10 @@ Screen shake, reduced motion, reduced flashing, damage numbers, one-handed touch
 
 ## 11. Platforms and ads
 
-One platform interface (web / itch.io, CrazyGames, Poki). Gameplay start / stop events around fights and pauses; the game pauses and mutes on tab hide and during ads. Midgame ads at most every second natural break, rewarded ads only when the player asks. Saves in local storage with a backup copy and an export / import save code.
+One platform interface (web / itch.io, CrazyGames, Poki). Gameplay start / stop events around fights and pauses; the game pauses and mutes on tab hide and during ads. Midgame ads only at natural breaks (results screens); rewarded ads only when the player asks, never more than every 5 minutes for double coins, always with a non-ad alternative. New players land in gameplay: one click on an element starts the first fight. Saves in local storage with a backup copy and an export / import save code.
 
 ## 12. Targets
 
-- First win in under 60 s from page load (measured 24 to 28 s).
+- First win in under 60 s from page load (measured 22 s).
 - Initial download under 5 MB (measured 1.67 MB, 407 KB gzipped).
-- 60 fps on desktop; balance: every element 45 to 55% win rate over 10,000 bot matches, rounds averaging 25 to 45 s.
+- 60 fps on desktop (measured 144 fps, capped by the monitor; 86 fps with 4x CPU throttle); balance: every element 45 to 55% over 10,000 bot matches (measured 47.3 to 53.8%), rounds 25 to 45 s (measured 43.0 s).

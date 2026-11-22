@@ -111,8 +111,8 @@ async function boot(): Promise<void> {
     /** bot vs bot fight that returns to the lobby (memory soak and fps tests) */
     botFight: (i: number) => {
       const el = (k: number) => ELEMENT_IDS[(i * 3 + k * 7) % ELEMENT_IDS.length]!;
-      const m = createMatch({ mode: 'duel', teamA: [stickSpec('A', el(0), 30), stickSpec('B', el(1), 30)], teamB: [stickSpec('C', el(2), 30), stickSpec('D', el(3), 30)], seed: i + 1, bots: [5, 5] });
-      startFight({ match: m, arena: ARENAS[i % ARENAS.length]!.id, labels: ['Bot A', 'Bot B'], music: 'fight', input: 'solo', done: () => showLobby() });
+      const m = createMatch({ mode: 'duel', teamA: [stickSpec('Kira', el(0), 30), stickSpec('Dax', el(1), 30)], teamB: [stickSpec('Mona', el(2), 30), stickSpec('Vito', el(3), 30)], seed: i + 1, bots: [5, 5] });
+      startFight({ match: m, arena: ARENAS[i % ARENAS.length]!.id, labels: ['Kira', 'Mona'], music: 'fight', input: 'solo', done: () => showLobby() });
       autopilot(5);
     },
     cover: (kind: 'landscape' | 'portrait' | 'square') => showCover(kind),

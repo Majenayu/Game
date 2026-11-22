@@ -33,3 +33,29 @@ Pushed: `de34c74` (snapshot), `540b939`, `0669087`, then this docs commit. Publi
 - Banned-word scan test and profile / save tests: next entry.
 - CrazyGames SDK check against current docs, portal zips, store text, covers, SUBMISSION_GUIDE.md: after that.
 - On 844x390 the fighters are small (the whole arena fits the short screen). Readable, but a closer camera is worth testing.
+
+## Entry 2: balance, performance, CrazyGames rules, portal package (M6 to M8)
+
+Pushed: `933abd8` and the docs/media commit after it. Published to Pages: `154b5ab` in orb-arena-play (build 2).
+
+**Changes**
+- Balance: per-element power damage tuning fitted from bot matches (DECISIONS_LOG D17).
+- Performance: filled circles drawn as triangle fans, arenas baked into one texture (D22).
+- CrazyGames rules (docs read 2026-11-22): new players land in gameplay with one click (title screen removed); midgame ads only after results with input blocked; rewarded double coins at most every 5 minutes with a video icon; Zombie revive once per run with equal "End the run / 150 coins / Watch an ad" choices; rewarded buttons hidden after `adsDisabled` / `adblock` and when an adblocker is detected; touch controls from the portal's device type; iOS audio resume on touch; Champion Road progress reported to the SDK.
+- Bugs fixed: the Zombie run ended behind the revive dialog; revive was never offered again in the same session; the revive dialog promised full health (it is half); the benched partner was left in the wrong state after a revive; "Stand still" in Training (banned word, now "Just stand"); test labels in bot fights.
+- Portal package: `npm run package` (CrazyGames zip and web zip, 0.41 MB each, 6 files), 3 covers, 5 screenshots, 2 preview videos, `STORE_TEXT.md`, `SUBMISSION_GUIDE.md`.
+
+**Checks run (all fresh for this entry)**
+| Check | Result |
+| --- | --- |
+| Typecheck | pass |
+| Unit tests (sim, determinism, content, wheel, banned words, profile, save) | 27 / 27 pass |
+| Balance: 10,000 bot matches | every element 47.3 to 53.8% (target 45 to 55), rounds 43.0 s average (target 25 to 45), 3.7% of rounds time out, 0 draws: pass |
+| Champion Road walkthrough bot | all 41 cleared in 158 champion fights + 93 practice fights, squad level 38, all 10 elements unlocked: pass |
+| Smoke e2e (every screen and mode, Zombie revive with an ad, no console errors) | pass |
+| First-run e2e | local 22.0 s, CrazyGames build 22.4 s, **live Pages build 24.3 s**: pass |
+| Memory soak: 100 bot matches in the browser | heap 9.1 to 9.9 MB after GC, DOM 158 nodes throughout: pass |
+| fps (Chrome with GPU, 1366x768, busy bot fight) | 144 fps (monitor cap), 95th percentile 140.8; 4x CPU throttle 86.3 fps, 95th percentile 71.4, one 389 ms frame when the throttle switched on |
+| fps headless (software rendering) | 11 fps before the drawing fix; not a real-device number, kept only as a note |
+| Build size | 1.67 MB initial (409 KB gzipped) |
+| Screenshots at 4 sizes | `docs/shots/` refreshed |
