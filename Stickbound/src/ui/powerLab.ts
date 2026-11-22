@@ -23,12 +23,16 @@ function find(id: string): Target | null {
 }
 
 const LOOK = { ...DEFAULT_LOOK, hat: 1, back: 1, eyes: 5, thick: 2 };
+/** each element shows in a matching arena (?arena=<id> overrides, ?arena=none shows the plain stage) */
+const ARENA_FOR: Record<ElementId, string> = { fire: 'foundry', water: 'orbital', ice: 'cryo', lightning: 'reactor', wind: 'skyrail', earth: 'techruins', leaf: 'biodome', light: 'neon', gravity: 'gravwell', time: 'datavoid' };
+const arenaFor = (el: ElementId, force?: string | null): string | undefined => (force === 'none' ? undefined : force || ARENA_FOR[el]);
 
 export function showPowerLab(): void {
   document.body.dataset.screen = 'lab';
   document.getElementById('game')!.style.display = 'none';
   const params = new URLSearchParams(location.search);
   const playOnly = params.get('play');
+  const forceArena = params.get('arena');
   const root = h('div', `lab screen ${playOnly ? 'play' : ''}`);
   document.getElementById('screens')!.replaceChildren(root);
 
@@ -37,7 +41,7 @@ export function showPowerLab(): void {
   const { c, ctx, dpr } = makeCanvas(W, H);
   c.className = 'lab-canvas';
   let cur: Target = (playOnly && find(playOnly)) || { el: 'fire', arch: 'classic', slot: 0 };
-  let stage = new PowerStage(ctx, W, H, dpr, { element: cur.el, archetype: cur.arch, look: LOOK, span: playOnly ? 820 : 700 });
+  let stage = new PowerStage(ctx, W, H, dpr, { element: cur.el, archetype: cur.arch, look: LOOK, span: playOnly ? 820 : 700, arena: arenaFor(cur.el, forceArena), quality: 'high' });
   let paused = false;
   let all = !playOnly;
   const info = h('div', 'lab-info');
@@ -47,7 +51,7 @@ export function showPowerLab(): void {
   };
   const load = (t: Target, cycleAll = false) => {
     cur = t;
-    stage = new PowerStage(ctx, W, H, dpr, { element: t.el, archetype: t.arch, look: LOOK, span: playOnly ? 820 : 700 });
+    stage = new PowerStage(ctx, W, H, dpr, { element: t.el, archetype: t.arch, look: LOOK, span: playOnly ? 820 : 700, arena: arenaFor(t.el, forceArena), quality: 'high' });
     stage.only = cycleAll ? null : t.slot;
     stage.slot = t.slot;
     setInfo();
@@ -135,11 +139,11 @@ export function showPowerLab(): void {
   const panel = makeCanvas(PW, PH);
   (window as unknown as { __lab: unknown }).__lab = {
     ids: order.map((o) => powersFor(o.el, o.arch)[o.slot]!.id),
-    sheet(id: string): string {
+    sheet(id: string, arena?: string): string {
       const t = find(id)!;
       const mv = powerById(id)!;
       const make = () => {
-        const s = new PowerStage(panel.ctx, PW, PH, panel.dpr, { element: t.el, archetype: t.arch, look: LOOK, span: 620 });
+        const s = new PowerStage(panel.ctx, PW, PH, panel.dpr, { element: t.el, archetype: t.arch, look: LOOK, span: 620, arena: arenaFor(t.el, arena ?? forceArena), quality: 'high' });
         s.only = t.slot;
         s.slot = t.slot;
         return s;

@@ -19,6 +19,7 @@ import { FLOOR_Y } from './arenas';
 import { drawStick, POSES, solve, type Joints } from './rig';
 import { lookOf } from './fighterView';
 import type { Pen } from './pen';
+import type { ArenaReact } from './arenaReact';
 
 export const wx = (x: number) => x / 100;
 export const wy = (y: number) => FLOOR_Y + y / 100;
@@ -380,6 +381,8 @@ export class FxRenderer {
   quality = 1;
   reduced = false;
   hitboxes = false;
+  /** the arena's reaction state (set by the fight scene or a preview); powers make the arena respond */
+  react: ArenaReact | null = null;
   req: FxRequests = { freeze: 0, shake: 0, push: 0, pushX: 0, flash: 0, flashColor: 0xffffff, cutin: null };
   /** render-only copies of big strikes that sink into the floor after the sim removes them */
   private linger: { e: Effect; t: number }[] = [];
@@ -444,6 +447,7 @@ export class FxRenderer {
           // power impact: flash, two shockwaves, element debris, decal, freeze-frame scaled to damage
           const p = PAL[el];
           const big = Math.min(1.6, 0.6 + e.dmg / 80);
+          this.react?.trigger(el, x, y, Math.min(1.5, 0.5 + e.dmg / 90));
           this.P.add(K.Glow, x, y, 0, 0, 12, 56 * big, p.hot);
           this.P.add(K.Glow, x, y, 0, 0, 20, 100 * big, p.main);
           this.P.add(K.Ring, x, y, 0, 0, 16, 70 * big, p.hot);
@@ -466,6 +470,8 @@ export class FxRenderer {
           if (!f || !mv?.element) break;
           const slot = powersFor(f.spec.element, f.spec.archetype).findIndex((x) => x.id === mv.id);
           if (slot === 2 && f.spec.kind === 'stick') this.req.cutin = { name: mv.name, element: f.spec.element, who: f.id };
+          if (slot === 2) this.react?.super(PAL[mv.element].main);
+          this.react?.trigger(mv.element, wx(f.x), wy(f.y) - 60, 0.35);
           this.req.push = Math.max(this.req.push, slot === 2 ? 0.1 : 0.04);
           this.req.pushX = wx(f.x);
           break;

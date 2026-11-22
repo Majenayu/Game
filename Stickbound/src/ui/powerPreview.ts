@@ -7,7 +7,10 @@ import { mechanicOf, powersFor, type Archetype } from '../content/powers';
 
 const REACT = new Set(['counter', 'decoy', 'barrier', 'recall']);
 const CLOSE = new Set(['flurry', 'rising', 'melee', 'spin', 'armor', 'aura', 'buff']);
-import { FLOOR_Y } from '../render/arenas';
+import { arenaById, FLOOR_Y, type ArenaDef } from '../render/arenas';
+import { ArenaReact } from '../render/arenaReact';
+import { drawArenaCanvas, type Quality } from '../render/arenaBake';
+import { mixC, RimPen } from '../render/rimPen';
 import { elementColors, lookOf, poseFor, registerLook, type ViewState } from '../render/fighterView';
 import { CanvasPen } from '../render/pen';
 import { drawStick, solve } from '../render/rig';
@@ -29,6 +32,9 @@ export interface StageOpts {
   /** world x range shown (px); default 640 wide around the middle */
   span?: number;
   bg?: [string, string];
+  /** draw this arena behind the stage (Power Lab, lobby); without it a plain neon floor */
+  arena?: string;
+  quality?: Quality;
 }
 
 export class PowerStage {
@@ -42,6 +48,17 @@ export class PowerStage {
   private lookId: string;
   readonly set;
   onLabel: (text: string) => void = () => {};
+  arena: ArenaDef | null = null;
+  readonly react = new ArenaReact();
+  private rim: RimPen;
+  setArena(id: string | null): void {
+    this.arena = id ? arenaById(id) : null;
+    const r = new ArenaReact(this.arena?.props ?? []);
+    Object.assign(this.react, r);
+    this.react.reduced = settings.reducedMotion;
+    this.react.q = settings.lowGraphics ? 0 : 1;
+    this.fx.react = this.arena ? this.react : null;
+  }
 
   constructor(
     readonly ctx: CanvasRenderingContext2D,
@@ -51,6 +68,8 @@ export class PowerStage {
     readonly o: StageOpts,
   ) {
     this.pen = new CanvasPen(ctx);
+    this.rim = new RimPen(this.pen);
+    this.setArena(o.arena ?? null);
     this.set = powersFor(o.element, o.archetype);
     this.lookId = `stage:${o.element}:${o.archetype}:${Math.random().toString(36).slice(2, 6)}`;
     registerLook(this.lookId, o.look);
@@ -149,15 +168,30 @@ export class PowerStage {
     const scale = W / span;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, this.o.bg?.[0] ?? '#1d2a5c');
-    g.addColorStop(1, this.o.bg?.[1] ?? '#0d1430');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (W / 2 - camX * scale), dpr * (H * 0.84 - FLOOR_Y * scale));
-    ctx.fillStyle = '#26315e';
-    ctx.fillRect(0, FLOOR_Y, 1280, 400);
-    pen.line(0, FLOOR_Y, 1280, FLOOR_Y, 4, 0xffffff, 0.5);
+    const world = () => ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (W / 2 - camX * scale), dpr * (H * 0.84 - FLOOR_Y * scale));
+    const q: Quality = this.o.quality ?? (settings.lowGraphics ? 'low' : 'medium');
+    if (this.arena) {
+      ctx.fillStyle = `#${this.arena.bg.toString(16).padStart(6, '0')}`;
+      ctx.fillRect(0, 0, W, H);
+      world();
+      this.react.update();
+      drawArenaCanvas(ctx, pen, this.arena, time, this.react, q, 'back');
+    } else {
+      // plain neon stage: deep navy, a glossy floor with a light edge
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, this.o.bg?.[0] ?? '#141236');
+      g.addColorStop(1, this.o.bg?.[1] ?? '#070615');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      world();
+      ctx.fillStyle = '#0c0b26';
+      ctx.fillRect(0, FLOOR_Y, 1280, 400);
+      pen.add(true);
+      for (let i = 0; i < 5; i++) pen.line(0, FLOOR_Y + 14 + i * i * 9, 1280, FLOOR_Y + 14 + i * i * 9, 1.2, 0x5a7cff, 0.22 - i * 0.03);
+      pen.line(0, FLOOR_Y, 1280, FLOOR_Y, 9, 0x7a8cff, 0.18);
+      pen.add(false);
+      pen.line(0, FLOOR_Y, 1280, FLOOR_Y, 2.5, 0xb8c6ff, 0.8);
+    }
     fx.drawUnder(pen, m, time);
     for (const f of m.fighters) {
       if (!f.onField) continue;
@@ -169,10 +203,14 @@ export class PowerStage {
       const [elc, ell] = elementColors(f, v.look);
       pen.line(x - 30, FLOOR_Y + 2, x + 30, FLOOR_Y + 2, 7, 0, 0.2);
       fx.drawBehindFighter(pen, m, f, time);
-      drawStick(pen, j, f.face, 1, { look: v.look, element: elc, elementLight: ell, expression: expr, aura: f.team === 0 ? 0.4 : 0.1, alpha, cloth: v.cloth, time, weight });
+      const opts = { look: v.look, element: elc, elementLight: ell, expression: expr, aura: f.team === 0 ? 0.4 : 0.1, alpha, cloth: v.cloth, time, weight };
+      this.rim.color = mixC(ell, 0xffffff);
+      drawStick(this.rim, j, f.face, 1, opts);
+      drawStick(pen, j, f.face, 1, opts);
       fx.drawOnFighter(pen, m, f, j, time);
     }
     fx.drawOver(pen, m, time);
+    if (this.arena) drawArenaCanvas(ctx, pen, this.arena, time, this.react, q, 'front');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 }

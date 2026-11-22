@@ -13,8 +13,16 @@ export interface Settings {
   oneHand: boolean;
   largeText: boolean;
   highContrast: boolean;
-  /** fewer particles and glows, no camera tricks (weak devices) */
+  /** derived from the graphics quality (true on Low); older saves stored it directly */
   lowGraphics: boolean;
+  /** graphics quality; 'auto' picks from the frame time of the first fight */
+  quality: 'auto' | 'high' | 'medium' | 'low';
+  /** what auto picked on this device (null until measured) */
+  autoQuality: 'high' | 'medium' | 'low' | null;
+  bloom: boolean;
+  reflections: boolean;
+  particles: boolean;
+  scanlines: boolean;
   timerSec: number;
   keys: Bindings;
 }
@@ -30,6 +38,12 @@ export const DEFAULT_SETTINGS: Settings = {
   largeText: false,
   highContrast: false,
   lowGraphics: false,
+  quality: 'auto',
+  autoQuality: null,
+  bloom: true,
+  reflections: true,
+  particles: true,
+  scanlines: false,
   timerSec: 60,
   keys: SOLO_KEYS,
 };
@@ -45,6 +59,8 @@ export function loadSettings(kv: KV): void {
     if (raw) {
       const s = JSON.parse(raw) as Partial<Settings>;
       Object.assign(settings, { ...structuredClone(DEFAULT_SETTINGS), ...s, keys: { ...SOLO_KEYS, ...(s.keys ?? {}) } });
+      // saves from before the quality setting: Low graphics on means quality Low
+      if (s.quality === undefined && s.lowGraphics) settings.quality = 'low';
     }
   } catch {
     /* keep defaults */
@@ -61,9 +77,19 @@ export function saveSettings(): void {
   applySettings();
 }
 
+/** The quality in use: the player's choice, or what auto measured (high on desktop, medium on touch until then). */
+export function resolvedQuality(): 'high' | 'medium' | 'low' {
+  if (settings.quality !== 'auto') return settings.quality;
+  if (settings.autoQuality) return settings.autoQuality;
+  return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'medium' : 'high';
+}
+
 export function applySettings(): void {
+  settings.lowGraphics = resolvedQuality() === 'low';
   const d = document.documentElement.dataset;
   d.text = settings.largeText ? 'large' : 'normal';
   d.contrast = settings.highContrast ? 'high' : 'normal';
   d.motion = settings.reducedMotion ? 'reduced' : 'full';
+  d.quality = resolvedQuality();
+  d.scanlines = settings.scanlines ? 'on' : 'off';
 }

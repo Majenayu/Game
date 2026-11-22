@@ -8,16 +8,17 @@ import { powersFor, RANK_MP_OFF } from '../content/powers';
 import type { Controller } from '../core/input';
 import { arenaById, FLOOR_Y, WORLD_H, WORLD_W, type ArenaDef } from '../render/arenas';
 import { elementColors, lookOf, poseFor, type ViewState } from '../render/fighterView';
-import { bakeGlow, PhaserPen, type Pen } from '../render/pen';
+import { bakeGlow, PhaserPen } from '../render/pen';
 import { FxRenderer } from '../render/fx';
-import { bakeArena } from '../render/bake';
+import { ArenaView } from '../render/arenaView';
+import { mixC, RimPen, TintPen } from '../render/rimPen';
 import { drawStick, solve } from '../render/rig';
 import { wx, wy } from '../render/vfx';
 import { botInput } from '../sim/ai';
 import { activeOf, fighterById, getMove, hurtbox, moveBox, reviveTeam } from '../sim/step';
 import type { Ev, Fighter, Match } from '../sim/types';
 import { step } from '../sim/step';
-import { settings } from '../meta/settings';
+import { resolvedQuality, saveSettings, settings } from '../meta/settings';
 import { Hud } from '../ui/hud';
 import { TouchPad } from '../ui/touchPad';
 import type { TouchController } from '../core/input';
@@ -46,18 +47,6 @@ export interface TutorialStep {
   done: (m: Match, evs: Ev[]) => boolean;
 }
 
-/** Rim pen: draws a light outline behind figures on dark arenas. */
-class RimPen implements Pen {
-  constructor(private p: Pen, private color: number) {}
-  line(x1: number, y1: number, x2: number, y2: number, w: number, _c: number, a = 1): void {
-    this.p.line(x1, y1, x2, y2, w + 5, this.color, a * 0.85);
-  }
-  circle(x: number, y: number, r: number, fill: number | null, stroke: number | null, w = 2, a = 1): void {
-    if (fill !== null || stroke !== null) this.p.circle(x, y, r + (stroke !== null ? w / 2 : 0) + 2.5, this.color, null, 0, a * 0.85);
-  }
-  poly(): void {}
-}
-
 export class FightScene extends Phaser.Scene {
   private setup!: FightSetup;
   private m!: Match;
@@ -72,6 +61,16 @@ export class FightScene extends Phaser.Scene {
   private frameMs = 16.7;
   private pen!: PhaserPen;
   private rim!: RimPen;
+  private arenaView!: ArenaView;
+  /** floor reflection (null on Low or with reflections off) */
+  private refl: { g: Phaser.GameObjects.Graphics; pen: PhaserPen; tint: TintPen } | null = null;
+  /** full-screen grade: time desaturates, supers punch contrast (WebGL only) */
+  private grade: Phaser.FX.ColorMatrix | null = null;
+  private gradeKey = '';
+  /** recent positions per fighter for the Time ghost trails */
+  private trail = new Map<number, number[]>();
+  private qFrames = 0;
+  private qSum = 0;
   private views = new Map<number, ViewState>();
   private hud!: Hud;
   private pad: TouchPad | null = null;
@@ -115,13 +114,34 @@ export class FightScene extends Phaser.Scene {
 
   create(): void {
     document.body.dataset.screen = 'fight';
-    bakeArena(this, this.arena);
+    document.body.dataset.arena = this.arena.id;
     bakeGlow(this);
+    const q = resolvedQuality();
+    this.arenaView = new ArenaView(this, this.arena, q);
+    this.arenaView.react.reduced = settings.reducedMotion;
+    this.fx.react = this.arenaView.react;
     this.g = this.add.graphics().setDepth(2);
     this.gAdd = this.add.graphics().setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
     this.pen = new PhaserPen(this.g, this.gAdd, this, 5);
-    this.rim = new RimPen(this.pen, 0xdfe8ff);
-    this.cameras.main.setBackgroundColor(this.arena.sky[0]);
+    this.rim = new RimPen(this.pen);
+    this.refl = null;
+    if (q !== 'low' && settings.reflections) {
+      // mirrored about the floor line: y' = 2 * FLOOR_Y - y
+      const g = this.add.graphics().setDepth(0).setScale(1, -1).setPosition(0, FLOOR_Y * 2).setAlpha(0.2);
+      const pen = new PhaserPen(g);
+      this.refl = { g, pen, tint: new TintPen(pen) };
+    }
+    this.grade = null;
+    this.gradeKey = '';
+    const cam = this.cameras.main;
+    if (this.renderer.type === Phaser.WEBGL && q !== 'low') {
+      this.grade = cam.postFX.addColorMatrix();
+      if (q === 'high' && settings.bloom) cam.postFX.addBloom(0xffffff, 1, 1, 0.8, 0.3, 2);
+    }
+    this.trail.clear();
+    this.qFrames = 0;
+    this.qSum = 0;
+    cam.setBackgroundColor(this.arena.bg);
     this.fitCamera(true);
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => this.cleanup());
@@ -199,7 +219,8 @@ export class FightScene extends Phaser.Scene {
   override update(_t: number, delta: number): void {
     const dt = Math.min(delta, 100);
     this.frameMs += (dt - this.frameMs) * 0.05;
-    this.fx.adapt(this.frameMs, settings.lowGraphics, dt);
+    this.fx.adapt(this.frameMs, settings.lowGraphics || !settings.particles, dt);
+    this.measureQuality(dt);
     if (this.cutinT > 0) {
       this.cutinT -= dt;
       if (this.cutinT <= 0) this.endCutin();
@@ -237,6 +258,17 @@ export class FightScene extends Phaser.Scene {
     if (me) audio.tension = this.m.phase === 'fight' ? Math.min(1, 1.2 - me.hp / me.hpMax + (this.m.timer < 600 ? 0.4 : 0)) : 0;
   }
 
+  /** Auto quality: the first fight on a device measures ~5 s of frame times and picks High, Medium or Low. */
+  private measureQuality(dt: number): void {
+    if (settings.quality !== 'auto' || settings.autoQuality || this.m.phase !== 'fight' || this.paused) return;
+    this.qFrames++;
+    if (this.qFrames < 90) return;
+    this.qSum += dt;
+    if (this.qFrames < 390) return;
+    const avg = this.qSum / 300;
+    settings.autoQuality = avg > 26 ? 'low' : avg > 18.5 ? 'medium' : 'high';
+    saveSettings();
+  }
   private tick(): void {
     const [c0, c1] = this.setup.controllers;
     const a = c0 ? c0.read() : botInput(this.m, 0);
@@ -442,8 +474,22 @@ export class FightScene extends Phaser.Scene {
 
   private draw(): void {
     this.pen.begin();
+    this.refl?.pen.begin();
     const time = (this.time.now - this.time0) / 1000;
     const m = this.m;
+    const A = this.arenaView.react;
+    this.arenaView.update(time);
+    this.applyGrade(A.time, A.superK);
+    // light pools under the fighters on the glossy floor
+    const fp = this.arenaView.floorPen;
+    fp.add(true);
+    for (const f of m.fighters) {
+      if (!f.onField) continue;
+      const [c] = elementColors(f, this.view(f).look);
+      const lift = Math.max(0.3, 1 - -f.y / 25000);
+      fp.glow(wx(f.x), FLOOR_Y + 8, 90 * lift, c, 0.3 * lift);
+    }
+    fp.add(false);
     this.fx.hitboxes = this.hitboxes;
     // floor light, decals, ground effects, spotlight
     this.fx.drawUnder(this.pen, m, time);
@@ -464,6 +510,22 @@ export class FightScene extends Phaser.Scene {
       this.pen.add(true);
       this.pen.poly([-600, -900, 1880, -900, 1880, 1500, -600, 1500], this.fx.req.flashColor, this.fx.req.flash * 0.5);
       this.pen.add(false);
+    }
+    // lightning strobes the arena and tears a glitch line across it; supers tint the whole screen
+    if (!settings.reducedFlash) {
+      if (A.strobe > 0.03) {
+        this.pen.add(true);
+        const on = Math.sin(time * 70) > 0 ? 1 : 0.35;
+        this.pen.poly([-600, -900, 1880, -900, 1880, 1500, -600, 1500], 0xcfe6ff, A.strobe * 0.16 * on);
+        const gy = 120 + ((time * 997) % 420);
+        this.pen.poly([-600, gy, 1880, gy, 1880, gy + 3 + A.strobe * 5, -600, gy + 3 + A.strobe * 5], 0xffffff, A.strobe * 0.5);
+        this.pen.add(false);
+      }
+      if (A.superK > 0.03) {
+        this.pen.add(true);
+        this.pen.poly([-600, -900, 1880, -900, 1880, 1500, -600, 1500], A.superColor, A.superK * 0.1);
+        this.pen.add(false);
+      }
     }
     if (this.hitboxes) this.drawHitboxes();
   }
@@ -502,10 +564,41 @@ export class FightScene extends Phaser.Scene {
       weight,
       teamColor: this.m.mode === 'duel' ? (f.team === 0 ? 0x2f8cff : 0xff4d6d) : undefined,
     };
-    if (this.arena.dark) drawStick(this.rim, j, f.face, s, opts);
+    // Time powers leave ghost afterimages of recent positions
+    const A = this.arenaView.react;
+    let tr = this.trail.get(f.id);
+    if (!tr) this.trail.set(f.id, (tr = []));
+    if (Math.round(time * 60) % 4 === 0) {
+      tr.unshift(x, y);
+      if (tr.length > 8) tr.length = 8;
+    }
+    if (A.time > 0.06 && A.q > 0) {
+      for (let i = 2; i < tr.length; i += 2) {
+        const gj = solve(pose, tr[i]!, tr[i + 1]!, f.face, s);
+        drawStick(this.pen, gj, f.face, s, { ...opts, alpha: alpha * A.time * (0.4 - i * 0.04), aura: 0 });
+      }
+    }
+    if (this.refl) {
+      this.refl.tint.color = ell;
+      drawStick(this.refl.tint, j, f.face, s, { ...opts, aura: 0 });
+    }
+    this.rim.color = mixC(ell, 0xffffff);
+    drawStick(this.rim, j, f.face, s, opts);
     drawStick(this.pen, j, f.face, s, opts);
     this.fx.drawOnFighter(this.pen, this.m, f, j, time);
     if (f.st === 'guard') this.pen.circle(j.aHand[0] + f.face * 10, j.aHand[1], 26 * s, null, 0x9fd8ff, 4, 0.6);
+  }
+  /** Colour grade from the arena reactions. Rebuilt only when the rounded values change. */
+  private applyGrade(time: number, sup: number): void {
+    if (!this.grade) return;
+    const tq = settings.reducedFlash ? 0 : Math.round(time * 20) / 20;
+    const sq = settings.reducedFlash ? 0 : Math.round(sup * 20) / 20;
+    const key = `${tq}:${sq}`;
+    if (key === this.gradeKey) return;
+    this.gradeKey = key;
+    this.grade.reset();
+    if (tq > 0) this.grade.saturate(-0.85 * tq, true);
+    if (sq > 0) this.grade.contrast(0.25 * sq, true);
   }
   private drawHitboxes(): void {
     for (const f of this.m.fighters) {

@@ -62,6 +62,7 @@ export class PhaserPen implements Pen {
     private gAdd?: Phaser.GameObjects.Graphics,
     private scene?: Phaser.Scene,
     private glowDepth = 5,
+    private glowScroll = 1,
   ) {
     this.cur = g;
   }
@@ -85,7 +86,7 @@ export class PhaserPen implements Pen {
     if (this.used >= this.maxGlows) return;
     let img = this.pool[this.used];
     if (!img) {
-      img = this.scene.add.image(0, 0, GLOW_KEY).setBlendMode(1).setDepth(this.glowDepth);
+      img = this.scene.add.image(0, 0, GLOW_KEY).setBlendMode(1).setDepth(this.glowDepth).setScrollFactor(this.glowScroll);
       this.pool.push(img);
     }
     this.used++;

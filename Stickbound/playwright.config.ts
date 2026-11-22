@@ -22,6 +22,7 @@ export default defineConfig({
     { name: 'smoke', testMatch: /smoke\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
     { name: 'firstrun', testMatch: /firstrun\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
     { name: 'shots', testMatch: /shots\.spec\.ts/ },
+    { name: 'arenas', testMatch: /(arenas|diag)\.spec\.ts/, use: { ...devices['Desktop Chrome'], channel: 'chrome', headless: false } },
     { name: 'perf', testMatch: /perf\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
     // same tests in a visible window: real GPU rendering instead of headless software rendering
     { name: 'powersheet', testMatch: /powersheet\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 2000, height: 900 }, deviceScaleFactor: 1 } },

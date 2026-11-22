@@ -20,7 +20,18 @@ const TOGGLES: [BoolKey, string, string][] = [
   ['oneHand', 'One-handed touch', 'All touch buttons in one column on the right.'],
   ['largeText', 'Large text', 'Bigger menu and HUD text.'],
   ['highContrast', 'High contrast', 'Stronger outlines and colours in menus and HUD.'],
-  ['lowGraphics', 'Low graphics', 'Fewer particles and lights, no lobby animations. For slower devices.'],
+];
+const GFX_TOGGLES: [BoolKey, string, string][] = [
+  ['bloom', 'Bloom', 'Soft glow around bright lights (High quality only).'],
+  ['reflections', 'Floor reflections', 'Fighters mirrored in the glossy floor (not on Low).'],
+  ['particles', 'Full particles', 'Off keeps sparks and debris to a minimum.'],
+  ['scanlines', 'Scanlines', 'A faint screen texture over the fight.'],
+];
+const QUALITY: [Settings['quality'], string][] = [
+  ['auto', 'Auto'],
+  ['high', 'High'],
+  ['medium', 'Medium'],
+  ['low', 'Low'],
 ];
 
 export function keyName(code: string): string {
@@ -56,6 +67,33 @@ export function showSettings(back: () => void = showLobby): void {
   slider('Music', () => settings.musicVol, (v) => (settings.musicVol = v));
   slider('Effects', () => settings.sfxVol, (v) => (settings.sfxVol = v));
   body.appendChild(snd);
+  // graphics
+  const gfx = h('div', 'panel');
+  gfx.appendChild(h('h3', '', 'Graphics'));
+  const qrow = h('div', 'set-row');
+  qrow.appendChild(h('span', '', 'Quality'));
+  for (const [q, label] of QUALITY) {
+    const b = btn(label, () => {
+      settings.quality = q;
+      saveSettings();
+      showSettings(back);
+    }, `btn chip ${settings.quality === q ? 'on' : ''}`);
+    b.setAttribute('aria-pressed', String(settings.quality === q));
+    qrow.appendChild(b);
+  }
+  gfx.appendChild(qrow);
+  const auto = settings.autoQuality ? ` (now: ${settings.autoQuality[0]!.toUpperCase()}${settings.autoQuality.slice(1)})` : '';
+  gfx.appendChild(h('p', 'hint', settings.quality === 'auto' ? `Auto picks from how fast your first fight runs${auto}. Low is for slower phones.` : 'Low is for slower phones: fewer layers, lights and particles.'));
+  for (const [k, label, hint] of GFX_TOGGLES) {
+    const b = btn(`<b>${label}</b><small>${hint}</small><span class="tog">${settings[k] ? 'On' : 'Off'}</span>`, () => {
+      settings[k] = !settings[k];
+      saveSettings();
+      showSettings(back);
+    }, `btn toggle ${settings[k] ? 'on' : ''}`);
+    b.setAttribute('aria-pressed', String(settings[k]));
+    gfx.appendChild(b);
+  }
+  body.appendChild(gfx);
 
   // options
   const opt = h('div', 'panel');

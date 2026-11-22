@@ -551,3 +551,22 @@ body[data-screen='lab'] .lab-sheet.show { position: static; }
 .lab.play { padding: 0; overflow: hidden; }
 .lab.play .lab-canvas { border: 0; border-radius: 0; }
 .lab.play .lab-info { display: none; }
+
+/* ---- fight screen post look: vignette and optional scanlines (CSS, so they cost the GPU almost nothing) ---- */
+body[data-screen='fight'] #game::after,
+body[data-screen='pause'] #game::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 55%, transparent 55%, rgba(2, 2, 12, 0.55) 100%);
+}
+html[data-scanlines='on'] body[data-screen='fight'] #game::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
