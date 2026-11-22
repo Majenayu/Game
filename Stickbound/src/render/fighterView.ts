@@ -34,12 +34,38 @@ function hashStr(s: string): number {
 
 const ease = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t));
 
-export function poseFor(f: Fighter, v: ViewState, time: number): { pose: Pose; expr: Expression; alpha: number } {
+function hashId(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+const POWER_POSES = new Map<string, { wind: Pose; strike: Pose }>();
+/** Each power gets its own wind-up and strike keyframes: its animation's poses plus a variation from its id. */
+function powerPoses(id: string, anim: string): { wind: Pose; strike: Pose } {
+  let pp = POWER_POSES.get(id);
+  if (!pp) {
+    const key = POSES[anim] ? anim : 'cast';
+    const w = POSES[`${key}_w`] ?? POSES.cast_w!;
+    const s = POSES[key]!;
+    const h = hashId(id);
+    const sup = id.endsWith('3');
+    const d = (shift: number, amp: number) => ((((h >>> shift) & 31) - 15.5) / 15.5) * amp;
+    pp = {
+      wind: { ...w, lean: w.lean + d(0, 10) - (sup ? 10 : 0), aSh: w.aSh + d(5, 28) + (sup ? 30 : 0), bSh: w.bSh + d(10, 30), aEl: w.aEl + d(15, 18), bEl: w.bEl + d(20, 18), hipY: w.hipY - 4 - (sup ? 6 : 0), aHip: w.aHip + d(25, 10), head: w.head + d(27, 8) },
+      strike: { ...s, lean: s.lean + d(2, 8) + (sup ? 8 : 0), bSh: s.bSh + d(7, 34), bEl: s.bEl + d(12, 20), aHip: s.aHip + d(17, 14), bHip: s.bHip + d(22, 12), head: s.head + d(26, 6) },
+    };
+    POWER_POSES.set(id, pp);
+  }
+  return pp;
+}
+
+export function poseFor(f: Fighter, v: ViewState, time: number): { pose: Pose; expr: Expression; alpha: number; weight: number } {
   const zombie = f.spec.kind !== 'stick';
   const base = zombie ? POSES.zombie! : POSES.idle!;
   let pose: Pose = base;
   let expr: Expression = 'neutral';
   let alpha = 1;
+  let weight = 1;
   const low = f.hp * 100 < f.hpMax * 25;
 
   switch (f.st) {
@@ -47,14 +73,26 @@ export function poseFor(f: Fighter, v: ViewState, time: number): { pose: Pose; e
       const mv = getMove(f.move ?? '');
       if (!mv) break;
       const key = POSES[mv.anim] ? mv.anim : 'cast';
-      const wind = POSES[`${key}_w`] ?? POSES.cast_w!;
-      const strike = POSES[key]!;
+      const pp = mv.element ? powerPoses(mv.id, key) : null;
+      const wind = pp ? pp.wind : (POSES[`${key}_w`] ?? POSES.cast_w!);
+      const strike = pp ? pp.strike : POSES[key]!;
       const s = mv.startup;
-      if (f.mf <= s) pose = mix(base, wind, ease(f.mf / Math.max(1, s)));
-      else if (f.mf <= s + mv.active) pose = mix(wind, strike, ease((f.mf - s) / 2));
-      else pose = mix(strike, base, ease((f.mf - s - mv.active) / Math.max(1, mv.recovery)));
+      if (f.mf <= s) {
+        const k = ease(f.mf / Math.max(1, s));
+        pose = mix(base, wind, k);
+        // anticipation: squash down while charging, and the lines pulse
+        if (mv.element) {
+          pose = { ...pose, hipY: pose.hipY - 4 * k };
+          weight = 1 + 0.18 * k * (0.6 + 0.4 * Math.sin(time * 30));
+        }
+      } else if (f.mf <= s + mv.active) {
+        pose = mix(wind, strike, ease((f.mf - s) / 2));
+        // release: a quick stretch
+        if (mv.element && f.mf - s <= 3) pose = { ...pose, hipY: pose.hipY + 3 };
+        if (mv.element) weight = 1.12;
+      } else pose = mix(strike, base, ease((f.mf - s - mv.active) / Math.max(1, mv.recovery)));
       if (key === 'spin') pose = { ...pose, rot: f.mf * 34 };
-      expr = mv.element ? 'determined' : 'angry';
+      expr = mv.element ? (mv.id.endsWith('3') ? 'angry' : mv.special === 'counter' ? 'smug' : 'determined') : 'angry';
       break;
     }
     case 'walk':
@@ -106,7 +144,7 @@ export function poseFor(f: Fighter, v: ViewState, time: number): { pose: Pose; e
     }
   }
   if (f.status.freeze > 0) expr = 'shocked';
-  return { pose, expr, alpha };
+  return { pose, expr, alpha, weight };
 }
 
 export function elementColors(f: Fighter, look: Look): [number, number] {

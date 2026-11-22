@@ -3,7 +3,11 @@
 
 import { ELEMENTS, matchup, matchupPct } from '../content/elements';
 import { BASIC, COMBOS, STATUS_IDS, ZOMBIE_MOVES, type Box, type EffectDef, type HitDef, type MoveDef, type StatusId } from '../content/moves';
-import { POWER_TUNE, POWERS_BY_ELEMENT, RANK_DMG, RANK_MP_OFF, RANK_SIZE_PCT, RANK_STATUS_PCT, powerById } from '../content/powers';
+import { powersFor, RANK_DMG, RANK_MP_OFF, RANK_SIZE_PCT, RANK_STATUS_PCT, powerById, tuneFor } from '../content/powers';
+
+/** sin(i * 2pi / 32) * 1000, an integer table so orbits stay deterministic on every engine */
+const SIN32 = [0, 195, 383, 556, 707, 831, 924, 981, 1000, 981, 924, 831, 707, 556, 383, 195, 0, -195, -383, -556, -707, -831, -924, -981, -1000, -981, -924, -831, -707, -556, -383, -195];
+const BUFF_KIND = { might: 1, speed: 2, iron: 3 } as const;
 import { hpFor } from './stats';
 import { IN, type Effect, type Fighter, type FighterSpec, type Match, type Mode, type ZombieKind } from './types';
 
@@ -84,6 +88,10 @@ export function makeFighter(m: Match, spec: FighterSpec, team: 0 | 1, x: number,
     lastGuard: -999,
     barrier: 0,
     pgBoost: 0,
+    counter: 0,
+    counterMove: null,
+    buff: 0,
+    buffT: 0,
     prevIn: 0,
     buf: 0,
     bufT: 0,
@@ -228,7 +236,7 @@ function canAct(f: Fighter): boolean {
 // ---- damage ---------------------------------------------------------------------------------------------------
 
 function powerRank(f: Fighter, moveId: string): number {
-  const list = POWERS_BY_ELEMENT[f.spec.element];
+  const list = powersFor(f.spec.element, f.spec.archetype);
   const i = list.findIndex((p) => p.id === moveId);
   return i < 0 ? 1 : Math.max(1, f.spec.ranks[i]!);
 }
@@ -239,7 +247,9 @@ function damageFor(m: Match, a: Fighter, v: Fighter, base: number, isPower: bool
   let d = Math.floor((base * (100 + atk)) / (100 + def));
   d = Math.floor((d * pct) / 100);
   if (el) d = Math.floor((d * matchupPct(a.spec.element, v.spec.element)) / 100);
-  if (isPower) d = Math.floor((d * POWER_TUNE[a.spec.element]) / 100);
+  if (isPower) d = Math.floor((d * tuneFor(a.spec.element, a.spec.archetype)) / 100);
+  if (a.buff === 1 && a.buffT > 0) d = Math.floor((d * 125) / 100);
+  if (v.buff === 3 && v.buffT > 0) d = Math.floor((d * 75) / 100);
   if (isPower && a.spec.perks.includes('power')) d = Math.floor((d * 110) / 100);
   if (isPower && v.spec.perks.includes('shield')) d = Math.floor((d * 90) / 100);
   if (isPower && v.spec.level >= 30) d = Math.floor((d * 95) / 100);
@@ -290,6 +300,22 @@ function applyHit(m: Match, a: Fighter, v: Fighter, h: HitDef, move: MoveDef | u
     return true;
   }
 
+  // counter stance: the hit is caught, and the counter's own hit goes back to the attacker if it is in reach
+  if (v.counter > 0 && v.counterMove && v.st === 'move') {
+    const cm = getMove(v.counterMove);
+    v.counter = 0;
+    v.invuln = Math.max(v.invuln, 14);
+    m.events.push({ t: 'counter', who: v.id, target: a.id, move: v.counterMove });
+    if (cm?.hit && a.onField && !a.down && Math.abs(a.x - v.x) < 32000) {
+      v.face = a.x >= v.x ? 1 : -1;
+      const rank = powerRank(v, cm.id);
+      applyHit(m, v, a, cm.hit, cm, RANK_DMG[rank]!, RANK_STATUS_PCT[rank]!, v.x, true);
+    }
+    // the stance ends into a short recovery
+    v.mf = Math.max(v.mf, (cm?.startup ?? 0) + (cm?.active ?? 0));
+    return true;
+  }
+
   const facingAttack = v.face === -dirX;
   if (v.st === 'guard' && facingAttack && !h.unblockable && v.status.freeze === 0) {
     const perfect = m.frame - v.guardSince <= v.spec.pgWindow;
@@ -330,6 +356,7 @@ function applyHit(m: Match, a: Fighter, v: Fighter, h: HitDef, move: MoveDef | u
   const dmg = damageFor(m, a, v, h.dmg, isPower, el, dmgPct, finisher);
   v.hp -= dmg;
   a.dealt += dmg;
+  if (h.drain && !a.down) a.hp = Math.min(a.hpMax, a.hp + Math.floor((dmg * h.drain) / 100));
   v.lastHurt = m.frame;
   v.combo++;
   if (v.combo > a.combosMax) a.combosMax = v.combo;
@@ -389,12 +416,12 @@ function startMove(m: Match, f: Fighter, id: string): void {
   } else m.events.push({ t: 'move', who: f.id, move: id });
 }
 
-function spawnEffect(m: Match, f: Fighter, mv: MoveDef, e: EffectDef): void {
+function spawnEffect(m: Match, f: Fighter, mv: MoveDef, e: EffectDef, fxi = 0): void {
   const rank = mv.element ? powerRank(f, mv.id) : 1;
   const size = RANK_SIZE_PCT[rank]!;
   const foe = nearestEnemy(m, f);
   let x = f.x + f.face * e.dx * 100;
-  if (e.atFoe && foe) x = foe.x;
+  if (e.atFoe && foe) x = Math.max(WALL_L, Math.min(WALL_R, foe.x + f.face * e.dx * 100));
   const lightFast = f.spec.element === 'light' && e.kind === 'proj' ? 120 : 100;
   m.effects.push({
     id: m.nextId++,
@@ -422,6 +449,12 @@ function spawnEffect(m: Match, f: Fighter, mv: MoveDef, e: EffectDef): void {
     statusPct: mv.element ? RANK_STATUS_PCT[rank]! : 100,
     hits: [],
     face: f.face,
+    age: 0,
+    orbitR: e.orbit ? e.orbit.r * 100 : 0,
+    orbitS: e.orbit ? e.orbit.speed : 0,
+    orbitA: e.orbit ? (e.orbit.start ?? 0) : 0,
+    returnAt: e.returnAt ?? 0,
+    fxi,
   });
 }
 
@@ -463,7 +496,23 @@ function stepMove(m: Match, f: Fighter): void {
       f.hp = Math.min(f.hpMax, f.hp + Math.floor(((mv.value ?? 0) * RANK_DMG[powerRank(f, mv.id)]!) / 100));
     }
     if (mv.special === 'heal') f.hp = Math.min(f.hpMax, f.hp + Math.floor(((mv.value ?? 0) * RANK_DMG[powerRank(f, mv.id)]!) / 100));
+    if (mv.special === 'counter') {
+      f.counter = mv.active;
+      f.counterMove = mv.id;
+    }
+    if (mv.special === 'buff' && mv.buff) {
+      f.buff = BUFF_KIND[mv.buff];
+      f.buffT = Math.floor(((mv.value ?? 0) * RANK_STATUS_PCT[powerRank(f, mv.id)]!) / 100);
+      m.events.push({ t: 'buff', who: f.id, kind: f.buff });
+    }
     if (mv.spawn) spawnEffect(m, f, mv, mv.spawn);
+    if (mv.spawns) mv.spawns.forEach((e, i) => spawnEffect(m, f, mv, e, i));
+    if (mv.special === 'decoy') {
+      // the double stays where you stood; you slip back
+      m.events.push({ t: 'decoy', who: f.id, x: f.x });
+      f.x = Math.max(WALL_L, Math.min(WALL_R, f.x - f.face * (mv.value ?? 150) * 100));
+      f.vx = 0;
+    }
   }
 
   if (mv.box && mv.hit && f.mf >= activeStart && f.mf <= activeEnd) {
@@ -497,17 +546,31 @@ function stepEffects(m: Match): void {
   const keep: Effect[] = [];
   for (const e of m.effects) {
     const owner = fighterById(m, e.owner);
+    e.age++;
+    // an owner who left the field or was knocked out takes their following effects along
+    if (e.follow && owner && (!owner.onField || owner.down)) e.life = 0;
     if (e.follow && owner) {
-      e.x = owner.x;
-      e.y = owner.y;
+      if (e.orbitR) {
+        e.orbitA = (e.orbitA + e.orbitS) & 31;
+        e.x = owner.x + Math.floor((SIN32[(e.orbitA + 8) & 31]! * e.orbitR) / 1000);
+        e.y = owner.y - 8000 + Math.floor((SIN32[e.orbitA]! * e.orbitR) / 2000);
+      } else {
+        e.x = owner.x;
+        e.y = owner.y;
+      }
     }
-    e.life--;
+    if (e.returnAt && e.age === e.returnAt) {
+      e.vx = -e.vx;
+      e.hits = [];
+    }
+    // the warning delay does not use up the effect's life (a delayed strike always lands)
     if (e.delay > 0) e.delay--;
     else {
+      e.life--;
       e.x += e.vx;
       e.vy += e.gravity;
       e.y += e.vy;
-      if (e.kind === 'proj' && !e.groundOnly && e.y >= 0 && e.gravity) e.life = 0;
+      if (e.kind === 'proj' && !e.groundOnly && e.y >= 0 && (e.gravity || e.vy > 0)) e.life = 0;
       if (e.x < WALL_L - 4000 || e.x > WALL_R + 4000) e.life = 0;
     }
     if (e.life <= 0) continue;
@@ -522,7 +585,7 @@ function stepEffects(m: Match): void {
             m.events.push({ t: 'hit', x: e.x, y: e.y, dmg: 0, el: e.element, guarded: true, perfect: false, heavy: false, victim: 0, attacker: owner.id, strong: false });
           }
       const mv = moveDefOf(e.move);
-      const hit = mv.spawn?.hit;
+      const hit = (mv.spawns?.[e.fxi] ?? mv.spawn)?.hit;
       if (alive && hit)
         for (const v of m.fighters) {
           if (v.team === e.team || !v.onField || v.down) continue;
@@ -548,7 +611,7 @@ function stepEffects(m: Match): void {
 function tryPower(m: Match, f: Fighter, slot: 0 | 1 | 2): boolean {
   if (f.spec.kind !== 'stick') return false;
   if (f.spec.ranks[slot]! <= 0) return false;
-  const p = POWERS_BY_ELEMENT[f.spec.element][slot];
+  const p = powersFor(f.spec.element, f.spec.archetype)[slot];
   const cost = Math.max(0, (p.mp ?? 0) - RANK_MP_OFF[f.spec.ranks[slot]!]!) * 10;
   if (f.mp < cost) return false;
   startMove(m, f, p.id);
@@ -610,6 +673,9 @@ function stepFighter(m: Match, f: Fighter, input: number): void {
   f.sf++;
   if (f.invuln > 0) f.invuln--;
   if (f.pgBoost > 0) f.pgBoost--;
+  if (f.buffT > 0 && --f.buffT === 0) f.buff = 0;
+  if (f.counter > 0) f.counter--;
+  if (f.st !== 'move') f.counter = 0;
 
   // statuses
   for (const s of STATUS_IDS) if (f.status[s] > 0) f.status[s]--;
@@ -632,8 +698,8 @@ function stepFighter(m: Match, f: Fighter, input: number): void {
   if (f.spec.element === 'leaf' && m.frame - f.lastHurt > 180 && m.frame % 20 === 0 && !f.down) f.hp = Math.min(f.hpMax, f.hp + 2);
   if (m.mode === 'training' && f.team === 1 && m.frame - f.lastHurt > 90) f.hp = f.hpMax;
 
-  const slow = f.status.slow > 0 ? 60 : 100;
-  const speedPct = Math.floor(((100 + (f.spec.stats.speed - 100)) * slow) / 100) * (f.spec.kind === 'stick' ? 1 : 1);
+  const slow = Math.floor(((f.status.slow > 0 ? 60 : 100) * (f.buff === 2 && f.buffT > 0 ? 130 : 100)) / 100);
+  const speedPct = Math.floor(((100 + (f.spec.stats.speed - 100)) * slow) / 100);
   const rooted = f.status.root > 0 || f.status.freeze > 0;
   const dir = (input & IN.R ? 1 : 0) - (input & IN.L ? 1 : 0);
   const take = (bit: number) => {
@@ -937,6 +1003,10 @@ function resetRound(m: Match): void {
         combo: 0,
         status: emptyStatus(),
         barrier: 0,
+        counter: 0,
+        counterMove: null,
+        buff: 0,
+        buffT: 0,
         onField: i === 0,
         down: false,
         koT: 0,

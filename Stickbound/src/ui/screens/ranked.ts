@@ -9,6 +9,7 @@ import { elementIcon } from '../../render/icons';
 import { registerLook } from '../../render/fighterView';
 import { DIFFICULTY_NAMES } from '../../sim/ai';
 import { stickSpec } from '../../sim/stats';
+import { stylesFor } from '../../content/championFight';
 import { createMatch } from '../../sim/step';
 import { settings } from '../../meta/settings';
 import { btn, h } from '../dom';
@@ -68,7 +69,8 @@ function fightRival(r: Rival): void {
   const level = Math.max(5, Math.min(50, Math.round((r.rating - 800) / 22)));
   const id = `rival:${r.name}`;
   registerLook(id, lookFromSeed(r.rating * 31 + r.name.length));
-  const teamB = r.elements.map((e, i) => stickSpec(i ? `${r.name.split(' ')[0]}'s partner` : r.name, e, level, [], true, i ? undefined : id));
+  const styles = stylesFor(r.name, r.elements[0] === r.elements[1]);
+  const teamB = r.elements.map((e, i) => stickSpec(i ? `${r.name.split(' ')[0]}'s partner` : r.name, e, level, [], true, i ? undefined : id, styles[i]));
   const m = createMatch({ mode: 'duel', teamA: squad.map((a) => specFor(a, true)), teamB, seed: (Date.now() & 0xffffff) ^ r.rating, timerSec: settings.timerSec, bots: [0, r.difficulty], ranked: true });
   startFight({
     match: m,

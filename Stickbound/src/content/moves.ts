@@ -32,6 +32,8 @@ export interface HitDef {
   pull?: boolean;
   /** cannot be guarded (only used by statuses that already need a telegraph) */
   unblockable?: boolean;
+  /** percent of the damage dealt that heals the attacker */
+  drain?: number;
 }
 
 export type EffectKind = 'proj' | 'zone' | 'wall' | 'trap' | 'strike';
@@ -62,11 +64,16 @@ export interface EffectDef {
   follow?: boolean;
   /** only hits targets standing on the floor */
   groundOnly?: boolean;
+  /** circles the owner at this radius (px); turns 'speed' table steps per frame */
+  orbit?: { r: number; speed: number; start?: number };
+  /** a projectile turns around after this many frames (boomerang) */
+  returnAt?: number;
   /** visual key for the renderer */
   look: string;
 }
 
-export type Special = 'teleportBehind' | 'recall' | 'barrier' | 'stunFoe' | 'heal';
+export type Special = 'teleportBehind' | 'recall' | 'barrier' | 'stunFoe' | 'heal' | 'counter' | 'buff' | 'decoy';
+export type BuffKind = 'might' | 'speed' | 'iron';
 
 export interface MoveDef {
   id: string;
@@ -90,6 +97,10 @@ export interface MoveDef {
   invuln?: [number, number];
   /** effect spawned at the first active frame */
   spawn?: EffectDef;
+  /** several effects spawned at the first active frame (rains, fans, wall pairs); each keeps its own delay */
+  spawns?: EffectDef[];
+  /** self-buff kind for special 'buff' (value = frames) */
+  buff?: BuffKind;
   special?: Special;
   /** value for specials (heal amount, stun frames ...) */
   value?: number;

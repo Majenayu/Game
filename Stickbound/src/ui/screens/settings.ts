@@ -20,6 +20,7 @@ const TOGGLES: [BoolKey, string, string][] = [
   ['oneHand', 'One-handed touch', 'All touch buttons in one column on the right.'],
   ['largeText', 'Large text', 'Bigger menu and HUD text.'],
   ['highContrast', 'High contrast', 'Stronger outlines and colours in menus and HUD.'],
+  ['lowGraphics', 'Low graphics', 'Fewer particles and lights, no lobby animations. For slower devices.'],
 ];
 
 export function keyName(code: string): string {

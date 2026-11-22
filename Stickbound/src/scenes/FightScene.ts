@@ -4,14 +4,15 @@
 import Phaser from 'phaser';
 import { audio, type Track } from '../audio/synth';
 import { ELEMENTS } from '../content/elements';
-import { POWERS_BY_ELEMENT, RANK_MP_OFF } from '../content/powers';
+import { powersFor, RANK_MP_OFF } from '../content/powers';
 import type { Controller } from '../core/input';
 import { arenaById, FLOOR_Y, WORLD_H, WORLD_W, type ArenaDef } from '../render/arenas';
 import { elementColors, lookOf, poseFor, type ViewState } from '../render/fighterView';
-import { PhaserPen, type Pen } from '../render/pen';
+import { bakeGlow, PhaserPen, type Pen } from '../render/pen';
+import { FxRenderer } from '../render/fx';
 import { bakeArena } from '../render/bake';
 import { drawStick, solve } from '../render/rig';
-import { drawEffect, drawStatusFx, Particles, wx, wy } from '../render/vfx';
+import { wx, wy } from '../render/vfx';
 import { botInput } from '../sim/ai';
 import { activeOf, fighterById, getMove, hurtbox, moveBox, reviveTeam } from '../sim/step';
 import type { Ev, Fighter, Match } from '../sim/types';
@@ -62,9 +63,15 @@ export class FightScene extends Phaser.Scene {
   private m!: Match;
   private arena!: ArenaDef;
   private g!: Phaser.GameObjects.Graphics;
+  private gAdd!: Phaser.GameObjects.Graphics;
+  readonly fx = new FxRenderer();
+  /** render-only pauses: freeze-frames on big hits and the super cut-in (the sim simply is not stepped) */
+  private holdT = 0;
+  private cutinEl: HTMLElement | null = null;
+  private cutinT = 0;
+  private frameMs = 16.7;
   private pen!: PhaserPen;
   private rim!: RimPen;
-  private parts = new Particles();
   private views = new Map<number, ViewState>();
   private hud!: Hud;
   private pad: TouchPad | null = null;
@@ -95,8 +102,10 @@ export class FightScene extends Phaser.Scene {
     this.ended = false;
     this.endT = 0;
     this.views.clear();
-    this.parts = new Particles();
-    this.parts.reduced = settings.reducedFlash;
+    this.fx.reset(setup.match.rng ^ 0x5eed);
+    this.fx.reduced = settings.reducedMotion;
+    this.holdT = 0;
+    this.cutinT = 0;
     this.tutorialI = 0;
     this.revived = false;
     this.finishing = false;
@@ -107,8 +116,10 @@ export class FightScene extends Phaser.Scene {
   create(): void {
     document.body.dataset.screen = 'fight';
     bakeArena(this, this.arena);
-    this.g = this.add.graphics();
-    this.pen = new PhaserPen(this.g);
+    bakeGlow(this);
+    this.g = this.add.graphics().setDepth(2);
+    this.gAdd = this.add.graphics().setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
+    this.pen = new PhaserPen(this.g, this.gAdd, this, 5);
     this.rim = new RimPen(this.pen, 0xdfe8ff);
     this.cameras.main.setBackgroundColor(this.arena.sky[0]);
     this.fitCamera(true);
@@ -139,6 +150,8 @@ export class FightScene extends Phaser.Scene {
     this.pad?.el.remove();
     this.tutorialEl?.remove();
     this.pauseEl?.remove();
+    this.cutinEl?.remove();
+    this.cutinEl = null;
     this.scale.off('resize', this.onResize, this);
     audio.tension = 0;
   }
@@ -185,13 +198,21 @@ export class FightScene extends Phaser.Scene {
 
   override update(_t: number, delta: number): void {
     const dt = Math.min(delta, 100);
-    if (!this.paused && !this.ended) {
+    this.frameMs += (dt - this.frameMs) * 0.05;
+    this.fx.adapt(this.frameMs, settings.lowGraphics);
+    if (this.cutinT > 0) {
+      this.cutinT -= dt;
+      if (this.cutinT <= 0) this.endCutin();
+    } else if (this.holdT > 0) {
+      this.holdT -= dt;
+      this.acc = 0;
+    } else if (!this.paused && !this.ended) {
       // test hook: window.__ekTurbo runs the sim faster (memory soak); players never set it
       const turbo = (window as unknown as { __ekTurbo?: number }).__ekTurbo ?? 1;
       const speed = (this.m.slowmo > 0 && !settings.reducedMotion ? 0.35 : 1) * turbo;
       this.acc += dt * speed;
       let n = 0;
-      while (this.acc >= 1000 / 60 && n < 4 * turbo) {
+      while (this.acc >= 1000 / 60 && n < 4 * turbo && this.holdT <= 0 && this.cutinT <= 0) {
         this.acc -= 1000 / 60;
         n++;
         this.tick();
@@ -207,7 +228,7 @@ export class FightScene extends Phaser.Scene {
     }
     this.shake = Math.max(0, this.shake - dt * 0.05);
     this.zoomPulse = Math.max(0, this.zoomPulse - dt * 0.0006);
-    this.parts.update();
+    this.fx.update();
     this.fitCamera();
     this.draw();
     this.hud.update(this.m, dt);
@@ -223,7 +244,9 @@ export class FightScene extends Phaser.Scene {
     step(this.m, a, b);
     if (this.m.events.length) {
       this.handleEvents(this.m.events);
+      this.fx.events(this.m, this.m.events);
       this.setup.onEvents?.(this.m.events, this.m);
+      this.takeRequests();
     }
     if (this.setup.tutorial && this.tutorialI < this.setup.tutorial.length) {
       if (this.setup.tutorial[this.tutorialI]!.done(this.m, this.m.events)) {
@@ -231,6 +254,54 @@ export class FightScene extends Phaser.Scene {
         this.showTutorial();
       }
     }
+  }
+
+  /** Turns the effects system's requests into camera and timing juice. None of it touches the sim state. */
+  private takeRequests(): void {
+    const r = this.fx.req;
+    if (r.freeze > 0) {
+      if (!settings.reducedMotion) this.holdT = Math.max(this.holdT, r.freeze * (1000 / 60));
+      r.freeze = 0;
+    }
+    if (r.shake > 0) {
+      this.shake = Math.max(this.shake, r.shake);
+      r.shake = 0;
+    }
+    if (r.push > 0) {
+      if (!settings.reducedMotion) this.zoomPulse = Math.max(this.zoomPulse, r.push);
+      r.push = 0;
+    }
+    if (r.cutin) {
+      const c = r.cutin;
+      r.cutin = null;
+      // the cinematic only plays for the human player's supers, never in bot-only fights or with reduced motion
+      const human = this.setup.controllers.some((ctl, t) => ctl && activeOf(this.m, t as 0 | 1)?.id === c.who);
+      if (human && !settings.reducedMotion) this.startCutin(c.name, c.element);
+    }
+  }
+
+  private startCutin(name: string, el: Fighter['spec']['element']): void {
+    const ui = document.getElementById('ui')!;
+    this.cutinEl?.remove();
+    const d = h('div', 'cutin');
+    d.style.setProperty('--el', ELEMENTS[el].css[0]);
+    d.style.setProperty('--el2', ELEMENTS[el].css[1]);
+    d.innerHTML = `<div class="cutin-lines"></div><div class="cutin-band"><span class="cutin-name">${name}</span></div>`;
+    ui.appendChild(d);
+    this.cutinEl = d;
+    this.cutinT = 650;
+    audio.sfx('perfect');
+    const skip = () => this.endCutin();
+    d.addEventListener('pointerdown', skip, { once: true });
+    window.addEventListener('keydown', skip, { once: true });
+  }
+
+  private endCutin(): void {
+    this.cutinT = 0;
+    this.cutinEl?.classList.add('out');
+    const el = this.cutinEl;
+    this.cutinEl = null;
+    setTimeout(() => el?.remove(), 160);
   }
 
   private showTutorial(): void {
@@ -244,7 +315,7 @@ export class FightScene extends Phaser.Scene {
     if (!this.pad) return;
     const f = activeOf(this.m, 0);
     if (!f || f.spec.kind !== 'stick') return;
-    const costs = POWERS_BY_ELEMENT[f.spec.element].map((p, i) => Math.max(0, (p.mp ?? 0) - RANK_MP_OFF[Math.max(1, f.spec.ranks[i]!)]!));
+    const costs = powersFor(f.spec.element, f.spec.archetype).map((p, i) => Math.max(0, (p.mp ?? 0) - RANK_MP_OFF[Math.max(1, f.spec.ranks[i]!)]!));
     this.pad.setPowers(f.spec.element, f.spec.ranks, costs, f.mp);
   }
 
@@ -256,19 +327,12 @@ export class FightScene extends Phaser.Scene {
         case 'hit': {
           const x = wx(e.x);
           const y = wy(e.y);
-          const col = e.el ? ELEMENTS[e.el].color[0] : 0xffffff;
           if (e.perfect) {
-            this.parts.ring(x, y, 0xffd84a, 70, 20);
-            this.parts.burst(x, y, 0xffd84a, 14, 6);
             this.hud.show('PERFECT GUARD', '', 700, 'gold');
             audio.sfx('perfect');
           } else if (e.guarded) {
-            this.parts.burst(x, y, 0x9fd8ff, 6, 4);
             audio.sfx('guard');
           } else {
-            this.parts.burst(x, y, col, e.heavy ? 16 : 9, e.heavy ? 8 : 5);
-            if (e.el) this.parts.burst(x, y, 0xffffff, 6, 3);
-            this.parts.ring(x, y, col, e.heavy ? 50 : 28, 12);
             this.shake = Math.max(this.shake, Math.min(18, 3 + e.dmg / 8));
             audio.sfx(e.dmg >= 90 ? 'hitH' : e.dmg >= 45 ? 'hitM' : 'hitL');
             if (settings.damageNumbers) this.damageText(x, y - 20, String(e.dmg), e.strong ? '#ffd84a' : '#ffffff');
@@ -282,7 +346,6 @@ export class FightScene extends Phaser.Scene {
           const f = fighterById(this.m, e.who);
           if (f) {
             audio.sfx(`power:${f.spec.element}`);
-            this.parts.ring(wx(f.x), wy(f.y) - 60, ELEMENTS[f.spec.element].color[0], 60, 14);
             const mv = getMove(e.move);
             if (mv && (mv.mp ?? 0) >= 50) this.zoomPulse = 0.05;
           }
@@ -295,12 +358,10 @@ export class FightScene extends Phaser.Scene {
           break;
         case 'swap':
           audio.sfx('swap');
-          this.parts.ring(wx(activeOf(this.m, e.team)!.x), FLOOR_Y - 60, 0xffffff, 60, 14);
           break;
         case 'ko': {
           const f = fighterById(this.m, e.who);
           audio.sfx(f && f.spec.kind !== 'stick' ? 'zombie' : 'ko');
-          if (f) this.parts.burst(wx(f.x), wy(f.y) - 60, ELEMENTS[f.spec.element].color[0], 20, 7);
           this.shake = 14;
           break;
         }
@@ -330,6 +391,16 @@ export class FightScene extends Phaser.Scene {
           this.hud.show(e.boss ? `BOSS WAVE ${e.n}` : `WAVE ${e.n}`, '', 1300, e.boss ? 'red' : '');
           if (e.boss) audio.play('boss');
           break;
+        case 'counter':
+          this.hud.show('COUNTER!', '', 700, 'gold');
+          audio.sfx('perfect');
+          break;
+        case 'buff':
+          audio.sfx('level');
+          break;
+        case 'decoy':
+          audio.sfx('swap');
+          break;
         case 'pickup':
           audio.sfx('coin');
           break;
@@ -339,8 +410,6 @@ export class FightScene extends Phaser.Scene {
         case 'jump':
         case 'land':
         case 'dash': {
-          const f = fighterById(this.m, e.who);
-          if (f) this.parts.dust(wx(f.x), FLOOR_Y, e.t === 'land' ? 5 : 3);
           if (e.t === 'jump') audio.sfx('jump');
           if (e.t === 'dash') audio.sfx('dash');
           break;
@@ -372,15 +441,16 @@ export class FightScene extends Phaser.Scene {
   }
 
   private draw(): void {
-    const g = this.g;
-    g.clear();
+    this.pen.begin();
     const time = (this.time.now - this.time0) / 1000;
     const m = this.m;
-    // floor effects under fighters
-    for (const e of m.effects) if (e.groundOnly || e.kind === 'zone' || e.kind === 'trap' || e.kind === 'wall') drawEffect(this.pen, e, time, this.parts, this.hitboxes);
+    this.fx.hitboxes = this.hitboxes;
+    // floor light, decals, ground effects, spotlight
+    this.fx.drawUnder(this.pen, m, time);
     for (const p of m.pickups) {
       const x = wx(p.x);
       const c = p.kind === 'hp' ? 0x4ade80 : p.kind === 'mp' ? 0x38bdf8 : 0xffd84a;
+      this.pen.glow(x, FLOOR_Y - 22, 30, c, 0.4);
       this.pen.circle(x, FLOOR_Y - 22 - Math.sin(time * 5 + p.id) * 4, 13, c, 0x16161d, 3);
       this.pen.line(x - 6, FLOOR_Y - 22, x + 6, FLOOR_Y - 22, 3, 0xffffff);
       if (p.kind !== 'mp') this.pen.line(x, FLOOR_Y - 28, x, FLOOR_Y - 16, 3, 0xffffff);
@@ -388,15 +458,20 @@ export class FightScene extends Phaser.Scene {
     const fs = m.fighters.filter((f) => f.onField || (f.down && f.st === 'ko' && f.koT < 70));
     fs.sort((a, b) => (a.team === 0 ? 1 : 0) - (b.team === 0 ? 1 : 0));
     for (const f of fs) this.drawFighter(f, time);
-    for (const e of m.effects) if (!(e.groundOnly || e.kind === 'zone' || e.kind === 'trap' || e.kind === 'wall')) drawEffect(this.pen, e, time, this.parts, this.hitboxes);
-    this.parts.draw(this.pen);
+    this.fx.drawOver(this.pen, m, time);
+    // a soft colour flash on big power hits (never with reduced flashing)
+    if (this.fx.req.flash > 0.02 && !settings.reducedFlash) {
+      this.pen.add(true);
+      this.pen.poly([-600, -900, 1880, -900, 1880, 1500, -600, 1500], this.fx.req.flashColor, this.fx.req.flash * 0.5);
+      this.pen.add(false);
+    }
     if (this.hitboxes) this.drawHitboxes();
   }
 
   private drawFighter(f: Fighter, time: number): void {
     const v = this.view(f);
     const s = (f.spec.scale ?? 100) / 100;
-    const { pose, expr, alpha } = poseFor(f, v, time);
+    const { pose, expr, alpha, weight } = poseFor(f, v, time);
     const x = wx(f.x);
     const y = wy(f.y);
     // ground shadow
@@ -406,21 +481,13 @@ export class FightScene extends Phaser.Scene {
     const [elc, ell] = elementColors(f, v.look);
     const mv = f.move ? getMove(f.move) : undefined;
     const activeMove = mv && f.mf > mv.startup && f.mf <= mv.startup + mv.active;
-    // smear trail on the striking limb
-    if (activeMove && v.prevHand && mv?.box) {
+    // smear trail on the striking limb (basic attacks; powers get their own visuals from the effects system)
+    if (activeMove && v.prevHand && mv?.box && !mv.element) {
       const hand = mv.anim === 'kick' || mv.anim === 'knee' || mv.anim === 'airkick' || mv.anim === 'spin' ? j.aFoot : mv.anim === 'jab2' ? j.bHand : j.aHand;
-      this.pen.line(v.prevHand[0], v.prevHand[1], hand[0], hand[1], 16 * s, mv.element ? elc : 0xffffff, 0.45);
+      this.pen.line(v.prevHand[0], v.prevHand[1], hand[0], hand[1], 16 * s, 0xffffff, 0.45);
       v.prevHand = hand;
     } else v.prevHand = mv?.box ? [j.aHand[0], j.aHand[1]] : null;
-    // power beams and melee power glow
-    if (activeMove && mv?.element && mv.box) {
-      const [l, t, r, b] = moveBox(f, mv.box);
-      const yy = (wy(t) + wy(b)) / 2;
-      if (mv.anim === 'beam') {
-        this.pen.line(wx(l), yy, wx(r), yy, (wy(b) - wy(t)) * 0.9, elc, 0.55);
-        this.pen.line(wx(l), yy, wx(r), yy, (wy(b) - wy(t)) * 0.35, 0xffffff, 0.85);
-      } else this.pen.circle((wx(l) + wx(r)) / 2, yy, (wx(r) - wx(l)) * 0.45, elc, null, 0, 0.25);
-    }
+    this.fx.drawBehindFighter(this.pen, this.m, f, time);
     const aura = f.st === 'move' && mv?.element ? 1 : f.spec.kind === 'boss' ? 0.8 : f.onField && f.team === 0 ? 0.25 : 0.15;
     const opts = {
       look: v.look,
@@ -432,14 +499,14 @@ export class FightScene extends Phaser.Scene {
       cloth: v.cloth,
       zombie: f.spec.kind !== 'stick',
       time,
+      weight,
       teamColor: this.m.mode === 'duel' ? (f.team === 0 ? 0x2f8cff : 0xff4d6d) : undefined,
     };
     if (this.arena.dark) drawStick(this.rim, j, f.face, s, opts);
     drawStick(this.pen, j, f.face, s, opts);
-    drawStatusFx(this.pen, f, j.head[0], j.head[1], time, this.parts);
+    this.fx.drawOnFighter(this.pen, this.m, f, j, time);
     if (f.st === 'guard') this.pen.circle(j.aHand[0] + f.face * 10, j.aHand[1], 26 * s, null, 0x9fd8ff, 4, 0.6);
   }
-
   private drawHitboxes(): void {
     for (const f of this.m.fighters) {
       if (!f.onField) continue;

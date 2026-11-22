@@ -58,7 +58,7 @@ export function showLocal(): void {
 }
 
 function run(): void {
-  const team = (pi: 0 | 1) => picks[pi].map((e, i) => stickSpec(`P${pi + 1} ${ELEMENTS[e].name}`, e, 20, [], true, `local${pi}${i}`));
+  const team = (pi: 0 | 1) => picks[pi].map((e, i) => stickSpec(`P${pi + 1} ${ELEMENTS[e].name}`, e, 20, [], true, `local${pi}${i}`, i ? 'striker' : 'classic'));
   const m = createMatch({ mode: 'duel', teamA: team(0), teamB: team(1), seed: Date.now() & 0xffffff, timerSec: settings.timerSec, bots: [0, 0], ranked: true });
   startFight({
     match: m,

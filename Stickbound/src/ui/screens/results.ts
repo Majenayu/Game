@@ -1,5 +1,6 @@
 // Results, level-up and perk screens. Rewards are applied before this screen is shown.
 import { audio } from '../../audio/synth';
+import { settings } from '../../meta/settings';
 import { ELEMENTS } from '../../content/elements';
 import { powerById } from '../../content/powers';
 import { app, saveProfile } from '../../app/state';
@@ -158,6 +159,18 @@ function showLevelUps(list: Rewards['levelUps'], next: () => void): void {
   for (const u of [...new Set(items)]) ul.appendChild(h('li', '', u));
   t.appendChild(ul);
   card.appendChild(t);
+  if (!settings.reducedMotion && !settings.lowGraphics) {
+    const cols = [ELEMENTS[a.element].css[0], ELEMENTS[a.element].css[1], '#ffd84a', '#ffffff'];
+    for (let i = 0; i < 36; i++) {
+      const cf = h('span', 'confetti');
+      cf.style.left = `${(i * 37) % 100}%`;
+      cf.style.background = cols[i % cols.length]!;
+      cf.style.animationDelay = `${(i % 9) * 0.06}s`;
+      cf.style.setProperty('--x', `${((i * 53) % 120) - 60}px`);
+      cf.style.setProperty('--r', `${(i * 97) % 720}deg`);
+      card.appendChild(cf);
+    }
+  }
   body.appendChild(card);
   body.appendChild(btn('Nice!', () => showLevelUps(list, next), 'btn primary big'));
   show({ id: 'levelup', el });

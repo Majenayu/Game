@@ -13,6 +13,8 @@ export interface Settings {
   oneHand: boolean;
   largeText: boolean;
   highContrast: boolean;
+  /** fewer particles and glows, no camera tricks (weak devices) */
+  lowGraphics: boolean;
   timerSec: number;
   keys: Bindings;
 }
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   oneHand: false,
   largeText: false,
   highContrast: false,
+  lowGraphics: false,
   timerSec: 60,
   keys: SOLO_KEYS,
 };

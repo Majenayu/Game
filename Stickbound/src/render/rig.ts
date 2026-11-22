@@ -164,6 +164,8 @@ export interface DrawOpts {
   teamColor?: number;
   zombie?: boolean;
   time: number;
+  /** line weight multiplier (pulses during casts) */
+  weight?: number;
 }
 
 function drawFace(pen: Pen, hx: number, hy: number, r: number, face: number, o: DrawOpts, ink: number): void {
@@ -275,7 +277,7 @@ function drawHat(pen: Pen, j: Joints, r: number, face: number, hat: number, ink:
 /** Draws a stick figure. */
 export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawOpts): void {
   const ink = o.zombie ? 0x3b5a34 : BODIES[o.look.body % BODIES.length]!;
-  const w = THICKNESS[o.look.thick % THICKNESS.length]! * s;
+  const w = THICKNESS[o.look.thick % THICKNESS.length]! * s * (o.weight ?? 1);
   const a = o.alpha ?? 1;
   const r = 16 * s * [1, 1.12, 0.95, 0.85][o.look.head % 4]!;
   const auraC = o.element;

@@ -2,6 +2,7 @@
 
 import type { ElementId } from '../content/elementPrefs';
 import { POWER_UNLOCK_LEVELS } from '../content/powers';
+import type { Archetype } from '../content/archetypes';
 import type { FighterSpec, Stats } from './types';
 
 export const MAX_LEVEL = 50;
@@ -74,8 +75,9 @@ export function hpFor(spec: FighterSpec): number {
   return spec.perks.includes('vital') ? Math.floor((base * 110) / 100) : base;
 }
 
-export function stickSpec(name: string, element: ElementId, level: number, perks: string[] = [], ranked = false, look?: string): FighterSpec {
+export function stickSpec(name: string, element: ElementId, level: number, perks: string[] = [], ranked = false, look?: string, archetype: Archetype = 'classic'): FighterSpec {
   return {
+    archetype,
     name,
     element,
     level,

@@ -5,10 +5,10 @@ import { ELEMENT_IDS, type ElementId } from '../content/elements';
 import { DEFAULT_LOOK, lookFromSeed, type Look } from '../content/looks';
 import { comboLenFor, MAX_LEVEL, PERK_LEVELS, PERKS, pgWindowFor, ranksFor, stickSpec } from '../sim/stats';
 import type { FighterSpec } from '../sim/types';
-import { POWER_UNLOCK_LEVELS, POWERS_BY_ELEMENT } from '../content/powers';
+import { ARCHETYPE_IDS, POWER_UNLOCK_LEVELS, powersFor, type Archetype } from '../content/powers';
 import { SaveError, type Schema } from './save';
 
-export const PROFILE_VERSION = 1;
+export const PROFILE_VERSION = 2;
 export const START_SLOTS = 10;
 export const MAX_SLOTS = 20;
 
@@ -16,6 +16,8 @@ export interface Avatar {
   id: string;
   name: string;
   element: ElementId;
+  /** fighting style: decides the avatar's 3 powers */
+  archetype: Archetype;
   level: number;
   xp: number;
   look: Look;
@@ -58,12 +60,27 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 
 export const PROFILE_SCHEMA: Schema<Profile> = {
   version: PROFILE_VERSION,
-  migrations: {},
+  migrations: {
+    // v1 had no fighting styles: avatars of the same element get different styles in roster order, so a squad of
+    // two same-element starters ends up with two different power sets.
+    1: (d) => {
+      const seen: Record<string, number> = {};
+      const avatars = (Array.isArray(d.avatars) ? d.avatars : []) as Record<string, unknown>[];
+      for (const a of avatars) {
+        const el = String(a.element);
+        const n = seen[el] ?? 0;
+        seen[el] = n + 1;
+        if (!ARCHETYPE_IDS.includes(a.archetype as Archetype)) a.archetype = ARCHETYPE_IDS[n % ARCHETYPE_IDS.length];
+      }
+      return { ...d, avatars, version: 2 };
+    },
+  },
   validate: (d) => {
     if (!isObj(d) || d.version !== PROFILE_VERSION) throw new SaveError('bad profile version');
     if (!Array.isArray(d.avatars) || !Array.isArray(d.squad) || typeof d.coins !== 'number') throw new SaveError('bad profile');
     for (const a of d.avatars as Avatar[]) {
       if (!ELEMENT_IDS.includes(a.element) || !Number.isInteger(a.level) || a.level < 1 || a.level > MAX_LEVEL) throw new SaveError('bad avatar');
+      if (!ARCHETYPE_IDS.includes(a.archetype)) throw new SaveError('bad avatar style');
     }
     return d as unknown as Profile;
   },
@@ -125,11 +142,11 @@ export function newProfile(name = 'Player', now = Date.now()): Profile {
   };
 }
 
-export function addAvatar(p: Profile, element: ElementId, name?: string, look?: Look): Avatar | null {
+export function addAvatar(p: Profile, element: ElementId, name?: string, look?: Look, archetype?: Archetype): Avatar | null {
   if (p.avatars.length >= p.slots) return null;
   if (!p.unlocked.includes(element)) return null;
   const id = `a${p.nextId++}`;
-  const a: Avatar = { id, name: cleanName(name ?? '') || randomName(p.nextId * 977 + p.created), element, level: 1, xp: 0, look: look ?? lookFromSeed(p.nextId * 31 + p.created), perks: [null, null, null], wins: 0, losses: 0 };
+  const a: Avatar = { id, name: cleanName(name ?? '') || randomName(p.nextId * 977 + p.created), element, archetype: archetype ?? suggestArchetype(p, element), level: 1, xp: 0, look: look ?? lookFromSeed(p.nextId * 31 + p.created), perks: [null, null, null], wins: 0, losses: 0 };
   p.avatars.push(a);
   if (p.squad.length < 2) p.squad.push(id);
   return a;
@@ -139,19 +156,31 @@ export function addAvatar(p: Profile, element: ElementId, name?: string, look?: 
 export function chooseStarter(p: Profile, element: ElementId): void {
   if (!p.unlocked.includes(element)) p.unlocked.push(element);
   if (p.avatars.length === 0) {
-    addAvatar(p, element, undefined, { ...DEFAULT_LOOK, hat: 1 });
-    addAvatar(p, element, undefined, { ...DEFAULT_LOOK, hat: 2, back: 0, eyes: 1, body: 1 });
+    addAvatar(p, element, undefined, { ...DEFAULT_LOOK, hat: 1 }, 'classic');
+    addAvatar(p, element, undefined, { ...DEFAULT_LOOK, hat: 2, back: 0, eyes: 1, body: 1 }, 'striker');
   }
 }
 
 export const avatarById = (p: Profile, id: string) => p.avatars.find((a) => a.id === id);
+
+/** The style a new avatar of this element should default to: the one the roster has least of. */
+export function suggestArchetype(p: Profile, element: ElementId): Archetype {
+  const count = (a: Archetype) => p.avatars.filter((x) => x.element === element && x.archetype === a).length;
+  return [...ARCHETYPE_IDS].sort((a, b) => count(a) - count(b))[0]!;
+}
+
+/** True when the two squad avatars would have exactly the same 3 powers. */
+export function squadClash(p: Profile): boolean {
+  const [a, b] = squadAvatars(p);
+  return !!a && !!b && a.element === b.element && a.archetype === b.archetype;
+}
 
 export function squadAvatars(p: Profile): Avatar[] {
   return p.squad.map((id) => avatarById(p, id)).filter((a): a is Avatar => !!a);
 }
 
 export function specFor(a: Avatar, ranked = false): FighterSpec {
-  return stickSpec(a.name, a.element, a.level, a.perks.filter((x): x is string => !!x), ranked, a.id);
+  return stickSpec(a.name, a.element, a.level, a.perks.filter((x): x is string => !!x), ranked, a.id, a.archetype);
 }
 
 // ---- XP and levels --------------------------------------------------------------------------------------------
@@ -167,12 +196,13 @@ export interface LevelUp {
   perkTier: number | null;
 }
 
-export function unlocksAt(element: ElementId, level: number): string[] {
+export function unlocksAt(element: ElementId, level: number, archetype: Archetype = 'classic'): string[] {
+  const set = powersFor(element, archetype);
   const out: string[] = [];
-  POWER_UNLOCK_LEVELS.forEach((l, i) => level === l && out.push(`New power: ${POWERS_BY_ELEMENT[element][i]!.name}`));
+  POWER_UNLOCK_LEVELS.forEach((l, i) => level === l && out.push(`New power: ${set[i]!.name}`));
   const before = ranksFor(level - 1);
   const now = ranksFor(level);
-  now.forEach((r, i) => r > before[i]! && before[i]! > 0 && out.push(`${POWERS_BY_ELEMENT[element][i]!.name} rank ${r}`));
+  now.forEach((r, i) => r > before[i]! && before[i]! > 0 && out.push(`${set[i]!.name} rank ${r}`));
   if (comboLenFor(level) > comboLenFor(level - 1)) out.push(`Basic combo: ${comboLenFor(level)} hits`);
   if (pgWindowFor(level) > pgWindowFor(level - 1)) out.push('Wider perfect-guard window');
   if (level === 30) out.push('Element shield: take less damage from powers');
@@ -190,7 +220,7 @@ export function giveXp(a: Avatar, xp: number): LevelUp | null {
   while (a.level < MAX_LEVEL && a.xp >= xpToNext(a.level)) {
     a.xp -= xpToNext(a.level);
     a.level++;
-    unlocks.push(...unlocksAt(a.element, a.level));
+    unlocks.push(...unlocksAt(a.element, a.level, a.archetype));
     const t = (PERK_LEVELS as readonly number[]).indexOf(a.level);
     if (t >= 0) perkTier = t;
   }

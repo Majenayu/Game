@@ -4,6 +4,7 @@
 
 import type { ElementId } from '../content/elementPrefs';
 import type { StatusId } from '../content/moves';
+import type { Archetype } from '../content/archetypes';
 
 /** Input bits. */
 export const IN = {
@@ -52,6 +53,8 @@ export interface FighterSpec {
   dummy?: DummyMode;
   /** look id for the renderer (not used by rules) */
   look?: string;
+  /** fighting style: which 3 powers this fighter has (default 'classic') */
+  archetype?: Archetype;
 }
 
 export type FState =
@@ -113,6 +116,12 @@ export interface Fighter {
   lastGuard: number;
   barrier: number;
   pgBoost: number;
+  /** counter stance frames left (special 'counter'); the move id that set it */
+  counter: number;
+  counterMove: string | null;
+  /** self-buff: 0 none, 1 might (+25% damage), 2 speed (+30% move speed), 3 iron (-25% damage taken) */
+  buff: number;
+  buffT: number;
   prevIn: number;
   /** buffered button presses (bits) and frames left */
   buf: number;
@@ -159,6 +168,16 @@ export interface Effect {
   /** [targetId, frame it may be hit again] pairs */
   hits: number[];
   face: 1 | -1;
+  /** frames since spawned */
+  age: number;
+  /** orbit radius (cpx) and angle step per frame (table of 32), or 0 */
+  orbitR: number;
+  orbitS: number;
+  orbitA: number;
+  /** boomerang: turns around at this age (0 = never) */
+  returnAt: number;
+  /** index into the move's spawns list (0 for a single spawn) */
+  fxi: number;
 }
 
 export interface Pickup {
@@ -184,6 +203,9 @@ export type Ev =
   | { t: 'gbreak'; who: number }
   | { t: 'status'; who: number; status: StatusId }
   | { t: 'barrier'; who: number }
+  | { t: 'counter'; who: number; target: number; move: string }
+  | { t: 'buff'; who: number; kind: number }
+  | { t: 'decoy'; who: number; x: number }
   | { t: 'round'; n: number }
   | { t: 'fight' }
   | { t: 'roundEnd'; winner: number; timeout: boolean }

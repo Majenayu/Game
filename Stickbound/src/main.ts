@@ -51,6 +51,14 @@ async function boot(): Promise<void> {
   ui.appendChild(screens);
   initRouter();
   setClickSound(clickSound);
+  // the Power Lab is a dev page drawn on canvases only; it does not start the Phaser game
+  if (new URLSearchParams(location.search).has('powers')) {
+    document.getElementById('boot')?.remove();
+    platform.loadingStop();
+    const { showPowerLab } = await import('./ui/powerLab');
+    showPowerLab();
+    return;
+  }
 
   app.game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -106,6 +114,7 @@ async function boot(): Promise<void> {
     show: (id: string) => {
       const map: Record<string, () => void> = { lobby: showLobby, avatars: () => showAvatars(), road: showChampionRoad, ranked: showRanked, shop: showShop, settings: () => showSettings(), zombie: showZombie, training: showTraining, local: showLocal };
       if (id.startsWith('vs:')) playChampion(Number(id.slice(3)), showChampionRoad);
+      else if (id.startsWith('avatars:')) showAvatars(id.slice(8));
       else map[id]?.();
     },
     /** bot vs bot fight that returns to the lobby (memory soak and fps tests) */

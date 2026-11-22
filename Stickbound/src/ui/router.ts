@@ -30,6 +30,7 @@ export function show(s: Screen): void {
   const root = screensRoot();
   root.replaceChildren(s.el);
   s.el.classList.add('screen', `scr-${s.id}`);
+  if (!document.documentElement.dataset.motion || document.documentElement.dataset.motion !== 'reduced') s.el.classList.add('enter');
   document.body.dataset.screen = s.id;
   nav?.setBack(s.back ?? null);
   root.scrollTop = 0;

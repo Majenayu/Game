@@ -1,8 +1,11 @@
-// The 30 powers: 3 per element, unlocked at levels 1, 8 and 20, each with 5 upgrade ranks.
+// The 90 powers: 3 fighting styles per element (archetypes.ts), 3 powers per style, unlocked at levels 1, 8 and 20,
+// each with 5 upgrade ranks. This file holds the Vanguard set (ids like fire1); the other styles are in archetypes.ts.
 // No cooldowns: MP cost and wind-up/recovery frames are the only limits.
 
 import type { ElementId } from './elementPrefs';
 import type { EffectDef, HitDef, MoveDef } from './moves';
+import { ARCHETYPE_IDS, ARCHETYPE_POWERS, ARCHETYPE_TEXT, type Archetype } from './archetypes';
+export { ARCHETYPE_IDS, ARCHETYPES, mechanicOf, type Archetype } from './archetypes';
 
 export const POWER_UNLOCK_LEVELS = [1, 8, 20] as const;
 export const MAX_RANK = 5;
@@ -12,8 +15,40 @@ export const RANK_DMG = [0, 100, 110, 120, 130, 145];
 export const RANK_MP_OFF = [0, 0, 2, 4, 6, 8];
 export const RANK_STATUS_PCT = [0, 100, 100, 130, 130, 150];
 export const RANK_SIZE_PCT = [0, 100, 100, 100, 100, 120];
-/** Per-element power damage tuning (percent), fitted from bot-vs-bot balance runs (tools/balance-tune.test.ts). */
-export const POWER_TUNE: Record<ElementId, number> = { fire: 86, water: 138, ice: 76, lightning: 92, wind: 132, earth: 134, leaf: 88, light: 74, gravity: 118, time: 60 };
+/** Power damage tuning (percent) per element and style, fitted from bot-vs-bot balance runs (tools/balance-tune.test.ts). */
+export const POWER_TUNE: Record<string, number> = {
+  'fire:classic': 120,
+  'water:classic': 141,
+  'ice:classic': 113,
+  'lightning:classic': 72,
+  'wind:classic': 150,
+  'earth:classic': 141,
+  'leaf:classic': 136,
+  'light:classic': 83,
+  'gravity:classic': 76,
+  'time:classic': 76,
+  'fire:striker': 86,
+  'fire:warden': 74,
+  'water:striker': 129,
+  'water:warden': 90,
+  'ice:striker': 95,
+  'ice:warden': 134,
+  'lightning:striker': 101,
+  'lightning:warden': 115,
+  'wind:striker': 130,
+  'wind:warden': 137,
+  'earth:striker': 120,
+  'earth:warden': 142,
+  'leaf:striker': 83,
+  'leaf:warden': 72,
+  'light:striker': 76,
+  'light:warden': 74,
+  'gravity:striker': 145,
+  'gravity:warden': 93,
+  'time:striker': 98,
+  'time:warden': 73,
+};
+export const tuneFor = (el: ElementId, arch: Archetype = 'classic'): number => POWER_TUNE[`${el}:${arch}`] ?? 100;
 
 const H = (dmg: number, stun: number, kbx: number, kby: number, extra: Partial<HitDef> = {}): HitDef => ({
   dmg, stun, block: Math.round(stun * 0.6), kbx, kby, guardDmg: Math.round(dmg * 2.2), ...extra,
@@ -26,7 +61,7 @@ const P = (el: ElementId, slot: number, m: Omit<MoveDef, 'element' | 'anim'> & {
 });
 const fx = (e: EffectDef) => e;
 
-export const POWERS: MoveDef[] = [
+const CLASSIC_POWERS: MoveDef[] = [
   // ---- Fire ----
   P('fire', 1, { id: '', name: 'Hot Shot', mp: 20, startup: 12, active: 1, recovery: 18,
     spawn: fx({ kind: 'proj', dx: 40, dy: -95, w: 30, h: 26, vx: 900, life: 90, hit: H(70, 20, 500, -100, { status: ['burn', 120] }), look: 'fireball' }) }),
@@ -55,7 +90,7 @@ export const POWERS: MoveDef[] = [
   P('lightning', 2, { id: '', name: 'Arc Lash', mp: 30, startup: 12, active: 12, recovery: 20, multi: 4,
     box: { x: 20, y: -110, w: 230, h: 40 }, hit: H(26, 14, 150, 0, { status: ['shock', 12] }), anim: 'beam' }),
   P('lightning', 3, { id: '', name: 'Storm Mark', mp: 50, startup: 14, active: 1, recovery: 22,
-    spawn: fx({ kind: 'strike', dx: 0, dy: 0, atFoe: true, w: 90, h: 720, life: 14, delay: 40, hit: H(150, 40, 300, -900, { launch: true, status: ['shock', 30] }), look: 'bolt' }) }),
+    spawn: fx({ kind: 'strike', dx: 0, dy: 0, atFoe: true, w: 90, h: 720, life: 14, delay: 40, hit: H(150, 36, 300, -900, { launch: true, status: ['shock', 20] }), look: 'bolt' }) }),
   // ---- Wind ----
   P('wind', 1, { id: '', name: 'Breeze Shove', mp: 15, startup: 9, active: 5, recovery: 16,
     box: { x: 10, y: -125, w: 110, h: 110 }, hit: H(40, 22, 1900, -350), anim: 'push' }),
@@ -87,28 +122,33 @@ export const POWERS: MoveDef[] = [
   P('gravity', 1, { id: '', name: 'Grav Well', mp: 25, startup: 12, active: 1, recovery: 20,
     spawn: fx({ kind: 'zone', dx: 120, dy: 0, w: 220, h: 200, life: 40, delay: 4, rehit: 10, hit: H(18, 12, 700, 0, { pull: true }), look: 'well' }) }),
   P('gravity', 2, { id: '', name: 'Anchor Drop', mp: 30, startup: 14, active: 1, recovery: 22,
-    spawn: fx({ kind: 'strike', dx: 0, dy: 0, atFoe: true, w: 110, h: 720, life: 10, delay: 18, hit: H(110, 32, 100, 1800), look: 'press' }) }),
+    spawn: fx({ kind: 'strike', dx: 0, dy: 0, atFoe: true, w: 110, h: 720, life: 10, delay: 18, hit: H(110, 26, 100, 1800), look: 'press' }) }),
   P('gravity', 3, { id: '', name: 'Weightless', mp: 55, startup: 18, active: 1, recovery: 22,
     spawn: fx({ kind: 'proj', dx: 40, dy: -100, w: 90, h: 90, vx: 600, life: 110, pierce: true, hit: H(70, 30, 100, -900, { status: ['float', 150] }), look: 'zerog' }) }),
   // ---- Time ----
   P('time', 1, { id: '', name: 'Rewind Step', mp: 20, startup: 4, active: 1, recovery: 10, special: 'recall', invuln: [1, 14], anim: 'cast' }),
   P('time', 2, { id: '', name: 'Tick Field', mp: 35, startup: 14, active: 1, recovery: 20,
-    spawn: fx({ kind: 'zone', dx: 60, dy: 0, w: 300, h: 200, life: 240, delay: 6, rehit: 20, hit: H(12, 6, 0, 0, { status: ['slow', 40] }), look: 'field' }) }),
-  P('time', 3, { id: '', name: 'Freeze Frame', mp: 60, startup: 16, active: 1, recovery: 20,
-    spawn: fx({ kind: 'proj', dx: 40, dy: -95, w: 40, h: 40, vx: 1200, life: 70, hit: H(0, 20, 0, 0, { status: ['freeze', 72] }), look: 'clock' }) }),
+    spawn: fx({ kind: 'zone', dx: 60, dy: 0, w: 300, h: 200, life: 180, delay: 6, rehit: 20, hit: H(12, 6, 0, 0, { status: ['slow', 40] }), look: 'field' }) }),
+  P('time', 3, { id: '', name: 'Freeze Frame', mp: 60, startup: 18, active: 1, recovery: 20,
+    spawn: fx({ kind: 'proj', dx: 40, dy: -95, w: 40, h: 40, vx: 1200, life: 70, hit: H(0, 20, 0, 0, { status: ['freeze', 40] }), look: 'clock' }) }),
 ];
 
-export const POWERS_BY_ELEMENT: Record<ElementId, [MoveDef, MoveDef, MoveDef]> = Object.fromEntries(
-  (['fire', 'water', 'ice', 'lightning', 'wind', 'earth', 'leaf', 'light', 'gravity', 'time'] as ElementId[]).map((e) => [
-    e,
-    [1, 2, 3].map((s) => POWERS.find((p) => p.id === `${e}${s}`)!) as [MoveDef, MoveDef, MoveDef],
-  ]),
-) as Record<ElementId, [MoveDef, MoveDef, MoveDef]>;
-
-export function powerById(id: string): MoveDef | undefined {
-  return POWERS.find((p) => p.id === id);
+export const POWERS: MoveDef[] = [...CLASSIC_POWERS, ...ARCHETYPE_POWERS];
+const ELS: ElementId[] = ['fire', 'water', 'ice', 'lightning', 'wind', 'earth', 'leaf', 'light', 'gravity', 'time'];
+const BY_ID = new Map(POWERS.map((p) => [p.id, p]));
+export const powerId = (el: ElementId, arch: Archetype, slot: number): string => (arch === 'classic' ? `${el}${slot}` : `${el}_${arch[0]}${slot}`);
+/** The 3 powers of an element in a fighting style. */
+export const POWER_SETS: Record<string, [MoveDef, MoveDef, MoveDef]> = Object.fromEntries(
+  ELS.flatMap((e) => ARCHETYPE_IDS.map((a) => [`${e}:${a}`, [1, 2, 3].map((s) => BY_ID.get(powerId(e, a, s))!) as [MoveDef, MoveDef, MoveDef]])),
+);
+export function powersFor(el: ElementId, arch: Archetype = 'classic'): [MoveDef, MoveDef, MoveDef] {
+  return POWER_SETS[`${el}:${arch}`] ?? POWER_SETS[`${el}:classic`]!;
 }
-
+/** The Vanguard set per element (kept for code that only knows the element). */
+export const POWERS_BY_ELEMENT: Record<ElementId, [MoveDef, MoveDef, MoveDef]> = Object.fromEntries(ELS.map((e) => [e, powersFor(e, 'classic')])) as Record<ElementId, [MoveDef, MoveDef, MoveDef]>;
+export function powerById(id: string): MoveDef | undefined {
+  return BY_ID.get(id);
+}
 /** Short player-facing description of each power (shown in the Avatars screen). */
 export const POWER_TEXT: Record<string, string> = {
   fire1: 'A fireball that burns.',
@@ -141,4 +181,5 @@ export const POWER_TEXT: Record<string, string> = {
   time1: 'Jump back to where you stood 2 seconds ago.',
   time2: 'A field that slows anyone inside.',
   time3: 'A clock that freezes the foe for over a second.',
+  ...ARCHETYPE_TEXT,
 };

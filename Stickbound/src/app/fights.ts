@@ -3,6 +3,7 @@
 import type { Track } from '../audio/synth';
 import { GamepadController, KeyboardController, MultiController, P1_KEYS, P2_KEYS, TouchController, type Controller } from '../core/input';
 import { settings } from '../meta/settings';
+import { ELEMENTS } from '../content/elements';
 import type { MatchSummary } from '../meta/profile';
 import { FightScene, type FightSetup, type TutorialStep } from '../scenes/FightScene';
 import { fighterById } from '../sim/step';
@@ -139,6 +140,17 @@ export function startFight(cfg: FightConfig): void {
   };
   current = { setup, cfg };
   document.getElementById('screens')!.replaceChildren();
+  if (!settings.reducedMotion) {
+    const lead = cfg.match.fighters.find((f) => f.team === 0);
+    const sw = document.createElement('div');
+    sw.className = 'swirl';
+    if (lead) {
+      sw.style.setProperty('--el', ELEMENTS[lead.spec.element].css[0]);
+      sw.style.setProperty('--el2', ELEMENTS[lead.spec.element].css[1]);
+    }
+    document.getElementById('ui')!.appendChild(sw);
+    setTimeout(() => sw.remove(), 450);
+  }
   game.scene.stop('backdrop');
   game.scene.start('fight', setup);
   app.platform.gameplayStart();

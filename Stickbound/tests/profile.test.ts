@@ -16,12 +16,15 @@ import {
   refreshQuests,
   rivals,
   squadAvatars,
+  squadClash,
+  specFor,
   touchStreak,
   unlockElement,
   ELEMENT_PRICE,
   type MatchSummary,
 } from '../src/meta/profile';
 import { SaveManager } from '../src/meta/save';
+import { powersFor } from '../src/content/powers';
 
 const DAY = 86_400_000;
 const T0 = Date.UTC(2026, 10, 10, 12);
@@ -104,6 +107,50 @@ describe('profile', () => {
   it('names are cleaned', () => {
     expect(cleanName('  <b>Zed</b>!!  ')).toBe('bZedb');
     expect(cleanName('A very long name indeed')).toHaveLength(12);
+  });
+});
+
+describe('fighting styles', () => {
+  it('a v1 save without styles migrates: same-element avatars get different styles, and it loads', () => {
+    const kv = new MemoryKV();
+    const s = new SaveManager(kv, PROFILE_SCHEMA, 'ek');
+    const p = newProfile('Old', T0) as unknown as Record<string, unknown>;
+    chooseStarter(p as unknown as Parameters<typeof chooseStarter>[0], 'fire');
+    // write a version-1 body by hand, the way the old game saved it
+    const v1 = { ...p, version: 1, avatars: (p.avatars as Record<string, unknown>[]).map(({ archetype: _drop, ...rest }) => rest) };
+    const body = JSON.stringify(v1);
+    let h = 2166136261;
+    for (let i = 0; i < body.length; i++) h = Math.imul(h ^ body.charCodeAt(i), 16777619);
+    kv.setItem('ek.profile1', JSON.stringify({ sum: h >>> 0, body }));
+    const loaded = s.read(1)!.data;
+    expect(loaded.version).toBe(2);
+    expect(loaded.avatars.map((a) => a.archetype)).toEqual(['classic', 'striker']);
+    expect(squadClash(loaded)).toBe(false);
+  });
+
+  it('starter squad has two different power sets; the clash check works', () => {
+    const p = newProfile('A', T0);
+    chooseStarter(p, 'water');
+    const [a, b] = squadAvatars(p);
+    expect(a!.archetype).not.toBe(b!.archetype);
+    expect(squadClash(p)).toBe(false);
+    b!.archetype = a!.archetype;
+    expect(squadClash(p)).toBe(true);
+  });
+
+  it('a new avatar defaults to the style the roster has least of', () => {
+    const p = newProfile('A', T0);
+    chooseStarter(p, 'leaf');
+    expect(addAvatar(p, 'leaf')!.archetype).toBe('warden');
+  });
+
+  it('two same-element avatars with different styles get different powers in the sim', () => {
+    const p = newProfile('A', T0);
+    chooseStarter(p, 'ice');
+    const [a, b] = squadAvatars(p).map((x) => specFor(x));
+    expect(a!.archetype).not.toBe(b!.archetype);
+    const names = (s: typeof a) => powersFor(s!.element, s!.archetype).map((m) => m.name);
+    expect(names(a).some((n) => names(b).includes(n))).toBe(false);
   });
 });
 

@@ -2,7 +2,27 @@
 // delay, and uses a seeded RNG kept in the state, so bots are deterministic and never frame-perfect.
 
 import { matchup } from '../content/elements';
-import { POWERS_BY_ELEMENT, RANK_MP_OFF } from '../content/powers';
+import { mechanicOf, powersFor, RANK_MP_OFF } from '../content/powers';
+
+/** How a bot uses a power: from range, up close, as a reaction to an attack, or as a setup when there is room. */
+type Use = 'ranged' | 'melee' | 'react' | 'setup';
+const useCache = new Map<string, Use>();
+function useOf(id: string): Use {
+  let u = useCache.get(id);
+  if (u) return u;
+  const mv = getMove(id)!;
+  const mech = mechanicOf(mv);
+  u =
+    mech === 'counter' || mech === 'decoy' || mech === 'recall' || mech === 'barrier'
+      ? 'react'
+      : mech === 'buff' || mech === 'orbit' || mech === 'aura' || mech === 'wall' || mech === 'trap' || mech === 'walls'
+        ? 'setup'
+        : isRanged(id) || mech === 'rain' || mech === 'fan' || mech === 'multistrike' || mech === 'boomerang' || mech === 'beam' || mech === 'reach'
+          ? 'ranged'
+          : 'melee';
+  useCache.set(id, u);
+  return u;
+}
 import { activeOf, aiRnd, fighterById, getMove } from './step';
 import { IN, type Fighter, type Match } from './types';
 
@@ -34,8 +54,15 @@ const isRanged = (id: string) => {
   return !!mv?.spawn && (mv.spawn.kind === 'proj' || mv.spawn.atFoe === true);
 };
 
+/** Slot of an affordable reaction power (counter, decoy, recall, barrier), or -1. */
+function reactSlot(f: Fighter): number {
+  if (f.spec.kind !== 'stick') return -1;
+  const set = powersFor(f.spec.element, f.spec.archetype);
+  for (let s = 0; s < 3; s++) if (f.spec.ranks[s]! > 0 && f.mp >= powerCost(f, s) && useOf(set[s]!.id) === 'react') return s;
+  return -1;
+}
 function powerCost(f: Fighter, slot: number): number {
-  const p = POWERS_BY_ELEMENT[f.spec.element][slot]!;
+  const p = powersFor(f.spec.element, f.spec.archetype)[slot]!;
   return Math.max(0, (p.mp ?? 0) - RANK_MP_OFF[Math.max(1, f.spec.ranks[slot]!)]!) * 10;
 }
 
@@ -83,6 +110,10 @@ export function botInput(m: Match, team: 0 | 1): number {
     ai.next = 4;
   } else if (f.st === 'stun' || f.st === 'down' || f.st === 'gbreak') {
     ai.next = 3;
+  } else if (!foe.down && threat(m, f, foe) && reactSlot(f) >= 0 && r() < t.guard / 3) {
+    // a counter stance or a decoy instead of guarding
+    press = [IN.P1, IN.P2, IN.P3][reactSlot(f)]!;
+    ai.next = 6;
   } else if (!foe.down && threat(m, f, foe) && r() < t.guard) {
     hold = IN.GRD;
     ai.next = 10 + (r() % 12);
@@ -99,10 +130,14 @@ export function botInput(m: Match, team: 0 | 1): number {
       if (hurt || better) press = IN.SWAP;
     }
     if (!press && f.mp >= 200 && r() < t.power / 3) {
-      const options = [0, 1, 2].filter((s) => f.spec.ranks[s]! > 0 && f.mp >= powerCost(f, s));
-      const ranged = options.filter((s) => isRanged(POWERS_BY_ELEMENT[f.spec.element][s]!.id));
-      const melee = options.filter((s) => !ranged.includes(s));
-      const pick = dist > 22000 ? ranged : dist < 15000 ? melee.concat(ranged) : options;
+      const set = powersFor(f.spec.element, f.spec.archetype);
+      const options = [0, 1, 2].filter((s) => f.spec.ranks[s]! > 0 && f.mp >= powerCost(f, s) && useOf(set[s]!.id) !== 'react');
+      const ranged = options.filter((s) => useOf(set[s]!.id) === 'ranged');
+      const melee = options.filter((s) => useOf(set[s]!.id) === 'melee');
+      // setups (buffs, orbiting shields, walls, traps) only when they are not already up and there is room
+      const ownFx = m.effects.some((e) => e.owner === f.id && e.follow);
+      const setup = options.filter((s) => useOf(set[s]!.id) === 'setup' && dist > 14000 && !(f.buffT > 0 && set[s]!.special === 'buff') && !(ownFx && set[s]!.spawns?.some((e) => e.orbit)));
+      const pick = dist > 22000 ? ranged.concat(setup) : dist < 15000 ? melee.concat(ranged) : options.filter((s) => useOf(set[s]!.id) !== 'setup' || setup.includes(s));
       if (pick.length) press = [IN.P1, IN.P2, IN.P3][pick[r() % pick.length]!]!;
     }
     if (!press) {

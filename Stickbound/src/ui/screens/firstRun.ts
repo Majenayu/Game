@@ -3,7 +3,7 @@
 import { audio } from '../../audio/synth';
 import { BEATS, ELEMENT_IDS, ELEMENTS, type ElementId } from '../../content/elements';
 import { DEFAULT_LOOK } from '../../content/looks';
-import { POWERS_BY_ELEMENT } from '../../content/powers';
+import { powersFor } from '../../content/powers';
 import { app, saveProfile } from '../../app/state';
 import { startFight, summary } from '../../app/fights';
 import { applyMatch, chooseStarter, specFor, squadAvatars } from '../../meta/profile';
@@ -24,7 +24,7 @@ export function showStarter(): void {
   logo.innerHTML = '<span class="logo-a">ELEMEN</span><span class="logo-b">TICK</span>';
   el.appendChild(logo);
   el.appendChild(h('h1', 'starter-title', 'Choose your element'));
-  el.appendChild(h('p', 'hint', 'It is free and yours to keep. You unlock the other nine by playing.'));
+  el.appendChild(h('p', 'hint', 'It is free and yours to keep. You get two fighters of it with different fighting styles. You unlock the other nine elements by playing.'));
   const grid = h('div', 'starter-grid');
   for (const id of ELEMENT_IDS) {
     const info = ELEMENTS[id];
@@ -93,7 +93,7 @@ export function tutorialFight(): void {
       const rewards = applyMatch(p, summary('tutorial', r), squad);
       p.tutorialDone = true;
       saveProfile();
-      const power = POWERS_BY_ELEMENT[el][0].name;
+      const power = powersFor(el, squad[0]!.archetype)[0].name;
       showResults({
         title: r.win ? 'First win!' : 'Good try!',
         sub: r.win ? `You beat Coach Bix in ${Math.round(r.seconds)} seconds.` : 'Coach Bix got lucky. You are ready anyway.',

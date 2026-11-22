@@ -2,13 +2,14 @@
 // element matchup chart.
 import { audio } from '../../audio/synth';
 import { BEATS, ELEMENT_IDS, ELEMENTS, matchup, STRONG_PCT, WEAK_PCT, type ElementId } from '../../content/elements';
-import { AURA_NAMES, BACKS, BODY_NAMES, EXTRAS, EYES, HATS, HEADS, LOCKED, MOUTHS, THICK_NAMES, WIN_POSES, type Look } from '../../content/looks';
-import { POWER_TEXT, POWER_UNLOCK_LEVELS, POWERS_BY_ELEMENT, RANK_MP_OFF } from '../../content/powers';
+import { AURA_NAMES, BACKS, BODY_NAMES, EXTRAS, EYES, HATS, HEADS, LOCKED, lookFromSeed, MOUTHS, THICK_NAMES, WIN_POSES, type Look } from '../../content/looks';
+import { ARCHETYPE_IDS, ARCHETYPES, mechanicOf, POWER_TEXT, POWER_UNLOCK_LEVELS, powersFor, RANK_MP_OFF, type Archetype } from '../../content/powers';
 import { app, saveProfile } from '../../app/state';
-import { addAvatar, avatarById, buy, choosePerk, cleanName, slotsFor, xpToNext, type Avatar } from '../../meta/profile';
+import { addAvatar, avatarById, buy, choosePerk, cleanName, slotsFor, squadClash, suggestArchetype, xpToNext, type Avatar } from '../../meta/profile';
 import { elementIcon } from '../../render/icons';
 import { comboLenFor, hpFor, PERK_LEVELS, PERKS, ranksFor, stickSpec, MAX_LEVEL } from '../../sim/stats';
-import { btn, h, toast } from '../dom';
+import { btn, h, html, toast } from '../dom';
+import { powerPreview } from '../powerPreview';
 import { askText } from '../dialog';
 import { frame, refreshCoins, show } from '../router';
 import { stickPreview } from '../preview';
@@ -61,7 +62,7 @@ function detail(a: Avatar): HTMLElement {
   const top = h('div', 'av-top');
   top.appendChild(stickPreview({ look: a.look, element: a.element, live: true }, 150, 190));
   const info = h('div', 'av-info');
-  info.innerHTML = `<h2>${elementIcon(a.element, 28)} ${esc(a.name)}</h2><p>${ELEMENTS[a.element].name} · Level ${a.level}${a.level >= MAX_LEVEL ? ' (max)' : ''} · ${a.wins} W / ${a.losses} L</p><p class="hint">${ELEMENTS[a.element].passive}</p>`;
+  info.innerHTML = `<h2>${elementIcon(a.element, 28)} ${esc(a.name)}</h2><p>${ELEMENTS[a.element].name} ${ARCHETYPES[a.archetype].name} · Level ${a.level}${a.level >= MAX_LEVEL ? ' (max)' : ''} · ${a.wins} W / ${a.losses} L</p><p class="hint">${ELEMENTS[a.element].passive}</p>`;
   const xb = h('div', 'bar xpbar');
   const xf = h('div', 'fill');
   xf.style.width = a.level >= MAX_LEVEL ? '100%' : `${Math.round((a.xp / xpToNext(a.level)) * 100)}%`;
@@ -81,20 +82,21 @@ function detail(a: Avatar): HTMLElement {
       if (extra) p.squad.push(extra.id);
     }
     saveProfile();
-    toast(`${a.name} is now your ${slot === 0 ? 'lead' : 'partner'}`);
+    toast(squadClash(p) ? 'Heads up: both squad avatars now have the same 3 powers.' : `${a.name} is now your ${slot === 0 ? 'lead' : 'partner'}`);
     showAvatars(a.id);
   };
   const lead = btn('Set as lead', () => setSquad(0), 'btn small');
   lead.disabled = sq === 0;
   const partner = btn('Set as partner', () => setSquad(1), 'btn small');
   partner.disabled = sq === 1 || p.avatars.length < 2;
-  acts.append(lead, partner, btn('Forge (looks)', () => showForge(a), 'btn small primary'), btn('Rename', () => void rename(a), 'btn small'));
+  acts.append(lead, partner, btn('Forge (looks)', () => showForge(a), 'btn small primary'), btn('Fighting style', () => pickStyle(a.element, a), 'btn small'), btn('Rename', () => void rename(a), 'btn small'));
+  if (squadClash(p) && sq >= 0) info.appendChild(h('p', 'warn', 'Both squad avatars have the same element and style, so they share the same 3 powers. Pick a different style or partner for more options.'));
   info.appendChild(acts);
   top.appendChild(info);
   box.appendChild(top);
 
   // stats
-  const spec = stickSpec(a.name, a.element, a.level, a.perks.filter((x): x is string => !!x));
+  const spec = stickSpec(a.name, a.element, a.level, a.perks.filter((x): x is string => !!x), false, undefined, a.archetype);
   const next = a.level < MAX_LEVEL ? stickSpec(a.name, a.element, Math.min(MAX_LEVEL, a.level + 5)) : null;
   const st = h('div', 'av-stats');
   const row = (label: string, v: number, nv: number | null, max: number) => {
@@ -112,15 +114,16 @@ function detail(a: Avatar): HTMLElement {
   box.appendChild(h('h3', '', 'Powers'));
   const pw = h('div', 'power-list');
   const ranks = ranksFor(a.level);
-  POWERS_BY_ELEMENT[a.element].forEach((mv, i) => {
+  powersFor(a.element, a.archetype).forEach((mv, i) => {
     const rank = ranks[i]!;
     const c = h('div', `power ${rank ? '' : 'locked'}`);
     const cost = Math.max(0, (mv.mp ?? 0) - RANK_MP_OFF[Math.max(1, rank)]!);
     const pips = Array.from({ length: 5 }, (_, k) => `<i class="${k < rank ? 'on' : ''}"></i>`).join('');
-    c.innerHTML = `<div class="pw-head">${elementIcon(a.element, 22)}<b>${mv.name}</b><span class="pw-key">Power ${i + 1}</span></div><p>${POWER_TEXT[mv.id] ?? ''}</p><div class="pw-foot">${rank ? `<span class="pips" aria-label="Rank ${rank} of 5">${pips}</span><span>Rank ${rank}/5 · ${cost} MP</span>` : `<span>Unlocks at level ${POWER_UNLOCK_LEVELS[i]}</span>`}</div>`;
+    c.innerHTML = `<div class="pw-head">${elementIcon(a.element, 22)}<b>${mv.name}</b><span class="pw-key">Power ${i + 1}${i === 2 ? ' · super' : ''}</span></div><span class="pw-mech">${mechName(mechanicOf(mv))}</span><p>${POWER_TEXT[mv.id] ?? ''}</p><div class="pw-foot">${rank ? `<span class="pips" aria-label="Rank ${rank} of 5">${pips}</span><span>Rank ${rank}/5 · ${cost} MP</span>` : `<span>Unlocks at level ${POWER_UNLOCK_LEVELS[i]}</span>`}</div>`;
     pw.appendChild(c);
   });
   box.appendChild(pw);
+  box.appendChild(powerPreview({ element: a.element, archetype: a.archetype, look: a.look, level: Math.max(20, a.level), w: Math.min(560, window.innerWidth - 60), h: 220 }).el);
   box.appendChild(h('p', 'hint', 'No cooldowns: powers only cost MP and have wind-up and recovery. Ranks go up on their own as you level (more damage, less MP, stronger effects, rank 5 is bigger).'));
 
   // perks
@@ -164,15 +167,7 @@ function newAvatar(): void {
   for (const id of ELEMENT_IDS) {
     const info = ELEMENTS[id];
     const open = p.unlocked.includes(id);
-    const b = btn(`${elementIcon(id, 36)}<b>${info.name}</b><small>${open ? info.passive : 'Locked'}</small>`, async () => {
-      const name = await askText('Name your avatar', '');
-      if (name === null) return;
-      const av = addAvatar(p, id, name);
-      if (!av) return toast('No free roster slot.');
-      saveProfile();
-      audio.sfx('level');
-      showAvatars(av.id);
-    }, `btn el-card ${open ? '' : 'locked'}`);
+    const b = btn(`${elementIcon(id, 36)}<b>${info.name}</b><small>${open ? info.passive : 'Locked'}</small>`, () => pickStyle(id), `btn el-card ${open ? '' : 'locked'}`);
     b.style.setProperty('--el', info.css[0]);
     b.style.setProperty('--el2', info.css[1]);
     b.disabled = !open;
@@ -180,6 +175,80 @@ function newAvatar(): void {
   }
   body.appendChild(grid);
   show({ id: 'newav', el, back: () => showAvatars() });
+}
+
+const MECH_NAME: Record<string, string> = {
+  shot: 'shot', lob: 'arc shot', wave: 'ground wave', fan: 'spread shot', rain: 'rain from above', boomerang: 'boomerang',
+  dash: 'dash-cut', rising: 'rising launcher', flurry: 'flurry', spin: 'spin', beam: 'beam', reach: 'long reach', melee: 'strike', armor: 'armored strike',
+  aura: 'burst around you', field: 'area', wall: 'wall', walls: 'wall trap', trap: 'trap', pillar: 'eruption', drop: 'delayed strike', multistrike: 'strikes from below',
+  orbit: 'orbiting shield', counter: 'counter stance', decoy: 'decoy', buff: 'power-up', drain: 'drain', teleportBehind: 'teleport', recall: 'rewind', barrier: 'shield', heal: 'heal',
+};
+export const mechName = (id: string) => MECH_NAME[id] ?? id;
+
+/** The 3 powers of a style as a compact card list. */
+function styleCard(el: ElementId, a: Archetype, onPick: (() => void) | null, current = false): HTMLElement {
+  const info = ARCHETYPES[a];
+  const card = h('div', `panel style-card ${current ? 'on' : ''}`);
+  card.style.setProperty('--el', ELEMENTS[el].css[0]);
+  card.appendChild(html('div', 'style-head', `<b>${info.name}</b><span>${info.role}</span>`));
+  card.appendChild(h('p', 'hint', info.blurb));
+  const ul = h('ol', 'style-powers');
+  powersFor(el, a).forEach((mv, i) => {
+    const li = html('li', '', `<b>${mv.name}</b> <em>${mechName(mechanicOf(mv))}</em><small>Lv ${POWER_UNLOCK_LEVELS[i]}${i === 2 ? ' · super' : ''} · ${POWER_TEXT[mv.id] ?? ''}</small>`);
+    ul.appendChild(li);
+  });
+  card.appendChild(ul);
+  if (onPick) card.appendChild(btn(current ? 'Current style' : `Choose ${info.name}`, onPick, `btn ${current ? '' : 'primary'}`));
+  return card;
+}
+
+/** Style picker with a live preview of the selected style's 3 powers. */
+function pickStyle(el: ElementId, existing?: Avatar): void {
+  const p = app.profile;
+  let sel: Archetype = existing?.archetype ?? suggestArchetype(p, el);
+  const back = () => (existing ? showAvatars(existing.id) : newAvatar());
+  const { el: root, body } = frame('style', existing ? `Fighting style: ${existing.name}` : `${ELEMENTS[el].name}: choose a fighting style`, back);
+  body.appendChild(h('p', 'hint', 'Each style has its own 3 powers. Two avatars of the same element play differently when their styles differ.'));
+  const stage = h('div', 'style-stage');
+  const tabs = h('div', 'style-tabs');
+  const cards = h('div', 'style-cards');
+  let prev: ReturnType<typeof powerPreview> | null = null;
+  const look = existing?.look ?? lookFromSeed(p.nextId * 31 + p.created);
+  const render = () => {
+    prev?.stop();
+    prev = powerPreview({ element: el, archetype: sel, look, w: Math.min(520, window.innerWidth - 40), h: 240 });
+    stage.replaceChildren(prev.el);
+    tabs.replaceChildren(
+      ...ARCHETYPE_IDS.map((a) => {
+        const b = btn(`<b>${ARCHETYPES[a].name}</b><small>${ARCHETYPES[a].role}</small>`, () => {
+          sel = a;
+          render();
+        }, `btn chip style-tab ${a === sel ? 'on' : ''}`);
+        b.setAttribute('aria-pressed', String(a === sel));
+        return b;
+      }),
+    );
+    cards.replaceChildren(
+      styleCard(el, sel, async () => {
+        if (existing) {
+          existing.archetype = sel;
+          saveProfile();
+          toast(`${existing.name} now fights as a ${ARCHETYPES[sel].name}`);
+          return showAvatars(existing.id);
+        }
+        const name = await askText('Name your avatar', '');
+        if (name === null) return;
+        const av = addAvatar(p, el, name, look, sel);
+        if (!av) return toast('No free roster slot.');
+        saveProfile();
+        audio.sfx('level');
+        showAvatars(av.id);
+      }, existing?.archetype === sel),
+    );
+  };
+  render();
+  body.append(tabs, stage, cards);
+  show({ id: 'style', el: root, back, leave: () => prev?.stop() });
 }
 
 // ---- Forge -------------------------------------------------------------------------------------------------
@@ -206,7 +275,7 @@ function showForge(a: Avatar, previewPose = 'idle'): void {
   const { el, body } = frame('forge', `Forge: ${a.name}`, () => showAvatars(a.id));
   const wrap = h('div', 'forge');
   const prev = h('div', 'panel forge-prev');
-  prev.appendChild(stickPreview({ look: a.look, element: a.element, live: true, pose: previewPose }, 220, 280));
+  prev.appendChild(previewPose === 'idle' ? powerPreview({ element: a.element, archetype: a.archetype, look: a.look, level: Math.max(20, a.level), w: Math.min(300, window.innerWidth - 40), h: 260, span: 420 }).el : stickPreview({ look: a.look, element: a.element, live: true, pose: previewPose }, 220, 280));
   prev.appendChild(h('p', 'hint', 'Looks never change stats.'));
   wrap.appendChild(prev);
   const opts = h('div', 'panel forge-opts');
@@ -276,6 +345,7 @@ function revertUnowned(a: Avatar): void {
 
 export function showMatchups(back: () => void = () => showAvatars()): void {
   const { el, body } = frame('matchups', 'Element matchups', back);
+  body.appendChild(h('p', 'hint', 'Matchups depend on the element only. The fighting style (Vanguard, Striker, Warden) changes your powers, not your matchups.'));
   body.appendChild(h('p', 'hint', `Each element is strong against two others (deals ${STRONG_PCT}% damage) and weak against two (deals ${WEAK_PCT}%). Everything else is even.`));
   const list = h('div', 'mu-list');
   for (const e of ELEMENT_IDS) {
