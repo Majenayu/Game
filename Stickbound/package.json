@@ -1,0 +1,33 @@
+{
+  "name": "elementick",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Elementick: a stickman elemental 1v1 fighting game for the browser (studio: majen)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node tools/size-report.mjs dist",
+    "build:crazygames": "tsc --noEmit && vite build --mode crazygames --outDir dist-crazygames && node tools/size-report.mjs dist-crazygames",
+    "build:poki": "tsc --noEmit && vite build --mode poki --outDir dist-poki && node tools/size-report.mjs dist-poki",
+    "preview": "vite preview --port 4190 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests",
+    "balance": "vitest run tools/balance.test.ts",
+    "e2e": "playwright test --project=smoke",
+    "shots": "playwright test --project=shots",
+    "package": "node tools/package.mjs"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "archiver": "7.0.1",
+    "typescript": "5.9.3",
+    "vite": "6.4.6",
+    "vitest": "3.2.7"
+  }
+}
