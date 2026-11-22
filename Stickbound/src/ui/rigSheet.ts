@@ -3,7 +3,7 @@
 import { ELEMENT_IDS, ELEMENTS } from '../content/elements';
 import { AURA_NAMES, AURAS, BACKS, DEFAULT_LOOK, HANDS, HATS, SUITS, WIN_POSES, type Look } from '../content/looks';
 import { CanvasPen } from '../render/pen';
-import { drawStick, mix, POSES, solve, walkPose, type Pose } from '../render/rig';
+import { drawStick, POSES, solve, type Pose } from '../render/rig';
 import { makeCanvas } from './powerPreview';
 export function showRigSheet(): void {
   document.body.dataset.screen = 'lab';
@@ -132,22 +132,22 @@ export function showCompareSheet(elId: string, style: 'classic' | 'striker' | 'w
   const cells: Record<string, Cell[]> = {
     fire: [
       [160, 365, stand, 'determined', 0.4],
-      [395, 365, walkPose(0.9, false), 'angry', 0.4],
-      [610, 365, POSES.jab1!, 'angry', 0.6],
+      [395, 365, POSES.stride!, 'angry', 0.4],
+      [610, 365, POSES.punchWide!, 'angry', 0.6],
       [910, 365, POSES.guard!, 'determined', 0.4],
-      [160, 705, mix(POSES.guard!, idle, 0.4), 'determined', 0.4],
-      [440, 705, POSES.cast!, 'angry', 0.8],
+      [160, 705, idle, 'determined', 0.4],
+      [440, 705, POSES.punchWide!, 'angry', 0.8],
       [910, 705, POSES.horse!, 'angry', 1],
       [1215, 705, POSES.cheer!, 'happy', 0.5],
     ],
     lightning: [
-      [160, 345, walkPose(0.3, false), 'determined', 0.4],
-      [400, 345, walkPose(0.9, false), 'angry', 0.5],
-      [620, 345, POSES.jab1!, 'angry', 0.7],
+      [160, 345, POSES.stride!, 'determined', 0.4],
+      [400, 345, POSES.stride!, 'angry', 0.5],
+      [620, 345, POSES.punchWide!, 'angry', 0.7],
       [1215, 415, POSES.win0!, 'happy', 0.5],
-      [170, 695, POSES.guard!, 'determined', 0.4],
-      [430, 695, mix(POSES.jab2_w!, POSES.guard!, 0.3), 'determined', 0.5],
-      [910, 695, POSES.power!, 'angry', 1],
+      [170, 695, idle, 'determined', 0.4],
+      [430, 695, idle, 'determined', 0.5],
+      [910, 695, POSES.horse!, 'angry', 1],
     ],
   };
   ctx.fillStyle = '#1b1c25';

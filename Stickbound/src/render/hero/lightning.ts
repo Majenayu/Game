@@ -40,7 +40,7 @@ export function lightningHead(c: HC): void {
   const f = face;
   // swept spiky hair: dark fill, yellow outline
   const tipU = [0.8, 0.4, 0.0, -0.4, -0.8];
-  const tipH = [0.9, 1.3, 1.5, 1.3, 0.85];
+  const tipH = [1.0, 1.45, 1.7, 1.45, 0.95];
   const flick = Math.floor(t * 10);
   const pts: number[] = [];
   const baseY = (u: number) => hy - Math.sqrt(Math.max(0.04, 1 - u * u)) * r * 0.86;
@@ -148,10 +148,11 @@ export function lightningAura(c: HC, part: 'back' | 'front'): void {
     }
     pen.glow?.(cx, gy - H * 0.3, H * 0.8, YEL, 0.25 * a);
     for (let i = 0; i < 8; i++) {
-      const u = (i / 7) * 2 - 1;
-      const x0 = cx + u * H * 0.5;
-      const top = H * (1.1 + 0.9 * (1 - Math.abs(u))) * (0.8 + 0.2 * rnd(fr + i));
-      bolt(c, x0, gy, x0 + u * H * 0.18 + (rnd(fr * 3 + i) - 0.5) * H * 0.2, gy - top, 11, H * 0.15, fr * 17 + i * 31, i % 2 ? YEL : CYAN_HOT, 1, true);
+      // bolts cluster at the sides, like the sheet's storm
+      const u = [-0.95, -0.75, -0.55, -0.3, 0.3, 0.55, 0.75, 0.95][i]!;
+      const x0 = cx + u * H * 0.55;
+      const top = H * (0.9 + 0.9 * rnd(fr + i * 3)) * (Math.abs(u) > 0.5 ? 1.1 : 0.8);
+      bolt(c, x0, gy, x0 + u * H * 0.22 + (rnd(fr * 3 + i) - 0.5) * H * 0.2, gy - top, 11, H * 0.15, fr * 17 + i * 31, i % 2 ? YEL : CYAN_HOT, Math.abs(u) > 0.5 ? 1.15 : 0.8, true);
     }
   } else {
     for (let i = 0; i < 6; i++) {

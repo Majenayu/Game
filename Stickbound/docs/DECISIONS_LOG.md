@@ -56,3 +56,8 @@ The owner's autonomous build directive says: never ask, pick the best option, lo
 - Render-only: arms drawn 22% longer than the sim rig, head sits 30% closer to the torso. Sim joints, hitboxes and balance are unchanged.
 - Old renderer stays for the other 8 elements, zombies and bosses. ?legacyart=1 forces it for before and after captures.
 - Smoke test e2e/smoke.spec.ts fails at the Forge step 'Next Hat / hair' on the unchanged baseline too (checked by stashing and rebuilding); not caused by this work.
+
+## D-art4: merge notes from the Gemini rig example
+- Already in src/render/hero/: capsule limbs with round caps, glow then outline then fill passes, depth groups so front limbs keep their outline. Added: fill #0B0D17 with no element tint, idle/stride/punchWide poses with weight and feet on the ground.
+- Not taken: one visor for all heroes, triangle hair, Gemini bone lengths and pose numbers.
+- Fire ribbon tails are about 0.5 H long like the sheet, not the 1.2 H in the directive (the sheet wins).

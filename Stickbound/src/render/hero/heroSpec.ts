@@ -17,11 +17,11 @@ export const SPEC = {
   coreIdle: 0.07, // chest core radius, idle
   coreCast: 0.14, // chest core radius, casting
   coreAt: 0.35, // chest core, fraction down the torso from the neck
-  tint: 0.04, // element tint on the near-black fill
+  tint: 0, // element tint on the near-black fill
   shadowW: 0.45, // soft shadow width
 } as const;
 
-export const FILL = 0x0c0c15;
+export const FILL = 0x0b0d17;
 
 export const STYLE = {
   classic: { limb: 1, torso: 1 },

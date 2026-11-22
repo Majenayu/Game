@@ -11,3 +11,5 @@ Elementick ships **no third-party art, sound, music or font files.**
 | Dev-only tools, not shipped: Vite, Vitest, TypeScript, Playwright, archiver | npm | MIT / Apache-2.0 |
 
 No CC-BY-SA, GPL or NC material is used anywhere.
+
+- gemini/code/ElementalStickRig.ts (not shipped, not saved in the repo): AI-assisted code reference (Gemini), adapted. Only ideas were used (round-capped capsule limbs, glow/outline/fill pass order, fill colour #0B0D17). Our renderer is src/render/hero/.
