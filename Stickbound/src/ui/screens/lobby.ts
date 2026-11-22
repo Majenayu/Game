@@ -112,7 +112,9 @@ export function showLobby(): void {
   side.appendChild(questBox('Daily quests', p.quests.daily));
   side.appendChild(questBox('Weekly quests', p.quests.weekly));
   main.appendChild(side);
-  el.appendChild(main);
+  const scroll = h('div', 'lobby-scroll');
+  scroll.appendChild(main);
+  el.appendChild(scroll);
 
   // ---- bottom nav
   const nav = h('nav', 'lobby-nav');

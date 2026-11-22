@@ -13,6 +13,14 @@ import { setClickSound } from './ui/dom';
 import { clickSound, initRouter, currentScreen } from './ui/router';
 import { showStarter, showTitle, tutorialFight } from './ui/screens/firstRun';
 import { showLobby } from './ui/screens/lobby';
+import { showAvatars } from './ui/screens/avatars';
+import { playChampion, showChampionRoad } from './ui/screens/champion';
+import { showRanked } from './ui/screens/ranked';
+import { showShop } from './ui/screens/shop';
+import { showSettings } from './ui/screens/settings';
+import { showZombie } from './ui/screens/zombie';
+import { showTraining } from './ui/screens/training';
+import { showLocal } from './ui/screens/local';
 import { h } from './ui/dom';
 
 declare global {
@@ -86,6 +94,11 @@ async function boot(): Promise<void> {
     autopilot,
     inFight: () => !!currentFight(),
     match: () => currentFight()?.setup.match ?? null,
+    show: (id: string) => {
+      const map: Record<string, () => void> = { lobby: showLobby, avatars: () => showAvatars(), road: showChampionRoad, ranked: showRanked, shop: showShop, settings: () => showSettings(), zombie: showZombie, training: showTraining, local: showLocal };
+      if (id.startsWith('vs:')) playChampion(Number(id.slice(3)), showChampionRoad);
+      else map[id]?.();
+    },
     platformLog: () => (platform as unknown as { log?: string[] }).log ?? [],
   };
 

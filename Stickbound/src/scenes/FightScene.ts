@@ -171,7 +171,8 @@ export class FightScene extends Phaser.Scene {
     const halfW = vw / zoom / 2;
     const cx = halfW * 2 >= WORLD_W ? WORLD_W / 2 : Math.max(halfW, Math.min(WORLD_W - halfW, this.camX));
     const viewH = vh / zoom;
-    const floorFrac = vw < vh ? 0.62 : 0.86;
+    // with touch buttons on a landscape screen, the floor sits higher so the buttons cover ground, not fighters
+    const floorFrac = vw < vh ? 0.62 : this.pad ? (vh < 560 ? 0.64 : 0.74) : 0.86;
     const cy = FLOOR_Y - viewH * floorFrac + viewH / 2;
     const sx = this.shake > 0 && settings.shake ? (Math.random() - 0.5) * this.shake : 0;
     const sy = this.shake > 0 && settings.shake ? (Math.random() - 0.5) * this.shake : 0;

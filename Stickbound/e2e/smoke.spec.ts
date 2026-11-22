@@ -44,7 +44,7 @@ test('every screen opens and every mode plays without errors', async ({ page }) 
   await page.getByRole('button', { name: 'Next Hat / hair' }).click();
   await page.getByRole('button', { name: 'Done' }).click();
   await waitScreen(page, 'avatars');
-  await page.getByRole('button', { name: 'Matchups' }).click();
+  await page.getByRole('button', { name: 'Element matchups' }).click();
   await waitScreen(page, 'matchups');
   await expect(page.locator('.mu-row')).toHaveCount(10);
   await back(page);

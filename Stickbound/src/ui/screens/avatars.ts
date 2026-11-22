@@ -21,8 +21,7 @@ export function showAvatars(sel?: string): void {
   const p = app.profile;
   if (sel) selected = sel;
   if (!avatarById(p, selected)) selected = p.squad[0] ?? p.avatars[0]?.id ?? '';
-  const { el, body, head } = frame('avatars', 'Avatars', showLobby);
-  head.insertBefore(btn('Matchups', () => showMatchups(), 'btn small'), head.lastChild);
+  const { el, body } = frame('avatars', 'Avatars', showLobby);
   const wrap = h('div', 'av-wrap');
   // roster
   const roster = h('div', 'panel roster');
@@ -39,6 +38,7 @@ export function showAvatars(sel?: string): void {
   const newBtn = btn('+ New avatar', () => newAvatar(), 'btn');
   newBtn.disabled = p.avatars.length >= p.slots;
   roster.appendChild(newBtn);
+  roster.appendChild(btn('Element matchups', () => showMatchups(), 'btn small'));
   wrap.appendChild(roster);
   const a = avatarById(p, selected);
   if (a) wrap.appendChild(detail(a));
