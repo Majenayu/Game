@@ -2,10 +2,11 @@
 inclusion: always
 ---
 
-# Stickbound project rules (studio: majen)
+# Elementick project rules (studio: majen)
 
+- The game is called **Elementick** (renamed from the working title "Stickbound", which clashes with existing games; see `Stickbound/docs/DECISIONS_LOG.md`). Every player-facing text, store text, credit and page title says Elementick. The folder stays `Stickbound/` and the Pages path stays `/stickbound/`, because existing links and this file point there.
 - The active project is `Stickbound/` (stickman elemental 1v1 fighting game). `Talewild/`, `Lanternfall/` and `orb arena/` are paused; reuse their code only as plain engine pieces (saves, platform layer, debug tools), never their design.
-- Before any task read `Stickbound/docs/KIRO_MASTER_PROMPT.md` and follow its phases and rules.
+- Before any task read `Stickbound/docs/KIRO_MASTER_PROMPT.md` and follow its phases and rules. Where it says "Stickbound", read "Elementick".
 - Stack: Phaser 3, TypeScript, Vite. The fight simulation is pure TypeScript, deterministic, fixed 60 Hz, seeded RNG, no Date or Math.random inside it.
 - Original only. No names, designs, powers, sounds or story from BoBoiBoy, Pokemon, Crazy Combos or any other work. Elements are generic.
 - Only original or free-for-commercial-use assets. Record each in `Stickbound/docs/ASSETS.md`. Never use CC-BY-SA, GPL or NC assets.

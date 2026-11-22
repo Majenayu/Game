@@ -41,7 +41,7 @@ for (const s of SIZES) {
     const ctx = await browser.newContext({ viewport: { width: s.width, height: s.height }, hasTouch: s.touch, isMobile: s.touch, deviceScaleFactor: s.touch ? 2 : 1 });
     const page = await ctx.newPage();
     const q = s.touch ? '?touch=1' : '';
-    await page.goto(`/${q}`);
+    await page.goto(`./${q}`);
     await page.evaluate(() => localStorage.clear());
     await boot(page, q);
     await waitScreen(page, 'title');
