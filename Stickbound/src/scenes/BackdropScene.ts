@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { DEFAULT_LOOK } from '../content/looks';
 import { arenaById, FLOOR_Y, WORLD_H, WORLD_W } from '../render/arenas';
 import { PhaserPen } from '../render/pen';
+import { bakeArena } from '../render/bake';
 import { drawStick, mix, POSES, solve } from '../render/rig';
 import { ELEMENTS } from '../content/elements';
 import { settings } from '../meta/settings';
@@ -23,8 +24,7 @@ export class BackdropScene extends Phaser.Scene {
 
   create(): void {
     const a = arenaById(this.arenaId);
-    const bg = this.add.graphics();
-    a.draw(bg, a);
+    bakeArena(this, a);
     this.g = this.add.graphics();
     this.pen = new PhaserPen(this.g);
     this.cameras.main.setBackgroundColor(a.sky[0]);

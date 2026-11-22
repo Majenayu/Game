@@ -8,7 +8,7 @@ import { applyMatch, specFor, squadAvatars, unlockElement } from '../../meta/pro
 import { elementIcon } from '../../render/icons';
 import { lookFromSeed } from '../../content/looks';
 import { registerLook } from '../../render/fighterView';
-import { stickSpec } from '../../sim/stats';
+import { championTeam } from '../../content/championFight';
 import { createMatch } from '../../sim/step';
 import { DIFFICULTY_NAMES } from '../../sim/ai';
 import { settings } from '../../meta/settings';
@@ -161,8 +161,7 @@ function fightChampion(i: number, back: () => void): void {
   const p = app.profile;
   const squad = squadAvatars(p);
   const { id } = champLook(c);
-  const partner = `${c.name.split(' ').slice(-1)[0]}'s partner`;
-  const teamB = [stickSpec(c.name, c.elements[0], c.level, [], false, id), stickSpec(partner, c.elements[1], Math.max(1, c.level - 1), [], false, `${id}:2`)];
+  const teamB = championTeam(c, id);
   const m = createMatch({ mode: 'duel', teamA: squad.map((a) => specFor(a)), teamB, seed: (Date.now() & 0xffffff) ^ (i * 7919), timerSec: settings.timerSec, bots: [0, c.difficulty] });
   const boss = i % 5 === 4 || i === 40;
   startFight({
@@ -178,6 +177,7 @@ function fightChampion(i: number, back: () => void): void {
       const lines: string[] = [];
       if (first) {
         p.champion.cleared.push(i);
+        app.platform.reportProgress((p.champion.cleared.length / ALL_CHAMPIONS.length) * 100);
         if (c.unlock && unlockElement(p, c.unlock, false)) lines.push(`New element unlocked: ${ELEMENTS[c.unlock].name}! Make an avatar with it on the Avatars screen.`);
         lines.push(`First win bonus: +${c.coins} coins.`);
       }

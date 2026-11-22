@@ -24,7 +24,8 @@ class Synth {
   /** Must be called from a user gesture (browsers block audio before one). */
   unlock(): void {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      // 'suspended', or 'interrupted' on iOS after a call or app switch
+      if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') void this.ctx.resume();
       return;
     }
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

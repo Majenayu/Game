@@ -8,6 +8,7 @@ import { avatarById, choosePerk, pendingPerk, xpToNext, type Avatar, type Reward
 import { PERK_LEVELS, PERKS } from '../../sim/stats';
 import { elementIcon } from '../../render/icons';
 import { btn, h, toast } from '../dom';
+import { blockWhile } from '../dialog';
 import { frame, refreshCoins, show } from '../router';
 import { stickPreview } from '../preview';
 
@@ -24,11 +25,30 @@ export interface ResultsOpts {
   retry?: () => void;
 }
 
-/** Midgame ads only at natural breaks, at most every second break. */
+let skipNext = false;
+/** The next break gets no midgame ad (CrazyGames: never a midgame ad and a "watch to keep playing" offer at the
+ *  same break). */
+export function skipNextMidgame(): void {
+  skipNext = true;
+}
+
+/** Midgame ads only at natural breaks (after a results screen). The CrazyGames SDK limits frequency itself (at most
+ *  one every 3 minutes), so it is asked at every break; elsewhere at most every second break. Input is blocked
+ *  until the ad finishes or fails. */
 export async function adBreak(): Promise<void> {
   app.breaks++;
-  if (app.breaks % 2 === 0) await app.platform.midgame();
+  if (skipNext) {
+    skipNext = false;
+    return;
+  }
+  if (app.platform.name !== 'crazygames' && app.breaks % 2 !== 0) return;
+  await blockWhile(() => app.platform.midgame());
 }
+
+/** Rewarded "double coins" is offered at most once every 5 minutes after it was used. */
+const REWARD_GAP_MS = 5 * 60_000;
+let lastRewarded = -Infinity;
+export const AD_ICON = '<span class="ad-ico" aria-label="video ad"></span>';
 
 export function showResults(o: ResultsOpts): void {
   const r = o.result;
@@ -71,12 +91,13 @@ export function showResults(o: ResultsOpts): void {
 
   const row = h('div', 'res-actions');
   let doubled = false;
-  if (o.rewards && o.rewards.coins > 0 && app.platform.hasRewarded) {
-    const b = btn(`Watch an ad: double coins (+${o.rewards.coins})`, async () => {
+  if (o.rewards && o.rewards.coins > 0 && app.platform.hasRewarded && performance.now() - lastRewarded > REWARD_GAP_MS) {
+    const b = btn(`${AD_ICON} Watch an ad: double coins (+${o.rewards.coins})`, async () => {
       if (doubled) return;
       b.disabled = true;
-      const ok = await app.platform.rewarded();
+      const ok = await blockWhile(() => app.platform.rewarded());
       if (ok) {
+        lastRewarded = performance.now();
         doubled = true;
         app.profile.coins += o.rewards!.coins;
         saveProfile();
@@ -84,7 +105,12 @@ export function showResults(o: ResultsOpts): void {
         toast(`+${o.rewards!.coins} coins`);
         audio.sfx('coin');
         b.textContent = 'Coins doubled';
-      } else b.disabled = false;
+      } else {
+        toast('No ad is available right now. Try again later.');
+        // no rewarded button may stay clickable without effect (ads disabled or blocked)
+        if (!app.platform.hasRewarded) b.remove();
+        else b.disabled = false;
+      }
     }, 'btn reward');
     row.appendChild(b);
   }

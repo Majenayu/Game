@@ -12,7 +12,7 @@ import { frame, show } from '../router';
 import { showLobby } from './lobby';
 
 const MODES: { id: DummyMode; label: string }[] = [
-  { id: 'stand', label: 'Stand still' },
+  { id: 'stand', label: 'Just stand' },
   { id: 'guard', label: 'Always guard' },
   { id: 'jump', label: 'Keep jumping' },
   { id: 'bot', label: 'Fight back (bot)' },

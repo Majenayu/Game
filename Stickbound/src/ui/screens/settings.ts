@@ -8,7 +8,7 @@ import { btn, h, toast } from '../dom';
 import { askText, confirmBox, infoBox } from '../dialog';
 import { frame, show } from '../router';
 import { showLobby } from './lobby';
-import { showTitle, showStarter } from './firstRun';
+import { showStarter } from './firstRun';
 
 type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
 
@@ -132,7 +132,7 @@ export function showSettings(back: () => void = showLobby): void {
       app.save.remove(1);
       app.profile = newProfile('Player');
       saveProfile();
-      showTitle(showStarter);
+      showStarter();
     }, 'btn small danger'),
   );
   sv.appendChild(row);

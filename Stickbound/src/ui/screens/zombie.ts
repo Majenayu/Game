@@ -4,10 +4,12 @@ import { app, saveProfile } from '../../app/state';
 import { startFight, summary } from '../../app/fights';
 import { applyMatch, specFor, squadAvatars } from '../../meta/profile';
 import { createMatch } from '../../sim/step';
-import { btn, h } from '../dom';
-import { confirmBox } from '../dialog';
+import { btn, h, toast } from '../dom';
+import { blockWhile, choiceBox } from '../dialog';
 import { frame, show } from '../router';
-import { showResults } from './results';
+import { AD_ICON, showResults, skipNextMidgame } from './results';
+
+const REVIVE_PRICE = 150;
 import { showLobby } from './lobby';
 
 export function showZombie(): void {
@@ -39,14 +41,36 @@ function run(): void {
   const squad = squadAvatars(p);
   const lvl = Math.round(squad.reduce((s, a) => s + a.level, 0) / Math.max(1, squad.length));
   const m = createMatch({ mode: 'zombie', teamA: squad.map((a) => specFor(a)), teamB: [], seed: Date.now() & 0xffffff, zombieLevel: lvl });
+  let offered = false;
   startFight({
     match: m,
     arena: 'city',
     labels: [p.name, 'Zombies'],
     music: 'zombie',
     input: 'solo',
-    onRevive: app.platform.hasRewarded ? async () => (await confirmBox('Overrun!', 'Watch an ad to bring your squad back with full health? (once per run)', 'Watch ad', 'No thanks')) && app.platform.rewarded() : undefined,
+    // once per run: revive with a rewarded ad or with coins (an alternative to the ad is required), or end the run
+    onRevive: async () => {
+      const canAd = app.platform.hasRewarded;
+      const canPay = p.coins >= REVIVE_PRICE;
+      if (!canAd && !canPay) return false;
+      offered = true;
+      const opts = [{ label: 'End the run' }, { label: `Revive for ${REVIVE_PRICE} coins`, disabled: !canPay }];
+      if (canAd) opts.push({ label: `${AD_ICON} Watch an ad to revive` });
+      const pick = await choiceBox('Overrun!', 'Bring your squad back with half health? (once per run)', opts);
+      if (pick === 1) {
+        p.coins -= REVIVE_PRICE;
+        saveProfile();
+        return true;
+      }
+      if (pick === 2) {
+        const ok = await blockWhile(() => app.platform.rewarded());
+        if (!ok) toast('No ad is available right now.');
+        return ok;
+      }
+      return false;
+    },
     done: (r) => {
+      if (offered) skipNextMidgame();
       const wave = r.match.wave;
       const rewards = applyMatch(p, summary('zombie', r), squad);
       const newBest = wave > p.zombie.best;

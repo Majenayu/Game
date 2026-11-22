@@ -3,7 +3,10 @@
 // - game.loadingStart/Stop around loading; game.gameplayStart/Stop around play and breaks (not on focus loss)
 // - game.settings.muteAudio overrides in-game audio; addSettingsChangeListener for changes
 // - data module: localStorage API, 1 MB limit, used for guests too (the SDK falls back to localStorage itself)
-// - ads: see M8 notes in docs/PROGRESS.md
+// - ads (docs.crazygames.com/sdk/video-ads, checked 2026-11-22): ad.requestAd('midgame' | 'rewarded', { adStarted,
+//   adFinished, adError }); pause + mute on adStarted, resume on adFinished / adError. adError covers adsDisabled
+//   (Basic Launch, kids mode), unfilled, adblock and adCooldown (midgame about every 3 minutes); the game always goes on.
+// - user.systemInfo.device.type decides touch controls (the docs say not to rely on touch detection)
 
 import type { KV } from '../core/storage';
 import { BasePlatform } from './types';
@@ -32,6 +35,7 @@ interface CrazySdk {
     hasAdblock?(): Promise<boolean>;
   };
   data: KV;
+  user?: { systemInfo?: { device?: { type?: string } } };
 }
 
 declare global {
@@ -68,7 +72,18 @@ export class CrazyGamesPlatform extends BasePlatform {
     await sdk.init();
     this.sdk = sdk;
     this.hasRewarded = true;
+    // rewarded buttons must not stay clickable without effect: hide them when an adblocker is detected
+    try {
+      if (await sdk.ad.hasAdblock?.()) this.hasRewarded = false;
+    } catch {
+      /* detection failed: keep offering, adError will turn it off */
+    }
     sdk.game.addSettingsChangeListener((s) => this.muteFns.forEach((f) => f(!!s.muteAudio)));
+  }
+
+  override deviceType(): 'desktop' | 'tablet' | 'mobile' | null {
+    const t = this.sdk.user?.systemInfo?.device?.type;
+    return t === 'desktop' || t === 'tablet' || t === 'mobile' ? t : null;
   }
 
   override isMuted(): boolean {
@@ -92,8 +107,11 @@ export class CrazyGamesPlatform extends BasePlatform {
           if (started) this.adState(false);
           resolve(true);
         },
-        adError: () => {
+        adError: (e) => {
           if (started) this.adState(false);
+          const code = (e as { code?: string } | undefined)?.code;
+          // adsDisabled: Basic Launch, kids mode or offline; adblock: blocked. Neither will work this session.
+          if (code === 'adsDisabled' || code === 'adblock') this.hasRewarded = false;
           resolve(false);
         },
       });

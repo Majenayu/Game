@@ -8,22 +8,46 @@ export interface Pen {
   poly(points: number[], fill: number, alpha?: number): void;
 }
 
+// Unit-circle tables for triangle fans (8 to 24 segments).
+const FANS = new Map<number, Float32Array>();
+function fan(n: number): Float32Array {
+  let t = FANS.get(n);
+  if (!t) {
+    t = new Float32Array((n + 1) * 2);
+    for (let i = 0; i <= n; i++) {
+      t[i * 2] = Math.cos((i / n) * Math.PI * 2);
+      t[i * 2 + 1] = Math.sin((i / n) * Math.PI * 2);
+    }
+    FANS.set(n, t);
+  }
+  return t;
+}
+
 export class PhaserPen implements Pen {
   constructor(public g: Phaser.GameObjects.Graphics) {}
+
+  /** Filled circle as a triangle fan. Phaser's fillCircle triangulates a path (earcut) on every render, which was
+   *  the main CPU cost of drawing stick figures. */
+  private disc(x: number, y: number, r: number): void {
+    if (r <= 0.3) return;
+    const n = r < 4 ? 8 : r < 10 ? 12 : r < 24 ? 16 : 24;
+    const t = fan(n);
+    for (let i = 0; i < n; i++) this.g.fillTriangle(x, y, x + t[i * 2]! * r, y + t[i * 2 + 1]! * r, x + t[i * 2 + 2]! * r, y + t[i * 2 + 3]! * r);
+  }
 
   line(x1: number, y1: number, x2: number, y2: number, w: number, color: number, alpha = 1): void {
     this.g.lineStyle(w, color, alpha);
     this.g.lineBetween(x1, y1, x2, y2);
     // round caps
     this.g.fillStyle(color, alpha);
-    this.g.fillCircle(x1, y1, w / 2);
-    this.g.fillCircle(x2, y2, w / 2);
+    this.disc(x1, y1, w / 2);
+    this.disc(x2, y2, w / 2);
   }
 
   circle(x: number, y: number, r: number, fill: number | null, stroke: number | null, w = 2, alpha = 1): void {
     if (fill !== null) {
       this.g.fillStyle(fill, alpha);
-      this.g.fillCircle(x, y, r);
+      this.disc(x, y, r);
     }
     if (stroke !== null) {
       this.g.lineStyle(w, stroke, alpha);

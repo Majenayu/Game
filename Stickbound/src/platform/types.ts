@@ -26,6 +26,8 @@ export interface Platform {
   rewarded(): Promise<boolean>;
   /** Called by ads to pause and mute the game. */
   onAdState(fn: (playing: boolean) => void): void;
+  /** Device type from the portal (CrazyGames system info), or null when the platform does not say. */
+  deviceType(): 'desktop' | 'tablet' | 'mobile' | null;
 }
 
 export abstract class BasePlatform implements Platform {
@@ -82,6 +84,9 @@ export abstract class BasePlatform implements Platform {
 
   onAdState(fn: (playing: boolean) => void): void {
     this.adFns.push(fn);
+  }
+  deviceType(): 'desktop' | 'tablet' | 'mobile' | null {
+    return null;
   }
 
   protected adState(playing: boolean): void {

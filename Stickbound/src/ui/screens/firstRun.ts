@@ -1,4 +1,4 @@
-// First run: title, pick a free starter element, then straight into a short tutorial fight that a new player can
+// First run: pick a free starter element, then straight into a short tutorial fight that a new player can
 // win inside a minute (one round, a Rookie sparring partner on low HP, one tip at a time).
 import { audio } from '../../audio/synth';
 import { BEATS, ELEMENT_IDS, ELEMENTS, type ElementId } from '../../content/elements';
@@ -18,23 +18,11 @@ import { registerLook } from '../../render/fighterView';
 import { showResults } from './results';
 import { showLobby } from './lobby';
 
-export function showTitle(onStart: () => void): void {
-  const el = h('div', 'title-screen');
-  const logo = h('div', 'logo');
-  logo.innerHTML = '<span class="logo-a">ELEMEN</span><span class="logo-b">TICK</span>';
-  el.appendChild(logo);
-  el.appendChild(h('p', 'tagline', '10 elements. 30 powers. 2 fighters. 1 winner.'));
-  const b = btn('Play', () => {
-    audio.unlock();
-    onStart();
-  }, 'btn primary huge');
-  el.appendChild(b);
-  el.appendChild(h('p', 'credit', 'a game by majen'));
-  show({ id: 'title', el });
-}
-
 export function showStarter(): void {
   const el = h('div', 'frame starter');
+  const logo = h('div', 'logo small');
+  logo.innerHTML = '<span class="logo-a">ELEMEN</span><span class="logo-b">TICK</span>';
+  el.appendChild(logo);
   el.appendChild(h('h1', 'starter-title', 'Choose your element'));
   el.appendChild(h('p', 'hint', 'It is free and yours to keep. You unlock the other nine by playing.'));
   const grid = h('div', 'starter-grid');
@@ -52,6 +40,7 @@ export function showStarter(): void {
 }
 
 function pickStarter(id: ElementId): void {
+  audio.unlock();
   const p = app.profile;
   chooseStarter(p, id);
   saveProfile();

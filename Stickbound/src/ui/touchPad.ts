@@ -119,7 +119,12 @@ export class TouchPad {
     });
   }
 
+  /** Set from the platform at boot: the portal's device type beats guessing from touch support. */
+  static device: 'desktop' | 'tablet' | 'mobile' | null = null;
   static wanted(): boolean {
-    return new URLSearchParams(location.search).has('touch') || matchMedia('(pointer: coarse)').matches;
+    if (new URLSearchParams(location.search).has('touch')) return true;
+    if (TouchPad.device) return TouchPad.device !== 'desktop';
+    // touch laptops have a fine primary pointer, so they keep the keyboard layout
+    return matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
   }
 }

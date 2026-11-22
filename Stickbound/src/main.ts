@@ -6,12 +6,16 @@ import { attachKeyboard } from './core/input';
 import { createPlatform } from './platform';
 import { loadSettings, settings } from './meta/settings';
 import { app, initProfile, saveProfile } from './app/state';
-import { autopilot, currentFight, fightScene } from './app/fights';
+import { autopilot, currentFight, fightScene, startFight } from './app/fights';
+import { ELEMENT_IDS } from './content/elements';
+import { ARENAS } from './render/arenas';
+import { stickSpec } from './sim/stats';
+import { createMatch } from './sim/step';
 import { BackdropScene } from './scenes/BackdropScene';
 import { FightScene } from './scenes/FightScene';
 import { setClickSound } from './ui/dom';
 import { clickSound, initRouter, currentScreen } from './ui/router';
-import { showStarter, showTitle, tutorialFight } from './ui/screens/firstRun';
+import { showStarter, tutorialFight } from './ui/screens/firstRun';
 import { showLobby } from './ui/screens/lobby';
 import { showAvatars } from './ui/screens/avatars';
 import { playChampion, showChampionRoad } from './ui/screens/champion';
@@ -22,6 +26,8 @@ import { showZombie } from './ui/screens/zombie';
 import { showTraining } from './ui/screens/training';
 import { showLocal } from './ui/screens/local';
 import { h } from './ui/dom';
+import { TouchPad } from './ui/touchPad';
+import { showCover } from './ui/cover';
 
 declare global {
   interface Window {
@@ -37,6 +43,7 @@ async function boot(): Promise<void> {
   audio.sfxVol = settings.sfxVol;
   initProfile(platform);
   attachKeyboard();
+  TouchPad.device = platform.deviceType();
 
   const ui = document.getElementById('ui')!;
   const screens = h('div', '');
@@ -64,6 +71,8 @@ async function boot(): Promise<void> {
   const unlock = () => audio.unlock();
   window.addEventListener('pointerdown', unlock, { once: false, passive: true });
   window.addEventListener('keydown', unlock, { once: false });
+  // iOS interrupts the AudioContext when the app is backgrounded; it may only resume inside a gesture
+  document.addEventListener('touchend', unlock, { passive: true });
 
   // portal mute and ads pause/mute the game
   if (platform.isMuted()) audio.setMuted('platform', true);
@@ -99,13 +108,24 @@ async function boot(): Promise<void> {
       if (id.startsWith('vs:')) playChampion(Number(id.slice(3)), showChampionRoad);
       else map[id]?.();
     },
+    /** bot vs bot fight that returns to the lobby (memory soak and fps tests) */
+    botFight: (i: number) => {
+      const el = (k: number) => ELEMENT_IDS[(i * 3 + k * 7) % ELEMENT_IDS.length]!;
+      const m = createMatch({ mode: 'duel', teamA: [stickSpec('A', el(0), 30), stickSpec('B', el(1), 30)], teamB: [stickSpec('C', el(2), 30), stickSpec('D', el(3), 30)], seed: i + 1, bots: [5, 5] });
+      startFight({ match: m, arena: ARENAS[i % ARENAS.length]!.id, labels: ['Bot A', 'Bot B'], music: 'fight', input: 'solo', done: () => showLobby() });
+      autopilot(5);
+    },
+    cover: (kind: 'landscape' | 'portrait' | 'square') => showCover(kind),
     platformLog: () => (platform as unknown as { log?: string[] }).log ?? [],
   };
 
   const p = app.profile;
-  if (!p.avatars.length) showTitle(showStarter);
-  else if (!p.tutorialDone) showTitle(tutorialFight);
-  else showTitle(showLobby);
+  // Champion Road is the game's progression; CrazyGames asks for it on load as well as when it changes
+  if (p.champion.cleared.length) platform.reportProgress((p.champion.cleared.length / 41) * 100);
+  // new players land in gameplay: one click on an element starts the first fight (CrazyGames: at most 1 click)
+  if (!p.avatars.length) showStarter();
+  else if (!p.tutorialDone) tutorialFight();
+  else showLobby();
 }
 
 boot().catch((e) => {

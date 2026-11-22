@@ -44,12 +44,9 @@ for (const s of SIZES) {
     await page.goto(`./${q}`);
     await page.evaluate(() => localStorage.clear());
     await boot(page, q);
-    await waitScreen(page, 'title');
+    await waitScreen(page, 'starter');
     await page.waitForTimeout(500);
     const shot = (n: string) => page.screenshot({ path: `${OUT}/${s.name}-${n}.png` });
-    await shot('01-title');
-    await page.getByRole('button', { name: 'Play' }).click();
-    await waitScreen(page, 'starter');
     await shot('02-starter');
     await page.locator('.el-card[data-el="fire"]').click();
     await waitFight(page);

@@ -74,6 +74,7 @@ em { font-style: normal; }
 /* ---- title and starter ---- */
 .title-screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: radial-gradient(ellipse at center, rgba(13, 20, 48, 0.35), rgba(13, 20, 48, 0.85)); text-align: center; padding: 20px; }
 .logo { font-size: clamp(44px, 10vw, 110px); font-weight: 1000; letter-spacing: 2px; line-height: 1; -webkit-text-stroke: 3px #0d1430; paint-order: stroke fill; text-shadow: 0 6px 0 #0d1430, 0 10px 30px rgba(0, 0, 0, 0.5); }
+.logo.small { font-size: clamp(30px, 6vw, 56px); -webkit-text-stroke: 2px #0d1430; margin-top: 4px; }
 .logo-a { color: #fff; }
 .logo-b { color: var(--accent); }
 .tagline { font-size: 1.15em; font-weight: 800; text-shadow: 0 2px 0 #000; }
@@ -297,6 +298,11 @@ em { font-style: normal; }
 .dialog, .pause-panel { min-width: min(380px, 92vw); max-width: 560px; display: flex; flex-direction: column; gap: 10px; text-align: center; word-break: break-word; }
 .pause-panel .btn { width: 100%; }
 .dialog-row { display: flex; justify-content: center; gap: 10px; }
+.dialog-col { display: flex; flex-direction: column; gap: 10px; }
+.dialog-col .btn { width: 100%; }
+.ad-wait { position: fixed; inset: 0; z-index: 90; pointer-events: auto; cursor: progress; }
+.ad-ico { display: inline-block; width: 18px; height: 14px; border-radius: 3px; background: #fff; position: relative; vertical-align: middle; }
+.ad-ico::after { content: ''; position: absolute; left: 7px; top: 3px; border-left: 6px solid #1f6b46; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
 .text-in { font: inherit; font-size: 1.2em; padding: 10px 12px; border-radius: 12px; border: 3px solid #fff; background: #0d1430; color: #fff; user-select: text; -webkit-user-select: text; }
 .toasts { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 30; pointer-events: none; }
 .toast { background: #000d; border: 3px solid #fff; border-radius: 12px; padding: 8px 16px; font-weight: 800; text-align: center; transition: opacity 0.4s; }
@@ -421,3 +427,14 @@ em { font-style: normal; }
   .tutorial { bottom: auto; top: 30%; }
   .banner { top: 28%; }
 }
+
+/* ---- store covers (covers test only) ---- */
+.cover { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.cover-burst { position: absolute; left: 50%; top: 58%; width: 140vmax; height: 140vmax; transform: translate(-50%, -50%); background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.16) 0deg 6deg, transparent 6deg 18deg); -webkit-mask: radial-gradient(circle, #000 0, transparent 60%); mask: radial-gradient(circle, #000 0, transparent 60%); }
+.cover-figs { position: absolute; left: 0; right: 0; bottom: 4%; display: flex; justify-content: center; align-items: flex-end; gap: 0; }
+.cover-figs canvas:first-child { margin-right: -6%; }
+.cover-logo { position: absolute; left: 0; right: 0; top: 6%; text-align: center; font-size: 15vmin; -webkit-text-stroke: 1.2vmin #0d1430; text-shadow: 0 1.4vmin 0 #0d1430, 0 2vmin 5vmin rgba(0, 0, 0, 0.5); }
+.cover-landscape .cover-logo { font-size: 17vh; top: 5%; }
+.cover-portrait .cover-logo { font-size: 15vw; top: 8%; }
+.cover-portrait .cover-figs { bottom: 10%; }
+.cover-square .cover-logo { font-size: 14vw; }

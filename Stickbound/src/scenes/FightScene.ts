@@ -9,6 +9,7 @@ import type { Controller } from '../core/input';
 import { arenaById, FLOOR_Y, WORLD_H, WORLD_W, type ArenaDef } from '../render/arenas';
 import { elementColors, lookOf, poseFor, type ViewState } from '../render/fighterView';
 import { PhaserPen, type Pen } from '../render/pen';
+import { bakeArena } from '../render/bake';
 import { drawStick, solve } from '../render/rig';
 import { drawEffect, drawStatusFx, Particles, wx, wy } from '../render/vfx';
 import { botInput } from '../sim/ai';
@@ -97,14 +98,15 @@ export class FightScene extends Phaser.Scene {
     this.parts = new Particles();
     this.parts.reduced = settings.reducedFlash;
     this.tutorialI = 0;
+    this.revived = false;
+    this.finishing = false;
     this.hitboxes = !!setup.showHitboxes;
     this.texts = [];
   }
 
   create(): void {
     document.body.dataset.screen = 'fight';
-    const bg = this.add.graphics();
-    this.arena.draw(bg, this.arena);
+    bakeArena(this, this.arena);
     this.g = this.add.graphics();
     this.pen = new PhaserPen(this.g);
     this.rim = new RimPen(this.pen, 0xdfe8ff);
@@ -184,16 +186,18 @@ export class FightScene extends Phaser.Scene {
   override update(_t: number, delta: number): void {
     const dt = Math.min(delta, 100);
     if (!this.paused && !this.ended) {
-      const speed = this.m.slowmo > 0 && !settings.reducedMotion ? 0.35 : 1;
+      // test hook: window.__ekTurbo runs the sim faster (memory soak); players never set it
+      const turbo = (window as unknown as { __ekTurbo?: number }).__ekTurbo ?? 1;
+      const speed = (this.m.slowmo > 0 && !settings.reducedMotion ? 0.35 : 1) * turbo;
       this.acc += dt * speed;
       let n = 0;
-      while (this.acc >= 1000 / 60 && n < 4) {
+      while (this.acc >= 1000 / 60 && n < 4 * turbo) {
         this.acc -= 1000 / 60;
         n++;
         this.tick();
       }
     }
-    if (this.m.phase === 'over' && !this.ended) {
+    if (this.m.phase === 'over' && !this.ended && !this.finishing) {
       this.endT += dt;
       if (this.endT > 1700) {
         void this.finish(false);
@@ -496,11 +500,14 @@ export class FightScene extends Phaser.Scene {
   }
 
   private async finish(quit: boolean): Promise<void> {
-    if (this.ended) return;
+    if (this.ended || this.finishing) return;
     if (!quit && this.m.mode === 'zombie' && this.setup.onRevive && !this.revived) {
       this.revived = true;
       this.paused = true;
+      // while the revive offer is open, the end timer must not run (it would end the run behind the dialog)
+      this.finishing = true;
       const ok = await this.setup.onRevive();
+      this.finishing = false;
       this.paused = false;
       if (ok) {
         reviveTeam(this.m);
@@ -516,4 +523,5 @@ export class FightScene extends Phaser.Scene {
   }
 
   private revived = false;
+  private finishing = false;
 }

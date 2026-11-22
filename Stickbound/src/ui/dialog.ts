@@ -55,6 +55,38 @@ export function confirmBox(title: string, text: string, yes = 'Yes', no = 'Cance
   });
 }
 
+/** Several equal-looking choices (same size and style, so no option is pushed). Resolves with the chosen index. */
+export function choiceBox(title: string, text: string, options: { label: string; disabled?: boolean }[]): Promise<number> {
+  return new Promise((resolve) => {
+    const { panel, close } = layer();
+    panel.appendChild(h('h2', '', title));
+    panel.appendChild(h('p', '', text));
+    const row = h('div', 'dialog-col');
+    options.forEach((o, i) => {
+      const b = btn(o.label, () => {
+        close();
+        resolve(i);
+      });
+      b.disabled = !!o.disabled;
+      row.appendChild(b);
+    });
+    panel.appendChild(row);
+    setTimeout(() => row.querySelector<HTMLButtonElement>('button:not([disabled])')?.focus(), 30);
+  });
+}
+
+/** Blocks all input while an ad is requested and shown (an ad request is not instant). */
+export async function blockWhile<T>(fn: () => Promise<T>): Promise<T> {
+  const wrap = h('div', 'ad-wait');
+  wrap.setAttribute('aria-busy', 'true');
+  document.getElementById('ui')!.appendChild(wrap);
+  try {
+    return await fn();
+  } finally {
+    wrap.remove();
+  }
+}
+
 export function infoBox(title: string, lines: string[], ok = 'OK'): Promise<void> {
   return new Promise((resolve) => {
     const { panel, close } = layer();

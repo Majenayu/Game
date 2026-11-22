@@ -3,7 +3,7 @@
 
 import { ELEMENTS, matchup, matchupPct } from '../content/elements';
 import { BASIC, COMBOS, STATUS_IDS, ZOMBIE_MOVES, type Box, type EffectDef, type HitDef, type MoveDef, type StatusId } from '../content/moves';
-import { POWERS_BY_ELEMENT, RANK_DMG, RANK_MP_OFF, RANK_SIZE_PCT, RANK_STATUS_PCT, powerById } from '../content/powers';
+import { POWER_TUNE, POWERS_BY_ELEMENT, RANK_DMG, RANK_MP_OFF, RANK_SIZE_PCT, RANK_STATUS_PCT, powerById } from '../content/powers';
 import { hpFor } from './stats';
 import { IN, type Effect, type Fighter, type FighterSpec, type Match, type Mode, type ZombieKind } from './types';
 
@@ -239,6 +239,7 @@ function damageFor(m: Match, a: Fighter, v: Fighter, base: number, isPower: bool
   let d = Math.floor((base * (100 + atk)) / (100 + def));
   d = Math.floor((d * pct) / 100);
   if (el) d = Math.floor((d * matchupPct(a.spec.element, v.spec.element)) / 100);
+  if (isPower) d = Math.floor((d * POWER_TUNE[a.spec.element]) / 100);
   if (isPower && a.spec.perks.includes('power')) d = Math.floor((d * 110) / 100);
   if (isPower && v.spec.perks.includes('shield')) d = Math.floor((d * 90) / 100);
   if (isPower && v.spec.level >= 30) d = Math.floor((d * 95) / 100);
@@ -1244,10 +1245,10 @@ function stepPickups(m: Match): void {
 
 /** Revive the player's active avatar in Zombie Survival (rewarded ad). */
 export function reviveTeam(m: Match): void {
-  for (const id of m.teams[0].members) {
+  m.teams[0].members.forEach((id, i) => {
     const f = fighterById(m, id)!;
-    Object.assign(f, { down: false, hp: Math.floor(f.hpMax / 2), st: 'idle', invuln: 120, onField: false, koT: 0 });
-  }
+    Object.assign(f, { down: false, hp: Math.floor(f.hpMax / 2), st: i === 0 ? 'idle' : 'bench', invuln: 120, onField: false, koT: 0 });
+  });
   const first = fighterById(m, m.teams[0].members[0]!)!;
   first.onField = true;
   m.teams[0].active = 0;

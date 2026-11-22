@@ -12,6 +12,8 @@ export const RANK_DMG = [0, 100, 110, 120, 130, 145];
 export const RANK_MP_OFF = [0, 0, 2, 4, 6, 8];
 export const RANK_STATUS_PCT = [0, 100, 100, 130, 130, 150];
 export const RANK_SIZE_PCT = [0, 100, 100, 100, 100, 120];
+/** Per-element power damage tuning (percent), fitted from bot-vs-bot balance runs (tools/balance-tune.test.ts). */
+export const POWER_TUNE: Record<ElementId, number> = { fire: 86, water: 138, ice: 76, lightning: 92, wind: 132, earth: 134, leaf: 88, light: 74, gravity: 118, time: 60 };
 
 const H = (dmg: number, stun: number, kbx: number, kby: number, extra: Partial<HitDef> = {}): HitDef => ({
   dmg, stun, block: Math.round(stun * 0.6), kbx, kby, guardDmg: Math.round(dmg * 2.2), ...extra,

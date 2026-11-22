@@ -6,8 +6,7 @@ import { fresh, hooks, waitFight, waitScreen } from './helpers';
 test('page load to first win in under 60 seconds with simple key mashing', async ({ page }) => {
   const t0 = Date.now();
   const errors = await fresh(page);
-  await waitScreen(page, 'title');
-  await page.getByRole('button', { name: 'Play' }).click();
+  await waitScreen(page, 'starter');
   await waitScreen(page, 'starter');
   await page.locator('.el-card[data-el="fire"]').click();
   await waitFight(page);

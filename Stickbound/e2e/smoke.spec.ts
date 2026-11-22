@@ -21,8 +21,7 @@ async function back(page: Page): Promise<void> {
 test('every screen opens and every mode plays without errors', async ({ page }) => {
   test.setTimeout(600_000);
   const errors = await fresh(page, '?fakeads=1');
-  await waitScreen(page, 'title');
-  await page.getByRole('button', { name: 'Play' }).click();
+  await waitScreen(page, 'starter');
   await page.locator('.el-card[data-el="water"]').click();
   await autoWin(page);
   await waitScreen(page, 'results');
@@ -140,6 +139,31 @@ test('every screen opens and every mode plays without errors', async ({ page }) 
   await page.waitForTimeout(2500);
   await quitFight(page);
   await waitScreen(page, 'local');
+  await back(page);
+  await waitScreen(page, 'lobby');
+
+  // Zombie revive: overrun on purpose, the offer shows 3 equal choices, the ad revive brings the squad back
+  await page.locator('.m-zombie').click();
+  await page.getByRole('button', { name: 'Start' }).click();
+  await waitFight(page);
+  await page.waitForTimeout(2500);
+  await page.evaluate(() => {
+    const m = (window as unknown as { __ek: { match: () => { fighters: { team: number; hp: number }[] } } }).__ek.match()!;
+    for (const f of m.fighters) if (f.team === 0) f.hp = 1;
+  });
+  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('dialog').getByRole('button')).toHaveCount(3);
+  await page.getByRole('dialog').getByRole('button', { name: /Watch an ad/ }).click();
+  await expect(page.locator('.banner')).toHaveText('BACK IN!', { timeout: 10_000 });
+  expect(await hooks(page, (h) => h.inFight())).toBe(true);
+  await quitFight(page);
+  await waitScreen(page, 'results');
+  await page.locator('#screens .btn.primary').first().click();
+  for (let i = 0; i < 6 && (await hooks(page, (h) => h.screen())) !== 'zombie'; i++) {
+    await page.locator('#screens .btn.primary').first().click().catch(() => undefined);
+    await page.waitForTimeout(250);
+  }
+  await waitScreen(page, 'zombie');
   await back(page);
   await waitScreen(page, 'lobby');
 
