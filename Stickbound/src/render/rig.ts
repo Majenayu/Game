@@ -172,7 +172,7 @@ export interface DrawOpts {
   time: number;
   /** line weight multiplier (pulses during casts) */
   weight?: number;
-  /** 0..1 MP fill: the joint light strips pulse brighter with more MP */
+  /** 0..1 MP fill: the chest core glows brighter with more MP */
   mp?: number;
   /** boss rig: shoulder plates and a heavier core */
   boss?: boolean;
@@ -228,7 +228,7 @@ function drawFace(pen: Pen, hx: number, hy: number, r: number, face: number, o: 
   } else {
     // eye slits; fierce styles slant inward, sleepy ones are flat and thin
     const tilt = e === 'angry' ? 0.14 : e === 'determined' || style === 5 || style === 2 ? 0.09 : style === 3 ? 0 : 0.04;
-    if (style === 0 || style === 1 || style === 6) {
+    if (!o.el && (style === 0 || style === 1 || style === 6)) {
       const rr = (style === 1 ? 0.17 : 0.13) * r;
       pen.circle(eyeL, ey, rr, W, null);
       pen.circle(eyeR, ey, rr, W, null);
@@ -545,8 +545,8 @@ function drawHands(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: n
   pen.add?.(false);
 }
 
-/** Faces per element (reference sheets): eye slits for fire, ice and leaf, a visor for the rest. */
-const VISOR: Record<ElementId, boolean> = { fire: false, ice: false, leaf: false, water: true, lightning: true, wind: true, earth: true, light: true, gravity: true, time: true };
+/** Faces per element (reference sheets): eye slits for fire, a visor for the rest. */
+const VISOR: Record<ElementId, boolean> = { fire: false, ice: true, leaf: true, water: true, lightning: true, wind: true, earth: true, light: true, gravity: true, time: true };
 
 /** Element signature pieces from the hero sheets, drawn on every avatar of that element. */
 function drawSignature(pen: Pen, j: Joints, face: number, s: number, r: number, w: number, o: DrawOpts, neon: number, hot: number, body: number, a: number, layer: 'back' | 'front'): void {
@@ -578,12 +578,13 @@ function drawSignature(pen: Pen, j: Joints, face: number, s: number, r: number, 
     case 'water': {
       // wavy hair streaming back
       for (let k = 0; k < 3; k++) {
-        let px = hx + face * r * (0.3 - k * 0.35);
-        let py = hy - r * (0.95 - k * 0.12);
-        for (let i = 1; i <= 4; i++) {
-          const nx = px + back * 5 * s;
-          const ny = py + Math.sin(t * 4 + i + k) * 2.5 * s + 1.5 * s;
-          pen.line(px, py, nx, ny, w * (0.55 - i * 0.08), neon, a);
+        let px = hx + face * r * (0.4 - k * 0.4);
+        let py = hy - r * (0.95 - k * 0.15);
+        for (let i = 1; i <= 7; i++) {
+          const nx = px + back * 5.5 * s;
+          const ny = py + Math.sin(t * 4 + i * 0.9 + k) * 3 * s + 1.8 * s;
+          pen.line(px, py, nx, ny, w * (0.8 - i * 0.08), neon, a);
+          if (i > 2) pen.line(px, py, nx, ny, w * (0.3 - i * 0.03), hot, 0.6 * a);
           px = nx;
           py = ny;
         }
@@ -597,6 +598,10 @@ function drawSignature(pen: Pen, j: Joints, face: number, s: number, r: number, 
         const hgt = r * (i === 2 ? 1.05 : i === 1 || i === 3 ? 0.8 : 0.5);
         pen.poly([cx - r * 0.2, hy - r * 0.72, cx + r * 0.2, hy - r * 0.72, cx + (i - 2) * r * 0.08, hy - r * 0.72 - hgt], 0xc8f4ff, 0.95 * a);
         pen.line(cx, hy - r * 0.74, cx + (i - 2) * r * 0.08, hy - r * 0.72 - hgt, 1.2 * s, 0xffffff, a);
+      }
+      for (const [dx, h] of [[-7, 12], [0, 16], [7, 11]] as const) {
+        const sx = j.shoulder[0] + dx * s;
+        pen.poly([sx - 4 * s, j.shoulder[1], sx + 4 * s, j.shoulder[1], sx + dx * 0.3 * s, j.shoulder[1] - h * s], 0xc8f4ff, 0.85 * a);
       }
       break;
     }
@@ -642,13 +647,26 @@ function drawSignature(pen: Pen, j: Joints, face: number, s: number, r: number, 
         pen.poly([x - rr, y, x - rr * 0.5, y - rr * 0.9, x + rr * 0.6, y - rr * 0.8, x + rr, y + rr * 0.1, x + rr * 0.4, y + rr * 0.8, x - rr * 0.6, y + rr * 0.7], 0x5a3a1c, a);
         pen.line(x - rr * 0.5, y - rr * 0.9, x + rr * 0.6, y - rr * 0.8, 1.6 * s, neon, a);
       };
-      rock(j.shoulder[0] + back * 3 * s, j.shoulder[1] + 1 * s, 10 * s);
-      rock(j.aHand[0], j.aHand[1], 6 * s);
+      rock(j.shoulder[0] + back * 5 * s, j.shoulder[1] + 2 * s, 13 * s);
+      rock(j.shoulder[0] - back * 6 * s, j.shoulder[1] - 1 * s, 10 * s);
+      rock((j.aEl[0] + j.aHand[0]) / 2, (j.aEl[1] + j.aHand[1]) / 2, 8 * s);
+      rock((j.bEl[0] + j.bHand[0]) / 2, (j.bEl[1] + j.bHand[1]) / 2, 7 * s);
+      rock(j.aHand[0], j.aHand[1], 8.5 * s);
       pen.poly([hx - r * 0.9, hy - r * 0.45, hx - r * 0.5, hy - r * 1.02, hx + r * 0.5, hy - r * 1.02, hx + r * 0.9, hy - r * 0.45], 0x5a3a1c, a);
       pen.line(hx - r * 0.9, hy - r * 0.45, hx + r * 0.9, hy - r * 0.45, 1.6 * s, neon, a);
       break;
     }
     case 'leaf': {
+      // vines curling round the front forearm
+      const [e1x, e1y] = j.aEl;
+      const [h1x, h1y] = j.aHand;
+      for (let i = 0; i < 6; i++) {
+        const u0 = i / 6;
+        const u1 = (i + 1) / 6;
+        const off = (u: number) => Math.sin(u * Math.PI * 4 + t * 3) * w * 0.7;
+        pen.line(e1x + (h1x - e1x) * u0, e1y + (h1y - e1y) * u0 + off(u0), e1x + (h1x - e1x) * u1, e1y + (h1y - e1y) * u1 + off(u1), 1.4 * s, 0x3fbf4a, a);
+      }
+      pen.circle(e1x + (h1x - e1x) * 0.5, e1y + (h1y - e1y) * 0.5 - w * 0.6, 2.2 * s, 0x7ee36a, null, 0, a);
       // laurel crown: small leaves around the brow
       for (let i = 0; i < 7; i++) {
         const ang = Math.PI * (1.05 + i * 0.15);
@@ -698,9 +716,23 @@ function drawSignature(pen: Pen, j: Joints, face: number, s: number, r: number, 
       }
       pen.circle(gx, gy, gr * 0.78, 0xb8862a, neon, 1.4 * s, a);
       pen.circle(gx, gy, gr * 0.3, body, null, 0, a);
+      // gear pauldron on the front shoulder
+      const px = j.shoulder[0] + face * 3 * s;
+      const py = j.shoulder[1] + 2 * s;
+      for (let i = 0; i < 8; i++) {
+        const ang = -rot * 1.3 + (i / 8) * Math.PI * 2;
+        pen.line(px + Math.cos(ang) * 6 * s, py + Math.sin(ang) * 6 * s, px + Math.cos(ang) * 10 * s, py + Math.sin(ang) * 10 * s, 3 * s, 0xd8a24a, a);
+      }
+      pen.circle(px, py, 7.5 * s, 0xb8862a, neon, 1.4 * s, a);
+      pen.circle(px, py, 3 * s, hot, null, 0, a);
       break;
     }
   }
+}
+/** a mixed toward b by k (0..1) */
+function tint(a: number, b: number, k: number): number {
+  const m = (sh: number) => Math.round(((a >> sh) & 255) * (1 - k) + ((b >> sh) & 255) * k) << sh;
+  return m(16) | m(8) | m(0);
 }
 function ellipseRing(pen: Pen, cx: number, cy: number, rx: number, ry: number, w: number, c: number, a: number): void {
   let px = cx + rx;
@@ -733,11 +765,12 @@ function capeTail(pen: Pen, j: Joints, face: number, s: number, w: number, o: Dr
 
 /** Draws a stick figure in the neon hero style of the reference sheets: a solid dark body with a bright element
  *  outline and soft glow, a dark head with glowing eyes or a visor, a star chest core that flares when casting, the
- *  element's signature piece, the style's silhouette (Striker blades, Warden armour and barrier), light-strip joints
- *  that pulse with MP, plus the Forge cosmetics. */
+ *  element's signature piece, the style's silhouette (Striker blades, Warden armour and barrier), plus the Forge
+ *  cosmetics. */
 export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawOpts): void {
   const style = o.style ?? 'classic';
-  const body = o.zombie ? 0x0e1a10 : BODIES[o.look.body % BODIES.length]!;
+  // the default body takes a faint tint of the element, as on the sheets (bronze earth, violet gravity, teal time)
+  const body = o.zombie ? 0x0e1a10 : o.el && o.look.body === 0 ? tint(BODIES[0]!, o.element, 0.12) : BODIES[o.look.body % BODIES.length]!;
   const wMul = style === 'striker' ? 0.86 : style === 'warden' ? 1.16 : 1;
   const w = THICKNESS[o.look.thick % THICKNESS.length]! * s * (o.weight ?? 1) * 1.22 * wMul;
   const a = o.alpha ?? 1;
@@ -802,14 +835,14 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
     [j.bEl, j.bHand, 1],
   ]);
   group([
-    [j.pelvis, j.neck, 1.15],
+    [j.pelvis, j.neck, style === 'warden' ? 2.1 : style === 'striker' ? 1.55 : 1.8],
     [j.pelvis, j.aKn, 1],
     [j.aKn, j.aFoot, 1],
     [j.shoulder, j.aEl, 1],
     [j.aEl, j.aHand, 1],
   ]);
   // fists
-  for (const [hp, k] of [[j.aHand, 0.95], [j.bHand, 0.9]] as [V2, number][]) {
+  for (const [hp, k] of [[j.aHand, 0.68], [j.bHand, 0.64]] as [V2, number][]) {
     pen.circle(hp[0], hp[1], w * k + ow, neon, null, 0, a);
     pen.circle(hp[0], hp[1], w * k, body, null, 0, a);
   }
@@ -820,9 +853,11 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
       const dx = h1[0] - e1[0];
       const dy = h1[1] - e1[1];
       const l = Math.hypot(dx, dy) || 1;
-      const nx = (-dy / l) * 5 * s;
-      const ny = (dx / l) * 5 * s;
-      pen.poly([e1[0] + dx * 0.1, e1[1] + dy * 0.1, h1[0] + dx * 0.25 + nx * 0.2, h1[1] + dy * 0.25 + ny * 0.2, e1[0] + dx * 0.55 + nx, e1[1] + dy * 0.55 + ny], hot, 0.85 * a);
+      const nx = (-dy / l) * 8 * s;
+      const ny = (dx / l) * 8 * s;
+      const tip = [h1[0] + dx * 0.55 + nx * 0.3, h1[1] + dy * 0.55 + ny * 0.3];
+      pen.poly([e1[0] + dx * 0.05, e1[1] + dy * 0.05, tip[0]!, tip[1]!, e1[0] + dx * 0.6 + nx, e1[1] + dy * 0.6 + ny], neon, 0.55 * a);
+      pen.poly([e1[0] + dx * 0.15, e1[1] + dy * 0.15, tip[0]!, tip[1]!, e1[0] + dx * 0.6 + nx * 0.6, e1[1] + dy * 0.6 + ny * 0.6], hot, 0.9 * a);
     }
     pen.add?.(false);
   }
@@ -831,9 +866,14 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
     const sx = j.shoulder[0];
     const sy = j.shoulder[1];
     const k = o.boss ? 1.25 : 1;
-    pen.poly([sx - 13 * s * k, sy - 5 * s, sx + 13 * s * k, sy - 5 * s, sx + 10 * s * k, sy + 8 * s, sx - 10 * s * k, sy + 8 * s], neon, a);
-    pen.poly([sx - 11 * s * k, sy - 3 * s, sx + 11 * s * k, sy - 3 * s, sx + 8.5 * s * k, sy + 6 * s, sx - 8.5 * s * k, sy + 6 * s], body, a);
-    pen.line(sx - 10 * s * k, sy - 1 * s, sx + 10 * s * k, sy - 1 * s, 1.4 * s, hot, a);
+    // one pad over each shoulder, sloping outward
+    for (const d of [-1, 1]) {
+      const px = sx + d * w * 1.25;
+      const o1 = px + d * 9 * s * k;
+      pen.poly([px - d * 3 * s, sy - 6 * s, o1, sy - 3 * s, o1 + d * 1.5 * s, sy + 6 * s * k, px - d * 2 * s, sy + 4 * s], neon, a);
+      pen.poly([px - d * 1.5 * s, sy - 4.2 * s, o1 - d * 1.6 * s, sy - 1.8 * s, o1 - d * 0.8 * s, sy + 4.2 * s * k, px - d * 0.8 * s, sy + 2.6 * s], body, a);
+      pen.line(px, sy - 2.2 * s, o1 - d * 2 * s, sy - 0.6 * s, 1.3 * s, hot, a);
+    }
   }
   if (o.look.extra === 1) {
     pen.circle(j.aHand[0], j.aHand[1], w * 1.1, null, hot, w * 0.35, a);
@@ -841,17 +881,12 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   }
   if (o.look.extra === 2) pen.line(j.pelvis[0] - w * 1.2, j.pelvis[1] - 2 * s, j.pelvis[0] + w * 1.2, j.pelvis[1] - 2 * s, w * 0.5, neon, a);
   drawSuit(pen, j, s, w, o, neon, hot, a);
-  // light-strip joints: elbows and knees glow, brighter with more MP
-  const pulse = (0.25 + 0.5 * mp) * (0.75 + 0.25 * Math.sin(t * 4 + j.pelvis[0] * 0.01));
-  pen.add?.(true);
-  for (const p of [j.aEl, j.bEl, j.aKn, j.bKn]) pen.circle(p[0], p[1], Math.max(1.2, w * 0.24), hot, null, 0, pulse * a);
-  pen.add?.(false);
   // chest core: a four-point star that flares when casting
   const cx = (j.pelvis[0] + j.neck[0] * 2.2) / 3.2;
   const cy = (j.pelvis[1] + j.neck[1] * 2.2) / 3.2;
   const cr = w * (o.boss ? 1.1 : 0.85) * (1 + cast * 0.5);
   pen.add?.(true);
-  pen.glow?.(cx, cy, (12 + 26 * cast + 6 * mp) * s, neon, (0.55 + 0.35 * cast) * a);
+  pen.glow?.(cx, cy, (12 + 26 * cast + 10 * mp) * s, neon, (0.45 + 0.2 * mp + 0.35 * cast) * a);
   pen.poly([cx, cy - cr, cx + cr * 0.25, cy - cr * 0.25, cx + cr, cy, cx + cr * 0.25, cy + cr * 0.25, cx, cy + cr, cx - cr * 0.25, cy + cr * 0.25, cx - cr, cy, cx - cr * 0.25, cy - cr * 0.25], hot, a);
   pen.circle(cx, cy, cr * 0.3, 0xffffff, null, 0, a);
   pen.add?.(false);
@@ -866,7 +901,8 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   pen.circle(hx, hy, r + ow, neon, null, 0, a);
   pen.circle(hx, hy, r, body, null, 0, a);
   if (o.teamColor !== undefined) pen.circle(hx, hy, r + ow + w * 0.45, null, o.teamColor, w * 0.3, a * 0.9);
-  drawFace(pen, hx, hy, r, face, o, body, !!o.el && VISOR[o.el] && o.look.eyes !== 0 && o.look.eyes !== 1);
+  // the default eye styles (0, 1, 6) take the element's face from its sheet; the other styles stay cosmetic
+  drawFace(pen, hx, hy, r, face, o, body, !!o.el && VISOR[o.el] && (o.look.eyes <= 1 || o.look.eyes === 6));
   if (o.zombie) {
     // cyber zombie: glitching cracks on the head and body
     const gl = Math.floor(t * 9 + hx) % 5 === 0 ? 2 * s : 0;
