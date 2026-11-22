@@ -48,6 +48,13 @@ test('fps during a fight, normal and 4x CPU throttle', async ({ page }) => {
   test.setTimeout(180_000);
   await toLobby(page);
   await page.evaluate(() => (window as unknown as { __ek: Ek }).__ek.botFight(3));
+  // the busiest case: MP kept full, so the bots cast powers (supers included) as often as they can
+  await page.evaluate(() =>
+    setInterval(() => {
+      const m = (window as unknown as { __ek: { match: () => { fighters: { mp: number }[] } | null } }).__ek.match();
+      if (m) for (const f of m.fighters) f.mp = 1000;
+    }, 50),
+  );
   await page.waitForTimeout(5000);
   const normal = await measureFps(page, 10);
   const cdp = await page.context().newCDPSession(page);

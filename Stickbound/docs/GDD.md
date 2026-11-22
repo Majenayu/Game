@@ -45,9 +45,17 @@ Each element is strong against exactly 2 (125% damage) and weak against exactly 
 
 Base stats differ a little per element but every element has the same stat total. Power damage is tuned per element from bot balance runs (DECISIONS_LOG D17).
 
-## 5. Powers
+## 5. Fighting styles and powers
 
-3 per element, unlocked at levels 1, 8 and 20. Each has 5 ranks that rise on their own with level: more damage, less MP, stronger status, and a bigger hitbox at rank 5.
+Every element has 3 fighting styles, and every style has its own 3 powers (90 powers in all), unlocked at levels 1, 8 and 20. Power III of each style is a super move with a cinematic cut-in. Each power has 5 ranks that rise on their own with level: more damage, less MP, stronger status, and a bigger hitbox at rank 5. Two avatars of the same element but different styles share no power.
+
+- **Vanguard (all-rounder):** the set below.
+- **Striker (close range):** flurries, dash-cuts, invincible launchers, fans, rains from above, self-buffs.
+- **Warden (defense and control):** orbiting shields, counter stances, decoys, traps, wall prisons, life drains, wide areas.
+
+The full list of all 90 powers with their mechanics is in `src/content/archetypes.ts` and, as pictures, in `docs/powers-sheet/` (6 frames each from the Power Lab, `?powers=1`). The style is picked when an avatar is made (with a live preview of its 3 powers) and can be changed any time; it never changes stats.
+
+### Vanguard powers
 
 | Element | Power I (Lv 1) | Power II (Lv 8) | Power III (Lv 20) |
 | --- | --- | --- | --- |
@@ -102,6 +110,6 @@ One platform interface (web / itch.io, CrazyGames, Poki). Gameplay start / stop 
 
 ## 12. Targets
 
-- First win in under 60 s from page load (measured 22 s).
+- First win in under 60 s from page load (measured 19 to 24 s).
 - Initial download under 5 MB (measured 1.67 MB, 407 KB gzipped).
-- 60 fps on desktop (measured 144 fps, capped by the monitor; 86 fps with 4x CPU throttle); balance: every element 45 to 55% over 10,000 bot matches (measured 47.3 to 53.8%), rounds 25 to 45 s (measured 43.0 s).
+- 60 fps on desktop (measured 144 fps, capped by the monitor; busiest power fight with 4x CPU throttle: 94 fps average, 71 fps at the 95th percentile); balance: every element 45 to 55% and every element:style 42 to 58% over 10,000 bot matches (measured 46.7 to 51.9% and 44.8 to 54.6%), rounds 25 to 45 s (measured 40.6 s).

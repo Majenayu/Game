@@ -59,3 +59,29 @@ Pushed: `933abd8` and the docs/media commit after it. Published to Pages: `154b5
 | fps headless (software rendering) | 11 fps before the drawing fix; not a real-device number, kept only as a note |
 | Build size | 1.67 MB initial (409 KB gzipped) |
 | Screenshots at 4 sizes | `docs/shots/` refreshed |
+
+## Entry 3: upgrade directive (fighting styles, effects, lobby)
+
+Pushed: `9e29c8d` and the final docs/media commit after it. Published to Pages: `cb39938` in orb-arena-play (build 3).
+
+**M1 Distinct powers.** Every element has 3 fighting styles (Vanguard, Striker, Warden), each with its own 3 powers: 90 powers, all with unique names. New sim mechanics (rains, fans, orbiting shields, counters, decoys, buffs, drains, boomerangs, staggered strikes); 59 of 60 new powers use a mechanic the element's other styles do not. Save migration v1 → v2 (tested with a hand-written v1 save). Style picker with a live preview of the 3 powers when making an avatar, a "Fighting style" button on every avatar, a warning when both squad avatars share element and style. Starter squad and AI squads (Champion Road, Ranked rivals) use mixed styles. Bot AI uses counters and decoys as reactions, buffs, orbits, walls and traps as setups.
+
+**M2 Effects.** New effects system (`src/render/fx.ts`) used by the fight and every canvas preview: per-power charge-up (ground rune, glowing hands, gathering element particles, spotlight with dim), cast burst, layered travel visuals with additive glow, floor light, decals, impact flash, two shockwaves, element debris, freeze-frames and shake scaled to damage, lingering statuses (embers, growing ice crystals, static arcs, vines, bubbles, sand, drips), afterimages on dashes and blinks, per-power wind-up and strike poses, squash/stretch and line-weight pulses, Power III cut-ins (0.65 s, skippable, off with reduced motion). Element languages differ by shape and motion, not only colour. Power Lab at `?powers=1` with pause and frame-step; `docs/powers-sheet/` has a 6-frame sheet for every power; `docs/videos/` has 10 flagship power clips.
+
+**M3 Lobby.** Hero stage with a dusk rooftop, parallax skyline, swaying spotlights, motes and a glowing podium; the two squad avatars breathe, blink, look around and taunt, and a tap plays one of their real powers. Illustrated mode tiles with small animated scenes; hovering one tints the stage and the backdrop. Level ring with XP fill, tier badge, streak flame, coin count-up, news banner, streak chest that opens with sparkles, screen transitions, element swirl into fights, level-up confetti, a Low graphics setting. New players still land straight in the element pick and their first fight.
+
+**Bugs found and fixed:** delayed strikes expired during their warning (Storm Mark, Anchor Drop never landed); the lobby refresh after claiming the streak could override the screen the player had moved to; Power Lab strips stalled for powers that hit on their cast frame.
+
+**Checks run (all fresh for this entry)**
+| Check | Result |
+| --- | --- |
+| Typecheck | pass |
+| Unit tests | 34 / 34 (incl. 90 unique names, no shared powers between styles, mechanic variety, save migration, banned words over all names, 10,000-frame determinism hash) |
+| Balance: 10,000 bot matches, random elements and styles | elements 46.7 to 51.9% (45 to 55), all 30 element:style pairs 44.8 to 54.6% (42 to 58), rounds 40.6 s, 0 draws |
+| Champion Road walkthrough bot | all 41 cleared: 171 champion fights + 105 practice fights, squad level 40, all 10 elements unlocked |
+| Smoke e2e | pass (every screen, every mode, Zombie revive, no console errors) |
+| First-run e2e | local 19.1 s, live Pages 20.4 s |
+| fps, Chrome with GPU, busiest power fight (4 Legend bots, MP kept full) | 143.6 fps (monitor cap), 95th percentile 140.8; 4x CPU throttle 94.3 fps, 95th percentile 71.4, one 389 ms frame when the throttle switched on |
+| Memory soak, 100 bot matches with the new effects | heap 10.3 to 11.2 MB after GC, DOM 183 nodes throughout |
+| Build size | 1.76 MB initial (437 KB gzipped), Power Lab is a separate lazy chunk |
+| Screenshots at 4 sizes | `docs/shots/` (incl. both squad avatars' power lists and the style picker) |

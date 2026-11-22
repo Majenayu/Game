@@ -14,6 +14,12 @@ test('profile a fight', async ({ page }) => {
   await page.getByRole('button', { name: 'Quit fight' }).click();
   await waitScreen(page, 'lobby');
   await page.evaluate(() => (window as unknown as { __ek: { botFight: (i: number) => void } }).__ek.botFight(3));
+  await page.evaluate(() =>
+    setInterval(() => {
+      const m = (window as unknown as { __ek: { match: () => { fighters: { mp: number }[] } | null } }).__ek.match();
+      if (m) for (const f of m.fighters) f.mp = 1000;
+    }, 50),
+  );
   await page.waitForTimeout(4000);
   void hooks;
   const cdp = await page.context().newCDPSession(page);

@@ -48,6 +48,7 @@ describe('powers', () => {
           if (!others.has(mechanicOf(p))) unique++;
         }
       }
+    console.log(`unique mechanics: ${unique}/${total} (${Math.round((unique / total) * 100)}%)`);
     expect(total).toBe(60);
     expect(unique / total).toBeGreaterThanOrEqual(0.6);
   });

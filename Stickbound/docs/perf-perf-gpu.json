@@ -1,40 +1,40 @@
 {
-  "date": "2026-11-22T05:53:01.433Z",
+  "date": "2026-11-22T08:31:16.965Z",
   "soak": [
     {
       "match": 5,
-      "heapMB": 9.5,
-      "dom": 158
+      "heapMB": 10.3,
+      "dom": 183
     },
     {
       "match": 25,
-      "heapMB": 9.9,
-      "dom": 158
+      "heapMB": 10.5,
+      "dom": 183
     },
     {
       "match": 50,
-      "heapMB": 9.1,
-      "dom": 158
+      "heapMB": 10.8,
+      "dom": 183
     },
     {
       "match": 75,
-      "heapMB": 9.6,
-      "dom": 158
+      "heapMB": 11.4,
+      "dom": 183
     },
     {
       "match": 100,
-      "heapMB": 9.8,
-      "dom": 158
+      "heapMB": 11.2,
+      "dom": 183
     }
   ],
   "fps": {
     "normal": {
-      "fps": 144,
+      "fps": 143.6,
       "p5": 140.8,
-      "worstMs": 8
+      "worstMs": 28
     },
     "throttled4x": {
-      "fps": 86.3,
+      "fps": 94.3,
       "p5": 71.4,
       "worstMs": 389
     }

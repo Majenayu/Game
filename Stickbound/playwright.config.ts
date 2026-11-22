@@ -25,6 +25,7 @@ export default defineConfig({
     { name: 'perf', testMatch: /perf\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
     // same tests in a visible window: real GPU rendering instead of headless software rendering
     { name: 'powersheet', testMatch: /powersheet\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 2000, height: 900 }, deviceScaleFactor: 1 } },
+    { name: 'videos', testMatch: /videos\.spec\.ts/, use: { channel: 'chrome', headless: false } },
     { name: 'media', testMatch: /media\.spec\.ts/, use: { channel: 'chrome', headless: false } },
     { name: 'profile', testMatch: /profile\.spec\.ts/, use: { ...devices['Desktop Chrome'], channel: 'chrome', headless: false, viewport: { width: 1366, height: 768 } } },
     { name: 'perf-gpu', testMatch: /perf\.spec\.ts/, use: { ...devices['Desktop Chrome'], channel: 'chrome', headless: false, viewport: { width: 1366, height: 768 } } },

@@ -381,6 +381,8 @@ export class FxRenderer {
   reduced = false;
   hitboxes = false;
   req: FxRequests = { freeze: 0, shake: 0, push: 0, pushX: 0, flash: 0, flashColor: 0xffffff, cutin: null };
+  /** render-only copies of big strikes that sink into the floor after the sim removes them */
+  private linger: { e: Effect; t: number }[] = [];
   private dimK = 0;
   private spotX = 0;
   private spotY = 0;
@@ -389,6 +391,7 @@ export class FxRenderer {
     seed = s;
     this.P.n = 0;
     this.decals.length = 0;
+    this.linger.length = 0;
     this.ghosts.clear();
     this.lastMf.clear();
     this.castFlash.clear();
@@ -396,9 +399,10 @@ export class FxRenderer {
   }
 
   /** Called with the frame time so the particle budget follows the device. */
-  adapt(ms: number, low: boolean): void {
+  adapt(ms: number, low: boolean, last = ms): void {
     if (low) this.quality = 0.35;
-    else if (ms > 19) this.quality = Math.max(0.3, this.quality - 0.04);
+    else if (last > 22) this.quality = Math.max(0.3, this.quality - 0.06);
+    else if (ms > 17.5) this.quality = Math.max(0.3, this.quality - 0.03);
     else if (ms < 15.5) this.quality = Math.min(1, this.quality + 0.005);
     this.P.cap = Math.max(160, Math.floor(MAXP * this.quality));
   }
@@ -701,6 +705,13 @@ export class FxRenderer {
   // ---- layer 3: over everything ---------------------------------------------------------------------------------
   drawOver(pen: Pen, m: Match, time: number): void {
     for (const e of m.effects) if (!isGround(e)) this.drawEffect(pen, m, e, time);
+    for (const l of this.linger) {
+      l.t--;
+      l.e.y += 700;
+      l.e.age = 2;
+      this.drawEffect(pen, m, l.e, time);
+    }
+    if (this.linger.length && this.linger[0]!.t <= 0) this.linger = this.linger.filter((l) => l.t > 0);
     this.P.draw(pen, false);
     pen.add?.(true);
     this.P.draw(pen, true);
@@ -1021,9 +1032,12 @@ export class FxRenderer {
     }
     const age = e.age;
     const life = e.life;
+    if (e.life === 1 && e.kind === 'strike' && LINGER.has(e.look) && this.linger.length < 8) this.linger.push({ e: { ...e, hits: [] }, t: 26 });
     const spin = time * 10 + e.id;
     pen.add?.(true);
-    pen.glow?.(cx, cy, Math.max(w, h) * 0.9 + 20, p.main, 0.45);
+    // the light around an effect: tall strikes light their lower part, not the whole sky
+    const gh = Math.min(h, 220);
+    pen.glow?.(cx, e.kind === 'strike' ? B - gh * 0.5 : cy, Math.min(260, Math.max(w, gh) * 0.9 + 20), p.main, 0.45);
     pen.add?.(false);
     switch (e.look) {
       // ---------------- fire ----------------
@@ -1313,8 +1327,8 @@ export class FxRenderer {
       }
       case 'mountain': {
         // a huge peak falling from above
-        const top = T;
-        pen.poly([L, B, cx - 20, top + 60, cx, top, cx + 30, top + 80, Rr, B], p.main, 0.95);
+        const top = Math.max(T, B - 300);
+        pen.poly([L - 30, B, cx - 40, top + 90, cx, top, cx + 50, top + 110, Rr + 30, B], p.main, 0.95);
         pen.poly([cx - 20, top + 60, cx, top, cx + 10, top + 50], 0xffffff, 0.85);
         pen.poly([L + 20, B, cx, B - 100, Rr - 30, B], p.dark, 0.6);
         if (age === 1) {
@@ -1494,6 +1508,8 @@ export class FxRenderer {
     }
   }
 }
+
+const LINGER = new Set(['mountain', 'pillar', 'geyser', 'press']);
 
 function isGround(e: Effect): boolean {
   return e.groundOnly || e.kind === 'zone' || e.kind === 'trap' || (e.kind === 'wall' && !e.orbitR);

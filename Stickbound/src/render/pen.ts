@@ -105,10 +105,28 @@ export class PhaserPen implements Pen {
   line(x1: number, y1: number, x2: number, y2: number, w: number, color: number, alpha = 1): void {
     this.cur.lineStyle(w, color, alpha);
     this.cur.lineBetween(x1, y1, x2, y2);
-    // round caps
+    // round caps (hairlines do not need them)
+    if (w < 3.2) return;
     this.cur.fillStyle(color, alpha);
     this.disc(x1, y1, w / 2);
     this.disc(x2, y2, w / 2);
+  }
+
+  /** A ring as a triangle strip (strokeCircle goes through Phaser's path code, which is slow). */
+  private ring(x: number, y: number, r: number, w: number): void {
+    if (r <= 0.5) return;
+    const n = r < 10 ? 12 : r < 40 ? 20 : 32;
+    const t = fan(n);
+    const ro = r + w / 2;
+    const ri = Math.max(0, r - w / 2);
+    for (let i = 0; i < n; i++) {
+      const c0 = t[i * 2]!;
+      const s0 = t[i * 2 + 1]!;
+      const c1 = t[i * 2 + 2]!;
+      const s1 = t[i * 2 + 3]!;
+      this.cur.fillTriangle(x + c0 * ro, y + s0 * ro, x + c1 * ro, y + s1 * ro, x + c0 * ri, y + s0 * ri);
+      this.cur.fillTriangle(x + c1 * ro, y + s1 * ro, x + c1 * ri, y + s1 * ri, x + c0 * ri, y + s0 * ri);
+    }
   }
 
   circle(x: number, y: number, r: number, fill: number | null, stroke: number | null, w = 2, alpha = 1): void {
@@ -117,8 +135,8 @@ export class PhaserPen implements Pen {
       this.disc(x, y, r);
     }
     if (stroke !== null) {
-      this.cur.lineStyle(w, stroke, alpha);
-      this.cur.strokeCircle(x, y, r);
+      this.cur.fillStyle(stroke, alpha);
+      this.ring(x, y, r, w);
     }
   }
 
@@ -134,11 +152,20 @@ export class PhaserPen implements Pen {
       this.cur.fillTriangle(points[0]!, points[1]!, points[4]!, points[5]!, points[6]!, points[7]!);
       return;
     }
-    this.cur.beginPath();
-    this.cur.moveTo(points[0]!, points[1]!);
-    for (let i = 2; i < points.length; i += 2) this.cur.lineTo(points[i]!, points[i + 1]!);
-    this.cur.closePath();
-    this.cur.fillPath();
+    // larger shapes as a fan from the centroid (all our shapes are star-shaped around it); no earcut per frame
+    let cx = 0;
+    let cy = 0;
+    const n = points.length / 2;
+    for (let i = 0; i < points.length; i += 2) {
+      cx += points[i]!;
+      cy += points[i + 1]!;
+    }
+    cx /= n;
+    cy /= n;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      this.cur.fillTriangle(cx, cy, points[i * 2]!, points[i * 2 + 1]!, points[j * 2]!, points[j * 2 + 1]!);
+    }
   }
 }
 

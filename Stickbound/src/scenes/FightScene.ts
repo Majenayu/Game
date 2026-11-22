@@ -199,7 +199,7 @@ export class FightScene extends Phaser.Scene {
   override update(_t: number, delta: number): void {
     const dt = Math.min(delta, 100);
     this.frameMs += (dt - this.frameMs) * 0.05;
-    this.fx.adapt(this.frameMs, settings.lowGraphics);
+    this.fx.adapt(this.frameMs, settings.lowGraphics, dt);
     if (this.cutinT > 0) {
       this.cutinT -= dt;
       if (this.cutinT <= 0) this.endCutin();

@@ -8,6 +8,7 @@ import { loadSettings, settings } from './meta/settings';
 import { app, initProfile, saveProfile } from './app/state';
 import { autopilot, currentFight, fightScene, startFight } from './app/fights';
 import { ELEMENT_IDS } from './content/elements';
+import { ARCHETYPE_IDS } from './content/archetypes';
 import { ARENAS } from './render/arenas';
 import { stickSpec } from './sim/stats';
 import { createMatch } from './sim/step';
@@ -120,7 +121,8 @@ async function boot(): Promise<void> {
     /** bot vs bot fight that returns to the lobby (memory soak and fps tests) */
     botFight: (i: number) => {
       const el = (k: number) => ELEMENT_IDS[(i * 3 + k * 7) % ELEMENT_IDS.length]!;
-      const m = createMatch({ mode: 'duel', teamA: [stickSpec('Kira', el(0), 30), stickSpec('Dax', el(1), 30)], teamB: [stickSpec('Mona', el(2), 30), stickSpec('Vito', el(3), 30)], seed: i + 1, bots: [5, 5] });
+      const st = (k: number) => ARCHETYPE_IDS[(i + k * 2) % 3]!;
+      const m = createMatch({ mode: 'duel', teamA: [stickSpec('Kira', el(0), 30, [], false, undefined, st(0)), stickSpec('Dax', el(1), 30, [], false, undefined, st(1))], teamB: [stickSpec('Mona', el(2), 30, [], false, undefined, st(2)), stickSpec('Vito', el(3), 30, [], false, undefined, st(3))], seed: i + 1, bots: [5, 5] });
       startFight({ match: m, arena: ARENAS[i % ARENAS.length]!.id, labels: ['Kira', 'Mona'], music: 'fight', input: 'solo', done: () => showLobby() });
       autopilot(5);
     },

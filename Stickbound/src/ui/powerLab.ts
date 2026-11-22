@@ -29,7 +29,7 @@ export function showPowerLab(): void {
   document.getElementById('game')!.style.display = 'none';
   const params = new URLSearchParams(location.search);
   const playOnly = params.get('play');
-  const root = h('div', 'lab screen');
+  const root = h('div', `lab screen ${playOnly ? 'play' : ''}`);
   document.getElementById('screens')!.replaceChildren(root);
 
   const W = playOnly ? window.innerWidth : Math.min(960, window.innerWidth - 300);

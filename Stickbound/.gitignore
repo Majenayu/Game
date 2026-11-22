@@ -7,3 +7,4 @@ release
 *.log
 .env
 store/raw
+docs/videos/raw

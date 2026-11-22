@@ -8,13 +8,14 @@ Elementick
 
 ## Short description (under 160 characters)
 
-Tag-team stick fighting with 10 elements and 30 powers. Pick your element, build a squad of two, and beat the masked champion Null.
+Tag-team stick fighting: 10 elements, 3 fighting styles each, 90 powers. Build a squad of two and beat the masked champion Null.
 
 ## Description
 
-Elementick is a fast 1v1 stick-figure fighting game. Pick one of 10 elements, team up two fighters, and tag between them mid-fight.
+Elementick is a fast 1v1 stick-figure fighting game. Pick one of 10 elements and a fighting style, team up two fighters, and tag between them mid-fight.
 
-- **10 elements, 30 powers.** Fire, Water, Ice, Lightning, Wind, Earth, Leaf, Light, Gravity and Time. Each beats two and loses to two, so every matchup matters.
+- **10 elements, 3 styles, 90 powers.** Fire, Water, Ice, Lightning, Wind, Earth, Leaf, Light, Gravity and Time, each beating two and losing to two. Play each as a Vanguard all-rounder, a close-range Striker or a Warden who controls the ground with shields, counters and traps.
+- **Super moves.** Every style's third power is a super with its own cinematic: meteor rains, falling mountains, chain lightning, time locks.
 - **Tag team.** Swap fighters at any time. Each has their own health and energy.
 - **No cooldowns.** Powers cost energy and take skill to land. Time a perfect guard to turn defense into offense.
 - **Level up every fighter.** New powers at levels 8 and 20, stronger ranks as you grow, perks to choose at 15, 30 and 45.

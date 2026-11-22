@@ -7,13 +7,13 @@ CrazyGames docs were checked on 2026-11-22: intro, requirements (intro, technica
 
 | What | Where | Notes |
 | --- | --- | --- |
-| Game zip (CrazyGames build) | `Stickbound/release/elementick-crazygames-1.0.0.zip` (run `npm run package` to rebuild) | 0.41 MB, 6 files, `index.html` at the root, relative paths only. Not in git (release/ is ignored); rebuild it from the repo. |
+| Game zip (CrazyGames build) | `Stickbound/release/elementick-crazygames-1.0.0.zip` (run `npm run package` to rebuild) | 0.44 MB, 7 files, `index.html` at the root, relative paths only. Not in git (release/ is ignored); rebuild it from the repo. |
 | Web zip (itch.io or any host) | `Stickbound/release/elementick-web-1.0.0.zip` | Same game without the SDK. Ads off unless `?fakeads=1`. |
 | Cover landscape 16:9 | `Stickbound/store/cover-landscape-1920x1080.png` | Title only, no other text, no border, no icons. |
 | Cover portrait 2:3 | `Stickbound/store/cover-portrait-800x1200.png` | |
 | Cover square 1:1 | `Stickbound/store/cover-square-800x800.png` | |
-| Preview video landscape | `Stickbound/store/preview-landscape-1920x1080.mp4` | 17.6 s, 1.6 MB, no sound, opens on the cover frame. |
-| Preview video portrait | `Stickbound/store/preview-portrait-1080x1620.mp4` | 2:3, 2.1 MB. |
+| Preview video landscape | `Stickbound/store/preview-landscape-1920x1080.mp4` | 17.6 s, 3.0 MB, no sound, opens on the cover frame. |
+| Preview video portrait | `Stickbound/store/preview-portrait-1080x1620.mp4` | 2:3, 3.4 MB. |
 | Screenshots | `Stickbound/store/screenshot-1..5-*.png` | 1920x1080: two fights, lobby, avatars, Champion Road. |
 | Title, description, controls, tags | `Stickbound/docs/STORE_TEXT.md` | |
 
@@ -30,15 +30,15 @@ CrazyGames docs were checked on 2026-11-22: intro, requirements (intro, technica
 
 | Requirement | How Elementick meets it | Checked by |
 | --- | --- | --- |
-| Initial download ≤ 50 MB (≤ 20 MB for the mobile homepage) | 1.67 MB before the first gameplay start (407 KB gzipped) | `tools/size-report.mjs` on every build |
-| ≤ 1500 files, ≤ 250 MB | 6 files, 1.68 MB | `tools/package.mjs` |
+| Initial download ≤ 50 MB (≤ 20 MB for the mobile homepage) | 1.76 MB before the first gameplay start (437 KB gzipped) | `tools/size-report.mjs` on every build |
+| ≤ 1500 files, ≤ 250 MB | 7 files, 1.76 MB | `tools/package.mjs` |
 | Relative paths | Vite `base: './'`; the packager rejects absolute paths in `index.html` | `tools/package.mjs` |
 | Chrome / Edge, mouse + keyboard + touch | Keyboard, gamepad and touch controls | smoke e2e, screenshots at 4 sizes |
 | Touch controls from CrazyGames device info, not touch detection | `user.systemInfo.device.type` decides; outside CrazyGames a fine pointer keeps keyboard layout | code review (`src/ui/touchPad.ts`) |
 | `user-select: none` | Set on `body` | `src/ui/styles.css` |
 | iOS audio resume | AudioContext resumed on `touchend` / click when suspended or interrupted | code review (`src/main.ts`, `src/audio/synth.ts`) |
 | Same physics at 144 / 165 Hz | Fixed 60 Hz simulation with an accumulator | determinism test, fps test at 144 Hz |
-| Land in gameplay (≤ 1 click) | Element pick → fight | first-run e2e: first win 22 s after load |
+| Land in gameplay (≤ 1 click) | Element pick → fight (the new lobby is only for returning players) | first-run e2e: first win 19 to 24 s after load |
 | No custom fullscreen button, no cross-promotion, no external links | None in the game | code review |
 | PEGI 12 | Cartoon stick figures, no blood, no chat | content review |
 | English | All text in English | banned-word test reads all of it |
