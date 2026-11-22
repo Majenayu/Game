@@ -3,7 +3,7 @@
 import { ELEMENT_IDS, ELEMENTS } from '../content/elements';
 import { AURA_NAMES, AURAS, BACKS, DEFAULT_LOOK, HANDS, HATS, SUITS, WIN_POSES, type Look } from '../content/looks';
 import { CanvasPen } from '../render/pen';
-import { drawStick, POSES, solve } from '../render/rig';
+import { drawStick, mix, POSES, solve, walkPose, type Pose } from '../render/rig';
 import { makeCanvas } from './powerPreview';
 export function showRigSheet(): void {
   document.body.dataset.screen = 'lab';
@@ -106,4 +106,58 @@ export function showHeroSheet(): void {
       ctx.fillText(`${e.name} ${['Vanguard', 'Striker', 'Warden'][row]}`, col * CW + 10, row * CH + 22);
     });
   });
+}
+/** Reference-size compare page (?powers=1&rigs=compare&el=fire|lightning&style=classic): draws the game hero at the
+ *  same height and the same panel positions as the Gemini sheet (1376x768), so tools/herocompare3.ps1 can overlay them. */
+export function showCompareSheet(elId: string, style: 'classic' | 'striker' | 'warden'): void {
+  document.body.dataset.screen = 'lab';
+  document.getElementById('game')!.style.display = 'none';
+  const W = 1376;
+  const H = 768;
+  const c = document.createElement('canvas');
+  c.id = 'cmp';
+  c.width = W;
+  c.height = H;
+  c.style.width = `${W}px`;
+  c.style.height = `${H}px`;
+  document.getElementById('screens')!.replaceChildren(c);
+  const ctx = c.getContext('2d')!;
+  const pen = new CanvasPen(ctx);
+  const el = ELEMENT_IDS.find((e) => e === elId) ?? 'fire';
+  const e = ELEMENTS[el];
+  const S = 270 / 142;
+  type Cell = [number, number, Pose, 'angry' | 'determined' | 'happy', number];
+  const idle = POSES.idle!;
+  const stand: Pose = { ...idle, lean: 0, hipY: 62, aSh: 8, aEl: -6, bSh: -8, bEl: -6, aHip: 12, aKn: 3, bHip: -10, bKn: 3 };
+  const cells: Record<string, Cell[]> = {
+    fire: [
+      [160, 365, stand, 'determined', 0.4],
+      [395, 365, walkPose(0.9, false), 'angry', 0.4],
+      [610, 365, POSES.jab1!, 'angry', 0.6],
+      [910, 365, POSES.guard!, 'determined', 0.4],
+      [160, 705, mix(POSES.guard!, idle, 0.4), 'determined', 0.4],
+      [440, 705, POSES.cast!, 'angry', 0.8],
+      [910, 705, POSES.horse!, 'angry', 1],
+      [1215, 705, POSES.cheer!, 'happy', 0.5],
+    ],
+    lightning: [
+      [160, 345, walkPose(0.3, false), 'determined', 0.4],
+      [400, 345, walkPose(0.9, false), 'angry', 0.5],
+      [620, 345, POSES.jab1!, 'angry', 0.7],
+      [1215, 415, POSES.win0!, 'happy', 0.5],
+      [170, 695, POSES.guard!, 'determined', 0.4],
+      [430, 695, mix(POSES.jab2_w!, POSES.guard!, 0.3), 'determined', 0.5],
+      [910, 695, POSES.power!, 'angry', 1],
+    ],
+  };
+  ctx.fillStyle = '#1b1c25';
+  ctx.fillRect(0, 0, W, H);
+  for (const [x, y, pose, expr, aura] of cells[el] ?? cells.fire!) {
+    ctx.globalCompositeOperation = 'source-over';
+    pen.poly(Array.from({ length: 20 }, (_, i) => [x + Math.cos((i / 20) * Math.PI * 2) * 0.225 * 270, y + 4 + Math.sin((i / 20) * Math.PI * 2) * 9]).flat(), 0x000000, 0.35);
+    const j = solve(pose, x, y, 1, S);
+    const o = { look: { ...DEFAULT_LOOK, back: 0, thick: 1 }, element: e.color[0], elementLight: e.color[1], expression: expr, aura, time: 1.7, cloth: [] as { x: number; y: number }[], mp: 0.8, el, style };
+    for (let i = 0; i < 60; i++) drawStick(pen, j, 1, S, { ...o, alpha: 0, time: 1.7 - (60 - i) / 60 });
+    drawStick(pen, j, 1, S, o);
+  }
 }

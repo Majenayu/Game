@@ -64,7 +64,9 @@ async function boot(): Promise<void> {
     platform.loadingStop();
     if (new URLSearchParams(location.search).has('rigs')) {
       const sheets = await import('./ui/rigSheet');
-      if (new URLSearchParams(location.search).get('rigs') === 'heroes') sheets.showHeroSheet();
+      const q = new URLSearchParams(location.search);
+      if (q.get('rigs') === 'compare') sheets.showCompareSheet(q.get('el') ?? 'fire', (q.get('style') ?? 'classic') as 'classic');
+      else if (q.get('rigs') === 'heroes') sheets.showHeroSheet();
       else sheets.showRigSheet();
       return;
     }

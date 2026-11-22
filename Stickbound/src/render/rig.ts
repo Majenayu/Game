@@ -6,6 +6,7 @@ import { BODIES, THICKNESS } from '../content/looks';
 import type { Pen } from './pen';
 import type { ElementId } from '../content/elements';
 import type { Archetype } from '../content/archetypes';
+import { drawHero, NEW_RENDERER } from './hero/draw';
 
 export interface Pose {
   lean: number; // torso, degrees from vertical (+ = forward)
@@ -69,6 +70,8 @@ export const POSES: Record<string, Pose> = {
   push: P(22, 58, 0, 90, -6, 85, -6, 30, 12, -28, 10),
   spin_w: P(0, 60, 0, 90, -10, -90, 10, 30, 40, -20, 30),
   spin: P(0, 62, 0, 95, 0, -95, 0, 95, 0, -40, 20),
+  horse: P(0, 55, -4, 70, -118, 62, -122, 34, 14, -34, -14),
+  cheer: P(0, 62, -6, 155, -6, -155, 6, 12, 2, -12, 2),
   zombie: P(14, 58, 18, 82, -6, 76, -10, 12, 16, -10, 18),
 };
 
@@ -254,7 +257,7 @@ function drawFace(pen: Pen, hx: number, hy: number, r: number, face: number, o: 
   else if (e === 'shocked' || e === 'scared') pen.circle(ex, my, r * 0.12, null, W, w * 0.45);
   else if (e === 'smug' || o.look.mouth === 4) pen.line(ex - r * 0.22, my + r * 0.02, ex + r * 0.2, my - r * 0.07, w * 0.5, W, 0.85);
 }
-function drawHat(pen: Pen, j: Joints, r: number, face: number, hat: number, ink: number, el: number, w: number, light: number): void {
+export function drawHat(pen: Pen, j: Joints, r: number, face: number, hat: number, ink: number, el: number, w: number, light: number): void {
   const [hx, hy] = j.head;
   switch (hat) {
     case 1: // headband
@@ -358,7 +361,7 @@ function hex(pen: Pen, x: number, y: number, r: number, w: number, c: number, a:
 }
 
 /** Back pieces 4 to 8 (the futuristic ones); 1 to 3 are cloth and drawn with springs. */
-function drawTech(pen: Pen, j: Joints, face: number, s: number, w: number, o: DrawOpts, ink: number, el: number, light: number, a: number): void {
+export function drawTech(pen: Pen, j: Joints, face: number, s: number, w: number, o: DrawOpts, ink: number, el: number, light: number, a: number): void {
   const back = o.look.back;
   const t = o.time;
   const sx = j.shoulder[0] - face * w * 0.9;
@@ -435,7 +438,7 @@ function drawTech(pen: Pen, j: Joints, face: number, s: number, w: number, o: Dr
 }
 
 /** Suit patterns: light strips on the dark body. */
-function drawSuit(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: number, light: number, a: number): void {
+export function drawSuit(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: number, light: number, a: number): void {
   const suit = o.look.suit ?? 0;
   if (!suit) return;
   const sw = Math.max(1.2, w * 0.32);
@@ -490,7 +493,7 @@ function drawSuit(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: nu
 }
 
 /** Hand effects. */
-function drawHands(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: number, light: number, a: number, cast: number): void {
+export function drawHands(pen: Pen, j: Joints, s: number, w: number, o: DrawOpts, el: number, light: number, a: number, cast: number): void {
   const hand = o.look.hand ?? 0;
   if (!hand) return;
   const t = o.time;
@@ -768,6 +771,7 @@ function capeTail(pen: Pen, j: Joints, face: number, s: number, w: number, o: Dr
  *  element's signature piece, the style's silhouette (Striker blades, Warden armour and barrier), plus the Forge
  *  cosmetics. */
 export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawOpts): void {
+  if (o.el && !o.zombie && !o.boss && !LEGACY_ART && NEW_RENDERER.has(o.el)) return drawHero(pen, j, face, s, o);
   const style = o.style ?? 'classic';
   // the default body takes a faint tint of the element, as on the sheets (bronze earth, violet gravity, teal time)
   const body = o.zombie ? 0x0e1a10 : o.el && o.look.body === 0 ? tint(BODIES[0]!, o.element, 0.12) : BODIES[o.look.body % BODIES.length]!;
@@ -919,3 +923,6 @@ export function drawStick(pen: Pen, j: Joints, face: number, s: number, o: DrawO
   drawSignature(pen, j, face, s, r, w, o, neon, hot, body, a, 'front');
   drawHat(pen, j, r, face, o.look.hat, body, neon, w, hot);
 }
+
+/** ?legacyart=1 draws the old heroes (for before and after captures) */
+const LEGACY_ART = typeof location !== 'undefined' && /legacyart/.test(location.search);

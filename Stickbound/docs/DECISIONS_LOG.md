@@ -49,3 +49,10 @@ The owner's autonomous build directive says: never ask, pick the best option, lo
 | D42 | **Floor reflection is the fighters drawn again in a flat element tint, mirrored about the floor line at 20% alpha; bloom is Phaser's camera bloom at low strength, High only; time and supers grade the screen with a camera colour matrix (WebGL only).** | Render-to-texture reflections; full-strength bloom. | Cheap and readable. Full bloom blurred the stick figures in the first review shots, so it runs at 0.3 strength. |
 | D43 | **Fighters get an element-tinted rim** (the old white rim on dark arenas, now on every arena, mixed with the element light colour) and a light pool on the floor in their element colour. | White rim only. | All ten arenas are dark; the tint keeps the two fighters apart and ties them to their element. |
 | D44 | **Power previews and the Power Lab draw the real arenas** (each element in a matching arena; `?arena=<id>` or `none` overrides). Small menu previews keep a plain neon stage. | Plain background everywhere. | The contact sheets must show powers inside the new arenas to check that none gets lost against its background; small cards would bake textures for nothing. |
+
+## D-art3: new hero renderer (src/render/hero/)
+- Technique: sampled quadratic curves through the existing 14 joints, drawn through the shared Pen (works for Phaser and canvas). Outline, hot inner line and fill passes per merged silhouette; glow from baked sprites placed along limbs (no additive stroke overlap). Technique B (baked vector atlas) not tried yet.
+- Reference flame height: the Gemini super panel is about 1.3 H tall, not 2 H as the prompt says; the reference wins, current flame is 1.75 H.
+- Render-only: arms drawn 22% longer than the sim rig, head sits 30% closer to the torso. Sim joints, hitboxes and balance are unchanged.
+- Old renderer stays for the other 8 elements, zombies and bosses. ?legacyart=1 forces it for before and after captures.
+- Smoke test e2e/smoke.spec.ts fails at the Forge step 'Next Hat / hair' on the unchanged baseline too (checked by stashing and rebuilding); not caused by this work.
