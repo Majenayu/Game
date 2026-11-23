@@ -1,28 +1,87 @@
 /**
  * The screens ARE the owner's reference pictures in gemini/extra/, shown as they are, with click areas over the
- * buttons in each picture. Nothing is redrawn. Hovering a button outlines it; clicks go where the button says.
+ * buttons in each picture. Nothing is redrawn; live values (names, levels, coins, the player's own heroes) are painted
+ * over the picture in its own colours (see lobby.ts). Hovering a button outlines it; clicks go where the button says.
  * Add ?boxes=1 to the address to see every click area.
+ * The pictures carry the generator's small sparkle mark in the bottom-right corner; cleanMark() takes it out when a
+ * picture loads by reversing the mark's blend (alpha map below, measured on a flat part of element-icons.png).
  */
 import { nav, pages, type Page, type PageName } from './nav';
-import { ELS, profile, save, type El } from './save';
-import { C, H, W, chamfer, click, input, neon, region, text, type G } from './ui';
+import { profile, save } from './save';
+import { C, H, W, chamfer, input, neon, region, text, type G } from './ui';
 
-const imgs = new Map<string, HTMLImageElement>();
-export function loadRef(name: string): Promise<HTMLImageElement> {
-  const hit = imgs.get(name);
-  if (hit?.complete) return Promise.resolve(hit);
-  return new Promise((res, rej) => {
+// ---------------------------------------------------------------- the sparkle mark
+const MARK_SIZE = 72;
+const MARK_B64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAAACXBIWXMAAAPoAAAD6AG1e1JrAAADEklEQVRoge2awW7iMBCGfaFiOICE8wJFKigVYI5NqNrKNiKUOO//OJWYXWvkCXSlpU0c+TtEeBqq/PlnxnaCEIlEIpFIJBKJRNeYC2JgZFnmLmRZJobEZrNxzjVN8/z8LIaEtRYdq6pKDAYpJapqmmZQ2aiUOp/PdV3jsSgKMQAAAPV4nHPj8VjEzm63qxlKKRE1k8kE6wqPlLgrzRgTCPMf9vu9iJTlcokaeCpi/PHxUUQHAHhJXp7vIhg5Ho/T6VREBABorZ1zVMn5QmCdMWY0GolYeHt78xVF8Z3DD5umiabYlFLojz+iY7zGfDyC7r/b7WhPp5L4NE2P/dU2Go3KsgwmK19dvDfSc7D8Xl9fJ5OJ6BWz2cwYQ4uHlhMf1nVNC8/rtNb2SNtisaiqKvDK90DqG83M4GQaXC6XHUuSUhZFQa+ez8i8xgKprWitAaADSQCw3W6vXVZrOfkh1RPEA+uUUr+3D8iyDJvEjUuncZqBeOncKL9bC/6Eke12K6X8KT1SyjzPq6pqdYD2wGD1xC+Uns+FBfns74vWOs/zO+8JjDHUAVrxNMI10yDdRAeV5r36/PwMmhD/t1rrewrjArxXfCVB8/OaOdem72uO+Yi19m7ChBDz+TzPc/+w6YaGoIPz7Aoc42XZev7pdMrz/GeLDVeDPNnoZdE7HZhMv/itKudcURQ/qCcAAJRS1+z69vbzrVrrV3613VMAwFrb6tgNW7jVvN+UZTmfz0W3PD09tZoWVFGw1LgmvqqqHj0yGI/H2Dm5Y60CeIniUGs9m81ErwCA9/d3Phnw7senMhy+vLyIWDaaSDBHB00Ch/3daN7WRhXyzhGBKqQsSz6J0XUwjX98fIhYeHh4oMvLIP2o5n5tmf+F6XTKt9W0qPBDN7vJ/2SxWFA9TdME1q1WKxEp5d/nVvxty+FwEAN4SUtB06JMQgpdK/tUjKa/3wAA+Ao4eruQ/X5PU3EIdgU/yxnCS9qA0+mENXbnJxads16vsbqG9pMjeen7dV0PKg8Re+HPIJFIJBKJRCKREJ3xBapR2OwNpBb2AAAAAElFTkSuQmCC';
+let markAlpha: Float32Array | null = null;
+function loadMark(): Promise<Float32Array> {
+  if (markAlpha) return Promise.resolve(markAlpha);
+  return new Promise((res) => {
     const im = new Image();
-    im.onload = () => res(im);
-    im.onerror = () => rej(new Error(`missing gemini/extra/${name}.png`));
-    im.src = new URL(`../extra/${name}.png`, import.meta.url).href;
-    imgs.set(name, im);
+    im.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = MARK_SIZE;
+      const x = c.getContext('2d')!;
+      x.drawImage(im, 0, 0);
+      const d = x.getImageData(0, 0, MARK_SIZE, MARK_SIZE).data;
+      const a = new Float32Array(MARK_SIZE * MARK_SIZE);
+      for (let i = 0; i < a.length; i++) a[i] = d[i * 4] / 255;
+      markAlpha = a;
+      res(a);
+    };
+    im.onerror = () => res(new Float32Array(MARK_SIZE * MARK_SIZE));
+    im.src = `data:image/png;base64,${MARK_B64}`;
   });
 }
-export const ref = (name: string): HTMLImageElement | undefined => imgs.get(name);
+/** takes the sparkle mark out of a picture (centre 120 px in from the right and bottom edges) */
+export async function cleanMark(c: HTMLCanvasElement): Promise<void> {
+  const a = await loadMark();
+  const x = c.getContext('2d', { willReadFrequently: true })!;
+  const ox = c.width - 120 - MARK_SIZE / 2;
+  const oy = c.height - 120 - MARK_SIZE / 2;
+  if (ox < 0 || oy < 0) return;
+  const img = x.getImageData(ox, oy, MARK_SIZE, MARK_SIZE);
+  const d = img.data;
+  for (let i = 0; i < a.length; i++) {
+    const k = a[i];
+    if (!k) continue;
+    for (let ch = 0; ch < 3; ch++) d[i * 4 + ch] = Math.max(0, Math.min(255, Math.round((d[i * 4 + ch] - k * 255) / (1 - k))));
+  }
+  x.putImageData(img, ox, oy);
+}
+
+// ---------------------------------------------------------------- pictures
+const imgs = new Map<string, HTMLCanvasElement>();
+const loading = new Map<string, Promise<HTMLCanvasElement>>();
+export function loadRef(name: string): Promise<HTMLCanvasElement> {
+  const hit = imgs.get(name);
+  if (hit) return Promise.resolve(hit);
+  const busy = loading.get(name);
+  if (busy) return busy;
+  const p = new Promise<HTMLCanvasElement>((res, rej) => {
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = im.naturalWidth;
+      c.height = im.naturalHeight;
+      c.getContext('2d', { willReadFrequently: true })!.drawImage(im, 0, 0);
+      void cleanMark(c).then(() => {
+        imgs.set(name, c);
+        res(c);
+      });
+    };
+    im.onerror = () => rej(new Error(`missing gemini/extra/${name}.png`));
+    im.src = new URL(`../extra/${name}.png`, import.meta.url).href;
+  });
+  loading.set(name, p);
+  return p;
+}
+export const ref = (name: string): HTMLCanvasElement | undefined => imgs.get(name);
 const showBoxes = new URLSearchParams(location.search).has('boxes');
 
-interface Spot {
+// ---------------------------------------------------------------- click areas
+export interface Spot {
   x: number;
   y: number;
   w: number;
@@ -32,14 +91,17 @@ interface Spot {
   round?: boolean;
   /** stays outlined (the picked card, item or option) */
   on?: () => boolean;
+  /** greyed out and not clickable */
+  off?: () => boolean;
 }
-const S = (x: number, y: number, w: number, h: number, act: () => void, o: Partial<Spot> = {}): Spot => ({ x, y, w, h, act, ...o });
-const go = (p: PageName) => () => nav.go(p);
+export const S = (x: number, y: number, w: number, h: number, act: () => void, o: Partial<Spot> = {}): Spot => ({ x, y, w, h, act, ...o });
+export const go = (p: PageName) => () => nav.go(p);
 let toast = '';
 let toastT = 0;
-function say(s: string): void {
+/** a short message at the bottom of the screen */
+export function say(s: string, frames = 150): void {
   toast = s;
-  toastT = 100;
+  toastT = frames;
 }
 function outline(g: G, s: Spot, col: string, strong: boolean): void {
   g.save();
@@ -54,18 +116,28 @@ function outline(g: G, s: Spot, col: string, strong: boolean): void {
   neon(g, col, strong ? 3 : 2, 18);
   g.restore();
 }
-/** draws the picture, its click areas and the hover outline */
-function drawRef(g: G, name: string, spots: Spot[], fit: 'full' | 'portrait' = 'full'): void {
+/** draws a picture (cleaned) to fill the screen */
+export function drawPicture(g: G, name: string, fit: 'full' | 'portrait' = 'full'): void {
   const im = ref(name);
-  if (im) {
-    if (fit === 'portrait') {
-      g.fillStyle = '#05060f';
-      g.fillRect(0, 0, W, H);
-      const w = (im.width / im.height) * H;
-      g.drawImage(im, (W - w) / 2, 0, w, H);
-    } else g.drawImage(im, 0, 0, W, H);
-  }
+  if (!im) return;
+  if (fit === 'portrait') {
+    g.fillStyle = '#05060f';
+    g.fillRect(0, 0, W, H);
+    const w = (im.width / im.height) * H;
+    g.drawImage(im, (W - w) / 2, 0, w, H);
+  } else g.drawImage(im, 0, 0, W, H);
+}
+/** the click areas of a picture with their hover and picked outlines */
+export function drawSpots(g: G, spots: Spot[]): void {
   for (const s of spots) {
+    if (s.off?.()) {
+      g.save();
+      chamfer(g, s.x, s.y, s.w, s.h, 10);
+      g.fillStyle = 'rgba(2,4,12,0.62)';
+      g.fill();
+      g.restore();
+      continue;
+    }
     region(s.x, s.y, s.w, s.h, s.act);
     const hov = input.mx >= s.x && input.mx <= s.x + s.w && input.my >= s.y && input.my <= s.y + s.h;
     if (s.on?.()) outline(g, s, '#ffd24a', true);
@@ -76,19 +148,29 @@ function drawRef(g: G, name: string, spots: Spot[], fit: 'full' | 'portrait' = '
       g.strokeRect(s.x, s.y, s.w, s.h);
     }
   }
-  if (toastT > 0) {
-    toastT--;
-    g.save();
-    g.globalAlpha = Math.min(1, toastT / 20);
-    chamfer(g, W / 2 - 260, H - 92, 520, 52, 10);
-    g.fillStyle = 'rgba(6,14,32,0.92)';
-    g.fill();
-    neon(g, C.cyan, 2, 12);
-    text(g, toast, W / 2, H - 65, { size: 24, align: 'center' });
-    g.restore();
-  }
 }
-function refPage(title: string, name: string, spots: () => Spot[], extra: Partial<Page> = {}, fit: 'full' | 'portrait' = 'full'): Page {
+/** the message box (call last so it sits on top) */
+/** y is the top of the box; pages with buttons at the bottom centre pass a higher one */
+export function drawToast(g: G, y = H - 92): void {
+  if (toastT <= 0) return;
+  toastT--;
+  g.save();
+  g.globalAlpha = Math.min(1, toastT / 20);
+  g.font = `700 24px Bahnschrift, sans-serif`;
+  const w = Math.max(520, g.measureText(toast).width + 60);
+  chamfer(g, W / 2 - w / 2, y, w, 52, 10);
+  g.fillStyle = 'rgba(6,14,32,0.92)';
+  g.fill();
+  neon(g, C.cyan, 2, 12);
+  text(g, toast, W / 2, y + 27, { size: 24, align: 'center' });
+  g.restore();
+}
+export function drawRef(g: G, name: string, spots: Spot[], fit: 'full' | 'portrait' = 'full'): void {
+  drawPicture(g, name, fit);
+  drawSpots(g, spots);
+  drawToast(g);
+}
+export function refPage(title: string, name: string, spots: () => Spot[], extra: Partial<Page> = {}, fit: 'full' | 'portrait' = 'full'): Page {
   return {
     title,
     load: () => loadRef(name).then(() => undefined),
@@ -99,13 +181,13 @@ function refPage(title: string, name: string, spots: () => Spot[], extra: Partia
   };
 }
 /** coins, gear and rank in the shared top bar of the pictures */
-const topRight = (): Spot[] => [S(1118, 14, 180, 44, go('shop')), S(1310, 16, 46, 42, () => ((nav.back = nav.name), nav.go('settings')), { round: true })];
+export const topRight = (): Spot[] => [S(1118, 14, 180, 44, () => say(`${profile.coins.toLocaleString('en-US')} coins. Win fights and claim the Daily Streak to earn more.`)), S(1310, 16, 46, 42, () => ((nav.back = nav.name), nav.go('settings')), { round: true })];
 
-// ---------------------------------------------------------------- index of all screens (a plain link list)
+// ---------------------------------------------------------------- index of all screens (a plain link list, for checks)
 const LIST: Array<[PageName, string]> = [
-  ['title', 'Logo'], ['lobby', 'Lobby'], ['road', 'Champion Road'], ['roster', 'Hero roster'], ['customise', 'Customise'], ['shop', 'Shop'],
-  ['ranked', 'Rank ladder'], ['versus', 'Versus'], ['fight', 'Fight (playable)'], ['pause', 'Pause'], ['victory', 'Victory'], ['levelup', 'Level up'],
-  ['zombie', 'Zombies (playable)'], ['bestiary', 'Zombies sheet'], ['icons', 'Icons'], ['keyart', 'Key art'], ['poster', 'Poster'],
+  ['title', 'Logo'], ['register', 'Register name'], ['starter', 'First hero'], ['partner', 'Pick partner'], ['lobby', 'Lobby'], ['road', 'Champion Road'],
+  ['roster', 'Hero roster'], ['ranked', 'Rank ladder'], ['versus', 'Versus'], ['fight', 'Fight (playable)'], ['pause', 'Pause'], ['victory', 'Victory'],
+  ['levelup', 'Level up'], ['zombie', 'Zombies (playable)'], ['bestiary', 'Zombies sheet'], ['icons', 'Icons'], ['keyart', 'Key art'], ['poster', 'Poster'],
 ];
 pages.gallery = {
   title: 'All screens',
@@ -113,171 +195,24 @@ pages.gallery = {
     g.fillStyle = '#070a1c';
     g.fillRect(0, 0, W, H);
     text(g, 'ELEMENTICK · SCREENS', 60, 60, { size: 40, weight: 800 });
-    text(g, 'Each screen is the reference picture from gemini/extra, with working buttons. Esc comes back here.', 60, 100, { size: 19, col: '#9fc8ff', weight: 500 });
-    LIST.forEach(([p, label], i) => {
+    text(g, 'Each screen is the reference picture from gemini/extra, with working buttons.', 60, 100, { size: 19, col: '#9fc8ff', weight: 500 });
+    const all = [...LIST, ['trial', 'Trial room'] as [string, string]];
+    all.forEach(([p, label], i) => {
       const x = 60 + (i % 4) * 318;
       const y = 140 + Math.floor(i / 4) * 100;
       const hov = input.mx >= x && input.mx <= x + 296 && input.my >= y && input.my <= y + 80;
+      const trial = p === 'trial';
       chamfer(g, x, y, 296, 80, 10);
-      g.fillStyle = hov ? 'rgba(40,90,130,0.9)' : 'rgba(14,34,64,0.9)';
+      g.fillStyle = trial ? 'rgba(90,60,10,0.9)' : hov ? 'rgba(40,90,130,0.9)' : 'rgba(14,34,64,0.9)';
       g.fill();
-      neon(g, C.cyan, 2, 10);
-      text(g, label, x + 20, y + 40, { size: 24 });
-      region(x, y, 296, 80, () => nav.go(p));
+      neon(g, trial ? '#ffd24a' : C.cyan, 2, 10);
+      text(g, label, x + 20, y + 40, { size: 24, col: trial ? '#ffe08a' : C.white });
+      region(x, y, 296, 80, () => (trial ? (location.href = '../trial/') : nav.go(p as PageName)));
     });
-    const x = 60 + (LIST.length % 4) * 318;
-    const y = 140 + Math.floor(LIST.length / 4) * 100;
-    chamfer(g, x, y, 296, 80, 10);
-    g.fillStyle = 'rgba(90,60,10,0.9)';
-    g.fill();
-    neon(g, '#ffd24a', 2, 10);
-    text(g, 'Trial room', x + 20, y + 40, { size: 24, col: '#ffe08a' });
-    region(x, y, 296, 80, () => (location.href = '../trial/'));
   },
 };
 
-// ---------------------------------------------------------------- the pictures
-pages.title = refPage('Title', 'logo-wordmark', () => [S(0, 0, W, H, go('lobby'))]);
-pages.lobby = refPage('Lobby', 'lobby', () => [
-  S(715, 269, 333, 138, go('road')),
-  S(663, 445, 185, 114, go('road')),
-  S(866, 445, 245, 114, go('ranked')),
-  S(1136, 445, 203, 114, go('bestiary')),
-  S(663, 579, 185, 115, () => (location.href = '../trial/')),
-  S(866, 579, 245, 115, () => {
-    nav.match = { p1: 'fire', p2: 'lightning', p2Name: 'Tadan', p2Lv: 18, mode: 'local' };
-    nav.go('versus');
-  }),
-  S(1136, 579, 203, 115, go('roster')),
-  S(1136, 114, 202, 142, () => say('Daily Streak: day 3 of 7. Come back tomorrow.')),
-  S(1136, 276, 202, 150, () => say('Daily Quests: win 3 fights, land 50 combos, play Zombie Survival')),
-  S(95, 610, 205, 52, go('roster')),
-  S(372, 610, 205, 52, go('roster')),
-  S(120, 210, 450, 360, go('roster')),
-  S(304, 15, 152, 48, go('ranked')),
-  S(22, 12, 80, 74, go('customise'), { round: true }),
-  ...topRight(),
-]);
-pages.road = refPage('Champion Road', 'champion-road-map', () => [
-  S(24, 14, 62, 62, go('lobby')),
-  S(1117, 650, 232, 100, () => road()),
-  S(668, 520, 78, 115, () => road(), { round: true }),
-  S(762, 14, 140, 42, go('ranked')),
-  ...topRight(),
-]);
-function road(): void {
-  nav.match = { p1: 'fire', p2: 'lightning', p2Name: 'Tadan', p2Lv: 18, mode: 'road' };
-  nav.go('versus');
-}
-// hero roster: card positions in the picture and the hero on each card
-const CARDS: Array<[number, number, El]> = [
-  [52, 103, 'fire'], [191, 103, 'water'], [331, 103, 'lightning'], [469, 103, 'ice'],
-  [52, 298, 'earth'], [191, 298, 'wind'], [331, 298, 'leaf'], [469, 298, 'light'],
-  [52, 491, 'light'], [191, 491, 'gravity'], [331, 491, 'time'],
-];
-let rosterPick: El = profile.hero;
-pages.roster = refPage('Avatar Roster', 'hero-roster', () => [
-  S(28, 18, 125, 42, go('lobby')),
-  ...CARDS.map(([x, y, el], i) => S(x, y, 126, 178, () => ((rosterPick = el), say(`${el.charAt(0).toUpperCase() + el.slice(1)} picked. Press SELECT.`)), { on: () => rosterPick === el && CARDS.findIndex((c) => c[2] === el) === i })),
-  S(686, 655, 210, 72, () => {
-    profile.hero = rosterPick;
-    save();
-    nav.go('lobby');
-  }),
-  S(1229, 617, 100, 102, () => {
-    if (!profile.squad.includes(rosterPick)) profile.squad[1] = rosterPick;
-    save();
-    say('Added to your squad');
-  }),
-  S(1009, 210, 92, 36, () => say('Class: Vanguard')),
-  S(1108, 210, 92, 36, () => say('Class: Striker')),
-  S(1207, 210, 92, 36, () => say('Class: Warden')),
-  ...topRight(),
-], { enter: () => (rosterPick = profile.hero) });
-// customise: tabs, the 3 x 4 item grid, aura grid, element row, palette, name, create
-let cTab = 0;
-let cItem = 4;
-let cAura = 0;
-let cEl = 0;
-let cCol = 3;
-let cName = '';
-const cSpots = (): Spot[] => {
-  const s: Spot[] = [S(22, 17, 113, 48, go('lobby'))];
-  for (let i = 0; i < 4; i++) s.push(S(53 + i * 95, 160, 80, 54, () => (cTab = i), { on: () => cTab === i }));
-  for (let i = 0; i < 12; i++) s.push(S(69 + (i % 3) * 110, 265 + Math.floor(i / 3) * 111, 97, 98, () => (cItem = i), { on: () => cItem === i }));
-  for (let i = 0; i < 3; i++) s.push(S(1003 + i * 103, 128, 100, 44, () => say(['Auras', 'Effects', 'Colors'][i])));
-  for (let i = 0; i < 9; i++) s.push(S(1007 + (i % 3) * 105, 179 + Math.floor(i / 3) * 106, 94, 94, () => (cAura = i), { on: () => cAura === i }));
-  for (let i = 0; i < 10; i++) s.push(S(485 + i * 45.8, 575, 40, 65, () => ((cEl = i), (profile.hero = ELS[i]), save()), { on: () => cEl === i }));
-  for (let i = 0; i < 10; i++) s.push(S(1005 + (i % 5) * 64, 555 + Math.floor(i / 5) * 81, 54, 54, () => (cCol = i), { round: true, on: () => cCol === i }));
-  s.push(S(512, 648, 352, 42, () => say('Type a name, then press CREATE')));
-  s.push(S(588, 700, 200, 56, () => {
-    profile.name = cName.trim() || profile.name;
-    save();
-    nav.go('roster');
-  }));
-  s.push(...topRight());
-  return s;
-};
-pages.customise = {
-  ...refPage('Character Customization', 'customise-screen', cSpots),
-  enter() {
-    cName = '';
-    cEl = Math.max(0, ELS.indexOf(profile.hero));
-  },
-  key(e) {
-    if (e.code === 'Escape') return nav.go('lobby');
-    if (e.key === 'Backspace') cName = cName.slice(0, -1);
-    else if (e.key.length === 1 && cName.length < 12 && /[\w \-]/.test(e.key)) cName += e.key;
-  },
-  draw(g) {
-    drawRef(g, 'customise-screen', cSpots());
-    if (cName) {
-      // the typed name goes into the picture's name field
-      chamfer(g, 516, 652, 344, 34, 4);
-      g.fillStyle = '#0a1a36';
-      g.fill();
-      text(g, cName + (Math.floor(performance.now() / 500) % 2 ? '|' : ''), 688, 670, { size: 26, align: 'center', col: '#dff8ff' });
-    }
-  },
-};
-// shop: tabs, 4 x 3 item grid with prices from the picture, buy, try on
-const PRICES = [500, 1200, 1200, 1200, 500, 1200, 3000, 3000, 500, 1200, 3000, 3000];
-let shopSel = 7;
-const shopSpots = (): Spot[] => [
-  S(28, 17, 147, 55, go('lobby')),
-  ...[0, 1, 2, 3].map((i) => S(72 + i * 130, 187, 120, 44, () => say(['Visors', 'Capes', 'Auras', 'Trails'][i]))),
-  ...PRICES.map((_, i) => S(71 + (i % 4) * 132, 254 + Math.floor(i / 4) * 155, 117, 140, () => (shopSel = i), { on: () => shopSel === i })),
-  S(836, 573, 321, 138, () => {
-    const id = `shop:${shopSel}`;
-    const price = PRICES[shopSel];
-    if (profile.owned.includes(id)) return say('Already yours, equipped');
-    if (profile.coins < price) return say(`Needs ${price} coins. You have ${profile.coins}.`);
-    profile.coins -= price;
-    profile.owned.push(id);
-    save();
-    say(`Bought for ${price} coins. ${profile.coins} left.`);
-  }),
-  S(1262, 650, 76, 44, () => say('Try on switched'), { round: true }),
-  ...topRight(),
-];
-pages.shop = refPage('Cosmetic Shop', 'shop-screen', shopSpots);
-pages.ranked = refPage('Rank Ladder', 'rank-ladder', () => [
-  S(841, 636, 338, 92, () => {
-    nav.match = { p1: 'fire', p2: 'water', p2Name: 'Root', p2Lv: 22, mode: 'ranked' };
-    nav.go('versus');
-  }),
-  S(22, 12, 80, 74, go('lobby'), { round: true }),
-  ...topRight(),
-]);
-// versus: the picture, then the fight starts by itself (or on a click)
-let vsT = 0;
-pages.versus = {
-  ...refPage('Versus', 'versus-screen', () => [S(0, 0, W, H, go('fight'))]),
-  enter: () => (vsT = 0),
-  step() {
-    if (++vsT > 200) nav.go('fight');
-  },
-};
+// ---------------------------------------------------------------- pictures with plain buttons
 pages.victory = refPage('Victory', 'victory-screen', () => [
   S(748, 619, 340, 104, () => nav.go(nav.result?.score !== undefined ? 'zombie' : 'versus')),
   S(1111, 619, 225, 104, () => nav.go(nav.result?.levelUp ? 'levelup' : 'lobby')),
@@ -307,9 +242,7 @@ function resume(menu: boolean): void {
 }
 pages.pause = { ...refPage('Paused', 'pause-menu', PAUSE(false)), key: (e) => e.code === 'Escape' && resume(false) };
 pages.settings = { ...refPage('Settings', 'pause-menu', PAUSE(true)), key: (e) => e.code === 'Escape' && resume(true) };
-pages.icons = refPage('Icons', 'element-icons', () => [S(0, 0, W, H, go('gallery'))]);
+pages.icons = refPage('Icons', 'element-icons', () => [S(0, 0, W, H, go('lobby'))]);
 pages.keyart = refPage('Key art', 'key-art-landscape', () => [S(0, 0, W, H, go('lobby'))]);
 pages.poster = refPage('Key art portrait', 'key-art-portrait', () => [S(0, 0, W, H, go('lobby'))], {}, 'portrait');
 pages.bestiary = refPage('Zombies', 'zombie-enemies-sheet', () => [S(0, 0, W, H, go('zombie'))], { key: (e) => (e.code === 'Escape' ? nav.go('lobby') : undefined) });
-void click;
-void H;

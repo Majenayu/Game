@@ -7,6 +7,8 @@ import { loadHeroes } from './heroes';
 import { nav, pages, type PageName } from './nav';
 import './play';
 import './refs';
+import './lobby';
+import { profile } from './save';
 import { H, W, click, input } from './ui';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#c')!;
@@ -44,6 +46,7 @@ nav.go = (name: PageName) => {
   history.replaceState(null, '', `?${params.toString()}`);
   document.title = `Elementick · ${page.title}`;
   input.held.clear();
+  if (name !== current) pages[current]?.leave?.(name);
   const els = page.heroes?.() ?? [];
   void Promise.all([loadHeroes(els), page.load?.()]).then(() => {
     current = name;
@@ -52,8 +55,8 @@ nav.go = (name: PageName) => {
     ready = true;
   });
 };
-const first = (new URLSearchParams(location.search).get('page') ?? 'gallery') as PageName;
-nav.go(first in pages ? first : 'gallery');
+const first = (new URLSearchParams(location.search).get('page') ?? 'title') as PageName;
+nav.go(first in pages ? first : 'title');
 
 // ---- input
 const toDesign = (e: { clientX: number; clientY: number }) => ({ x: (e.clientX - ox) / scale, y: (e.clientY - oy) / scale });
@@ -90,7 +93,7 @@ window.addEventListener('keydown', (e) => {
   input.held.add(e.code);
   const page = pages[current];
   if (page.key) page.key(e);
-  else if (e.code === 'Escape' && current !== 'gallery') nav.go('gallery');
+  else if (e.code === 'Escape' && current !== 'lobby') nav.go(profile.registered ? 'lobby' : 'title');
 });
 window.addEventListener('keyup', (e) => input.held.delete(e.code));
 window.addEventListener('blur', () => input.held.clear());

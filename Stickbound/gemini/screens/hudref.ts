@@ -3,8 +3,66 @@
  * gemini/extra/fight-hud.png and zombie-survival-hud.png. Only the live values (bars, names, timer, wave, score)
  * are painted over the picture, on a patch in the picture's own colour.
  */
-import { loadRef, ref } from './refs';
+import { Sound } from '../stages/engine/audio';
+import { drawBackdrop, loadBackdrop, type Backdrop } from '../stages/engine/backdrop';
+import { ARENA_DEFS } from '../stages/engine/registry';
+import { cleanMark, loadRef, ref } from './refs';
+import { profile, type El } from './save';
 import { W, type G } from './ui';
+
+// ---------------------------------------------------------------- arenas with their moving effects and music
+let stage: Backdrop | null = null;
+let stageKey = '';
+let sound: Sound | null = null;
+let heard = 0;
+/** loads the element's arena from gemini/stages (picture, moving effects, sounds, music) */
+export async function useStage(el: El): Promise<void> {
+  const key = `${el}arena`;
+  if (stageKey === key && stage) {
+    if (!sound) {
+      const def = stage.def;
+      sound = new Sound(def.song, def.air);
+      sound.setSfx(profile.sfx > 0.02);
+      heard = 0;
+    }
+    return;
+  }
+  const load = ARENA_DEFS[key] ?? ARENA_DEFS.lightningarena;
+  const def = await load();
+  const b = await loadBackdrop(def);
+  if (b) await cleanMark(b.img);
+  stopMusic();
+  stage = b;
+  stageKey = key;
+  sound = new Sound(def.song, def.air);
+  sound.setVolume(Math.max(0.05, profile.music));
+  sound.setSfx(profile.sfx > 0.02);
+  heard = 0;
+}
+/** starts (or resumes) the arena music; browsers allow it after the first click or key */
+export function startMusic(): void {
+  if (!sound) return;
+  sound.setVolume(Math.max(0.05, profile.music));
+  sound.setMusic(profile.music > 0.02);
+  sound.start();
+}
+export function pauseMusic(): void {
+  void sound?.ctx?.suspend();
+}
+export function stopMusic(): void {
+  sound?.stop();
+  sound = null;
+}
+for (const ev of ['pointerdown', 'keydown'] as const) window.addEventListener(ev, () => (stage && sound && !sound.ctx ? startMusic() : undefined));
+/** draws the current arena: floor at `ground`, with its moving effects and their sounds */
+export function drawStage(g: G, ground: number, frame: number, flash: number, storm: number): void {
+  if (!stage) return drawArena(g);
+  drawBackdrop(g, stage, { ground, stageW: W, camX: W / 2, halfW: W / 2, frame, flash, storm });
+  if (sound?.ctx && stage.def.sounds && frame > heard) {
+    for (const s of stage.def.sounds(heard, frame, storm)) sound.play(s);
+    heard = frame;
+  }
+}
 
 export const ARENA_URL = new URL('../stages/lightningarena/arena.png', import.meta.url).href;
 let arena: HTMLImageElement | null = null;

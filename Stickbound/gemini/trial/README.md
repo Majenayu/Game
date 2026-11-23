@@ -84,14 +84,17 @@ cape and shoulder pads; gravity slit visor, cape and orbit ring; time gear crown
 
 ## Screens (gemini/screens)
 Every mock-up in `gemini/extra/` shown as the picture itself, with click areas over its buttons (`refs.ts`), linked
-from the top of the trial panel. Add `&boxes=1` to see the click areas. The fight and Zombie Survival play on the
-lightning arena picture, with the HUD strip and touch buttons cut from `fight-hud.png` and `zombie-survival-hud.png`
-(`hudref.ts`, `play.ts`).
-Open http://localhost:5190/gemini/screens/ (all screens) or `?page=<name>`: `title`, `lobby`, `road`, `roster`, `customise`,
-`shop`, `ranked`, `versus`, `fight`, `pause`, `settings`, `victory`, `levelup`, `zombie` (add `&wave=10` to start later),
-`bestiary`, `icons`, `keyart`, `poster`. The flow works end to end: lobby, Champion Road or Ranked, versus, a best-of-3
-fight against the AI (or Local 2P), victory with XP and coins, level up, back to the lobby. Coins buy cosmetics in the
-shop (earned in play only). Zombie Survival: endless waves of Walkers, Runners, Spitters, Officers (riot shield, hit
+from the top of the trial panel. Add `&boxes=1` to see the click areas. The Gemini sparkle mark is removed from every
+picture when it loads (`cleanMark` in `refs.ts` reverses the mark's blend). Fights play on the real arenas from
+`gemini/stages` with their music (starts on the first tap or key), with the HUD strip and touch buttons cut from
+`fight-hud.png` and `zombie-survival-hud.png` (`hudref.ts`, `play.ts`).
+Open http://localhost:5190/gemini/screens/ (all screens) or `?page=<name>`: `title`, `register`, `starter`, `partner`,
+`lobby`, `road`, `roster`, `ranked`, `versus`, `fight`, `pause`, `settings`, `victory`, `levelup`, `zombie` (add `&wave=10`
+to start later), `bestiary`, `icons`, `keyart`, `poster`. New players go title, register (type a name), starter (pick
+one hero), a tutorial fight with that hero (Skip allowed), partner (pick a second hero), lobby. The save key is
+`ek.screens.player`; clear it to register again. All skills are unlocked and free in training and the tutorial. From
+the lobby: Champion Road (41 champions), Ranked, versus, a best-of-3 fight against the AI (or Local 2P), victory with
+XP and coins, level up, daily streak and quests. Coins are earned in play only. Zombie Survival: endless waves of Walkers, Runners, Spitters, Officers (riot shield, hit
 from behind) and Bombers, with a boss every 5th wave (Brute: slams shockwaves you jump over and charges; Toxic Titan:
 acid volleys and calls up Walkers). Esc pauses. Heroes use this lab's rig, heads and clips; Lightning uses a
 code-drawn visor head. These are dev pages, so they use the gemini/extra pictures; the `src/` game build does not.

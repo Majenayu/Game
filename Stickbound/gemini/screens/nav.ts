@@ -4,7 +4,7 @@ import type { G } from './ui';
 
 export type PageName =
   | 'gallery' | 'title' | 'lobby' | 'road' | 'customise' | 'roster' | 'versus' | 'fight' | 'victory' | 'levelup'
-  | 'shop' | 'ranked' | 'pause' | 'settings' | 'zombie' | 'bestiary' | 'icons' | 'keyart' | 'poster';
+  | 'ranked' | 'pause' | 'settings' | 'zombie' | 'bestiary' | 'icons' | 'keyart' | 'poster' | 'register' | 'starter' | 'partner';
 export interface Page {
   title: string;
   /** heroes the page needs loaded before it draws */
@@ -12,6 +12,8 @@ export interface Page {
   /** pictures the page needs before it draws */
   load?(): Promise<void>;
   enter?(): void;
+  /** called when another page takes over */
+  leave?(next: PageName): void;
   step?(): void;
   draw(g: G, t: number): void;
   key?(e: KeyboardEvent): void;
@@ -22,7 +24,9 @@ export interface Match {
   p2: El;
   p2Name: string;
   p2Lv: number;
-  mode: 'road' | 'ranked' | 'local' | 'quick' | 'training';
+  mode: 'road' | 'ranked' | 'local' | 'quick' | 'training' | 'tutorial';
+  /** arena element (gemini/stages/<el>arena); default: the opponent's */
+  arena?: El;
 }
 export interface Result {
   winner: 1 | 2;

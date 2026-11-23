@@ -6,12 +6,12 @@
  */
 import { coin, elementCoin, rain } from './art';
 import { fmt, dim } from './common';
-import { drawArena, drawCut, loadHudRefs, patch } from './hudref';
+import { drawArena, drawCut, drawStage, loadHudRefs, patch, pauseMusic, startMusic, stopMusic, useStage } from './hudref';
 import { resumeFlags } from './refs';
-import { Hero, drawEffects, drawFloaters, heroAI, makeWorld, noKeys, stepWorld, type Keys, type World } from './fight';
+import { Hero, MP_ULT, drawEffects, drawFloaters, heroAI, makeWorld, noKeys, stepWorld, type Keys, type World } from './fight';
 import { NAMES } from './heroes';
-import { nav, pages } from './nav';
-import { addXp, profile, save } from './save';
+import { nav, pages, type PageName } from './nav';
+import { addXp, profile, rollDay, save } from './save';
 import { C, H, W, bar, chamfer, cyanButton, goldButton, input, neon, panel, region, text, type G } from './ui';
 import { newZGame, stepZGame, type ZGame } from './zmode';
 
@@ -91,6 +91,7 @@ function newRound(f: FightState | null): FightState {
     ? { ...f, w, a, b, timer: 60 * 60, phase: 'intro', phaseT: 0, round: f.round + 1 }
     : { w, a, b, wins: [0, 0], round: 1, timer: 60 * 60, phase: 'intro', phaseT: 0, comboShow: 0, comboN: 0, comboSide: 1 };
   w.onHit = (by) => {
+    if (by === a) profile.qHits++;
     st.comboN = by.chain;
     st.comboSide = by === a ? 1 : 2;
     if (by.chain >= 2) st.comboShow = 80;
@@ -109,7 +110,11 @@ function finishMatch(f: FightState): void {
     profile.rp = Math.max(0, profile.rp + rp);
   }
   if (m.mode === 'road' && won) profile.road = Math.min(41, profile.road + 1);
-  profile.streak = won ? profile.streak + 1 : 0;
+  if (m.mode !== 'local') {
+    profile.streak = won ? profile.streak + 1 : 0;
+    rollDay();
+    if (won) profile.qWins++;
+  }
   profile.wins += won ? 1 : 0;
   profile.coins += coins;
   const levelUp = addXp(xp);
@@ -129,16 +134,89 @@ function pause(): void {
   nav.back = nav.name;
   nav.go('pause');
 }
+/** training and the tutorial: no clock, no knock-outs, every skill free to use */
+const practice = (): boolean => nav.match.mode === 'training' || nav.match.mode === 'tutorial';
+// ---------------------------------------------------------------- tutorial (first run, with the starting hero)
+interface TutStep {
+  say: string;
+  keys: string;
+  /** frames the action has to be held (walk, guard); 1 = once */
+  hold?: number;
+  done: (a: Hero) => boolean;
+}
+const TUT: TutStep[] = [
+  { say: 'Walk left and right', keys: 'A  /  D', hold: 45, done: (a) => Math.abs(a.vx) > 3 },
+  { say: 'Jump', keys: 'W  or  SPACE', done: (a) => !a.grounded },
+  { say: 'Punch combo: tap attack four times', keys: 'J  J  J  J', done: (a) => a.clipName === 'rising' },
+  { say: 'Heavy strike', keys: 'K', done: (a) => a.clipName === 'heavy' },
+  { say: 'Element dash', keys: 'L', done: (a) => a.clipName === 'dash' },
+  { say: 'Power I: {0}', keys: 'U', done: (a) => a.clipName === a.powerName(0) },
+  { say: 'Power II: {1}', keys: 'I', done: (a) => a.clipName === a.powerName(1) },
+  { say: 'Power III: {2}', keys: 'O', done: (a) => a.clipName === a.powerName(2) },
+  { say: 'Guard: hold it to block', keys: 'S', hold: 30, done: (a) => a.guarding },
+  { say: 'Ultimate: {u}', keys: 'P', done: (a) => a.clipName === 'ult' },
+];
+const tut = { step: 0, held: 0, nice: 0 };
+function tutText(s: TutStep, a: Hero): string {
+  return s.say.replace('{0}', a.kit.powers[0].name).replace('{1}', a.kit.powers[1].name).replace('{2}', a.kit.powers[2].name).replace('{u}', a.kit.ult);
+}
+function stepTutorial(a: Hero): void {
+  if (tut.nice > 0) {
+    if (--tut.nice === 0) {
+      tut.step++;
+      tut.held = 0;
+    }
+    return;
+  }
+  const s = TUT[tut.step];
+  if (!s) return;
+  if (s.done(a)) tut.held++;
+  else if ((s.hold ?? 1) > 1) tut.held = Math.max(0, tut.held - 1);
+  if (tut.held >= (s.hold ?? 1)) tut.nice = 45;
+}
+function tutorialPanel(g: G, f: FightState, t: number): void {
+  const a = f.a;
+  const s = TUT[tut.step];
+  if (!s) {
+    dim(g, 0.55);
+    panel(g, 388, 210, 600, 330, { col: '#ffd24a', cut: 16, brackets: true });
+    text(g, 'TUTORIAL COMPLETE', W / 2, 270, { size: 50, align: 'center', weight: 900, col: '#ffe08a', glow: '#ffb43a', blur: 20 });
+    text(g, `${profile.name}, you are ready to fight with ${NAMES[a.el]}.`, W / 2, 330, { size: 24, align: 'center' });
+    text(g, 'Next: pick a partner hero for your squad.', W / 2, 368, { size: 22, align: 'center', col: '#cfe4ff' });
+    goldButton(g, 508, 420, 360, 76, 'PICK PARTNER', { size: 36, t, act: () => {
+      profile.tutorial = true;
+      save();
+      nav.go('partner');
+    } });
+    return;
+  }
+  const y = 168;
+  panel(g, 388, y, 600, 112, { col: tut.nice > 0 ? C.green : C.cyan, cut: 12, brackets: true });
+  text(g, `TUTORIAL  ${tut.step + 1} / ${TUT.length}`, 410, y + 24, { size: 18, col: '#9fd8ff', weight: 800 });
+  text(g, tutText(s, a), W / 2, y + 56, { size: 30, align: 'center', weight: 800 });
+  if (tut.nice > 0) text(g, 'NICE!', W / 2, y + 92, { size: 26, align: 'center', weight: 900, col: C.green, glow: C.green, blur: 12 });
+  else text(g, s.keys, W / 2, y + 92, { size: 24, align: 'center', weight: 800, col: '#ffd24a' });
+  if ((s.hold ?? 1) > 1 && tut.nice === 0) bar(g, 410, y + 100, 556, 6, tut.held / (s.hold ?? 1), [C.cyanDeep, C.cyan], { glow: false });
+  text(g, 'Skip', 960, y + 24, { size: 16, align: 'right', col: '#9fb8d8' });
+  region(910, y + 10, 60, 28, () => (tut.step = TUT.length));
+}
+
 pages.fight = {
   title: 'Fight',
   heroes: () => [nav.match.p1, nav.match.p2],
-  load: loadHudRefs,
+  load: () => Promise.all([loadHudRefs(), useStage(nav.match.arena ?? nav.match.p2)]).then(() => undefined),
   enter() {
+    startMusic();
     if (resumeFlags.fight && F) {
       resumeFlags.fight = false;
       return;
     }
     F = newRound(null);
+    tut.step = tut.held = tut.nice = 0;
+  },
+  leave(next: PageName) {
+    if (next === 'pause' || next === 'settings') pauseMusic();
+    else stopMusic();
   },
   key(e) {
     if (e.code === 'Escape') pause();
@@ -153,9 +231,16 @@ pages.fight = {
       w.hitstop--;
       return;
     }
-    const local = nav.match.mode === 'local';
+    const mode = nav.match.mode;
+    const local = mode === 'local';
     const ka = f.phase === 'fight' ? read(P1, true) : noKeys();
-    const kb = f.phase === 'fight' ? (local ? read(P2) : heroAI(b, a, w, nav.match.mode === 'road' ? 0.7 + Math.min(0.3, profile.road / 60) : 1)) : noKeys();
+    const kb = f.phase !== 'fight' || practice() ? noKeys() : local ? read(P2) : heroAI(b, a, w, mode === 'road' ? 0.7 + Math.min(0.3, profile.road / 60) : 1);
+    if (practice()) {
+      // every skill free; the sparring dummy gets back up
+      a.mp = MP_ULT;
+      if (a.ko || a.hp < a.maxHp * 0.3) Object.assign(a, { ko: false, hp: a.maxHp, clip: null, clipName: '' });
+      if (b.ko && b.clipName === 'ko' && b.frame >= (b.clip?.frames ?? 1) - 1) Object.assign(b, { ko: false, hp: b.maxHp, clip: null, clipName: '' });
+    }
     a.step(w, ka);
     b.step(w, kb);
     // keep them from walking through each other
@@ -167,9 +252,11 @@ pages.fight = {
       b.x += push * s;
     }
     stepWorld(w, [a, b]);
-    if (f.phase === 'intro' && f.phaseT > 100) {
+    if (f.phase === 'intro' && f.phaseT > (practice() ? 40 : 100)) {
       f.phase = 'fight';
       f.phaseT = 0;
+    } else if (f.phase === 'fight' && practice()) {
+      if (mode === 'tutorial') stepTutorial(a);
     } else if (f.phase === 'fight') {
       f.timer--;
       if (a.ko || b.ko || f.timer <= 0) {
@@ -195,7 +282,7 @@ pages.fight = {
     const sh = profile.shake && !profile.reduced ? w.shake : 0;
     g.save();
     g.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
-    drawArena(g);
+    drawStage(g, FGROUND, w.frame, w.flash / 14, Math.min(1, w.dim / 40));
     drawEffects(g, w, false);
     b.draw(g, w);
     a.draw(g, w);
@@ -218,7 +305,7 @@ pages.fight = {
       g.fillRect(0, 0, W, H);
     }
     fightHud(g, f, t);
-    if (f.phase === 'intro') {
+    if (f.phase === 'intro' && !practice()) {
       const s = f.phaseT < 60 ? `ROUND ${f.round}` : 'FIGHT!';
       const k = (f.phaseT % 60) / 60;
       text(g, s, W / 2, 330, { size: 100 + (1 - k) * 30, align: 'center', weight: 900, italic: true, col: '#ffe08a', stroke: '#4a1a00', sw: 8, glow: '#ffb43a', blur: 30 });
@@ -229,6 +316,10 @@ pages.fight = {
     }
     // touch controls
     fightControls(g);
+    if (nav.match.mode === 'tutorial') tutorialPanel(g, f, t);
+    else if (nav.match.mode === 'training') {
+      text(g, 'TRAINING · every skill is free · the dummy does not hit back · Esc to leave', W / 2, 165, { size: 20, align: 'center', col: '#cfe4ff', stroke: '#02060f', sw: 4 });
+    }
     // pause button
     chamfer(g, W / 2 - 22, 104, 44, 30, 6);
     g.fillStyle = 'rgba(10,20,40,0.8)';
@@ -263,7 +354,7 @@ function fightHud(g: G, f: FightState, t: number): void {
   bar(g, 181, 91, 190, 14, f.b.mp / 100, ['#1a8ad0', '#3fe6ff'], { seg: 2, back: '#050a18' });
   g.restore();
   patch(g, N, 646, 46, 84, 52, 650, 50);
-  text(g, String(Math.max(0, Math.ceil(f.timer / 60))), 688, 73, { size: 52, align: 'center', weight: 800 });
+  text(g, practice() ? '--' : String(Math.max(0, Math.ceil(f.timer / 60))), 688, 73, { size: 52, align: 'center', weight: 800 });
   const pips = (xs: number[], wins: number, sx: number) => {
     patch(g, N, xs[0] - 16, 98, xs[2] - xs[0] + 32, 24, sx, 110);
     xs.forEach((px, i) => {
@@ -304,8 +395,13 @@ let zRewarded = false;
 pages.zombie = {
   title: 'Zombie Survival',
   heroes: () => [profile.hero],
-  load: loadHudRefs,
+  load: () => Promise.all([loadHudRefs(), useStage('lightning')]).then(() => undefined),
+  leave(next: PageName) {
+    if (next === 'pause' || next === 'settings') pauseMusic();
+    else stopMusic();
+  },
   enter() {
+    startMusic();
     if (resumeFlags.zombie && Z) {
       resumeFlags.zombie = false;
       return;
@@ -326,6 +422,8 @@ pages.zombie = {
       const xp = Math.floor(Z.score / 40);
       profile.coins += coins;
       profile.best = Math.max(profile.best, Z.score);
+      rollDay();
+      profile.qZombie++;
       const up = addXp(xp);
       save();
       nav.result = { winner: 2, mode: 'quick', xp, coins, levelUp: up, score: Z.score, wave: Z.wave };
@@ -391,8 +489,9 @@ function zombieHud(g: G, z: ZGame, t: number): void {
   drawCut(g, N, 0, 0, W, 176, 'strip', [560, 900, 128]);
   if (h.el !== 'lightning') elementCoin(g, h.el, 56, 59, 38);
   patch(g, N, 114, 20, 150, 32, 270, 30);
-  text(g, NAMES[h.el], 118, 37, { size: 21 });
-  text(g, `Lv. ${profile.heroLv[h.el]}`, 124 + NAMES[h.el].length * 12, 37, { size: 21, col: '#ffd24a' });
+  const nm = profile.name || NAMES[h.el];
+  text(g, nm, 118, 37, { size: 21 });
+  text(g, `Lv. ${profile.heroLv[h.el]}`, 124 + nm.length * 12, 37, { size: 21, col: '#ffd24a' });
   bar(g, 142, 55, 290, 23, h.hp / h.maxHp, profile.colorblind ? ['#2a6aff', '#7ab8ff'] : ['#3ad84a', '#d8ff4a'], { seg: 10, back: '#050a18' });
   bar(g, 142, 86, 128, 13, h.mp / 100, ['#1a8ad0', '#3fe6ff'], { seg: 3, back: '#050a18' });
   patch(g, N, 584, 34, 208, 52, 590, 38);

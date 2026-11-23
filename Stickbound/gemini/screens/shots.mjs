@@ -6,9 +6,9 @@ import { mkdirSync, existsSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import sharp from 'sharp';
 const MOCK = {
-  title: 'logo-wordmark', lobby: 'lobby', road: 'champion-road-map', roster: 'hero-roster', customise: 'customise-screen', shop: 'shop-screen',
+  title: 'logo-wordmark', lobby: 'lobby', road: 'champion-road-map', roster: 'hero-roster', 
   ranked: 'rank-ladder', versus: 'versus-screen', fight: 'fight-hud', pause: 'pause-menu', victory: 'victory-screen', levelup: 'level-up-popup',
-  zombie: 'zombie-survival-hud', bestiary: 'zombie-enemies-sheet', icons: 'element-icons', keyart: 'key-art-landscape', poster: 'key-art-portrait', gallery: null, settings: null,
+  register: 'logo-wordmark', starter: 'hero-roster', partner: 'hero-roster', zombie: 'zombie-survival-hud', bestiary: 'zombie-enemies-sheet', icons: 'element-icons', keyart: 'key-art-landscape', poster: 'key-art-portrait', gallery: null, settings: null,
 };
 const list = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : Object.keys(MOCK);
 const out = process.argv[3] ?? 'gemini/screens/shots';
@@ -19,6 +19,11 @@ const page = await b.newPage({ viewport: { width: 1376, height: 768 } });
 page.on('pageerror', (e) => errors.push(`${e.message}`));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 const B = process.env.BOXES ? '&boxes=1' : '';
+// a registered player (HERO and MATE pick the squad) for every page but the first-run ones
+const SEED = { registered: true, tutorial: true, name: 'Majen', hero: process.env.HERO ?? 'water', partner: process.env.MATE ?? 'earth', level: 3, xp: 400, coins: 1450 };
+await page.addInitScript((seed) => {
+  if (!/page=(title|register|starter)/.test(location.search) || seed.force) localStorage.setItem('ek.screens.player', JSON.stringify(seed));
+}, SEED);
 const ready = () => page.waitForSelector('body[data-ready="1"]', { timeout: 30000 });
 for (const name of list) {
   const url = name === 'zombie' ? `http://localhost:5191/gemini/screens/?page=zombie&wave=10${B}` : `http://localhost:5191/gemini/screens/?page=${name}${B}`;
