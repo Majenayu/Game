@@ -4,6 +4,7 @@ import { BUILDS, PALETTES, TINT, drawRig, footDrop, jointWorld, lerpPose, loadPa
 import { GROUND, STAGE_H, STAGE_W, bakeStage, drawArena, type Arena } from './stage';
 import { ARENAS, type ArenaDef } from './arena';
 import { Sound } from './audio';
+import { drawBackdrop, loadBackdrop, type Backdrop } from './backdrop';
 import { shellHtml } from './shell';
 
 /**
@@ -775,60 +776,10 @@ function drawFighter(g: CanvasRenderingContext2D, skins: Skins, f: Fighter): voi
   }
 }
 
-/**
- * The arena picture (the owner's reference art) as a fixed backdrop.
- * It is scaled so its floor line sits on GROUND and its top reaches the top of the view;
- * it pans a little slower than the fighters so the floor still feels like the stage.
- */
-interface Backdrop {
-  img: HTMLCanvasElement;
-  /** floor height as a fraction of the picture height */
-  rail: number;
-  fx: unknown;
-}
+/** The arena picture with its effects (engine/backdrop.ts). */
 let def: ArenaDef;
 let backdrop: Backdrop | null = null;
-async function loadBackdrop(): Promise<Backdrop | null> {
-  const img = new Image();
-  img.src = def.image;
-  try {
-    await img.decode();
-  } catch {
-    return null;
-  }
-  const c = document.createElement('canvas');
-  c.width = img.naturalWidth;
-  c.height = img.naturalHeight;
-  const x = c.getContext('2d', { willReadFrequently: true })!;
-  x.drawImage(img, 0, 0);
-  const rail = typeof def.floor === 'number' ? def.floor : def.floor(x.getImageData(0, 0, c.width, c.height));
-  return { img: c, rail, fx: def.bake ? def.bake(c, rail) : null };
-}
-function drawBackdrop(g: CanvasRenderingContext2D, b: Backdrop, camX: number, halfW: number): void {
-  const PAN = def.pan ?? 0.2;
-  // big enough to reach the top of the view and both sides at any camera position
-  const s = Math.max(GROUND / (b.rail * b.img.height), (2 * halfW + 2 * PAN * (STAGE_W / 2) + 40) / b.img.width);
-  const w = b.img.width * s;
-  const h = b.img.height * s;
-  const x = camX - w / 2 - (camX - STAGE_W / 2) * PAN;
-  const y = GROUND - b.rail * h;
-  g.drawImage(b.img, x, y, w, h);
-  // the arena's moving effects, placed in the picture's own pixels (1376 wide)
-  if (def.draw) {
-    g.save();
-    g.translate(x, y);
-    g.scale(s * (b.img.width / 1376), s * (b.img.width / 1376));
-    def.draw(g, b.fx, state.frameNo, state.flash, state.dim / 0.55);
-    g.restore();
-  }
-  const bottom = y + h;
-  // past the picture's bottom edge (tall screens), continue the floor colour
-  g.fillStyle = def.ground;
-  g.fillRect(x - 2000, bottom - 1, w + 4000, 3000);
-  // past the top edge (tall screens), continue the sky
-  g.fillStyle = def.sky;
-  g.fillRect(x - 2000, y - 3000, w + 4000, 3001);
-}function render(g: CanvasRenderingContext2D, stage: Arena, skins: Skins): void {
+function render(g: CanvasRenderingContext2D, stage: Arena, skins: Skins): void {
   const cw = g.canvas.width;
   const ch = g.canvas.height;
   const zoom = Math.min(cw / VIEW_W, ch / VIEW_H) * state.zoom;
@@ -842,7 +793,7 @@ function drawBackdrop(g: CanvasRenderingContext2D, b: Backdrop, camX: number, ha
   const camY = VIEW_H / 2 + (GROUND - 200 - VIEW_H / 2) * push;
   g.setTransform(zoom, 0, 0, zoom, cw / 2 + sx, ch / 2 + sy);
   g.translate(-state.camX, -camY);
-  if (backdrop) drawBackdrop(g, backdrop, state.camX, cw / 2 / zoom);
+  if (backdrop) drawBackdrop(g, backdrop, { ground: GROUND, stageW: STAGE_W, camX: state.camX, halfW: cw / 2 / zoom, frame: state.frameNo, flash: state.flash, storm: state.dim / 0.55 });
   else drawArena(g, stage, state.camX, state.frameNo, state.flash, state.dim / 0.55);
   // the arena darkens for the ultimate
   if (state.dim > 0.01) {
@@ -1118,17 +1069,21 @@ function info(t: string): void {
 /** Builds the page and runs the lab in the given arena. */
 export async function startLab<F>(arena: ArenaDef<F>): Promise<void> {
   def = arena as unknown as ArenaDef;
-  document.title = `Elementick · ${arena.name} Lab`;
+  document.title = `Elementick · Trial Ground · Lightning · ${arena.name}`;
   document.body.innerHTML = shellHtml(def, ARENAS);
   const pick = document.getElementById('arena') as HTMLSelectElement;
   pick.onchange = () => (location.href = `../${pick.value}/`);
   // keep the arena list from taking the game keys
   pick.onkeydown = (e) => e.preventDefault();
+  // the other heroes live in the Trial Ground; keep this arena
+  const hero = document.getElementById('hero') as HTMLSelectElement;
+  hero.onchange = () => (location.href = `../../trial/?el=${hero.value}&arena=${def.id}`);
+  hero.onkeydown = (e) => e.preventDefault();
   const canvas = document.getElementById('c') as HTMLCanvasElement;
   const g = canvas.getContext('2d')!;
   const skins = makeSkins(await loadParts());
   const stage = bakeStage();
-  backdrop = await loadBackdrop();
+  backdrop = await loadBackdrop(def);
   // sound: starts on the first input (browser rule), panel switches, M toggles the music
   const sound = new Sound(def.song, def.air);
   const music = document.getElementById('music') as HTMLInputElement;

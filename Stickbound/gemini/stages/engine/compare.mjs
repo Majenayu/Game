@@ -13,7 +13,7 @@ await page.waitForSelector('body[data-ready="1"]');
 const snap = async (kind, frame) => Buffer.from((await page.evaluate(([k, f]) => window.__snap(k, f), [kind, frame])).split(',')[1], 'base64');
 const mineRaw = [await snap('idle', 0), await snap('walk', 14), await snap('cross', 10), await snap('guard', 0)];
 await b.close();
-const kit = 'gemini/parts/lightning/kit.png';
+const kit = 'gemini/characters/lightning/kit.png';
 /** Cuts a reference figure off the green screen and trims it. */
 async function ref(left, top, w, h) {
   const { data, info } = await sharp(kit).extract({ left, top, width: w, height: h }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

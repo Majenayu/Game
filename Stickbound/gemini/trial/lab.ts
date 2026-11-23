@@ -4,15 +4,25 @@ import { makeHeads } from './heads';
 import { KITS, TRIAL_ELEMENTS, type ElementId, type Kit } from './kits';
 import { BUILDS, PALETTES, TINT, drawRig, footDrop, ghostPalette, heroPalette, jointWorld, lerpPose, loadTrialParts, setBuild, solve, tintImage, type Build, type Face, type Pieces, type Pose, type Skin, type TrialParts } from './rig';
 import { GROUND, STAGE_H, STAGE_W, bakeStage } from './stage';
+import { ARENAS } from '../stages/engine/arena';
+import { Sound } from '../stages/engine/audio';
+import { drawBackdrop, loadBackdrop, type Backdrop } from '../stages/engine/backdrop';
+import { ARENA_DEFS } from '../stages/engine/registry';
 
 /**
- * Hero Trial: one lab for the nine element heroes (Lightning keeps its own lab). Move freely in the stadium, try
- * the combo, heavy, dash, the three powers, the ultimate and the element shield on a sparring dummy that can fight
- * back. Fixed 60 Hz update with a seeded RNG; rendering only reads state. ?el=<element> picks the hero.
+ * Trial Ground: every hero in every arena. Move freely, try the combo, heavy, dash, the three powers, the ultimate
+ * and the element shield on a sparring dummy that can fight back, in the training stadium or in any of the arena
+ * pictures from gemini/stages (with their moving effects, sounds and music). Fixed 60 Hz update with a seeded RNG;
+ * rendering only reads state. ?el=<hero> picks the hero, ?arena=<arena folder or stadium> the arena (default: the
+ * hero's own arena). Lightning runs on its own lab engine, so picking him opens gemini/stages/<arena>/.
  */
 const params = new URLSearchParams(location.search);
+const arenaParam = params.get('arena') ?? localStorage.getItem('ek.trial.arena') ?? '';
+if (params.get('el') === 'lightning') location.replace(`../stages/${arenaParam in ARENA_DEFS ? arenaParam : 'lightningarena'}/`);
 const pick = (params.get('el') ?? localStorage.getItem('ek.trial.el') ?? 'fire') as ElementId;
 const EL: ElementId = TRIAL_ELEMENTS.includes(pick) ? pick : 'fire';
+/** 'stadium' or an arena folder in gemini/stages */
+const ARENA: string = arenaParam === 'stadium' || arenaParam in ARENA_DEFS ? arenaParam : `${EL}arena`;
 const K: Kit = KITS[EL];
 const CLIPS = makeClips(K);
 const FX: FxCol = K.fx;
@@ -1764,6 +1774,8 @@ function drawSpark(g: CanvasRenderingContext2D, s: Spark): void {
   }
 }
 
+/** the arena picture with its effects (null in the training stadium) */
+let backdrop: Backdrop | null = null;
 function render(g: CanvasRenderingContext2D, stage: HTMLCanvasElement, skins: Skins): void {
   const cw = g.canvas.width;
   const ch = g.canvas.height;
@@ -1777,9 +1789,12 @@ function render(g: CanvasRenderingContext2D, stage: HTMLCanvasElement, skins: Sk
   const camY = VIEW_H / 2 + (GROUND - 200 - VIEW_H / 2) * push;
   g.setTransform(zoom, 0, 0, zoom, cw / 2 + sx, ch / 2 + sy);
   g.translate(-state.camX, -camY);
-  const off = (state.camX - STAGE_W / 2) * 0.35;
-  g.drawImage(stage, 0, 0, STAGE_W, GROUND, off - 160, -40, STAGE_W + 320, GROUND + 40);
-  g.drawImage(stage, 0, GROUND - 4, STAGE_W, STAGE_H - GROUND + 4, 0, GROUND - 4, STAGE_W, STAGE_H - GROUND + 4);
+  if (backdrop) drawBackdrop(g, backdrop, { ground: GROUND, stageW: STAGE_W, camX: state.camX, halfW: cw / 2 / zoom, frame: state.frameNo, flash: Math.min(1, state.flash / 10), storm: state.dim / 0.55 });
+  else {
+    const off = (state.camX - STAGE_W / 2) * 0.35;
+    g.drawImage(stage, 0, 0, STAGE_W, GROUND, off - 160, -40, STAGE_W + 320, GROUND + 40);
+    g.drawImage(stage, 0, GROUND - 4, STAGE_W, STAGE_H - GROUND + 4, 0, GROUND - 4, STAGE_W, STAGE_H - GROUND + 4);
+  }
   if (state.dim > 0.01) {
     g.fillStyle = `rgba(2,3,14,${state.dim})`;
     g.fillRect(-200, -200, STAGE_W + 400, STAGE_H + 400);
@@ -1940,9 +1955,9 @@ function frameData(c: Clip): string {
   return `startup ${h.from} · active ${active} · recovery ${c.frames - h.to - 1} · dmg ${(c.hits ?? []).reduce((a, x) => a + x.dmg, 0)}${cost}`;
 }
 function buildPanel(): void {
-  document.title = `Elementick · ${K.name} Hero Trial`;
+  document.title = `Elementick · Trial Ground · ${K.name}`;
   document.documentElement.style.setProperty('--el', K.line);
-  document.getElementById('title')!.textContent = `${K.icon} ${K.name} Hero Trial`;
+  document.getElementById('title')!.textContent = `${K.icon} ${K.name} · Trial Ground`;
   const sel = document.getElementById('element') as HTMLSelectElement;
   for (const id of TRIAL_ELEMENTS) {
     const o = document.createElement('option');
@@ -1952,16 +1967,27 @@ function buildPanel(): void {
   }
   const o = document.createElement('option');
   o.value = 'lightning';
-  o.textContent = '⚡ Lightning (own lab)';
+  o.textContent = '⚡ Lightning';
   sel.appendChild(o);
   sel.value = EL;
+  // keep the lists from taking the game keys
+  sel.onkeydown = (e) => e.preventDefault();
   sel.onchange = () => {
-    if (sel.value === 'lightning') {
-      location.href = '../lightning/';
-      return;
-    }
-    localStorage.setItem('ek.trial.el', sel.value);
-    location.search = `?el=${sel.value}`;
+    if (sel.value !== 'lightning') localStorage.setItem('ek.trial.el', sel.value);
+    location.search = `?el=${sel.value}&arena=${ARENA}`;
+  };
+  const ar = document.getElementById('arena') as HTMLSelectElement;
+  for (const [id, name] of [['stadium', 'Training stadium'], ...ARENAS.map(([id, n]) => [id, `${n} Arena`])]) {
+    const a = document.createElement('option');
+    a.value = id;
+    a.textContent = id === `${EL}arena` ? `${name} (home)` : name;
+    ar.appendChild(a);
+  }
+  ar.value = ARENA;
+  ar.onkeydown = (e) => e.preventDefault();
+  ar.onchange = () => {
+    localStorage.setItem('ek.trial.arena', ar.value);
+    location.search = `?el=${EL}&arena=${ar.value}`;
   };
   const [p1, p2, p3] = K.powers;
   const pw = document.getElementById('powers')!;
@@ -2053,12 +2079,51 @@ function info(t: string): void {
   document.getElementById('info')!.textContent = t;
 }
 
+/** Loads the chosen arena picture and starts its music and effect sounds (nothing in the training stadium). */
+async function startArena(): Promise<Sound | null> {
+  const box = document.getElementById('soundbox')!;
+  if (ARENA === 'stadium') {
+    box.style.display = 'none';
+    return null;
+  }
+  const def = await ARENA_DEFS[ARENA]();
+  backdrop = await loadBackdrop(def);
+  const sound = new Sound(def.song, def.air);
+  const music = document.getElementById('music') as HTMLInputElement;
+  const sfx = document.getElementById('sfx') as HTMLInputElement;
+  const vol = document.getElementById('vol') as HTMLInputElement;
+  document.getElementById('sfxl')!.textContent = def.sfxLabel;
+  document.getElementById('song')!.textContent = `Music: "${def.song.title}"`;
+  music.checked = sound.musicOn;
+  sfx.checked = sound.sfxOn;
+  vol.value = String(sound.volume);
+  document.getElementById('volv')!.textContent = `${Math.round(sound.volume * 100)}%`;
+  music.onchange = () => sound.setMusic(music.checked);
+  sfx.onchange = () => sound.setSfx(sfx.checked);
+  vol.oninput = () => {
+    sound.setVolume(Number(vol.value));
+    document.getElementById('volv')!.textContent = `${Math.round(Number(vol.value) * 100)}%`;
+  };
+  // sound starts on the first input (browser rule); M toggles the music
+  const wake = () => sound.start();
+  addEventListener('pointerdown', wake);
+  addEventListener('keydown', (e) => {
+    wake();
+    if (e.code === 'KeyM' && !e.repeat) {
+      music.checked = !music.checked;
+      sound.setMusic(music.checked);
+    }
+  });
+  (window as unknown as { __sound: Sound }).__sound = sound;
+  return sound;
+}
 async function boot(): Promise<void> {
   const canvas = document.getElementById('c') as HTMLCanvasElement;
   const g = canvas.getContext('2d')!;
   buildPanel();
   const skins = makeSkins(await loadTrialParts(EL));
   const stage = bakeStage(K);
+  const sound = await startArena();
   const fit = () => {
     const r = canvas.getBoundingClientRect();
     canvas.width = Math.round(r.width * devicePixelRatio);
@@ -2104,6 +2169,8 @@ async function boot(): Promise<void> {
   };
   w.__clips = CLIPS;
   w.__el = EL;
+  (window as unknown as { __arena: string }).__arena = ARENA;
+  let heardTo = 0;
   let last = performance.now();
   let acc = 0;
   const loop = (now: number) => {
@@ -2114,6 +2181,11 @@ async function boot(): Promise<void> {
       acc -= 1000 / 60;
     }
     render(g, stage, skins);
+    // a sound for each arena effect that began since the last frame drawn
+    if (sound && backdrop?.def.sounds && state.frameNo !== heardTo) {
+      if (state.frameNo > heardTo) for (const s of backdrop.def.sounds(heardTo, state.frameNo, state.dim / 0.55)) sound.play(s);
+      heardTo = state.frameNo;
+    }
     const p = state.player;
     document.getElementById('state')!.textContent = p.clip ? `${p.clip.name}  frame ${p.frame}/${p.clip.frames}` : p.grounded ? (Math.abs(p.vx) > 5.5 ? 'Run' : Math.abs(p.vx) > 0.6 ? 'Walk' : p.guarding ? 'Guard' : 'Idle') : p.vy < 0 ? 'Jump' : 'Fall';
     requestAnimationFrame(loop);

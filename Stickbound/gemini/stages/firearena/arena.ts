@@ -5,7 +5,6 @@
  */
 import { glow, timetable, type ArenaDef, type ArenaSound, type G } from '../engine/arena';
 import { burst, flicker, glowAt, particles, wave, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const FLOOR = 640; // where the fighters stand (picture pixels)
 // robot-arm tips that spray sparks, and the y where their sparks land
@@ -202,4 +201,3 @@ export const fire: ArenaDef<Fx> = {
   air: { cut: 260, level: 0.07, lfo: 0.13, depth: 120, band: true },
 };
 
-void startLab(fire);

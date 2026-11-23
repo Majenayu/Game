@@ -1,6 +1,6 @@
 // Film strips of the Hero Trial moves: the simulation is paused and stepped frame by frame, and the canvas is shot
 // every few frames, so each move can be judged frame by frame. Run from Stickbound/ with the check server on 5191:
-//   node gemini/parts/trial/film.mjs [elements] [moves] [outDir]
+//   node gemini/trial/film.mjs [elements] [moves] [outDir]
 // moves: comma list of combo, heavy, p1, p2, p3, ult, dash (default all). Writes <outDir>/<el>-<move>.png
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
@@ -8,7 +8,7 @@ import sharp from 'sharp';
 const ALL = ['fire', 'water', 'ice', 'wind', 'earth', 'leaf', 'light', 'gravity', 'time'];
 const els = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : ALL;
 const moves = process.argv[3] && process.argv[3] !== 'all' ? process.argv[3].split(',') : ['combo', 'heavy', 'p1', 'p2', 'p3', 'ult', 'dash'];
-const out = process.argv[4] ?? 'gemini/parts/trial/shots/film';
+const out = process.argv[4] ?? 'gemini/trial/shots/film';
 mkdirSync(out, { recursive: true });
 const KEYS = { heavy: ['KeyK'], p1: ['KeyU'], p2: ['KeyI'], p3: ['KeyO'], ult: ['KeyP'], dash: ['KeyL'] };
 const b = await chromium.launch();
@@ -16,7 +16,7 @@ const errors = [];
 for (const el of els) {
   const page = await b.newPage({ viewport: { width: 1366, height: 768 } });
   page.on('pageerror', (e) => errors.push(`${el}: ${e.message}`));
-  await page.goto(`http://localhost:5191/gemini/parts/trial/?el=${el}`);
+  await page.goto(`http://localhost:5191/gemini/trial/?el=${el}`);
   await page.waitForSelector('body[data-ready="1"]', { timeout: 20000 });
   await page.evaluate(() => (window.__lab.speed = 0));
   const canvas = await page.$('#c');

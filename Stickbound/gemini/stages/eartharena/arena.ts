@@ -6,7 +6,6 @@
  */
 import { canvas, glow, hash, timetable, type ArenaDef, type ArenaSound, type G } from '../engine/arena';
 import { burst, drawCut, glowAt, liftDark, particles, shaft, wave, type Cut, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const FLOOR = 630;
 const QUAKE_PERIOD = 1200;
@@ -150,4 +149,3 @@ export const earth: ArenaDef<Fx> = {
   air: { cut: 400, level: 0.035, lfo: 0.06, depth: 150, drone: 41, droneLevel: 0.05 },
 };
 
-void startLab(earth);

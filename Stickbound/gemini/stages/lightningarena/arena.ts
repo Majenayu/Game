@@ -3,7 +3,6 @@
  * thunder for every strike, and a 124 BPM synth battle loop in A minor.
  */
 import type { ArenaDef } from '../engine/arena';
-import { startLab } from '../engine/lab';
 import { bakeBackFx, drawBackFx, strikes, strikesStarting, type BackFx } from './arenafx';
 
 /** The floor is the bright yellow roof rail: the row in the lower band with the most yellow pixels. */
@@ -76,4 +75,3 @@ export const lightning: ArenaDef<BackFx> = {
   air: { cut: 420, level: 0.06, lfo: 0.09, depth: 220 },
 };
 
-void startLab(lightning);

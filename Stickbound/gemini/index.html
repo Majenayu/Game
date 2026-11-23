@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Elementick · Trial Ground</title>
+    <style>
+      body { margin: 0; padding: 24px; background: #11142a; color: #e8ecff; font: 15px/1.4 system-ui, sans-serif; }
+      h1 { margin: 0 0 4px; color: #ffd84a; font-size: 26px; }
+      h2 { margin: 22px 0 10px; color: #9ff3ff; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; }
+      p { margin: 0 0 8px; color: #aab3d8; }
+      .heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+      .arenas { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+      button.card { background: #1b2040; border: 2px solid #2d3566; border-radius: 10px; color: inherit; font: inherit; font-weight: 700; padding: 8px; cursor: pointer; text-align: center; }
+      button.card:hover { border-color: #8f99c4; }
+      button.card.on { border-color: #ffd84a; background: #262c58; }
+      .heroes img { display: block; width: 72px; height: 72px; object-fit: contain; margin: 0 auto 4px; }
+      .arenas button.card { padding: 0; overflow: hidden; }
+      .arenas img { display: block; width: 100%; aspect-ratio: 1376 / 768; object-fit: cover; }
+      .arenas span { display: block; padding: 6px 10px; }
+      .stadium { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1376 / 768; background: linear-gradient(#0d1038, #2a2f78); font-size: 13px; color: #aab3d8; }
+      #go { margin-top: 22px; padding: 14px 28px; font: inherit; font-size: 18px; font-weight: 800; color: #11142a; background: #ffd84a; border: 0; border-radius: 10px; cursor: pointer; }
+      #pick { margin-left: 12px; color: #c9d3ea; }
+    </style>
+  </head>
+  <body>
+    <h1>Elementick · Trial Ground</h1>
+    <p>Every hero in every arena. Pick a hero and an arena, then enter; both can be changed again from the panel inside. Dev tool, not part of the game build.</p>
+    <h2>Hero</h2>
+    <div class="heroes" id="heroes"></div>
+    <h2>Arena</h2>
+    <div class="arenas" id="arenas"></div>
+    <button id="go">Enter the Trial Ground</button><span id="pick"></span>
+    <script>
+      const HEROES = [
+        ['lightning', 'Lightning', 'characters/lightning/body/head.png'],
+        ['fire', 'Fire'], ['water', 'Water'], ['ice', 'Ice'], ['wind', 'Wind'], ['earth', 'Earth'],
+        ['leaf', 'Leaf'], ['light', 'Light'], ['gravity', 'Gravity'], ['time', 'Time'],
+      ];
+      const ARENAS = [
+        ['home', 'Home arena (the hero\'s own)'], ['stadium', 'Training stadium'],
+        ['lightningarena', 'Lightning'], ['firearena', 'Fire'], ['waterarena', 'Water'], ['icearena', 'Ice'], ['windarena', 'Wind'],
+        ['eartharena', 'Earth'], ['leafarena', 'Leaf'], ['lightarena', 'Light'], ['shadowarena', 'Shadow'], ['gravityarena', 'Gravity'], ['timearena', 'Time'],
+      ];
+      let hero = localStorage.getItem('ek.trial.el') || 'fire';
+      let arena = 'home';
+      const show = () => {
+        for (const b of document.querySelectorAll('[data-hero]')) b.classList.toggle('on', b.dataset.hero === hero);
+        for (const b of document.querySelectorAll('[data-arena]')) b.classList.toggle('on', b.dataset.arena === arena);
+        const a = arena === 'home' ? `${hero}arena` : arena;
+        document.getElementById('pick').textContent = `${HEROES.find((h) => h[0] === hero)[1]} in ${a === 'stadium' ? 'the training stadium' : `the ${ARENAS.find((x) => x[0] === a)[1]} arena`}`;
+      };
+      const card = (box, attr, id, html) => {
+        const b = document.createElement('button');
+        b.className = 'card';
+        b.dataset[attr] = id;
+        b.innerHTML = html;
+        b.onclick = () => {
+          if (attr === 'hero') hero = id;
+          else arena = id;
+          show();
+        };
+        document.getElementById(box).appendChild(b);
+      };
+      for (const [id, name, img] of HEROES) card('heroes', 'hero', id, `<img src="${img ?? `characters/${id}/parts/head_normal.png`}" alt="" />${name}`);
+      for (const [id, name] of ARENAS)
+        card('arenas', 'arena', id, id === 'home' || id === 'stadium' ? `<div class="stadium">${id === 'home' ? 'matches the hero' : 'code-drawn stadium'}</div><span>${name}</span>` : `<img src="stages/${id}/arena.png" alt="" loading="lazy" /><span>${name}</span>`);
+      document.getElementById('go').onclick = () => {
+        const a = arena === 'home' ? `${hero}arena` : arena;
+        localStorage.setItem('ek.trial.arena', a);
+        location.href = `trial/?el=${hero}&arena=${a}`;
+      };
+      show();
+    </script>
+  </body>
+</html>

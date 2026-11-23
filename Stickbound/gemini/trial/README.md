@@ -4,7 +4,7 @@ move freely in a stadium and try every move on a sparring dummy that can fight b
 (`../lightning/`), the hero menu links to it.
 
 **Open it:** start the dev server in `Stickbound/` (`npx vite`), then go to
-http://localhost:5190/gemini/parts/trial/?el=fire (or pick the hero in the panel; the choice is remembered).
+http://localhost:5190/gemini/trial/?el=fire (or pick the hero in the panel; the choice is remembered).
 
 ## Controls (same for every hero)
 | Key | Move |
@@ -49,7 +49,7 @@ cape and shoulder pads; gravity slit visor, cape and orbit ring; time gear crown
 | File | What it is |
 | --- | --- |
 | `kits.ts` | Element colours, names, powers and passives |
-| `cut.mjs`, `picks.mjs` | Cut the heads and pieces out of the owner's sheets in `gemini/avatar/generated refernce/` into `parts/<el>/` and `parts/meta.json` (`node gemini/parts/trial/cut.mjs scan` shows the numbered parts; `picks.mjs` names them) |
+| `cut.mjs`, `picks.mjs` | Cut the heads and pieces out of the owner's sheets in `gemini/avatar/generated refernce/` into `parts/<el>/` and `parts/meta.json` (`node gemini/trial/cut.mjs scan` shows the numbered parts; `picks.mjs` names them) |
 | `heads.ts` | Code-drawn dummy head, plus flame and gear shapes for the effects |
 | `rig.ts` | Skeleton and code-drawn body (from the Lightning rig); picture heads (4 faces) and pieces (capes, shoulder and wrist pieces, scarf wrap, time gear, chest emblems); charge energy |
 | `base.ts` | Copy of the Lightning lab's base animations, so this lab does not change when that one is edited |
@@ -58,7 +58,7 @@ cape and shoulder pads; gravity slit visor, cape and orbit ring; time gear crown
 | `stage.ts` | Training stadium in the element colour |
 | `lab.ts` | The lab: input, combo, cancels, MP, statuses (Burn, Slow, Freeze, Root, Float, Bubble, Stop, Dazzle), walls, mines, fields, hits, guard, camera, dummy AI, panel |
 | `shots.mjs` | Screenshots of every hero (`shots/`) |
-| `film.mjs` | Frame-by-frame film strips of moves: `node gemini/parts/trial/film.mjs <el or all> <moves or all>` (`shots/film/`) |
+| `film.mjs` | Frame-by-frame film strips of moves: `node gemini/trial/film.mjs <el or all> <moves or all>` (`shots/film/`) |
 | `check.mjs` | Behaviour check, frame-stepped (combo, heavy, each power, ultimate, block, perfect guard) |
 | `vite.trial.config.mjs` | Check server on port 5191 without hot reload |
 

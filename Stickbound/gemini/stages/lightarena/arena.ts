@@ -5,7 +5,6 @@
  */
 import { glow, timetable, type ArenaDef, type ArenaSound, type G } from '../engine/arena';
 import { burst, flicker, glowAt, particles, shaft, wave, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const FLOOR = 640;
 const SUN = { x: 905, y: 300 };
@@ -169,4 +168,3 @@ export const light: ArenaDef<Fx> = {
   air: { cut: 300, level: 0.03, lfo: 0.04, depth: 80, drone: 55, droneLevel: 0.025 },
 };
 
-void startLab(light);

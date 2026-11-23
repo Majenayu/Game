@@ -5,7 +5,6 @@
  */
 import { glow, hash, timetable, type ArenaDef, type ArenaSound, type G } from '../engine/arena';
 import { burst, glowAt, particles, shaft, wave, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const FLOOR = 650;
 const GUST_PERIOD = 1100;
@@ -115,4 +114,3 @@ export const leaf: ArenaDef<Fx> = {
   air: { cut: 700, level: 0.04, lfo: 0.05, depth: 300 },
 };
 
-void startLab(leaf);

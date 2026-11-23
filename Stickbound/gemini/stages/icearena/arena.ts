@@ -6,7 +6,6 @@
  */
 import { glow, hash, timetable, type ArenaDef, type ArenaSound, type G } from '../engine/arena';
 import { burst, cutOut, glowAt, particles, shaft, wave, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const FLOOR = 660;
 const STEAM_PERIOD = 600;
@@ -152,4 +151,3 @@ export const ice: ArenaDef<Fx> = {
   air: { cut: 1500, level: 0.03, lfo: 0.05, depth: 600 },
 };
 
-void startLab(ice);

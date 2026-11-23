@@ -1,4 +1,4 @@
-// Scan index -> part name for each sheet (see parts/<el>/_scan.png). Only heads and the signature pieces are cut;
+// Scan index -> part name for each sheet (see gemini/characters/<el>/parts/_scan.png). Only heads and the signature pieces are cut;
 // the body stays one code-drawn silhouette like the Lightning avatar.
 // back: behind the body; shoulder: on the shoulders; wrist: on the front forearm; emblem: chest core.
 export const PICKS = {

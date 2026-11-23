@@ -1,0 +1,40 @@
+HOW TO USE: in Gemini attach these 10 images in this order, then paste everything below the line.
+  1 fire-reference.png   2 water-reference.png   3 ice-reference.png   4 wind-reference.png   5 earth-reference.png
+  6 leaf-reference.png   7 light-reference.png   8 gravity-reference.png   9 time-reference.png
+  10 style-example-lightning-parts.png
+Save each result here as <hero>-parts.png (fire-parts.png, water-parts.png, ...).
+If Gemini stops after a few heroes, reply: "continue with the next hero".
+------------------------------------------------------------
+
+I attached 10 images. Images 1 to 9 are reference sheets of my 9 original elemental stickman heroes, in this order:
+1 Fire, 2 Water, 3 Ice, 4 Wind, 5 Earth, 6 Leaf, 7 Light, 8 Gravity, 9 Time.
+Image 10 is a finished parts sheet of a different hero (lightning). Copy only its STYLE and LAYOUT idea from it: separate parts, clean outlines, glow. Do not copy its hair, colours or face.
+
+Generate 9 SEPARATE images, one parts sheet per hero, in the order above. Each sheet must copy that hero's look exactly from its reference image: head, face, colours and signature pieces.
+
+Rules for every sheet:
+- Flat dark-navy fill (#141833), thick glowing outline in the hero colour (listed below), soft outer glow, light shading, same cartoon neon style as the references.
+- Side view, every part facing RIGHT.
+- Transparent background (PNG with alpha). Not white, not green, no scenery.
+- Every part separate, with at least 40 px of empty space around it. Nothing touches or overlaps.
+- 2048 x 1152 or larger. No text, no labels, no watermark, no ground shadows.
+- Original design only. Do not copy any existing character, anime, game or brand.
+
+Same layout on every sheet:
+Row 1: four heads of the hero, identical in shape, hair and accessories, only the face changes:
+  1 calm and confident (default), 2 shouting attack face with open mouth, 3 hurt face (eyes squeezed or visor knocked up), 4 knocked out (cracked visor, flat mouth).
+Row 2: separate pieces left to right: back piece, shoulder piece, wrist/forearm piece, chest emblem. Skip any slot marked "none".
+Row 3: body parts as rounded capsules with a small round joint circle at the LEFT end, lying horizontal and pointing right: upper arm, forearm, thigh, shin, closed fist, open hand, foot, torso (upright with a short neck stub), pelvis.
+
+The heroes:
+1 FIRE, outline #FF7A2E orange. Head: burning flame crown of 3-4 tongues on top, red cloth headband, glowing white-orange narrow slit eyes. Back: two long red headband tails flowing back. Shoulder: none. Wrist: small flame cuff. Emblem: orange sun-burst.
+2 WATER, outline #4FE6E0 aqua. Head: liquid water hair flowing back in 3 curls with drops, wide glowing visor, small smile. Back: long liquid hair stream. Shoulder: none. Wrist: water ring cuff. Emblem: aqua droplet-star.
+3 ICE, outline #CFEFFF icy white-blue. Head: short cluster of 4-5 ice crystal spikes on TOP only (not all around), wide glowing visor, small smile. Back: none. Shoulder: cluster of ice crystals. Wrist: crystal forearm guard. Emblem: snowflake-star.
+4 WIND, outline #7FF2C8 mint green. Head: two round goggle lenses, big open happy grin. Back: long scarf flowing back in two strips. Shoulder: scarf knot at the neck. Wrist: none. Emblem: swirl-star.
+5 EARTH, outline #F0A050 warm amber, body fill dark brown #3A2414 instead of navy. Head: segmented dome helmet, glowing visor slit, stern straight mouth. Back: none. Shoulder: big rock pauldron. Wrist: big rock gauntlet fist. Emblem: sun-rock.
+6 LEAF, outline #8CF07A lime green. Head: laurel leaves on both sides of the top of the head, wide green visor, small smile. Back: none. Shoulder: none. Wrist: vine wrap with 2 small leaves. Emblem: pink lotus flower.
+7 LIGHT, outline #FFE6A0 warm gold. Head: thin glowing halo floating above, white visor, calm smile. Back: wide cream-white cape flowing back from the shoulders. Shoulder: gold shoulder pad. Wrist: none. Emblem: bright white-gold star.
+8 GRAVITY, outline #E060FF magenta. Head: sleepy heavy-lidded face, dark visor, two thin glowing orbit rings tilted around the neck. Back: dark purple cape. Shoulder: the orbit ring pair on its own. Wrist: none. Emblem: small black hole with a bright magenta ring.
+9 TIME, outline #3FE8CC teal. Head: round glass dome helmet with a copper goggle rim and teal visor, large copper half-gear standing behind the head. Back: large copper gear on its own. Shoulder: small copper gear. Wrist: none. Emblem: copper gear with a small clock face.
+
+Start with sheet 1 (Fire) and continue in order until all 9 are done.

@@ -1,12 +1,26 @@
 /** The lab page body (panel, touch buttons), filled in for one arena. Styles are in lab.css. */
 import type { ArenaDef } from './arena';
+/** every hero of the Trial Ground; the others open gemini/trial/ in the same arena */
+const HEROES: Array<[string, string]> = [
+  ['lightning', 'Lightning'],
+  ['fire', 'Fire'],
+  ['water', 'Water'],
+  ['ice', 'Ice'],
+  ['wind', 'Wind'],
+  ['earth', 'Earth'],
+  ['leaf', 'Leaf'],
+  ['light', 'Light'],
+  ['gravity', 'Gravity'],
+  ['time', 'Time'],
+];
 
 export function shellHtml(a: ArenaDef, list: Array<[string, string]>): string {
   return `
 <div id="wrap">
   <canvas id="c"></canvas>
   <div id="panel">
-    <h1>${a.icon} ${a.name} Lab</h1>
+    <h1>⚡ Lightning · Trial Ground</h1>
+    <label>Hero <select id="hero" class="sel">${HEROES.map(([id, n]) => `<option value="${id}"${id === 'lightning' ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
     <label>Arena <select id="arena" class="sel">${list.map(([id, n]) => `<option value="${id}"${id === a.id ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
     <div id="state">Idle</div>
     <div id="info">Free control</div>

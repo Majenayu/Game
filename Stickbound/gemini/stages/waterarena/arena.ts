@@ -5,7 +5,6 @@
  */
 import { glow, hash, timetable, type ArenaDef, type ArenaSound, type G } from '../engine/arena';
 import { burst, flicker, glowAt, particles, shaft, wave, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const FLOOR = 640;
 const WAVE_PERIOD = 960;
@@ -147,4 +146,3 @@ export const water: ArenaDef<Fx> = {
   air: { cut: 1400, level: 0.05, lfo: 0.06, depth: 500, band: true },
 };
 
-void startLab(water);

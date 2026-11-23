@@ -1,12 +1,12 @@
-﻿// Behaviour check for the Hero Trial: for every element, the 4-hit combo, the heavy, each power, the ultimate,
+// Behaviour check for the Hero Trial: for every element, the 4-hit combo, the heavy, each power, the ultimate,
 // block chip damage and the perfect guard. The page's real-time loop is paused and the simulation is stepped frame
 // by frame through test hooks, so results never depend on how fast the machine renders.
-// Run from Stickbound/ with the check server: npx vite --config gemini/parts/trial/vite.trial.config.mjs
-// then: node gemini/parts/trial/check.mjs [elements]
+// Run from Stickbound/ with the check server: npx vite --config gemini/trial/vite.trial.config.mjs
+// then: node gemini/trial/check.mjs [elements]
 import { chromium } from '@playwright/test';
 const ALL = ['fire', 'water', 'ice', 'wind', 'earth', 'leaf', 'light', 'gravity', 'time'];
 const els = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : ALL;
-const URL = process.env.TRIAL_URL ?? 'http://localhost:5191/gemini/parts/trial/';
+const URL = process.env.TRIAL_URL ?? 'http://localhost:5191/gemini/trial/';
 const b = await chromium.launch();
 const errors = [];
 const fails = [];

@@ -7,7 +7,6 @@
  */
 import { glow, hash, timetable, type ArenaDef, type ArenaSound, type G, type Pt } from '../engine/arena';
 import { burst, cutOut, flicker, glowAt, particles, wave, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const TAU = Math.PI * 2;
 const FLOOR = 560;
@@ -220,4 +219,3 @@ export const shadow: ArenaDef<Fx> = {
   air: { cut: 500, level: 0.025, lfo: 0.1, depth: 200, drone: 46, droneLevel: 0.04 },
 };
 
-void startLab(shadow);

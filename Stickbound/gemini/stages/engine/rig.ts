@@ -67,7 +67,7 @@ type Img = HTMLImageElement | HTMLCanvasElement;
 export interface Parts {
   head: Img;
 }
-const HEAD_URL = new URL('./parts/head.png', import.meta.url).href;
+const HEAD_URL = new URL('../../characters/lightning/body/head.png', import.meta.url).href;
 export async function loadParts(): Promise<Parts> {
   const head = await new Promise<HTMLImageElement>((res, rej) => {
     const im = new Image();

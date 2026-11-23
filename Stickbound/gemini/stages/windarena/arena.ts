@@ -6,7 +6,6 @@
  */
 import { canvas, glow, hash, timetable, type ArenaDef, type ArenaSound, type G, type Pt } from '../engine/arena';
 import { burst, drawCut, glowAt, liftDark, particles, shaft, wave, type Cut, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const FLOOR = 605;
 const GUST_PERIOD = 840;
@@ -181,4 +180,3 @@ export const wind: ArenaDef<Fx> = {
   air: { cut: 1100, level: 0.06, lfo: 0.09, depth: 700 },
 };
 
-void startLab(wind);

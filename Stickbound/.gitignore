@@ -9,14 +9,7 @@ release
 store/raw
 docs/videos/raw
 
-# owner's concept images (never shipped; ALLOW_AI_BACKGROUND_IMAGES = NO)
-# except the Lightning hero kit and the arena labs in gemini/stages (dev tools, not part of the game build), minus their screenshots
-gemini/*
-!gemini/parts/
-gemini/parts/*
-!gemini/parts/lightning/
-!gemini/stages/
-gemini/stages/**/shots/
-!gemini/parts/trial/
-gemini/parts/trial/shots/
-gemini/parts/trial/parts/*/_scan.png
+# gemini/: the owner's Gemini images (characters/, stages/, extra/) and the dev labs built from them (stages/, trial/).
+# Never part of the game build (ALLOW_AI_BACKGROUND_IMAGES = NO). Screenshots and part-scan previews are not kept.
+gemini/**/shots/
+gemini/characters/*/parts/_scan.png

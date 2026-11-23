@@ -1,30 +1,19 @@
-// Cuts the trial heroes' parts out of the owner's Gemini sheets (gemini/avatar/generated refernce/).
+// Cuts the trial heroes' parts out of the owner's Gemini sheets (gemini/characters/<el>/parts-sheet.png).
 // The sheets have a dark gradient background, not transparency. The background colour is estimated per row from
 // the left edge; pixels reachable from the border through background-like colours become transparent, and the
 // glow halo around each part fades out (alpha from the colour difference to the background).
 // Run from Stickbound/:
-//   node gemini/parts/trial/cut.mjs scan        -> lists the parts found on each sheet, writes parts/<el>/_scan.png
-//   node gemini/parts/trial/cut.mjs             -> writes parts/<el>/<name>.png and parts/meta.json from PICKS
+//   node gemini/trial/cut.mjs scan        -> lists the parts found on each sheet, writes gemini/characters/<el>/parts/_scan.png
+//   node gemini/trial/cut.mjs             -> writes gemini/characters/<el>/parts/<name>.png and gemini/characters/hero-parts.json from PICKS
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const SHEETS = join(here, '..', '..', 'avatar', 'generated refernce');
-const OUT = join(here, 'parts');
-const G = 'Gemini_Generated_Image_';
-export const SHEET = {
-  fire: `${G}tom1c9tom1c9tom1.png`,
-  water: `${G}tom1c9tom1c9tom1 (1).png`,
-  ice: `${G}tom1c9tom1c9tom1 (2).png`,
-  wind: `${G}tom1c9tom1c9tom1 (3).png`,
-  earth: `${G}bf0oa0bf0oa0bf0o.png`,
-  leaf: `${G}yjevtiyjevtiyjev.png`,
-  light: `${G}nyu90nnyu90nnyu9.png`,
-  gravity: `${G}nyu90nnyu90nnyu9 (1).png`,
-  time: `${G}nyu90nnyu90nnyu9 (2).png`,
-};
+const CHARS = join(here, '..', 'characters');
+// every hero's sheet is gemini/characters/<el>/parts-sheet.png
+export const SHEET = Object.fromEntries(['fire', 'water', 'ice', 'wind', 'earth', 'leaf', 'light', 'gravity', 'time'].map((el) => [el, 'parts-sheet.png']));
 /**
  * Which scanned part (index in the scan list, numbered left to right inside rows) becomes which named piece.
  * Head names: head_normal, head_attack, head_hurt, head_ko. Filled in after looking at the scan images.
@@ -39,7 +28,7 @@ const BG = 14;
 const CLOSE = 3;
 
 async function load(el) {
-  const { data, info } = await sharp(join(SHEETS, SHEET[el])).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(join(CHARS, el, SHEET[el])).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   return { data, w: info.width, h: info.height };
 }
 /** Per-row background colour: median of the 12 left-most pixels (no part touches the left edge). */
@@ -260,7 +249,7 @@ for (const el of Object.keys(SHEET)) {
   const img = await load(el);
   const m = matte(img);
   const list = scan(m);
-  mkdirSync(join(OUT, el), { recursive: true });
+  mkdirSync(join(CHARS, el, 'parts'), { recursive: true });
   if (mode === 'scan') {
     console.log(el, list.map((b, i) => `${i}:[${b.x0},${b.y0},${b.x1},${b.y1}]`).join(' '));
     // preview: the matte on a checker with numbered boxes
@@ -270,7 +259,7 @@ for (const el of Object.keys(SHEET)) {
     await sharp({ create: { width: m.w, height: m.h, channels: 4, background: { r: 90, g: 120, b: 90, alpha: 1 } } })
       .composite([{ input: m.rgba, raw: { width: m.w, height: m.h, channels: 4 } }, { input: Buffer.from(svg) }])
       .png()
-      .toFile(join(OUT, el, '_scan.png'));
+      .toFile(join(CHARS, el, 'parts', '_scan.png'));
     continue;
   }
   const picks = PICKS[el];
@@ -280,7 +269,7 @@ for (const el of Object.keys(SHEET)) {
     const boxes = idx.box ? [{ x0: idx.box[0], y0: idx.box[1], x1: idx.box[2], y1: idx.box[3] }] : (Array.isArray(idx) ? idx : [idx]).map((i) => list[i]);
     const b = { x0: Math.min(...boxes.map((b) => b.x0)), y0: Math.min(...boxes.map((b) => b.y0)), x1: Math.max(...boxes.map((b) => b.x1)), y1: Math.max(...boxes.map((b) => b.y1)) };
     const c = crop(m, b);
-    await sharp(c.px, { raw: { width: c.w, height: c.h, channels: 4 } }).png().toFile(join(OUT, el, `${name}.png`));
+    await sharp(c.px, { raw: { width: c.w, height: c.h, channels: 4 } }).png().toFile(join(CHARS, el, 'parts', `${name}.png`));
     const info = { w: c.w, h: c.h };
     if (name.startsWith('head_')) Object.assign(info, headCircle(c));
     meta[el][name] = info;
@@ -291,4 +280,4 @@ for (const el of Object.keys(SHEET)) {
   for (const k of heads) Object.assign(meta[el][k], { cx: mid.cx, cy: mid.cy, r: mid.r });
   console.log(el, Object.keys(picks).join(' '));
 }
-if (mode !== 'scan') writeFileSync(join(OUT, only ? `meta-${only}.json` : 'meta.json'), JSON.stringify(meta, null, 1));
+if (mode !== 'scan') writeFileSync(join(CHARS, only ? `hero-parts-${only}.json` : 'hero-parts.json'), JSON.stringify(meta, null, 1));

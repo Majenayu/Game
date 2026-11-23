@@ -10,7 +10,6 @@
  */
 import { canvas, glow, hash, type ArenaDef, type ArenaSound, type G } from '../engine/arena';
 import { cutOut, drawCut, glowAt, liftKeyed, particles, shaft, wave, type Cut, type Particles } from '../engine/fxkit';
-import { startLab } from '../engine/lab';
 
 const TAU = Math.PI * 2;
 const FLOOR = 612;
@@ -441,4 +440,3 @@ export const time: ArenaDef<Fx> = {
   air: { cut: 350, level: 0.025, lfo: 0.07, depth: 100, drone: 55, droneLevel: 0.025 },
 };
 
-void startLab(time);

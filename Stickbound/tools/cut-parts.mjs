@@ -1,10 +1,10 @@
 // Cuts a Gemini parts kit (parts on a #00FF00 background) into trimmed part PNGs and packs a WebP atlas.
 // Usage: node tools/cut-parts.mjs <element>
-// Input:  gemini/parts/<element>/kit.png and gemini/parts/<element>/parts.json:
+// Input:  gemini/characters/<element>/kit.png and gemini/characters/<element>/parts.json:
 //   { "region": [x0,y0,x1,y1], "erase": [[x0,y0,x1,y1]], "rowBand": 150, "minArea": 600,
 //     "order": ["head_normal", ...]   // part name per grid cell, in reading order (rows top to bottom, left to right)
 //     "maxSize": 128 }                // longest side of a part in the atlas, in px
-// Output: gemini/parts/<element>/out/<name>.png (trimmed, soft edges, despilled) and
+// Output: gemini/characters/<element>/out/<name>.png (trimmed, soft edges, despilled) and
 //         public/parts/<element>.webp + <element>.json (atlas and frames; shipped, see docs/ASSETS.md).
 // Fix a wrong part order by editing "order" in parts.json and running again.
 import sharp from 'sharp';
@@ -17,7 +17,7 @@ if (!el) {
   process.exit(1);
 }
 const root = path.resolve(import.meta.dirname, '..');
-const dir = path.join(root, 'gemini/parts', el);
+const dir = path.join(root, 'gemini/characters', el);
 const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'parts.json'), 'utf8'));
 const { data, info } = await sharp(path.join(dir, cfg.kit ?? 'kit.png')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 const W = info.width;

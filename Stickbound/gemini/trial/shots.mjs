@@ -1,10 +1,10 @@
-﻿// Screenshots of the Hero Trial for every element: idle, a combo hit, heavy, each power, the ultimate and guard.
-// Run from Stickbound/ with the dev server on 5190: node gemini/parts/trial/shots.mjs [elements] [outDir]
+// Screenshots of the Hero Trial for every element: idle, a combo hit, heavy, each power, the ultimate and guard.
+// Run from Stickbound/ with the dev server on 5190: node gemini/trial/shots.mjs [elements] [outDir]
 import { mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 const ALL = ['fire', 'water', 'ice', 'wind', 'earth', 'leaf', 'light', 'gravity', 'time'];
 const els = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : ALL;
-const out = process.argv[3] ?? 'gemini/parts/trial/shots';
+const out = process.argv[3] ?? 'gemini/trial/shots';
 mkdirSync(out, { recursive: true });
 const b = await chromium.launch();
 const errors = [];
@@ -12,7 +12,7 @@ for (const el of els) {
   const page = await b.newPage({ viewport: { width: 1366, height: 768 } });
   page.on('pageerror', (e) => errors.push(`${el}: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && errors.push(`${el}: ${m.text()}`));
-  await page.goto(`http://localhost:5191/gemini/parts/trial/?el=${el}`);
+  await page.goto(`http://localhost:5191/gemini/trial/?el=${el}`);
   await page.waitForSelector('body[data-ready="1"]', { timeout: 20000 });
   await page.waitForTimeout(500);
   const shot = (n) => page.screenshot({ path: `${out}/${el}-${n}.png` });

@@ -1,5 +1,5 @@
-// Cuts the lightning avatar parts out of "image (1).png" (transparent sheet, outlined parts), fills each part's
-// inside with the dark body colour, trims it and writes parts/<name>.png plus rig.json (sizes).
+// Cuts the lightning avatar parts out of gemini/characters/lightning/body-sheet.png (transparent sheet, outlined parts), fills each part's
+// inside with the dark body colour, trims it and writes gemini/characters/lightning/body/<name>.png plus rig.json (sizes).
 // Run from Stickbound/: node gemini/stages/engine/cut.mjs
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const SRC = join(here, 'image (1).png');
-const OUT = join(here, 'parts');
+const SRC = join(here, '..', '..', 'characters', 'lightning', 'body-sheet.png');
+const OUT = join(here, '..', '..', 'characters', 'lightning', 'body');
 mkdirSync(OUT, { recursive: true });
 
 /** Body fill colour (the dark navy of the kit). */

@@ -117,7 +117,7 @@ export interface Circle {
   cy: number;
   r: number;
 }
-/** Signature pieces cut from the owner's parts sheets (parts/<el>/<name>.png). */
+/** Signature pieces cut from the owner's parts sheets (gemini/characters/<el>/parts/<name>.png). */
 export type PieceName = 'back' | 'shoulder' | 'wrist' | 'neck' | 'emblem';
 export type Pieces = Partial<Record<PieceName, Img>>;
 /** Pictures for one hero: the four faces with their head circles, and the pieces. */
@@ -137,9 +137,9 @@ function loadImg(url: string): Promise<HTMLImageElement> {
 }
 /** Loads the cut heads and pieces of one hero (made by cut.mjs). */
 export async function loadTrialParts(el: ElementId): Promise<TrialParts> {
-  const meta = (await (await fetch(new URL('./parts/meta.json', import.meta.url).href)).json()) as Record<string, Record<string, { w: number; h: number } & Partial<Circle>>>;
+  const meta = (await (await fetch(new URL('../characters/hero-parts.json', import.meta.url).href)).json()) as Record<string, Record<string, { w: number; h: number } & Partial<Circle>>>;
   const m = meta[el];
-  const url = (name: string) => new URL(`./parts/${el}/${name}.png`, import.meta.url).href;
+  const url = (name: string) => new URL(`../characters/${el}/parts/${name}.png`, import.meta.url).href;
   const heads = {} as Record<Face, Img>;
   const circles = {} as Record<Face, Circle>;
   for (const f of FACES) {

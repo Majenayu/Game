@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Elementick · Lightning Avatar Lab</title>
+    <title>Elementick · Trial Ground</title>
     <style>
       html,
       body {
@@ -170,8 +170,9 @@
     <div id="wrap">
       <canvas id="c"></canvas>
       <div id="panel">
-        <h1 id="title">Hero Trial</h1>
+        <h1 id="title">Trial Ground</h1>
         <label>Hero <select id="element" class="sel"></select></label>
+        <label>Arena <select id="arena" class="sel"></select></label>
         <div id="state">Idle</div>
         <div id="info">Free control</div>
         <h2>Controls</h2>
@@ -189,6 +190,14 @@
         <label><input id="dummy" type="checkbox" checked /> Sparring dummy</label>
         <label><input id="fight" type="checkbox" checked /> Dummy fights back</label>
         <label><input id="freemp" type="checkbox" checked /> Free MP (untick to test MP costs)</label>
+        <div id="soundbox">
+          <h2>Sound</h2>
+          <div class="row" id="song"></div>
+          <div class="row">Starts on your first click or key press · <kbd>M</kbd> music on/off</div>
+          <label><input id="music" type="checkbox" checked /> Arena music</label>
+          <label><input id="sfx" type="checkbox" checked /> <span id="sfxl">Arena sounds</span></label>
+          <label>Volume <span id="volv">70%</span><br /><input id="vol" type="range" min="0" max="1" step="0.05" value="0.7" style="width: 100%" /></label>
+        </div>
       </div>
     </div>
     <div id="touch">
