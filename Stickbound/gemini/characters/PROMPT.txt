@@ -1,7 +1,7 @@
 HOW TO USE: in Gemini attach these 10 images in this order, then paste everything below the line.
-  1 fire-reference.png   2 water-reference.png   3 ice-reference.png   4 wind-reference.png   5 earth-reference.png
-  6 leaf-reference.png   7 light-reference.png   8 gravity-reference.png   9 time-reference.png
-  10 style-example-lightning-parts.png
+  1 fire/reference.png   2 water/reference.png   3 ice/reference.png   4 wind/reference.png   5 earth/reference.png
+  6 leaf/reference.png   7 light/reference.png   8 gravity/reference.png   9 time/reference.png
+  10 lightning/kit.png (the style example)
 Save each result here as <hero>-parts.png (fire-parts.png, water-parts.png, ...).
 If Gemini stops after a few heroes, reply: "continue with the next hero".
 ------------------------------------------------------------

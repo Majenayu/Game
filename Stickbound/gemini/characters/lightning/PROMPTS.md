@@ -1,7 +1,7 @@
 # Prompts for better Lightning avatar parts
 
-The lab already works with the current sheet (`image (1).png`). These prompts are for an image AI that can take
-reference pictures, to get cleaner and richer parts. Attach `image (1).png` (parts) and `kit.png` (poses and
+The lab already works with the current sheet (`body-sheet.png`). These prompts are for an image AI that can take
+reference pictures, to get cleaner and richer parts. Attach `body-sheet.png` (parts) and `kit.png` (poses and
 heads) as references with every prompt. Then put the new sheet in this folder and run `cut.mjs` (update its BOXES if
 the layout changes).
 

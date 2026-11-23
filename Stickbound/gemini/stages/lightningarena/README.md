@@ -13,7 +13,7 @@ In this folder: `arena.png`, `arena.ts` (floor detection and the arena definitio
 
 | File | What it is |
 | --- | --- |
-| `image (1).png` | Source parts sheet (transparent, outlined parts). Owner-supplied, AI-generated with Gemini. |
+| `gemini/characters/lightning/body-sheet.png` | Source parts sheet (transparent, outlined parts; cut into `gemini/characters/lightning/body/` by `engine/cut.mjs`). Owner-supplied, AI-generated with Gemini. |
 | `cut.mjs` | Cuts the sheet into `parts/*.png`, fills each part's inside with the body colour (#141833). Run: `node gemini/stages/engine/cut.mjs` |
 | `parts/` | The 11 cut parts. Only `head.png` is drawn now; the body is drawn as one silhouette in code (the cut limb pictures showed seams at every joint). |
 | `rig.ts` | Rig: skeleton and a one-piece body drawn in code (limbs, torso, hands and feet share one glowing outline, so no joint shows as a separate piece), the head picture, chest core, expressions, crackles while charging. |
@@ -26,7 +26,7 @@ In this folder: `arena.png`, `arena.ts` (floor detection and the arena definitio
 | `fx.ts` | Lightning effects engine: branching bolts (glow, mid and white core, with forks), flares, floor aura flames, arcs crawling over the body, the hex lightning shield, storm clouds and sky pillars. All flicker comes from seeds, so the fight stays deterministic. |
 | `lab.ts` | The lab: input, movement, combo queue, power cancels, shield and perfect guard, hits, hit-stop, shake, the ultimate camera, the dummy (it can fight back) and the panel. |
 | `index.html` | The page. |
-| `compare.mjs` | Side-by-side of the reference poses in `gemini/parts/lightning/kit.png` and the avatar (`shots/compare.png`). Body proportions are tuned to it: head about 32% of height sitting on the shoulders, broad shoulder yoke tapering to the crotch, wide fighting stance. Three body builds (Slim default, Medium, Bold) in the panel; `builds.mjs` writes `shots/builds.png`, rounded leg ends. |
+| `compare.mjs` | Side-by-side of the reference poses in `gemini/characters/lightning/kit.png` and the avatar (`shots/compare.png`). Body proportions are tuned to it: head about 32% of height sitting on the shoulders, broad shoulder yoke tapering to the crotch, wide fighting stance. Three body builds (Slim default, Medium, Bold) in the panel; `builds.mjs` writes `shots/builds.png`, rounded leg ends. |
 | `shots.mjs`, `check.mjs` | Screenshot script and behaviour check (4-hit combo, every power hits, power cancel, block, perfect guard). |
 | `fxshots.mjs` | Close-ups of every effect at its best frame (`shots/fx-*.png`). |
 | `shots/` | Latest screenshots. |

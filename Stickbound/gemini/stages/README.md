@@ -13,12 +13,12 @@ Dev tool only. The arenas are not part of the game build (ALLOW_AI_BACKGROUND_IM
 | `lightningarena/` | Volt City rooftop. Floor found from the yellow roof rail. Storm effects in `arenafx.ts`. |
 | `firearena/`, `waterarena/`, `leafarena/`, `lightarena/`, `eartharena/`, `windarena/`, `gravityarena/`, `timearena/`, `shadowarena/`, `icearena/` | One arena each: `arena.png`, `arena.ts`, `index.html`, `README.md`. |
 
-The Lightning hero kit (`kit.png`, `parts.json`, `PROMPTS.md`) stays in `gemini/parts/lightning/`, because `tools/cut-parts.mjs` reads it for the game.
+The Lightning hero kit (`kit.png`, `parts.json`, `PROMPTS.md`), his body parts sheet and the cut body parts are in `gemini/characters/lightning/` (`tools/cut-parts.mjs` reads the kit for the game). Every arena page runs `engine/main.ts`, which looks the folder up in `engine/registry.ts`; the Trial Ground (`gemini/trial/`) uses the same registry and `engine/backdrop.ts`, so every arena is also playable there with the other 9 heroes. The lab's Hero list opens them.
 
 ## Adding an arena
 1. Make `gemini/stages/<element>arena/` with the picture as `arena.png` and an `index.html` like the others.
-2. Write `arena.ts`: an `ArenaDef` with the floor line in picture pixels, `bake` (one-time picture edits), `draw` (effects as a function of the frame), `sounds` (events on a timetable) and the `Song`/`Air` music spec, then call `startLab(def)`.
-3. Add it to `ARENAS` in `engine/arena.ts` and to `index.html` here.
+2. Write `arena.ts`: an `ArenaDef` with the floor line in picture pixels, `bake` (one-time picture edits), `draw` (effects as a function of the frame), `sounds` (events on a timetable) and the `Song`/`Air` music spec, and export it.
+3. Add it to `ARENAS` in `engine/arena.ts`, to `ARENA_DEFS` in `engine/registry.ts`, to `index.html` here and to `gemini/index.html`, and give its folder an `index.html` like the others (it loads `../engine/main.ts`).
 4. Check: `npx tsc --noEmit`, then `node gemini/stages/engine/arenashots.mjs <element>arena` (screenshots, frame rate, sound counts).
 
 ## Checked (headless Chrome without a GPU; fps varies by about 10 between runs)
