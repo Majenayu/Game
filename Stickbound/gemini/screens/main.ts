@@ -4,10 +4,9 @@
  * Test hooks: window.__go(name), window.__step(n), window.__page(), body[data-ready="1"] once a page has drawn.
  */
 import { loadHeroes } from './heroes';
-import './menus';
-import './menus2';
 import { nav, pages, type PageName } from './nav';
 import './play';
+import './refs';
 import { H, W, click, input } from './ui';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#c')!;
@@ -46,7 +45,7 @@ nav.go = (name: PageName) => {
   document.title = `Elementick · ${page.title}`;
   input.held.clear();
   const els = page.heroes?.() ?? [];
-  void loadHeroes(els).then(() => {
+  void Promise.all([loadHeroes(els), page.load?.()]).then(() => {
     current = name;
     nav.name = name;
     page.enter?.();

@@ -476,7 +476,7 @@ export function drawZombie(g: G, z: ZLook): void {
   g.translate(0, p.sink);
   g.rotate(p.rot * D2R);
   if (big) {
-    drawBoss(g, z, p, sp, line, flash);
+    drawBoss(g, z, p, sp, line, false); // bosses flash their outline only, a full white body hides them
     g.restore();
     return;
   }

@@ -9,6 +9,8 @@ export interface Page {
   title: string;
   /** heroes the page needs loaded before it draws */
   heroes?: () => El[];
+  /** pictures the page needs before it draws */
+  load?(): Promise<void>;
   enter?(): void;
   step?(): void;
   draw(g: G, t: number): void;

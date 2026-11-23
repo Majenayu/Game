@@ -4,15 +4,16 @@
  * Keys: A D move, W jump, S guard, J attack (x4 combo), K heavy, L dash, U I O powers, P ultimate, Esc pause.
  * Player 2 (Local 2P): arrows, Numpad 1 attack, 2 heavy, 3 dash, 4 5 6 powers, 0 ultimate.
  */
-import { EL, city, coin, elementCoin, glyph, rain, rankBadge } from './art';
-import { backdrop, fmt, dim } from './common';
+import { coin, elementCoin, rain } from './art';
+import { fmt, dim } from './common';
+import { drawArena, drawCut, loadHudRefs, patch } from './hudref';
+import { resumeFlags } from './refs';
 import { Hero, drawEffects, drawFloaters, heroAI, makeWorld, noKeys, stepWorld, type Keys, type World } from './fight';
 import { NAMES } from './heroes';
 import { nav, pages } from './nav';
-import { addXp, profile, save, tierOf } from './save';
-import { C, H, W, bar, chamfer, cyanButton, goldButton, hexPath, input, neon, panel, region, text, type G } from './ui';
-import { ZSPEC } from './zombies';
-import { ZGROUND, newZGame, stepZGame, type ZGame } from './zmode';
+import { addXp, profile, save } from './save';
+import { C, H, W, bar, chamfer, cyanButton, goldButton, input, neon, panel, region, text, type G } from './ui';
+import { newZGame, stepZGame, type ZGame } from './zmode';
 
 // ---------------------------------------------------------------- keys
 const P1: Record<keyof Keys, string[]> = {
@@ -33,49 +34,35 @@ function touchZone(x: number, y: number, r: number, key: keyof Keys): boolean {
   if (on) virt.add(key);
   return on;
 }
-function dpad(g: G, x: number, y: number): void {
-  g.save();
-  g.globalAlpha = 0.75;
-  g.beginPath();
-  g.arc(x, y, 92, 0, Math.PI * 2);
-  g.fillStyle = 'rgba(20,40,80,0.25)';
-  g.fill();
-  neon(g, 'rgba(120,200,255,0.5)', 1.5, 6);
-  const arms: Array<[number, number, keyof Keys, number]> = [[0, -52, 'up', 0], [52, 0, 'right', 1], [0, 52, 'guard', 2], [-52, 0, 'left', 3]];
-  for (const [dx, dy, key, rot] of arms) {
-    const on = touchZone(x + dx, y + dy, 40, key);
-    chamfer(g, x + dx - 32, y + dy - 32, 64, 64, 10);
-    g.fillStyle = on ? 'rgba(63,214,255,0.45)' : 'rgba(40,70,120,0.55)';
-    g.fill();
-    neon(g, '#8ad8ff', 1.5, 6);
-    g.save();
-    g.translate(x + dx, y + dy);
-    g.rotate((rot * Math.PI) / 2);
-    g.fillStyle = '#dff4ff';
-    g.beginPath();
-    g.moveTo(0, -14);
-    g.lineTo(12, 6);
-    g.lineTo(-12, 6);
-    g.closePath();
-    g.fill();
-    g.restore();
-  }
-  g.restore();
+/** the touch buttons cut from the picture; pressing one holds that key */
+function pad(g: G, name: string, cx: number, cy: number): void {
+  drawCut(g, name, cx - 103, cy - 103, 206, 206, 'circle');
+  touchZone(cx, cy - 55, 38, 'up');
+  touchZone(cx + 55, cy, 38, 'right');
+  touchZone(cx, cy + 55, 38, 'guard');
+  touchZone(cx - 55, cy, 38, 'left');
 }
-function roundBtn(g: G, x: number, y: number, r: number, key: keyof Keys, draw: () => void, sq = false): void {
-  const on = touchZone(x, y, r + 6, key);
-  g.save();
-  g.globalAlpha = 0.85;
-  if (sq) chamfer(g, x - r, y - r, r * 2, r * 2, r * 0.3);
-  else {
-    g.beginPath();
-    g.arc(x, y, r, 0, Math.PI * 2);
-  }
-  g.fillStyle = on ? 'rgba(63,214,255,0.4)' : 'rgba(14,30,60,0.6)';
-  g.fill();
-  neon(g, '#8ad8ff', 2, 10);
-  g.restore();
-  draw();
+function fightControls(g: G): void {
+  const N = 'fight-hud';
+  pad(g, N, 145, 626);
+  drawCut(g, N, 1257, 471, 88, 88, 'circle');
+  touchZone(1301, 515, 44, 'p1');
+  drawCut(g, N, 1128, 515, 88, 88, 'circle');
+  touchZone(1172, 559, 44, 'p2');
+  drawCut(g, N, 1088, 638, 88, 88, 'circle');
+  touchZone(1132, 682, 44, 'p3');
+  drawCut(g, N, 1209, 605, 134, 130, 'rect');
+  touchZone(1276, 670, 62, 'attack');
+}
+function zombieControls(g: G): void {
+  const N = 'zombie-survival-hud';
+  pad(g, N, 147, 628);
+  drawCut(g, N, 1236, 467, 102, 110, 'rect');
+  touchZone(1287, 522, 50, 'p1');
+  drawCut(g, N, 1068, 630, 104, 104, 'rect');
+  touchZone(1120, 682, 50, 'guard');
+  drawCut(g, N, 1196, 596, 142, 144, 'rect');
+  touchZone(1267, 668, 68, 'attack');
 }
 
 // ---------------------------------------------------------------- fight
@@ -142,13 +129,13 @@ function pause(): void {
   nav.back = nav.name;
   nav.go('pause');
 }
-let resumeFight = false;
 pages.fight = {
   title: 'Fight',
   heroes: () => [nav.match.p1, nav.match.p2],
+  load: loadHudRefs,
   enter() {
-    if (resumeFight && F) {
-      resumeFight = false;
+    if (resumeFlags.fight && F) {
+      resumeFlags.fight = false;
       return;
     }
     F = newRound(null);
@@ -208,7 +195,7 @@ pages.fight = {
     const sh = profile.shake && !profile.reduced ? w.shake : 0;
     g.save();
     g.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
-    backdrop(g);
+    drawArena(g);
     drawEffects(g, w, false);
     b.draw(g, w);
     a.draw(g, w);
@@ -241,12 +228,7 @@ pages.fight = {
       text(g, timeUp ? 'TIME!' : 'K.O.', W / 2, 330, { size: 130, align: 'center', weight: 900, italic: true, col: '#ff5a3a', stroke: '#2a0000', sw: 10, glow: '#ff3b1a', blur: 40 });
     }
     // touch controls
-    dpad(g, 118, 640);
-    roundBtn(g, 1290, 690, 54, 'attack', () => text(g, 'J', 1290, 691, { size: 36, align: 'center', weight: 800 }), true);
-    roundBtn(g, 1295, 552, 38, 'p1', () => glyph(g, a.el, 1295, 552, 18));
-    roundBtn(g, 1185, 612, 38, 'p2', () => glyph(g, a.el, 1185, 612, 18));
-    roundBtn(g, 1160, 718, 38, 'p3', () => glyph(g, a.el, 1160, 718, 18));
-    roundBtn(g, 1196, 500, 28, 'ult', () => text(g, 'ULT', 1196, 501, { size: 15, align: 'center', weight: 800, col: a.mp >= 100 ? '#ffd24a' : '#7a8aa8' }));
+    fightControls(g);
     // pause button
     chamfer(g, W / 2 - 22, 104, 44, 30, 6);
     g.fillStyle = 'rgba(10,20,40,0.8)';
@@ -257,96 +239,54 @@ pages.fight = {
   },
 };
 function fightHud(g: G, f: FightState, t: number): void {
+  const N = 'fight-hud';
   const m = nav.match;
-  const side = (h: Hero, right: boolean, name: string, lv: number, mate: string, wins: number) => {
-    const s = right ? -1 : 1;
-    const ox = right ? W : 0;
-    const X = (x: number) => ox + s * x;
-    const el = h.el;
-    // name tab
-    g.save();
-    g.beginPath();
-    g.moveTo(X(70), 14);
-    g.lineTo(X(370), 14);
-    g.lineTo(X(392), 40);
-    g.lineTo(X(70), 40);
-    g.closePath();
-    g.fillStyle = 'rgba(8,16,34,0.85)';
-    g.fill();
-    neon(g, C.cyan, 1.2, 6);
-    g.restore();
-    if (right) {
-      text(g, `Lv. ${lv}`, X(120), 28, { size: 22, align: 'right', col: '#ffd24a' });
-      text(g, name, X(120) - 80, 28, { size: 22, align: 'right' });
-    } else {
-      text(g, name, X(120), 28, { size: 22 });
-      text(g, `Lv. ${lv}`, X(120) + name.length * 12 + 12, 28, { size: 22, col: '#ffd24a' });
-    }
-    // HP
-    text(g, 'HP', X(130), 62, { size: 20, align: right ? 'right' : 'left' });
-    const hpCols = profile.colorblind ? ['#2a6aff', '#7ab8ff'] : right ? ['#ff2a2a', '#ffb43a'] : ['#3ad84a', '#d8ff4a'];
-    const bx = right ? W - 160 - 450 : 160;
-    g.save();
-    if (right) {
-      g.translate(W, 0);
-      g.scale(-1, 1);
-    }
-    bar(g, 160, 50, 450, 24, h.hp / h.maxHp, right ? [hpCols[0], hpCols[1]] : hpCols, { seg: 4, skew: 10, edge: '#3fa8ff' });
-    bar(g, 160, 82, 220, 12, h.mp / 100, ['#1a8ad0', '#3fe6ff'], { seg: 2, skew: 6, edge: '#3fa8ff' });
-    g.restore();
-    void bx;
-    text(g, 'MP', X(130), 89, { size: 18, align: right ? 'right' : 'left' });
-    // round pips
-    for (let i = 0; i < 3; i++) {
-      const px = X(560 - i * 32);
+  const local = m.mode === 'local';
+  drawCut(g, N, 0, 0, W, 210, 'strip', [430, 946, 130]);
+  if (f.a.el !== 'fire') elementCoin(g, f.a.el, 56, 65, 44);
+  if (f.b.el !== 'water') elementCoin(g, f.b.el, 1320, 65, 44);
+  const n1 = local ? 'Player 1' : profile.name;
+  const n2 = local ? 'Player 2' : m.p2Name;
+  patch(g, N, 120, 22, 215, 28, 345, 36);
+  text(g, n1, 124, 36, { size: 22 });
+  text(g, `Lv. ${profile.heroLv[m.p1]}`, 132 + n1.length * 12, 36, { size: 22, col: '#ffd24a' });
+  patch(g, N, 1062, 22, 200, 28, 1040, 36);
+  text(g, `Lv. ${local ? profile.heroLv[m.p2] : m.p2Lv}`, 1252, 36, { size: 22, align: 'right', col: '#ffd24a' });
+  text(g, n2, 1176, 36, { size: 22, align: 'right' });
+  const cb = profile.colorblind;
+  bar(g, 179, 58, 434, 27, f.a.hp / f.a.maxHp, cb ? ['#2a6aff', '#7ab8ff'] : ['#3ad84a', '#d8ff4a'], { seg: 4, back: '#050a18' });
+  bar(g, 179, 91, 196, 14, f.a.mp / 100, ['#1a8ad0', '#3fe6ff'], { seg: 2, back: '#050a18' });
+  g.save();
+  g.translate(W, 0);
+  g.scale(-1, 1);
+  bar(g, 182, 58, 428, 27, f.b.hp / f.b.maxHp, cb ? ['#ffb43a', '#ffe08a'] : ['#ff2a2a', '#ffb43a'], { seg: 4, back: '#050a18' });
+  bar(g, 181, 91, 190, 14, f.b.mp / 100, ['#1a8ad0', '#3fe6ff'], { seg: 2, back: '#050a18' });
+  g.restore();
+  patch(g, N, 646, 46, 84, 52, 650, 50);
+  text(g, String(Math.max(0, Math.ceil(f.timer / 60))), 688, 73, { size: 52, align: 'center', weight: 800 });
+  const pips = (xs: number[], wins: number, sx: number) => {
+    patch(g, N, xs[0] - 16, 98, xs[2] - xs[0] + 32, 24, sx, 110);
+    xs.forEach((px, i) => {
       g.save();
       g.beginPath();
-      g.arc(px, 98, 11, 0, Math.PI * 2);
-      g.fillStyle = i < wins ? '#ffb43a' : 'rgba(10,20,40,0.8)';
+      g.arc(px, 110, 9, 0, Math.PI * 2);
+      g.fillStyle = i < wins ? '#ffb43a' : '#0a1430';
       g.shadowColor = '#ffb43a';
-      g.shadowBlur = i < wins ? 14 : 0;
+      g.shadowBlur = i < wins ? 12 : 0;
       g.fill();
       g.strokeStyle = '#c8d0e0';
       g.lineWidth = 2;
       g.stroke();
       g.restore();
-    }
-    // portrait
-    g.save();
-    g.beginPath();
-    g.arc(X(56), 58, 46, 0, Math.PI * 2);
-    g.fillStyle = EL[el].deep;
-    g.fill();
-    neon(g, EL[el].line, 4, 20);
-    g.restore();
-    glyph(g, el, X(56), 58, 26);
-    // companion
-    g.save();
-    g.beginPath();
-    g.arc(X(150), 140, 24, 0, Math.PI * 2);
-    g.fillStyle = '#0a1226';
-    g.fill();
-    neon(g, '#8ad8ff', 2, 10);
-    g.restore();
-    text(g, mate.slice(0, 1), X(150), 141, { size: 20, align: 'center' });
+    });
   };
-  const local = m.mode === 'local';
-  side(f.a, false, local ? 'Player 1' : profile.name, profile.heroLv[m.p1], NAMES[profile.squad[1] ?? 'lightning'], f.wins[0]);
-  side(f.b, true, local ? 'Player 2' : m.p2Name, m.p2Lv, 'L', f.wins[1]);
-  // timer
-  g.save();
-  hexPath(g, W / 2, 58, 50, 0.72);
-  g.fillStyle = 'rgba(8,16,34,0.92)';
-  g.fill();
-  neon(g, C.cyan, 2.5, 14);
-  g.restore();
-  text(g, String(Math.max(0, Math.ceil(f.timer / 60))), W / 2, 60, { size: 50, align: 'center', weight: 800 });
-  // combo
+  pips([592, 560, 529], f.wins[0], 506);
+  pips([782, 813, 846], f.wins[1], 870);
   if (f.comboShow > 0 && f.comboN >= 2) {
     const x = f.comboSide === 1 ? W - 150 : 170;
-    const pop = f.comboShow > 70 ? 1.2 : 1;
     g.save();
     g.translate(x, 260);
+    const pop = f.comboShow > 70 ? 1.2 : 1;
     g.scale(pop, pop);
     text(g, 'COMBO!', 60, -46, { size: 22, align: 'center', italic: true, col: '#ffd24a', weight: 800 });
     text(g, `${f.comboN}`, -70, 0, { size: 96, align: 'center', italic: true, weight: 900, col: '#ffd24a', stroke: '#4a1a00', sw: 6, glow: '#ffb43a', blur: 20 });
@@ -361,13 +301,13 @@ function fightHud(g: G, f: FightState, t: number): void {
 // ---------------------------------------------------------------- zombie survival
 let Z: ZGame | null = null;
 let zRewarded = false;
-let resumeZombie = false;
 pages.zombie = {
   title: 'Zombie Survival',
   heroes: () => [profile.hero],
+  load: loadHudRefs,
   enter() {
-    if (resumeZombie && Z) {
-      resumeZombie = false;
+    if (resumeFlags.zombie && Z) {
+      resumeFlags.zombie = false;
       return;
     }
     const wave = Number(new URLSearchParams(location.search).get('wave') ?? '1') || 1;
@@ -399,7 +339,7 @@ pages.zombie = {
     const sh = profile.shake && !profile.reduced ? w.shake : 0;
     g.save();
     g.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
-    g.drawImage(city('ruin', 560), 0, 0);
+    drawArena(g, 0.5);
     // green haze
     const fog = g.createLinearGradient(0, 420, 0, 700);
     fog.addColorStop(0, 'rgba(60,255,120,0)');
@@ -420,12 +360,7 @@ pages.zombie = {
       g.fillRect(0, 0, W, H);
     }
     zombieHud(g, z, t);
-    dpad(g, 118, 640);
-    roundBtn(g, 1290, 690, 54, 'attack', () => swordIcon(g, 1290, 690), true);
-    roundBtn(g, 1170, 705, 40, 'guard', () => shieldIcon(g, 1170, 705), true);
-    roundBtn(g, 1290, 560, 40, 'p1', () => glyph(g, hero.el, 1290, 560, 18), true);
-    roundBtn(g, 1180, 590, 30, 'p3', () => glyph(g, hero.el, 1180, 590, 14));
-    roundBtn(g, 1240, 470, 26, 'ult', () => text(g, 'ULT', 1240, 471, { size: 14, align: 'center', weight: 800, col: hero.mp >= 100 ? '#ffd24a' : '#7a8aa8' }));
+    zombieControls(g);
     if (z.over && z.overTimer > 90) {
       dim(g, 0.6);
       panel(g, 420, 190, 536, 380, { col: '#ff4a4a', cut: 16, brackets: true });
@@ -450,221 +385,36 @@ pages.zombie = {
     region(30, 160, 44, 30, pause);
   },
 };
-function swordIcon(g: G, x: number, y: number): void {
-  g.save();
-  g.translate(x, y);
-  g.rotate(-0.8);
-  g.fillStyle = '#dff4ff';
-  g.shadowColor = C.cyan;
-  g.shadowBlur = 10;
-  g.beginPath();
-  g.moveTo(-4, 10);
-  g.lineTo(-4, -26);
-  g.lineTo(0, -34);
-  g.lineTo(4, -26);
-  g.lineTo(4, 10);
-  g.closePath();
-  g.fill();
-  g.fillRect(-14, 10, 28, 5);
-  g.fillRect(-3, 15, 6, 14);
-  g.restore();
-}
-function shieldIcon(g: G, x: number, y: number): void {
-  g.save();
-  g.translate(x, y);
-  g.fillStyle = 'rgba(200,230,255,0.85)';
-  g.shadowColor = C.cyan;
-  g.shadowBlur = 10;
-  g.beginPath();
-  g.moveTo(0, -20);
-  g.lineTo(17, -13);
-  g.quadraticCurveTo(16, 10, 0, 22);
-  g.quadraticCurveTo(-16, 10, -17, -13);
-  g.closePath();
-  g.fill();
-  g.restore();
-}
 function zombieHud(g: G, z: ZGame, t: number): void {
+  const N = 'zombie-survival-hud';
   const h = z.hero;
-  // portrait and bars
-  g.save();
-  g.beginPath();
-  g.arc(58, 56, 40, 0, Math.PI * 2);
-  g.fillStyle = EL[h.el].deep;
-  g.fill();
-  neon(g, EL[h.el].line, 4, 20);
-  g.restore();
-  glyph(g, h.el, 58, 56, 24);
-  text(g, NAMES[h.el], 112, 30, { size: 22 });
-  text(g, `Lv. ${profile.heroLv[h.el]}`, 112 + NAMES[h.el].length * 12 + 10, 30, { size: 22, col: '#ffd24a' });
-  text(g, 'HP', 112, 62, { size: 18 });
-  bar(g, 145, 52, 290, 20, h.hp / h.maxHp, profile.colorblind ? ['#2a6aff', '#7ab8ff'] : ['#3ad84a', '#d8ff4a'], { seg: 10, skew: 8, edge: '#3fa8ff' });
-  text(g, 'MP', 112, 90, { size: 18 });
-  bar(g, 145, 82, 190, 12, h.mp / 100, ['#1a8ad0', '#3fe6ff'], { seg: 3, skew: 6, edge: '#3fa8ff' });
-  // wave
-  chamfer(g, 548, 14, 280, 84, 12);
-  const wg = g.createLinearGradient(0, 14, 0, 98);
-  wg.addColorStop(0, '#5a1a10');
-  wg.addColorStop(1, '#2a0a08');
-  g.fillStyle = wg;
-  g.fill();
-  neon(g, '#ffb43a', 3, 20);
-  text(g, `WAVE ${Math.max(1, z.wave)}`, 688, 58, { size: 50, align: 'center', weight: 900, col: '#ffd24a', stroke: '#3a1000', sw: 4 });
-  chamfer(g, 842, 26, 196, 64, 8);
-  g.fillStyle = 'rgba(8,16,34,0.85)';
-  g.fill();
-  text(g, 'ZOMBIES', 940, 46, { size: 21, align: 'center' });
-  text(g, `REMAINING: ${z.remaining}`, 940, 72, { size: 21, align: 'center', col: '#ffffff' });
-  // score
-  panel(g, 1128, 66, 222, 98, { col: C.cyan, cut: 12 });
-  text(g, `SCORE: ${fmt(z.score)}`, 1239, 98, { size: 22, align: 'center', col: '#ffffff' });
-  text(g, 'MULTIPLIER', 1215, 134, { size: 22, align: 'center' });
-  text(g, `x${z.mult}`, 1318, 134, { size: 30, align: 'center', col: '#ffd24a', weight: 900 });
-  // boss bar
+  drawCut(g, N, 0, 0, W, 176, 'strip', [560, 900, 128]);
+  if (h.el !== 'lightning') elementCoin(g, h.el, 56, 59, 38);
+  patch(g, N, 114, 20, 150, 32, 270, 30);
+  text(g, NAMES[h.el], 118, 37, { size: 21 });
+  text(g, `Lv. ${profile.heroLv[h.el]}`, 124 + NAMES[h.el].length * 12, 37, { size: 21, col: '#ffd24a' });
+  bar(g, 142, 55, 290, 23, h.hp / h.maxHp, profile.colorblind ? ['#2a6aff', '#7ab8ff'] : ['#3ad84a', '#d8ff4a'], { seg: 10, back: '#050a18' });
+  bar(g, 142, 86, 128, 13, h.mp / 100, ['#1a8ad0', '#3fe6ff'], { seg: 3, back: '#050a18' });
+  patch(g, N, 584, 34, 208, 52, 590, 38);
+  text(g, `WAVE ${Math.max(1, z.wave)}`, 688, 61, { size: 52, align: 'center', weight: 900, col: '#ffd24a', stroke: '#3a1000', sw: 3 });
+  patch(g, N, 968, 56, 40, 28, 962, 70);
+  text(g, String(z.remaining), 970, 70, { size: 21, col: '#ffd24a' });
+  patch(g, N, 1228, 80, 112, 30, 1224, 95);
+  text(g, fmt(z.score), 1232, 95, { size: 23, col: '#ffd24a' });
+  patch(g, N, 1292, 119, 48, 32, 1320, 113);
+  text(g, `x${z.mult}`, 1296, 135, { size: 28, col: '#ffd24a', weight: 900 });
   if (z.boss && z.boss.alive()) {
     const b = z.boss;
     text(g, b.spec.name.toUpperCase(), 688, 118, { size: 22, align: 'center', col: '#ff8a8a', weight: 800 });
     bar(g, 438, 132, 500, 18, b.hp / b.maxHp, ['#a01010', '#ff4a2a'], { seg: 10, skew: 6, edge: '#ff6a4a' });
   }
-  // banner
   if (z.banner > 0) {
-    const a = Math.min(1, z.banner / 20);
     g.save();
-    g.globalAlpha = a;
+    g.globalAlpha = Math.min(1, z.banner / 20);
     text(g, z.bannerText, W / 2, 300, { size: 84, align: 'center', weight: 900, italic: true, col: z.bannerText.includes('BOSS') ? '#ff6a4a' : '#ffd24a', stroke: '#2a0a00', sw: 8, glow: '#ff9a2a', blur: 26 });
     if (z.bannerText.includes('BOSS') && z.boss) text(g, z.boss.spec.text, W / 2, 360, { size: 22, align: 'center', col: '#ffffff' });
     g.restore();
   }
-  void ZSPEC;
-  void ZGROUND;
   void t;
 }
 
-// ---------------------------------------------------------------- pause and settings
-let ctrlView = false;
-function pauseDraw(g: G, t: number, menu: boolean): void {
-  if (!menu && nav.snapshot) {
-    g.save();
-    g.filter = 'blur(5px) brightness(0.55)';
-    g.drawImage(nav.snapshot, 0, 0);
-    g.restore();
-  } else {
-    backdrop(g);
-    dim(g, 0.55);
-  }
-  // title
-  text(g, menu ? 'SETTINGS' : 'GAME PAUSED', W / 2, 92, { size: 84, align: 'center', weight: 900, col: '#dff8ff', glow: C.cyan, blur: 24 });
-  for (const [x, d, col] of [[330, 1, C.cyan], [1040, -1, C.purple]] as const) {
-    for (let k = 0; k < 3; k++) {
-      g.save();
-      g.translate(x + k * 18 * d, 94);
-      g.scale(d, 1);
-      g.strokeStyle = col;
-      g.lineWidth = 5;
-      g.shadowColor = col;
-      g.shadowBlur = 8;
-      g.beginPath();
-      g.moveTo(-6, -12);
-      g.lineTo(6, 0);
-      g.lineTo(-6, 12);
-      g.stroke();
-      g.restore();
-    }
-  }
-  // left
-  panel(g, 98, 188, 538, 540, { col: C.purple, cut: 16, brackets: true });
-  text(g, menu ? 'MENU' : 'PAUSE', 367, 230, { size: 40, align: 'center', weight: 800, col: '#e0b8ff', glow: C.purple });
-  const back = nav.back === 'pause' || nav.back === 'settings' ? 'lobby' : nav.back;
-  const resume = () => {
-    if (back === 'fight') resumeFight = true;
-    if (back === 'zombie') resumeZombie = true;
-    nav.go(back);
-  };
-  goldButton(g, 218, 290, 300, 76, menu ? 'BACK' : 'RESUME', { size: 34, t, act: resume });
-  cyanButton(g, 218, 390, 300, 70, 'CONTROLS', { size: 32, on: ctrlView, act: () => (ctrlView = !ctrlView) });
-  cyanButton(g, 218, 485, 300, 70, 'SETTINGS', { size: 32, on: !ctrlView, act: () => (ctrlView = false) });
-  cyanButton(g, 218, 580, 300, 70, menu ? 'ALL SCREENS' : 'QUIT MATCH', { size: 32, col: menu ? C.cyan : '#ff4a5a', act: () => nav.go(menu ? 'gallery' : 'lobby') });
-  // right
-  panel(g, 730, 188, 552, 540, { col: C.cyan, cut: 16, brackets: true });
-  if (ctrlView) {
-    text(g, 'CONTROLS', 1006, 230, { size: 40, align: 'center', weight: 800 });
-    const rows: Array<[string, string]> = [['Move / run', 'A D'], ['Jump', 'W / Space'], ['Guard', 'S'], ['Attack (x4 combo)', 'J'], ['Heavy', 'K'], ['Dash', 'L'], ['Powers I / II / III', 'U I O'], ['Ultimate (100 MP)', 'P'], ['Pause', 'Esc'], ['Player 2', 'Arrows, Numpad 1-6, 0']];
-    rows.forEach(([a, b], i) => {
-      text(g, a, 770, 280 + i * 42, { size: 22 });
-      text(g, b, 1250, 280 + i * 42, { size: 22, align: 'right', col: '#ffd24a' });
-    });
-    return;
-  }
-  text(g, 'SETTINGS', 1006, 230, { size: 40, align: 'center', weight: 800 });
-  text(g, 'AUDIO', 760, 276, { size: 26 });
-  const slider = (label: string, y: number, v: number, set: (v: number) => void) => {
-    text(g, label, 760, y + 10, { size: 22 });
-    const x0 = 922;
-    const ww = 330;
-    chamfer(g, x0, y, ww, 22, 6);
-    g.fillStyle = 'rgba(6,14,30,0.9)';
-    g.fill();
-    neon(g, '#5a8ad0', 1, 4);
-    for (let i = 0; i < 14; i++) {
-      const on = i / 14 < v;
-      g.fillStyle = on ? (i < 9 ? '#d04ad8' : '#6a8aff') : 'rgba(255,255,255,0.08)';
-      g.fillRect(x0 + 6 + i * 23, y + 5, 19, 12);
-    }
-    g.fillStyle = '#9ff0ff';
-    g.shadowColor = '#9ff0ff';
-    g.fillRect(x0 + 4 + v * (ww - 12), y - 4, 8, 30);
-    region(x0, y - 6, ww, 34, () => set(Math.max(0, Math.min(1, (input.mx - x0) / ww))));
-  };
-  slider('MUSIC', 300, profile.music, (v) => ((profile.music = v), save()));
-  slider('SOUND FX', 346, profile.sfx, (v) => ((profile.sfx = v), save()));
-  text(g, 'GRAPHICS', 760, 410, { size: 26 });
-  text(g, 'GRAPHICS', 760, 456, { size: 22 });
-  (['high', 'medium', 'low'] as const).forEach((q, i) => {
-    const on = profile.graphics === q;
-    if (on) goldButton(g, 925 + i * 112, 436, 102, 40, q.toUpperCase(), { size: 20, t, act: () => ((profile.graphics = q), save()) });
-    else cyanButton(g, 925 + i * 112, 436, 102, 40, q.toUpperCase(), { size: 20, act: () => ((profile.graphics = q), save()) });
-  });
-  text(g, 'ACCESSIBILITY', 760, 510, { size: 26 });
-  const toggle = (label: string, y: number, on: boolean, set: () => void) => {
-    text(g, label, 760, y, { size: 22 });
-    g.save();
-    g.beginPath();
-    g.roundRect(1170, y - 14, 84, 28, 8);
-    g.fillStyle = 'rgba(60,10,20,0.8)';
-    g.fill();
-    neon(g, '#a03a4a', 1, 4);
-    g.beginPath();
-    g.roundRect(on ? 1172 : 1212, y - 11, 40, 22, 6);
-    g.fillStyle = on ? C.cyan : '#6a6a7a';
-    g.shadowColor = C.cyan;
-    g.shadowBlur = on ? 12 : 0;
-    g.fill();
-    g.restore();
-    region(1160, y - 18, 100, 36, set);
-  };
-  toggle('REDUCED MOTION', 556, profile.reduced, () => ((profile.reduced = !profile.reduced), save()));
-  toggle('SCREEN SHAKE', 600, profile.shake, () => ((profile.shake = !profile.shake), save()));
-  toggle('COLORBLIND MODE', 644, profile.colorblind, () => ((profile.colorblind = !profile.colorblind), save()));
-  text(g, `Rank: ${tierOf(profile.rp).tier}`, 760, 696, { size: 16, col: '#7fb0d8', weight: 500 });
-  rankBadge(g, tierOf(profile.rp).tier, 870, 694, 12, true);
-  void elementCoin;
-}
-pages.pause = {
-  title: 'Paused',
-  key(e) {
-    if (e.code === 'Escape') {
-      if (nav.back === 'fight') resumeFight = true;
-      if (nav.back === 'zombie') resumeZombie = true;
-      nav.go(nav.back === 'pause' ? 'lobby' : nav.back);
-    }
-  },
-  draw(g, t) {
-    pauseDraw(g, t, false);
-  },
-};
-pages.settings = {
-  title: 'Settings',
-  draw(g, t) {
-    pauseDraw(g, t, true);
-  },
-};

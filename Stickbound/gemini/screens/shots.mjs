@@ -18,17 +18,18 @@ const errors = [];
 const page = await b.newPage({ viewport: { width: 1376, height: 768 } });
 page.on('pageerror', (e) => errors.push(`${e.message}`));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+const B = process.env.BOXES ? '&boxes=1' : '';
 const ready = () => page.waitForSelector('body[data-ready="1"]', { timeout: 30000 });
 for (const name of list) {
-  const url = name === 'zombie' ? `http://localhost:5191/gemini/screens/?page=zombie&wave=10` : `http://localhost:5191/gemini/screens/?page=${name}`;
+  const url = name === 'zombie' ? `http://localhost:5191/gemini/screens/?page=zombie&wave=10${B}` : `http://localhost:5191/gemini/screens/?page=${name}${B}`;
   if (name === 'pause') {
-    await page.goto('http://localhost:5191/gemini/screens/?page=fight');
+    await page.goto(`http://localhost:5191/gemini/screens/?page=fight${B}`);
     await ready();
     await page.evaluate(() => window.__step(200));
     await page.keyboard.press('Escape');
     await ready();
   } else if (name === 'victory') {
-    await page.goto('http://localhost:5191/gemini/screens/?page=fight');
+    await page.goto(`http://localhost:5191/gemini/screens/?page=fight${B}`);
     await ready();
     await page.evaluate(() => {
       window.__nav.result = { winner: 1, mode: 'quick', xp: 1500, coins: 500, levelUp: true };

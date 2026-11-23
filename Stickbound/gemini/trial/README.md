@@ -83,7 +83,10 @@ cape and shoulder pads; gravity slit visor, cape and orbit ring; time gear crown
 - The lab is not part of the game build.
 
 ## Screens (gemini/screens)
-Working, code-drawn versions of every mock-up in `gemini/extra/`, linked from the top of the trial panel.
+Every mock-up in `gemini/extra/` shown as the picture itself, with click areas over its buttons (`refs.ts`), linked
+from the top of the trial panel. Add `&boxes=1` to see the click areas. The fight and Zombie Survival play on the
+lightning arena picture, with the HUD strip and touch buttons cut from `fight-hud.png` and `zombie-survival-hud.png`
+(`hudref.ts`, `play.ts`).
 Open http://localhost:5190/gemini/screens/ (all screens) or `?page=<name>`: `title`, `lobby`, `road`, `roster`, `customise`,
 `shop`, `ranked`, `versus`, `fight`, `pause`, `settings`, `victory`, `levelup`, `zombie` (add `&wave=10` to start later),
 `bestiary`, `icons`, `keyart`, `poster`. The flow works end to end: lobby, Champion Road or Ranked, versus, a best-of-3
@@ -91,5 +94,5 @@ fight against the AI (or Local 2P), victory with XP and coins, level up, back to
 shop (earned in play only). Zombie Survival: endless waves of Walkers, Runners, Spitters, Officers (riot shield, hit
 from behind) and Bombers, with a boss every 5th wave (Brute: slams shockwaves you jump over and charges; Toxic Titan:
 acid volleys and calls up Walkers). Esc pauses. Heroes use this lab's rig, heads and clips; Lightning uses a
-code-drawn visor head. Nothing here is an image from gemini/extra.
+code-drawn visor head. These are dev pages, so they use the gemini/extra pictures; the `src/` game build does not.
 `node gemini/screens/shots.mjs [pages] [outDir]` (check server on 5191) shoots every screen next to its mock-up.
