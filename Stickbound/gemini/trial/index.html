@@ -91,6 +91,7 @@
       }
       .sel { width: 100%; padding: 6px; background: #1b2148; color: #e8ecff; border: 1px solid #3a4590; border-radius: 8px; font: inherit; font-weight: 700; }
       b { color: var(--el, #ffd84a); }
+      #screens a { color: #9ff3ff; font-weight: 700; }
       label {
         display: block;
         margin: 4px 0;
@@ -171,6 +172,10 @@
       <canvas id="c"></canvas>
       <div id="panel">
         <h1 id="title">Trial Ground</h1>
+        <div class="row" id="screens">
+          <a href="../screens/?page=gallery">All screens</a> · <a href="../screens/?page=lobby">Lobby</a> · <a href="../screens/?page=zombie">Zombie Survival</a> ·
+          <a href="../screens/?page=bestiary">Zombies &amp; bosses</a> · <a href="../screens/?page=fight">Fight</a>
+        </div>
         <label>Hero <select id="element" class="sel"></select></label>
         <label>Arena <select id="arena" class="sel"></select></label>
         <div id="state">Idle</div>

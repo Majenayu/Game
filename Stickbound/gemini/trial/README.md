@@ -81,3 +81,15 @@ cape and shoulder pads; gravity slit visor, cape and orbit ring; time gear crown
 - Earth's boulder fists and forearm rocks, and the wind scarf tails, are still code-drawn (the sheet versions were joined or did not bend).
 - Side view only; facing left is a mirror.
 - The lab is not part of the game build.
+
+## Screens (gemini/screens)
+Working, code-drawn versions of every mock-up in `gemini/extra/`, linked from the top of the trial panel.
+Open http://localhost:5190/gemini/screens/ (all screens) or `?page=<name>`: `title`, `lobby`, `road`, `roster`, `customise`,
+`shop`, `ranked`, `versus`, `fight`, `pause`, `settings`, `victory`, `levelup`, `zombie` (add `&wave=10` to start later),
+`bestiary`, `icons`, `keyart`, `poster`. The flow works end to end: lobby, Champion Road or Ranked, versus, a best-of-3
+fight against the AI (or Local 2P), victory with XP and coins, level up, back to the lobby. Coins buy cosmetics in the
+shop (earned in play only). Zombie Survival: endless waves of Walkers, Runners, Spitters, Officers (riot shield, hit
+from behind) and Bombers, with a boss every 5th wave (Brute: slams shockwaves you jump over and charges; Toxic Titan:
+acid volleys and calls up Walkers). Esc pauses. Heroes use this lab's rig, heads and clips; Lightning uses a
+code-drawn visor head. Nothing here is an image from gemini/extra.
+`node gemini/screens/shots.mjs [pages] [outDir]` (check server on 5191) shoots every screen next to its mock-up.
