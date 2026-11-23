@@ -10,4 +10,9 @@ store/raw
 docs/videos/raw
 
 # owner's concept images (never shipped; ALLOW_AI_BACKGROUND_IMAGES = NO)
-gemini/
+# except the Lightning Avatar Lab (a dev tool, not part of the game build), minus its screenshots
+gemini/*
+!gemini/parts/
+gemini/parts/*
+!gemini/parts/lightning/
+gemini/parts/lightning/shots/

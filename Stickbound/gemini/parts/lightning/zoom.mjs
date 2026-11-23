@@ -1,0 +1,16 @@
+import { chromium } from '@playwright/test';
+const b = await chromium.launch();
+const page = await b.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 2 });
+await page.goto('http://localhost:5190/gemini/parts/lightning/');
+await page.waitForSelector('body[data-ready="1"]');
+await page.evaluate(() => { window.__lab.dummyOn = false; });
+const shot = (f) => page.screenshot({ path: `gemini/parts/lightning/shots/${f}.png`, clip: { x: 330, y: 330, width: 440, height: 300 } });
+const at = async (name, frame, f) => { await page.click(`#clips button:has-text("${name}")`); await page.evaluate((fr) => { window.__lab.speed = 0.0001; window.__lab.player.frame = fr; }, frame); await page.waitForTimeout(50); await page.evaluate(() => { window.__lab.speed = 1; }); for (let i = 0; i < 6; i++) { await page.evaluate((fr) => { window.__lab.player.frame = fr; }, frame); await page.waitForTimeout(40); } await shot(f); };
+await page.waitForTimeout(500); await shot('zoom-idle');
+await at('Cross', 10, 'zoom-cross');
+await at('Thunder Kick', 13, 'zoom-kick');
+await at('Chain Bolt', 30, 'zoom-charge');
+await at('Victory', 30, 'zoom-victory');
+await at('Volt Hammer', 12, 'zoom-hammer');
+await b.close();
+console.log('ok');

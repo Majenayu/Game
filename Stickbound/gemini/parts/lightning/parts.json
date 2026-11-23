@@ -1,0 +1,9 @@
+{
+  "kit": "kit.png",
+  "region": [700, 40, 1376, 740],
+  "erase": [[540, 120, 713, 230]],
+  "rowBand": 150,
+  "minArea": 600,
+  "order": ["head_normal", "head_attack", "hurt_body", "head_ko", "hair", "ear", "core", "fist", "foot"],
+  "maxSize": 128
+}
