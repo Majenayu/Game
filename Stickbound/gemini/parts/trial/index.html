@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Elementick · Lightning Avatar Lab</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #05061a;
+        color: #e8ecff;
+        font-family: Rajdhani, 'Segoe UI', Arial, sans-serif;
+        overflow: hidden;
+      }
+      #wrap {
+        display: grid;
+        grid-template-columns: 1fr 270px;
+        height: 100%;
+      }
+      #c {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #panel {
+        background: #0b0e24;
+        border-left: 2px solid #2b3270;
+        padding: 12px;
+        overflow-y: auto;
+        font-size: 14px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+        color: var(--el, #ffd84a);
+        letter-spacing: 1px;
+      }
+      h2 {
+        font-size: 13px;
+        margin: 14px 0 6px;
+        color: #9ff3ff;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      #clips {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      button {
+        background: #1b2148;
+        color: #e8ecff;
+        border: 1px solid #3a4590;
+        border-radius: 8px;
+        padding: 7px 4px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: #ffd84a;
+      }
+      #clips button:first-child {
+        grid-column: span 2;
+        background: #2b6cff;
+      }
+      kbd {
+        display: inline-block;
+        min-width: 18px;
+        padding: 1px 5px;
+        border: 1px solid #ffd84a;
+        border-radius: 5px;
+        text-align: center;
+        font-weight: 700;
+        margin-right: 4px;
+      }
+      .row {
+        margin: 3px 0;
+      }
+      #state,
+      #info {
+        font-weight: 700;
+        color: #ffd84a;
+        min-height: 18px;
+      }
+      #info {
+        color: #c9d3ea;
+        font-weight: 500;
+      }
+      .sel { width: 100%; padding: 6px; background: #1b2148; color: #e8ecff; border: 1px solid #3a4590; border-radius: 8px; font: inherit; font-weight: 700; }
+      b { color: var(--el, #ffd84a); }
+      label {
+        display: block;
+        margin: 4px 0;
+      }
+      #touch {
+        display: none;
+        position: fixed;
+        inset: auto 0 10px 0;
+        pointer-events: none;
+        justify-content: space-between;
+        padding: 0 10px;
+        user-select: none;
+        touch-action: none;
+      }
+      #touch .tl,
+      #touch .tr {
+        display: grid;
+        gap: 8px;
+        pointer-events: auto;
+      }
+      #touch .tl {
+        grid-template-columns: repeat(2, 56px);
+      }
+      #touch .tr {
+        grid-template-columns: repeat(3, 52px);
+      }
+      #touch button {
+        height: 52px;
+        border-radius: 14px;
+        background: rgba(27, 33, 72, 0.75);
+        font-size: 18px;
+      }
+      #touch button.on {
+        background: #2b6cff;
+      }
+      #touch .big {
+        grid-column: span 3;
+        background: rgba(255, 216, 74, 0.35);
+      }
+      #menu {
+        display: none;
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+        z-index: 5;
+      }
+      @media (max-width: 900px), (pointer: coarse) {
+        #wrap {
+          grid-template-columns: 1fr;
+        }
+        #panel {
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: min(300px, 86vw);
+          transform: translateX(105%);
+          transition: transform 0.2s;
+          z-index: 4;
+        }
+        body.panel-open #panel {
+          transform: none;
+        }
+        #touch {
+          display: flex;
+        }
+        #menu {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <canvas id="c"></canvas>
+      <div id="panel">
+        <h1 id="title">Hero Trial</h1>
+        <label>Hero <select id="element" class="sel"></select></label>
+        <div id="state">Idle</div>
+        <div id="info">Free control</div>
+        <h2>Controls</h2>
+        <div class="row"><kbd>A</kbd><kbd>D</kbd> move · hold <kbd>Shift</kbd> run · <kbd>W</kbd> / <kbd>Space</kbd> jump</div>
+        <div class="row">After a hit lands, a power key cancels into that power</div>
+        <div id="powers"></div>
+        <div class="row"><kbd>T</kbd> taunt · <kbd>V</kbd> victory · <kbd>H</kbd> hurt · <kbd>X</kbd> KO · <kbd>B</kbd> bones · <kbd>G</kbd> hitboxes</div>
+        <h2>Preview an animation (loops)</h2>
+        <div id="clips"></div>
+        <h2>Options</h2>
+        <label>Body <select id="build" class="sel"><option value="slim">Slim</option><option value="medium">Medium</option><option value="bold">Bold</option></select></label>
+        <label>Speed <span id="speedv">1.00x</span><br /><input id="speed" type="range" min="0.05" max="2" step="0.05" value="1" style="width: 100%" /></label>
+        <label><input id="bones" type="checkbox" /> Show bones</label>
+        <label><input id="boxes" type="checkbox" /> Show hitboxes and hurtboxes</label>
+        <label><input id="dummy" type="checkbox" checked /> Sparring dummy</label>
+        <label><input id="fight" type="checkbox" checked /> Dummy fights back</label>
+        <label><input id="freemp" type="checkbox" checked /> Free MP (untick to test MP costs)</label>
+      </div>
+    </div>
+    <div id="touch">
+      <div class="tl">
+        <button data-key="KeyA">◀</button><button data-key="KeyD">▶</button><button data-key="KeyS">🛡</button><button data-key="ShiftLeft">RUN</button>
+      </div>
+      <div class="tr">
+        <button data-key="KeyU">U</button><button data-key="KeyI">I</button><button data-key="KeyO">O</button><button data-key="KeyP">P</button>
+        <button data-key="KeyK">K</button><button data-key="KeyL">L</button><button data-key="KeyW">▲</button>
+        <button data-key="KeyJ" class="big">J</button>
+      </div>
+    </div>
+    <button id="menu" aria-label="Lab menu">☰</button>
+    <script type="module" src="./lab.ts"></script>
+  </body>
+</html>

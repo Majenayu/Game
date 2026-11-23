@@ -10,9 +10,13 @@ store/raw
 docs/videos/raw
 
 # owner's concept images (never shipped; ALLOW_AI_BACKGROUND_IMAGES = NO)
-# except the Lightning Avatar Lab (a dev tool, not part of the game build), minus its screenshots
+# except the Lightning hero kit and the arena labs in gemini/stages (dev tools, not part of the game build), minus their screenshots
 gemini/*
 !gemini/parts/
 gemini/parts/*
 !gemini/parts/lightning/
-gemini/parts/lightning/shots/
+!gemini/stages/
+gemini/stages/**/shots/
+!gemini/parts/trial/
+gemini/parts/trial/shots/
+gemini/parts/trial/parts/*/_scan.png
