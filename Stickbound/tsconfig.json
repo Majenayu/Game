@@ -16,5 +16,5 @@
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["src", "tests", "e2e", "tools", "gemini/parts/lightning/*.ts", "gemini/parts/trial/*.ts", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "tests", "e2e", "tools", "gemini/stages/*/*.ts", "gemini/parts/trial/*.ts", "vite.config.ts", "playwright.config.ts"]
 }

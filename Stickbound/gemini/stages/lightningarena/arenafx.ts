@@ -7,8 +7,8 @@
  * - floodlight beams pulse, billboards glow, flicker and scan, spire lights blink, sparks float up
  * Render only: it reads the frame number, never the fight state, so the simulation stays deterministic.
  */
-import { drawBolt, type Theme } from './fx';
-import { bakeCloud } from './stage';
+import { drawBolt, type Theme } from '../engine/fx';
+import { bakeCloud } from '../engine/stage';
 
 type G = CanvasRenderingContext2D;
 interface Pt {

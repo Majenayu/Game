@@ -3,14 +3,18 @@
 A page where you control the Lightning avatar freely in a stadium and try every move on a sparring dummy.
 
 **Open it:** start the dev server in `Stickbound/` (`npx vite`), then go to
-http://localhost:5190/gemini/parts/lightning/
+http://localhost:5190/gemini/stages/lightningarena/
+
+All arenas live in `gemini/stages/<element>arena/`; the code they share is in `gemini/stages/engine/`. The arena list in the panel switches between them. See `../README.md`.
+
+In this folder: `arena.png`, `arena.ts` (floor detection and the arena definition), `arenafx.ts`, `index.html`, `shots/`. The other files in the table below are in `../engine/`.
 
 ## Files
 
 | File | What it is |
 | --- | --- |
 | `image (1).png` | Source parts sheet (transparent, outlined parts). Owner-supplied, AI-generated with Gemini. |
-| `cut.mjs` | Cuts the sheet into `parts/*.png`, fills each part's inside with the body colour (#141833). Run: `node gemini/parts/lightning/cut.mjs` |
+| `cut.mjs` | Cuts the sheet into `parts/*.png`, fills each part's inside with the body colour (#141833). Run: `node gemini/stages/engine/cut.mjs` |
 | `parts/` | The 11 cut parts. Only `head.png` is drawn now; the body is drawn as one silhouette in code (the cut limb pictures showed seams at every joint). |
 | `rig.ts` | Rig: skeleton and a one-piece body drawn in code (limbs, torso, hands and feet share one glowing outline, so no joint shows as a separate piece), the head picture, chest core, expressions, crackles while charging. |
 | `anims.ts` | All animations as data: idle, walk and run cycles, jump and fall, plus keyframed clips with frame data and hitboxes. |
@@ -22,7 +26,7 @@ http://localhost:5190/gemini/parts/lightning/
 | `fx.ts` | Lightning effects engine: branching bolts (glow, mid and white core, with forks), flares, floor aura flames, arcs crawling over the body, the hex lightning shield, storm clouds and sky pillars. All flicker comes from seeds, so the fight stays deterministic. |
 | `lab.ts` | The lab: input, movement, combo queue, power cancels, shield and perfect guard, hits, hit-stop, shake, the ultimate camera, the dummy (it can fight back) and the panel. |
 | `index.html` | The page. |
-| `compare.mjs` | Side-by-side of the reference poses in kit.png and the avatar (`shots/compare.png`). Body proportions are tuned to it: head about 32% of height sitting on the shoulders, broad shoulder yoke tapering to the crotch, wide fighting stance. Three body builds (Slim default, Medium, Bold) in the panel; `builds.mjs` writes `shots/builds.png`, rounded leg ends. |
+| `compare.mjs` | Side-by-side of the reference poses in `gemini/parts/lightning/kit.png` and the avatar (`shots/compare.png`). Body proportions are tuned to it: head about 32% of height sitting on the shoulders, broad shoulder yoke tapering to the crotch, wide fighting stance. Three body builds (Slim default, Medium, Bold) in the panel; `builds.mjs` writes `shots/builds.png`, rounded leg ends. |
 | `shots.mjs`, `check.mjs` | Screenshot script and behaviour check (4-hit combo, every power hits, power cancel, block, perfect guard). |
 | `fxshots.mjs` | Close-ups of every effect at its best frame (`shots/fx-*.png`). |
 | `shots/` | Latest screenshots. |
@@ -62,4 +66,4 @@ The panel can loop any animation and slow everything down (speed slider) to stud
 
 - Side view only. The parts are drawn facing right; facing left is a mirror.
 - One head picture. Attack, hurt and KO faces are painted over the mouth in code; better head pictures would look nicer (see PROMPTS.md).
-- The lab is not part of the game build yet. `gemini/` is gitignored, so these files are local only.
+- The lab is not part of the game build (ALLOW_AI_BACKGROUND_IMAGES = NO). `gemini/stages/` is in the repo as a dev tool; `shots/` folders are gitignored.

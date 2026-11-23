@@ -68,3 +68,13 @@ The owner's autonomous build directive says: never ask, pick the best option, lo
 - Tube outline colour is sampled from the head image; its width is the head image outline scaled to the head size, clamped to 0.011 to 0.019 H so it stays readable.
 - Camera: max zoom cap raised from 1.3x to 1.75x of the fit zoom so fighters are about 30% of the screen height; fighters far apart still fit.
 - Legs are 0.43 to 0.44 H (rig lengths unchanged), a little short of the 0.45 H target.
+
+## D-arena1: picture arenas in gemini/stages/
+- Every arena uses the owner's Gemini picture unchanged (owner: "exactly like reference image"); a code-drawn arena was rejected.
+- Layout: gemini/stages/engine/ holds the shared lab, effects kit and audio; gemini/stages/<element>arena/ holds arena.png, arena.ts, index.html, README.md. Copying the engine into each folder was rejected (11 copies to keep in sync). The stages/ location was our choice; the owner did not name one.
+- Floors are hand-set rows in picture pixels; automatic edge finding picked wrong rows. Lightning keeps its yellow-rail detection.
+- Moving parts of a picture (floating rocks and islands, gears, pendulum) are lifted out in code and the hole is filled; painted figures (shadow stickman, ice logo) are removed the same way.
+- Effects and sounds are pure functions of the frame number (hash, timetable, burst), so they never touch the deterministic fight.
+- Still lab only: ALLOW_AI_BACKGROUND_IMAGES = NO.
+- Arena music: instrument voices are optional Song fields in gemini/stages/engine/audio.ts, so a song without them (Lightning) plays exactly as before.
+- Time arena: the back middle gear is mostly hidden behind the front one, so a turning copy of its own pixels would bring the hidden half into view. Both middle gears are drawn from one clean fifth of the front gear (5 spokes, 15 teeth), with its light evened out and the back one shaded to the back gear's colour. At frame 0 they therefore differ slightly from the painted ones. The corner gears stay painted and are only redrawn while they kick, which kept the arena at 60 fps.

@@ -1,6 +1,6 @@
 // Cuts the lightning avatar parts out of "image (1).png" (transparent sheet, outlined parts), fills each part's
 // inside with the dark body colour, trims it and writes parts/<name>.png plus rig.json (sizes).
-// Run from Stickbound/: node gemini/parts/lightning/cut.mjs
+// Run from Stickbound/: node gemini/stages/engine/cut.mjs
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

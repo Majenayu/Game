@@ -2,12 +2,14 @@ import { CLIPS, COMBO, airPose, auraAt, chargeAt, guardPose, idlePose, moveAt, s
 import { drawAura, drawBodyArcs, drawBolt, drawFlare, drawPillar, drawShield, drawStormCloud, type Theme } from './fx';
 import { BUILDS, PALETTES, TINT, drawRig, footDrop, jointWorld, lerpPose, loadParts, setBuild, solve, tintImage, type Build, type Face, type Parts, type Pose, type Skin } from './rig';
 import { GROUND, STAGE_H, STAGE_W, bakeStage, drawArena, type Arena } from './stage';
-import { bakeBackFx, drawBackFx, strikes, strikesStarting, type BackFx } from './arenafx';
+import { ARENAS, type ArenaDef } from './arena';
 import { Sound } from './audio';
+import { shellHtml } from './shell';
 
 /**
- * Lightning avatar lab: move the avatar freely in a stadium, try every attack, combo and power on a sparring dummy
- * that can fight back, block with the lightning shield, and inspect poses, bones, hitboxes and frame data.
+ * Arena lab (shared by every arena folder in gemini/stages): move the Lightning avatar freely in the arena,
+ * try every attack, combo and power on a sparring dummy that can fight back, block with the lightning shield,
+ * and inspect poses, bones, hitboxes and frame data. Each arena folder calls startLab() with its ArenaDef.
  * Fixed 60 Hz update with a seeded RNG; rendering only reads state.
  */
 const VIEW_W = 1600;
@@ -774,20 +776,21 @@ function drawFighter(g: CanvasRenderingContext2D, skins: Skins, f: Fighter): voi
 }
 
 /**
- * The arena picture (arena.png, the owner's reference art) as a fixed backdrop.
- * It is scaled so its roof-edge rail sits on GROUND and its top reaches the top of the view;
+ * The arena picture (the owner's reference art) as a fixed backdrop.
+ * It is scaled so its floor line sits on GROUND and its top reaches the top of the view;
  * it pans a little slower than the fighters so the floor still feels like the stage.
  */
 interface Backdrop {
   img: HTMLCanvasElement;
-  /** rail height as a fraction of the picture height */
+  /** floor height as a fraction of the picture height */
   rail: number;
-  fx: BackFx;
+  fx: unknown;
 }
+let def: ArenaDef;
 let backdrop: Backdrop | null = null;
 async function loadBackdrop(): Promise<Backdrop | null> {
   const img = new Image();
-  img.src = './arena.png';
+  img.src = def.image;
   try {
     await img.decode();
   } catch {
@@ -798,25 +801,11 @@ async function loadBackdrop(): Promise<Backdrop | null> {
   c.height = img.naturalHeight;
   const x = c.getContext('2d', { willReadFrequently: true })!;
   x.drawImage(img, 0, 0);
-  // find the bright yellow roof rail: the row in the middle band with the most yellow pixels
-  const { data } = x.getImageData(0, 0, c.width, c.height);
-  let best = 0;
-  let bestY = Math.round(c.height * 0.785);
-  for (let y = Math.round(c.height * 0.6); y < Math.round(c.height * 0.92); y++) {
-    let n = 0;
-    for (let px = 0; px < c.width; px += 2) {
-      const i = (y * c.width + px) * 4;
-      if (data[i] > 190 && data[i + 1] > 170 && data[i + 2] < 140) n++;
-    }
-    if (n > best) {
-      best = n;
-      bestY = y;
-    }
-  }
-  return { img: c, rail: bestY / c.height, fx: bakeBackFx(c, bestY / c.height) };
+  const rail = typeof def.floor === 'number' ? def.floor : def.floor(x.getImageData(0, 0, c.width, c.height));
+  return { img: c, rail, fx: def.bake ? def.bake(c, rail) : null };
 }
 function drawBackdrop(g: CanvasRenderingContext2D, b: Backdrop, camX: number, halfW: number): void {
-  const PAN = 0.2;
+  const PAN = def.pan ?? 0.2;
   // big enough to reach the top of the view and both sides at any camera position
   const s = Math.max(GROUND / (b.rail * b.img.height), (2 * halfW + 2 * PAN * (STAGE_W / 2) + 40) / b.img.width);
   const w = b.img.width * s;
@@ -824,22 +813,22 @@ function drawBackdrop(g: CanvasRenderingContext2D, b: Backdrop, camX: number, ha
   const x = camX - w / 2 - (camX - STAGE_W / 2) * PAN;
   const y = GROUND - b.rail * h;
   g.drawImage(b.img, x, y, w, h);
-  // moving clouds, lightning, beams, billboards and sparks, placed in the picture's own pixels
-  g.save();
-  g.translate(x, y);
-  g.scale(s * (b.img.width / 1376), s * (b.img.width / 1376));
-  drawBackFx(g, b.fx, state.frameNo, state.flash, state.dim / 0.55);
-  g.restore();
+  // the arena's moving effects, placed in the picture's own pixels (1376 wide)
+  if (def.draw) {
+    g.save();
+    g.translate(x, y);
+    g.scale(s * (b.img.width / 1376), s * (b.img.width / 1376));
+    def.draw(g, b.fx, state.frameNo, state.flash, state.dim / 0.55);
+    g.restore();
+  }
   const bottom = y + h;
   // past the picture's bottom edge (tall screens), continue the floor colour
-  g.fillStyle = '#0a0f2e';
+  g.fillStyle = def.ground;
   g.fillRect(x - 2000, bottom - 1, w + 4000, 3000);
-  // past the top edge (tall screens), continue the night sky
-  g.fillStyle = '#0b1030';
+  // past the top edge (tall screens), continue the sky
+  g.fillStyle = def.sky;
   g.fillRect(x - 2000, y - 3000, w + 4000, 3001);
-}
-
-function render(g: CanvasRenderingContext2D, stage: Arena, skins: Skins): void {
+}function render(g: CanvasRenderingContext2D, stage: Arena, skins: Skins): void {
   const cw = g.canvas.width;
   const ch = g.canvas.height;
   const zoom = Math.min(cw / VIEW_W, ch / VIEW_H) * state.zoom;
@@ -1126,14 +1115,22 @@ function info(t: string): void {
   document.getElementById('info')!.textContent = t;
 }
 
-async function boot(): Promise<void> {
+/** Builds the page and runs the lab in the given arena. */
+export async function startLab<F>(arena: ArenaDef<F>): Promise<void> {
+  def = arena as unknown as ArenaDef;
+  document.title = `Elementick · ${arena.name} Lab`;
+  document.body.innerHTML = shellHtml(def, ARENAS);
+  const pick = document.getElementById('arena') as HTMLSelectElement;
+  pick.onchange = () => (location.href = `../${pick.value}/`);
+  // keep the arena list from taking the game keys
+  pick.onkeydown = (e) => e.preventDefault();
   const canvas = document.getElementById('c') as HTMLCanvasElement;
   const g = canvas.getContext('2d')!;
   const skins = makeSkins(await loadParts());
   const stage = bakeStage();
   backdrop = await loadBackdrop();
   // sound: starts on the first input (browser rule), panel switches, M toggles the music
-  const sound = new Sound();
+  const sound = new Sound(def.song, def.air);
   const music = document.getElementById('music') as HTMLInputElement;
   const sfx = document.getElementById('sfx') as HTMLInputElement;
   const vol = document.getElementById('vol') as HTMLInputElement;
@@ -1157,7 +1154,52 @@ async function boot(): Promise<void> {
     }
   });
   (window as unknown as { __sound: Sound }).__sound = sound;
-  (window as unknown as { __strikes: typeof strikes }).__strikes = strikes;
+  for (const [k, v] of Object.entries(def.hooks ?? {})) (window as unknown as Record<string, unknown>)[k] = v;
+  (window as unknown as { __arenaSounds: unknown }).__arenaSounds = (from: number, to: number) => def.sounds?.(from, to, 0) ?? [];
+  // test hook: renders this arena's song loop offline; returns levels and a 16-bit mono WAV (base64)
+  (window as unknown as { __renderSong: unknown }).__renderSong = async () => {
+    const buf = await new Sound(def.song, def.air).render();
+    const L = buf.getChannelData(0);
+    const R = buf.getChannelData(1);
+    const n = L.length;
+    let peak = 0;
+    let sum = 0;
+    let quietSeconds = 0;
+    let secSum = 0;
+    const per = buf.sampleRate;
+    const pcm = new Int16Array(n);
+    for (let i = 0; i < n; i++) {
+      const v = (L[i] + R[i]) / 2;
+      const a = Math.max(Math.abs(L[i]), Math.abs(R[i]));
+      if (a > peak) peak = a;
+      sum += v * v;
+      secSum += v * v;
+      if ((i + 1) % per === 0) {
+        if (Math.sqrt(secSum / per) < 0.005) quietSeconds++;
+        secSum = 0;
+      }
+      pcm[i] = Math.max(-32768, Math.min(32767, Math.round(v * 32767)));
+    }
+    const wav = new DataView(new ArrayBuffer(44 + n * 2));
+    const str = (o: number, s: string) => [...s].forEach((c, k) => wav.setUint8(o + k, c.charCodeAt(0)));
+    str(0, 'RIFF');
+    wav.setUint32(4, 36 + n * 2, true);
+    str(8, 'WAVEfmt ');
+    wav.setUint32(16, 16, true);
+    wav.setUint16(20, 1, true);
+    wav.setUint16(22, 1, true);
+    wav.setUint32(24, per, true);
+    wav.setUint32(28, per * 2, true);
+    wav.setUint16(32, 2, true);
+    wav.setUint16(34, 16, true);
+    str(36, 'data');
+    wav.setUint32(40, n * 2, true);
+    new Int16Array(wav.buffer, 44).set(pcm);
+    let bin = '';
+    const bytes = new Uint8Array(wav.buffer);
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return { seconds: n / per, peak, rms: Math.sqrt(sum / n), quietSeconds, wav: btoa(bin) };
+  };
   let heardTo = 0;
   const fit = () => {
     const r = canvas.getBoundingClientRect();
@@ -1189,6 +1231,18 @@ async function boot(): Promise<void> {
     return c.toDataURL('image/png');
   };
   (window as unknown as { __lab: typeof state }).__lab = state;
+  // test hook: the arena picture with its effects at frame f, at the picture's own size, no fighters or panel
+  // (bare = the baked picture only, i.e. what is left behind the moving parts)
+  (window as unknown as { __plate: (f: number, bare?: boolean) => string }).__plate = (f, bare = false) => {
+    if (!backdrop) return '';
+    const c = document.createElement('canvas');
+    c.width = backdrop.img.width;
+    c.height = backdrop.img.height;
+    const x = c.getContext('2d')!;
+    x.drawImage(backdrop.img, 0, 0);
+    if (!bare) def.draw?.(x, backdrop.fx as never, f, 0, 0);
+    return c.toDataURL('image/png');
+  };
   let last = performance.now();
   let acc = 0;
   const loop = (now: number) => {
@@ -1199,9 +1253,9 @@ async function boot(): Promise<void> {
       acc -= 1000 / 60;
     }
     render(g, stage, skins);
-    // thunder for each strike that began since the last frame drawn
-    if (backdrop && state.frameNo !== heardTo) {
-      if (state.frameNo > heardTo) for (const s of strikesStarting(heardTo, state.frameNo, state.dim / 0.55)) sound.thunder(s.x, s.big, s.ground);
+    // a sound for each arena effect that began since the last frame drawn
+    if (backdrop && def.sounds && state.frameNo !== heardTo) {
+      if (state.frameNo > heardTo) for (const s of def.sounds(heardTo, state.frameNo, state.dim / 0.55)) sound.play(s);
       heardTo = state.frameNo;
     }
     const p = state.player;
@@ -1211,4 +1265,3 @@ async function boot(): Promise<void> {
   requestAnimationFrame(loop);
   document.body.dataset.ready = '1';
 }
-void boot();

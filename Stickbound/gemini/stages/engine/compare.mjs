@@ -1,12 +1,14 @@
 // Side-by-side: reference figures from kit.png and the lab avatar in similar poses, both trimmed to the same height.
-// Run from Stickbound/ with the dev server on 5190: node gemini/parts/lightning/compare.mjs
+// Run from Stickbound/ with the dev server on 5190: node gemini/stages/engine/compare.mjs [arena folder, default lightningarena]
 import { chromium } from '@playwright/test';
 import sharp from 'sharp';
-const out = 'gemini/parts/lightning/shots/compare.png';
+const ARENA = process.argv[2] ?? 'lightningarena';
+(await import('node:fs')).mkdirSync(`gemini/stages/${ARENA}/shots`, { recursive: true });
+const out = `gemini/stages/${ARENA}/shots/compare.png`;
 const H = 480;
 const b = await chromium.launch();
 const page = await b.newPage();
-await page.goto('http://localhost:5190/gemini/parts/lightning/');
+await page.goto(`http://localhost:5190/gemini/stages/${ARENA}/`);
 await page.waitForSelector('body[data-ready="1"]');
 const snap = async (kind, frame) => Buffer.from((await page.evaluate(([k, f]) => window.__snap(k, f), [kind, frame])).split(',')[1], 'base64');
 const mineRaw = [await snap('idle', 0), await snap('walk', 14), await snap('cross', 10), await snap('guard', 0)];

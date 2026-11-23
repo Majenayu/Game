@@ -1,12 +1,14 @@
 // Screenshots of the lightning effects at their key frames (the game runs slowed down so each shot is on time).
-// Run from Stickbound/ with the dev server on 5190: node gemini/parts/lightning/fxshots.mjs
+// Run from Stickbound/ with the dev server on 5190: node gemini/stages/engine/fxshots.mjs [arena folder, default lightningarena]
 import { chromium } from '@playwright/test';
-const out = 'gemini/parts/lightning/shots';
+const ARENA = process.argv[2] ?? 'lightningarena';
+(await import('node:fs')).mkdirSync(`gemini/stages/${ARENA}/shots`, { recursive: true });
+const out = `gemini/stages/${ARENA}/shots`;
 const b = await chromium.launch();
 const page = await b.newPage({ viewport: { width: 1366, height: 768 } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
-await page.goto('http://localhost:5190/gemini/parts/lightning/');
+await page.goto(`http://localhost:5190/gemini/stages/${ARENA}/`);
 await page.waitForSelector('body[data-ready="1"]');
 const reset = (gap, fights = false) =>
   page.evaluate(

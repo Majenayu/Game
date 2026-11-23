@@ -1,8 +1,10 @@
 // Screenshots of the Lightning lab: idle, walk, each attack mid-swing, the powers and KO.
-// Run from Stickbound/ with the dev server on 5190: node gemini/parts/lightning/shots.mjs
+// Run from Stickbound/ with the dev server on 5190: node gemini/stages/engine/shots.mjs [arena folder, default lightningarena]
 import { chromium } from '@playwright/test';
-const url = 'http://localhost:5190/gemini/parts/lightning/';
-const out = process.argv[2] ?? 'gemini/parts/lightning/shots';
+const ARENA = process.argv[2] ?? 'lightningarena';
+(await import('node:fs')).mkdirSync(`gemini/stages/${ARENA}/shots`, { recursive: true });
+const url = `http://localhost:5190/gemini/stages/${ARENA}/`;
+const out = process.argv[3] ?? `gemini/stages/${ARENA}/shots`;
 const sizes = [[1366, 768], [1920, 1080], [844, 390], [390, 844]];
 const b = await chromium.launch();
 const errors = [];

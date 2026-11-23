@@ -1,15 +1,17 @@
-// Screenshots of the arena with its moving effects: calm, cloud drift, lightning strikes, the ultimate storm,
+// Screenshots of an arena with its moving effects: calm, three later frames (and lightning strikes), the ultimate,
 // all four screen sizes, a frame-rate reading and a sound check.
-// Run from Stickbound/ with the dev server on 5190: node gemini/parts/lightning/arenashots.mjs
+// Run from Stickbound/ with the dev server on 5190: node gemini/stages/engine/arenashots.mjs [arena folder, default lightningarena]
 import { chromium } from '@playwright/test';
-const dir = 'gemini/parts/lightning/shots/';
+const ARENA = process.argv[2] ?? 'lightningarena';
+(await import('node:fs')).mkdirSync(`gemini/stages/${ARENA}/shots`, { recursive: true });
+const dir = `gemini/stages/${ARENA}/shots/`;
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
 const errors = [];
 const open = async (w, h) => {
   const page = await b.newPage({ viewport: { width: w, height: h } });
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto('http://localhost:5190/gemini/parts/lightning/');
+  await page.goto(`http://localhost:5190/gemini/stages/${ARENA}/`);
   await page.waitForSelector('body[data-ready="1"]');
   await page.waitForTimeout(400);
   return page;
@@ -22,10 +24,11 @@ const at = async (page, frame) => {
   await page.waitForTimeout(150);
 };
 const page = await open(1366, 768);
-// find strike frames: big ground strikes at their 2nd frame, and a cloud arc
+// lightning only: find strike frames (big ground strikes at their 2nd frame, and a cloud arc)
 const found = await page.evaluate(() => {
   const big = [];
   const arc = [];
+  if (!window.__strikes) return { big, arc };
   for (let f = 100; f < 4000 && (big.length < 3 || !arc.length); f++)
     for (const s of window.__strikes(f, 0)) {
       if (s.t === 1 && s.ground && s.big && big.length < 3) big.push(f);
@@ -33,17 +36,28 @@ const found = await page.evaluate(() => {
     }
   return { big, arc };
 });
-console.log('strike frames', JSON.stringify(found));
+if (found.big.length) console.log('strike frames', JSON.stringify(found));
+// every arena: the sounds its effects make in the first minute
+const heard = await page.evaluate(() => {
+  const n = {};
+  for (let f = 0; f < 3600; f++) for (const e of window.__arenaSounds(f, f + 1)) n[e.kind] = (n[e.kind] ?? 0) + 1;
+  return n;
+});
+console.log('effect sounds in 60 s', JSON.stringify(heard));
 await at(page, 60);
 await page.screenshot({ path: dir + 'arena-calm.png' });
-await at(page, 800);
-await page.screenshot({ path: dir + 'arena-drift.png' });
+for (const f of [300, 800, 1300]) {
+  await at(page, f);
+  await page.screenshot({ path: dir + `arena-f${f}.png` });
+}
 for (const [i, f] of found.big.entries()) {
   await at(page, f);
   await page.screenshot({ path: dir + `arena-strike${i}.png` });
 }
-await at(page, found.arc[0]);
-await page.screenshot({ path: dir + 'arena-arc.png' });
+if (found.arc.length) {
+  await at(page, found.arc[0]);
+  await page.screenshot({ path: dir + 'arena-arc.png' });
+}
 // the ultimate: storm mode with extra strikes
 await page.evaluate(() => (window.__lab.speed = 1));
 await page.keyboard.press('KeyP');
