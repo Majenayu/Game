@@ -43,8 +43,10 @@ export interface Keys {
   p2: boolean;
   p3: boolean;
   ult: boolean;
+  /** tag swap to the benched squad hero (handled by the fight screen) */
+  swap: boolean;
 }
-export const noKeys = (): Keys => ({ left: false, right: false, up: false, guard: false, attack: false, heavy: false, dash: false, p1: false, p2: false, p3: false, ult: false });
+export const noKeys = (): Keys => ({ left: false, right: false, up: false, guard: false, attack: false, heavy: false, dash: false, p1: false, p2: false, p3: false, ult: false, swap: false });
 
 // ---------------------------------------------------------------- world
 export interface Floater {
@@ -146,7 +148,12 @@ export function blip(kind: 'hit' | 'big' | 'cast' | 'boom' | 'ui' | 'hurt'): voi
 let NEXT_ID = 1;
 export const SC = 0.62;
 const COMBO = ['jab', 'cross', 'kick', 'rising'];
-export const MP_ULT = 100;
+/** MP the ultimate costs (MP max is 100) */
+export const MP_ULT = 80;
+/** MP a power costs in a fight: half the lab value, in steps of 5, at least 10 */
+export function powerCost(mp: number): number {
+  return Math.max(10, Math.round(mp / 10) * 5);
+}
 export class Hero implements Target {
   id = NEXT_ID++;
   kit: Kit;
@@ -162,7 +169,7 @@ export class Hero implements Target {
   stun = 0;
   hp: number;
   maxHp: number;
-  mp = 30;
+  mp = 40;
   t = 0;
   guarding = false;
   guardHit = 0;
@@ -216,7 +223,7 @@ export class Hero implements Target {
   cost(name: string): number {
     if (name === 'ult') return MP_ULT;
     const p = this.kit.powers.find((q) => q.clip === name);
-    return p ? p.mp : 0;
+    return p ? powerCost(p.mp) : 0;
   }
   powerIndex(name: string): number {
     return this.kit.powers.findIndex((q) => q.clip === name);
@@ -348,7 +355,8 @@ export class Hero implements Target {
       this.prev = { ...k };
       return;
     }
-    this.mp = Math.min(100, this.mp + 0.06 * this.st[4]);
+    // about 6 MP a second (master prompt), more with Resolve
+    this.mp = Math.min(100, this.mp + 0.1 * this.st[4]);
     if (this.stun > 0) this.stun--;
     const busy = !!this.clip && this.clipName !== 'hurt';
     this.guarding = !busy && this.stun <= 0 && this.grounded && k.guard;
@@ -744,8 +752,9 @@ export function heroAI(h: Hero, foe: Hero | null, w: World, level = 1): Keys {
     return k;
   }
   if (h.mp >= MP_ULT && dist < 700 && r() < 0.02) k.ult = true;
-  else if (dist > 420 && h.mp > 30 && r() < 0.025) k.p1 = true;
-  else if (dist < 520 && dist > 200 && h.mp > 45 && r() < 0.012) k.p3 = true;
+  else if (dist > 420 && h.mp >= h.cost(h.powerName(0)) && r() < 0.025) k.p1 = true;
+  else if (dist < 420 && dist > 160 && h.mp >= h.cost(h.powerName(1)) + 10 && r() < 0.01) k.p2 = true;
+  else if (dist < 520 && dist > 200 && h.mp >= h.cost(h.powerName(2)) && r() < 0.012) k.p3 = true;
   else if (dist > 150) k[toward] = true;
   else if (r() < 0.16 * level) k.attack = true;
   else if (r() < 0.02) k.heavy = true;

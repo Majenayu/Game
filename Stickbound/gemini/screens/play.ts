@@ -8,19 +8,19 @@ import { coin, elementCoin, rain } from './art';
 import { fmt, dim } from './common';
 import { drawArena, drawCut, drawStage, loadHudRefs, patch, pauseMusic, startMusic, stopMusic, useStage } from './hudref';
 import { resumeFlags } from './refs';
-import { Hero, MP_ULT, drawEffects, drawFloaters, heroAI, makeWorld, noKeys, stepWorld, type Keys, type World } from './fight';
-import { NAMES } from './heroes';
-import { nav, pages, type PageName } from './nav';
-import { addXp, profile, rollDay, save } from './save';
+import { Hero, MP_ULT, blip, drawEffects, drawFloaters, floater, heroAI, makeWorld, noKeys, sparks, stepWorld, type Keys, type World } from './fight';
+import { NAMES, drawHero, stillPose } from './heroes';
+import { matesOf, nav, pages, type PageName } from './nav';
+import { addXp, profile, rollDay, save, type El } from './save';
 import { C, H, W, bar, chamfer, cyanButton, goldButton, input, neon, panel, region, text, type G } from './ui';
 import { newZGame, stepZGame, type ZGame } from './zmode';
 
 // ---------------------------------------------------------------- keys
 const P1: Record<keyof Keys, string[]> = {
-  left: ['KeyA'], right: ['KeyD'], up: ['KeyW', 'Space'], guard: ['KeyS'], attack: ['KeyJ'], heavy: ['KeyK'], dash: ['KeyL'], p1: ['KeyU'], p2: ['KeyI'], p3: ['KeyO'], ult: ['KeyP'],
+  left: ['KeyA'], right: ['KeyD'], up: ['KeyW', 'Space'], guard: ['KeyS'], attack: ['KeyJ'], heavy: ['KeyK'], dash: ['KeyL'], p1: ['KeyU'], p2: ['KeyI'], p3: ['KeyO'], ult: ['KeyP'], swap: ['KeyQ'],
 };
 const P2: Record<keyof Keys, string[]> = {
-  left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], guard: ['ArrowDown'], attack: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], dash: ['Numpad3', 'Slash'], p1: ['Numpad4'], p2: ['Numpad5'], p3: ['Numpad6'], ult: ['Numpad0'],
+  left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], guard: ['ArrowDown'], attack: ['Numpad1', 'Comma'], heavy: ['Numpad2', 'Period'], dash: ['Numpad3', 'Slash'], p1: ['Numpad4'], p2: ['Numpad5'], p3: ['Numpad6'], ult: ['Numpad0'], swap: ['Numpad7', 'Quote'],
 };
 function read(map: Record<keyof Keys, string[]>, touch = false): Keys {
   const k = noKeys();
@@ -42,18 +42,6 @@ function pad(g: G, name: string, cx: number, cy: number): void {
   touchZone(cx, cy + 55, 38, 'guard');
   touchZone(cx - 55, cy, 38, 'left');
 }
-function fightControls(g: G): void {
-  const N = 'fight-hud';
-  pad(g, N, 145, 626);
-  drawCut(g, N, 1257, 471, 88, 88, 'circle');
-  touchZone(1301, 515, 44, 'p1');
-  drawCut(g, N, 1128, 515, 88, 88, 'circle');
-  touchZone(1172, 559, 44, 'p2');
-  drawCut(g, N, 1088, 638, 88, 88, 'circle');
-  touchZone(1132, 682, 44, 'p3');
-  drawCut(g, N, 1209, 605, 134, 130, 'rect');
-  touchZone(1276, 670, 62, 'attack');
-}
 function zombieControls(g: G): void {
   const N = 'zombie-survival-hud';
   pad(g, N, 147, 628);
@@ -68,8 +56,19 @@ function zombieControls(g: G): void {
 // ---------------------------------------------------------------- fight
 interface FightState {
   w: World;
+  /** the active hero of each side */
   a: Hero;
   b: Hero;
+  /** each side's squad (active and benched); each hero keeps its own HP and MP */
+  sa: Hero[];
+  sb: Hero[];
+  /** frames left before a side can swap again (commit frames) */
+  swapT: [number, number];
+  /** frames since a side's active hero went down (the partner then comes in) */
+  downT: [number, number];
+  /** the swap chip was tapped (touch and mouse) */
+  tapSwap: boolean;
+  timeUp: boolean;
   wins: [number, number];
   round: number;
   timer: number;
@@ -83,25 +82,79 @@ let F: FightState | null = null;
 /** test hook for the move checks (gemini/screens shots): the running fight */
 (window as unknown as Record<string, unknown>).__fight = () => F;
 const FGROUND = 650;
+/** fighters at the size their moves were designed for (the labs use 0.74), so the arena has room to move */
+const FSCALE = 0.74;
 function newRound(f: FightState | null): FightState {
   const m = nav.match;
   // both sides fight with their real stats: hero level and chosen class (the roster panel shows the same numbers)
   const local = m.mode === 'local';
-  const a = new Hero(m.p1, 420, 1, 1, FGROUND, profile.heroLv[m.p1], profile.cls[m.p1]);
-  const b = new Hero(m.p2, 956, -1, 2, FGROUND, local ? profile.heroLv[m.p2] : m.p2Lv, local ? profile.cls[m.p2] : undefined);
-  a.scale = b.scale = 1.05;
-  const w = makeWorld(FGROUND, 70, 1306, () => [a, b]);
+  const [ma, mb] = matesOf(m);
+  const mine = (el: El, x: number) => new Hero(el, x, 1, 1, FGROUND, profile.heroLv[el], profile.cls[el]);
+  const theirs = (el: El, x: number) => new Hero(el, x, -1, 2, FGROUND, local ? profile.heroLv[el] : m.p2Lv, local ? profile.cls[el] : undefined);
+  const sa = [mine(m.p1, 380), ...(ma ? [mine(ma, 380)] : [])];
+  const sb = [theirs(m.p2, 996), ...(mb ? [theirs(mb, 996)] : [])];
+  for (const h of [...sa, ...sb]) h.scale = FSCALE;
+  const [a, b] = [sa[0], sb[0]];
+  // the world reads the active heroes each frame, so a swap changes who can be hit
+  const live: { st?: FightState } = {};
+  const w = makeWorld(FGROUND, 60, 1316, () => (live.st ? [live.st.a, live.st.b] : [a, b]));
+  const fresh = { w, a, b, sa, sb, swapT: [0, 0] as [number, number], downT: [0, 0] as [number, number], tapSwap: false, timeUp: false, timer: 60 * 60, phase: 'intro' as const, phaseT: 0 };
   const st: FightState = f
-    ? { ...f, w, a, b, timer: 60 * 60, phase: 'intro', phaseT: 0, round: f.round + 1 }
-    : { w, a, b, wins: [0, 0], round: 1, timer: 60 * 60, phase: 'intro', phaseT: 0, comboShow: 0, comboN: 0, comboSide: 1 };
+    ? { ...f, ...fresh, round: f.round + 1 }
+    : { ...fresh, wins: [0, 0], round: 1, comboShow: 0, comboN: 0, comboSide: 1 };
+  live.st = st;
   w.onHit = (by) => {
-    if (by === a) profile.qHits++;
+    if (by.team === 1) profile.qHits++;
     st.comboN = by.chain;
-    st.comboSide = by === a ? 1 : 2;
+    st.comboSide = by.team === 1 ? 1 : 2;
     if (by.chain >= 2) st.comboShow = 80;
   };
   return st;
 }
+// ---------------------------------------------------------------- tag swap (master prompt: Squad of 2, Swap)
+const SWAP_COMMIT = 40;
+const SWAP_INVULN = 30;
+const benchOf = (f: FightState, side: 1 | 2): Hero | null => {
+  const cur = side === 1 ? f.a : f.b;
+  return (side === 1 ? f.sa : f.sb).find((h) => h !== cur) ?? null;
+};
+/** brings the benched hero in where the active one stands; `forced` when the active one is down */
+function trySwap(f: FightState, side: 1 | 2, forced = false): boolean {
+  const cur = side === 1 ? f.a : f.b;
+  const next = benchOf(f, side);
+  if (!next || next.ko) return false;
+  if (!forced) {
+    const busy = !!cur.clip && cur.clipName !== 'hurt';
+    const held = !!(cur.status.freeze || cur.status.stop || cur.status.bubble || cur.status.root);
+    if (f.swapT[side - 1] > 0 || cur.ko || busy || cur.stun > 0 || !cur.grounded || held) return false;
+  }
+  Object.assign(next, { x: cur.x, feet: f.w.ground, vx: 0, vy: 0, grounded: true, facing: cur.facing, clip: null, clipName: '', stun: 0, chain: 0, beam: 0, guarding: false });
+  next.invuln = SWAP_INVULN;
+  next.prev = { ...cur.prev };
+  cur.guarding = false;
+  cur.beam = 0;
+  const c = next.chest();
+  sparks(f.w, c.x, c.y, 22, `rgb(${next.kit.fx.mid})`, 11);
+  floater(f.w, next.x, c.y - 140 * next.scale, NAMES[next.el].toUpperCase(), `rgb(${next.kit.fx.mid})`, 28);
+  blip('cast');
+  if (side === 1) f.a = next;
+  else f.b = next;
+  f.swapT[side - 1] = SWAP_COMMIT;
+  f.downT[side - 1] = 0;
+  return true;
+}
+/** the benched hero slowly gets MP and a little HP back */
+function restBench(f: FightState): void {
+  for (const side of [1, 2] as const) {
+    const h = benchOf(f, side);
+    if (!h || h.ko) continue;
+    h.mp = Math.min(100, h.mp + 0.12);
+    h.hp = Math.min(h.maxHp, h.hp + h.maxHp * 0.0001);
+    if (f.swapT[side - 1] > 0) f.swapT[side - 1]--;
+  }
+}
+const sideDown = (list: Hero[]) => list.every((h) => h.ko);
+const hpShare = (list: Hero[]) => list.reduce((s, h) => s + h.hp, 0) / list.reduce((s, h) => s + h.maxHp, 0);
 function finishMatch(f: FightState): void {
   const m = nav.match;
   const winner: 1 | 2 = f.wins[0] > f.wins[1] ? 1 : 2;
@@ -207,7 +260,7 @@ function tutorialPanel(g: G, f: FightState, t: number): void {
 
 pages.fight = {
   title: 'Fight',
-  heroes: () => [nav.match.p1, nav.match.p2],
+  heroes: () => [nav.match.p1, nav.match.p2, ...matesOf(nav.match).filter((e): e is El => !!e)],
   load: () => Promise.all([loadHudRefs(), useStage(nav.match.arena ?? nav.match.p2)]).then(() => undefined),
   enter() {
     startMusic();
@@ -239,22 +292,31 @@ pages.fight = {
     const local = mode === 'local';
     const ka = f.phase === 'fight' ? read(P1, true) : noKeys();
     const kb = f.phase !== 'fight' || practice() ? noKeys() : local ? read(P2) : heroAI(b, a, w, mode === 'road' ? 0.7 + Math.min(0.3, profile.road / 60) : 1);
+    if (f.phase === 'fight') {
+      // tag swap: a fresh press of Swap (or a tap on the partner chip)
+      if ((ka.swap && !a.prev.swap) || f.tapSwap) trySwap(f, 1);
+      if (local && kb.swap && !b.prev.swap) trySwap(f, 2);
+      // the AI brings its partner in when its hero is low and the partner is fresher
+      const bb = benchOf(f, 2);
+      if (!local && bb && !bb.ko && b.hp / b.maxHp < 0.35 && bb.hp / bb.maxHp > 0.5 && w.frame % 45 === 0) trySwap(f, 2);
+      // a downed hero is replaced by the partner after the knock-down
+      for (const side of [1, 2] as const) {
+        const cur = side === 1 ? f.a : f.b;
+        if (cur.ko && ++f.downT[side - 1] > 70) trySwap(f, side, true);
+      }
+    }
+    f.tapSwap = false;
+    if (f.a !== a || f.b !== b) return;
     if (practice()) {
       // every skill free; the sparring dummy gets back up
       a.mp = MP_ULT;
       if (a.ko || a.hp < a.maxHp * 0.3) Object.assign(a, { ko: false, hp: a.maxHp, clip: null, clipName: '' });
       if (b.ko && b.clipName === 'ko' && b.frame >= (b.clip?.frames ?? 1) - 1) Object.assign(b, { ko: false, hp: b.maxHp, clip: null, clipName: '' });
     }
+    // the heroes walk freely through each other (no body push); hits come from hit boxes only
     a.step(w, ka);
     b.step(w, kb);
-    // keep them from walking through each other
-    const gap = b.x - a.x;
-    if (Math.abs(gap) < 60 && a.grounded && b.grounded) {
-      const push = (60 - Math.abs(gap)) / 2;
-      const s = Math.sign(gap) || 1;
-      a.x -= push * s;
-      b.x += push * s;
-    }
+    restBench(f);
     stepWorld(w, [a, b]);
     if (f.phase === 'intro' && f.phaseT > (practice() ? 40 : 100)) {
       f.phase = 'fight';
@@ -263,9 +325,13 @@ pages.fight = {
       if (mode === 'tutorial') stepTutorial(a);
     } else if (f.phase === 'fight') {
       f.timer--;
-      if (a.ko || b.ko || f.timer <= 0) {
-        const p1wins = b.ko || (!a.ko && a.hp / a.maxHp >= b.hp / b.maxHp);
+      // a round ends when both heroes of one side are down, or on time-out (higher total HP share wins)
+      const downA = sideDown(f.sa);
+      const downB = sideDown(f.sb);
+      if (downA || downB || f.timer <= 0) {
+        const p1wins = downB || (!downA && hpShare(f.sa) >= hpShare(f.sb));
         f.wins[p1wins ? 0 : 1]++;
+        f.timeUp = !downA && !downB;
         f.phase = 'ko';
         f.phaseT = 0;
         if (!a.ko && p1wins) a.play('victory');
@@ -315,11 +381,8 @@ pages.fight = {
       text(g, s, W / 2, 330, { size: 100 + (1 - k) * 30, align: 'center', weight: 900, italic: true, col: '#ffe08a', stroke: '#4a1a00', sw: 8, glow: '#ffb43a', blur: 30 });
     }
     if (f.phase === 'ko') {
-      const timeUp = !a.ko && !b.ko;
-      text(g, timeUp ? 'TIME!' : 'K.O.', W / 2, 330, { size: 130, align: 'center', weight: 900, italic: true, col: '#ff5a3a', stroke: '#2a0000', sw: 10, glow: '#ff3b1a', blur: 40 });
+      text(g, f.timeUp ? 'TIME!' : 'K.O.', W / 2, 330, { size: 130, align: 'center', weight: 900, italic: true, col: '#ff5a3a', stroke: '#2a0000', sw: 10, glow: '#ff3b1a', blur: 40 });
     }
-    // touch controls
-    fightControls(g);
     if (nav.match.mode === 'tutorial') tutorialPanel(g, f, t);
     else if (nav.match.mode === 'training') {
       text(g, 'TRAINING · every skill is free · the dummy does not hit back · Esc to leave', W / 2, 165, { size: 20, align: 'center', col: '#cfe4ff', stroke: '#02060f', sw: 4 });
@@ -333,6 +396,45 @@ pages.fight = {
     region(W / 2 - 22, 104, 44, 30, pause);
   },
 };
+/**
+ * The round portrait under each HP bar (the picture's partner slot): the benched hero, its small HP bar, and
+ * for the player the Swap key. Tapping the player's chip swaps too.
+ */
+function benchChip(g: G, f: FightState, side: 1 | 2): void {
+  const cx = side === 1 ? 155 : 1221;
+  const cy = 158;
+  const h = benchOf(f, side);
+  g.save();
+  g.beginPath();
+  g.arc(cx, cy, 31, 0, Math.PI * 2);
+  g.fillStyle = '#071226';
+  g.fill();
+  if (h) {
+    g.clip();
+    const { pose } = stillPose(h.el, 'fight', f.w.frame);
+    drawHero(g, h.el, { pose, face: h.ko ? 'ko' : 'normal', x: cx + (side === 1 ? -4 : 4), feet: cy + 118, scale: 0.42, facing: side === 1 ? 1 : -1, t: f.w.frame, alpha: h.ko ? 0.35 : 1 });
+  }
+  g.restore();
+  if (!h) return;
+  // commit frames after a swap: the ring fills back up
+  const ready = 1 - f.swapT[side - 1] / SWAP_COMMIT;
+  g.save();
+  g.lineWidth = 3;
+  g.strokeStyle = h.ko ? '#5a6070' : `rgb(${h.kit.fx.mid})`;
+  g.shadowColor = g.strokeStyle;
+  g.shadowBlur = 8;
+  g.beginPath();
+  g.arc(cx, cy, 32, -Math.PI / 2, -Math.PI / 2 + ready * Math.PI * 2);
+  g.stroke();
+  g.restore();
+  bar(g, cx - 32, cy + 40, 64, 8, h.hp / h.maxHp, profile.colorblind ? ['#2a6aff', '#7ab8ff'] : ['#3ad84a', '#d8ff4a'], { back: '#050a18', glow: false });
+  const local = nav.match.mode === 'local';
+  if (side === 1 || local) {
+    const kx = side === 1 ? cx + 46 : cx - 46;
+    text(g, h.ko ? 'DOWN' : side === 1 ? 'Q SWAP' : '7 SWAP', kx, cy + 4, { size: 15, weight: 800, align: side === 1 ? 'left' : 'right', col: h.ko ? '#8a90a0' : '#ffe08a', stroke: '#02060f', sw: 4 });
+  }
+  if (side === 1) region(cx - 34, cy - 34, 68, 68, () => (f.tapSwap = true));
+}
 function fightHud(g: G, f: FightState, t: number): void {
   const N = 'fight-hud';
   const m = nav.match;
@@ -344,9 +446,11 @@ function fightHud(g: G, f: FightState, t: number): void {
   const n2 = local ? 'Player 2' : m.p2Name;
   patch(g, N, 120, 22, 215, 28, 345, 36);
   text(g, n1, 124, 36, { size: 22 });
-  text(g, `Lv. ${profile.heroLv[m.p1]}`, 132 + n1.length * 12, 36, { size: 22, col: '#ffd24a' });
+  text(g, `Lv. ${profile.heroLv[f.a.el]}`, 132 + n1.length * 12, 36, { size: 22, col: '#ffd24a' });
   patch(g, N, 1062, 22, 200, 28, 1040, 36);
-  text(g, `Lv. ${local ? profile.heroLv[m.p2] : m.p2Lv}`, 1252, 36, { size: 22, align: 'right', col: '#ffd24a' });
+  text(g, `Lv. ${local ? profile.heroLv[f.b.el] : m.p2Lv}`, 1252, 36, { size: 22, align: 'right', col: '#ffd24a' });
+  benchChip(g, f, 1);
+  benchChip(g, f, 2);
   text(g, n2, 1176, 36, { size: 22, align: 'right' });
   const cb = profile.colorblind;
   bar(g, 179, 58, 434, 27, f.a.hp / f.a.maxHp, cb ? ['#2a6aff', '#7ab8ff'] : ['#3ad84a', '#d8ff4a'], { seg: 4, back: '#050a18' });

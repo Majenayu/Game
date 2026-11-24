@@ -10,9 +10,9 @@ import { EL, elementCoin, elementIcon, lock } from './art';
 import { fmt } from './common';
 import { sample } from '../trial/anims';
 import { clipsOf, kitOf, heroStats, CLASS_LIST, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
-import { colourAt, patch } from './hudref';
+import { arenaPicture, colourAt, loadArenaPicture, patch } from './hudref';
 import { Hero, drawEffects, drawFloaters, makeWorld, noKeys, stepWorld, type World } from './fight';
-import { nav, pages, type Match } from './nav';
+import { matesOf, nav, pages, type Match } from './nav';
 import { S, drawPicture, drawSpots, drawToast, go, loadRef, ref, say, topRight, type Spot } from './refs';
 import { ELS, QUESTS, dailyClaim, profile, save, tierOf, today, xpNeed, type El } from './save';
 import { goldButton, neon } from './ui';
@@ -697,10 +697,74 @@ pages.ranked = {
 
 // ---------------------------------------------------------------- Versus (versus-screen.png), then the fight starts
 let vsT = 0;
+/** x of the picture's diagonal split at height y */
+const vsSplit = (y: number) => 822 - (y / H) * 266;
+/** one half of the versus screen: the fighter's own arena, darkened, with a glow in its element colour */
+function vsHalf(g: G, el: El, left: boolean, gx: number): void {
+  g.save();
+  g.beginPath();
+  if (left) {
+    g.moveTo(0, 0);
+    g.lineTo(vsSplit(0), 0);
+    g.lineTo(vsSplit(H), H);
+    g.lineTo(0, H);
+  } else {
+    g.moveTo(vsSplit(0), 0);
+    g.lineTo(W, 0);
+    g.lineTo(W, H);
+    g.lineTo(vsSplit(H), H);
+  }
+  g.closePath();
+  g.clip();
+  const pic = arenaPicture(el);
+  if (pic) g.drawImage(pic, 0, 0, W, H);
+  g.fillStyle = 'rgba(2,6,16,0.5)';
+  g.fillRect(0, 0, W, H);
+  const c = EL[el].rgb.slice(4, -1);
+  const gr = g.createRadialGradient(gx, 330, 20, gx, 330, 420);
+  gr.addColorStop(0, `rgba(${c},0.42)`);
+  gr.addColorStop(1, `rgba(${c},0)`);
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, H);
+  g.restore();
+}
+/** a piece of the versus picture with soft edges (VS emblem, name plates) */
+const vsCuts = new Map<string, HTMLCanvasElement>();
+function vsCut(g: G, x: number, y: number, w: number, h: number, oval: boolean): void {
+  const im = ref('versus-screen');
+  if (!im) return;
+  const key = `${x}:${y}:${w}:${h}:${oval}`;
+  let c = vsCuts.get(key);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const x2 = c.getContext('2d')!;
+    const k = im.width / W;
+    x2.drawImage(im, x * k, y * k, w * k, h * k, 0, 0, w, h);
+    x2.globalCompositeOperation = 'destination-in';
+    if (oval) {
+      x2.translate(w / 2, h / 2);
+      x2.scale(1, h / w);
+      const gr = x2.createRadialGradient(0, 0, 0, 0, 0, w / 2);
+      gr.addColorStop(0.62, 'rgba(0,0,0,1)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      x2.fillStyle = gr;
+      x2.fillRect(-w / 2, -w / 2, w, w);
+    } else {
+      x2.fillStyle = '#000';
+      x2.beginPath();
+      x2.roundRect(0, 0, w, h, 12);
+      x2.fill();
+    }
+    vsCuts.set(key, c);
+  }
+  g.drawImage(c, x, y);
+}
 pages.versus = {
   title: 'Versus',
-  heroes: () => [nav.match.p1, nav.match.p2, partnerOf()],
-  load: () => Promise.all([loadRef('versus-screen'), loadRef('fight-hud')]).then(() => undefined),
+  heroes: () => [nav.match.p1, nav.match.p2, ...matesOf(nav.match).filter((e): e is El => !!e)],
+  load: () => Promise.all([loadRef('versus-screen'), loadRef('fight-hud'), loadArenaPicture(nav.match.p1), loadArenaPicture(nav.match.p2)]).then(() => undefined),
   enter: () => (vsT = 0),
   step() {
     if (++vsT > 210) nav.go('fight');
@@ -709,15 +773,28 @@ pages.versus = {
     const P = 'versus-screen';
     const m = nav.match;
     const local = m.mode === 'local';
-    drawPicture(g, P);
-    if (m.p1 !== 'fire') {
-      veil(g, P, 290, 300, 250, 270);
-      stand(g, m.p1, 300, 552, 1.3, t, 'fight', 1);
-    }
-    if (m.p2 !== 'water') {
-      veil(g, P, 1110, 290, 270, 280);
-      stand(g, m.p2, 1080, 552, 1.3, t + 30, 'fight', -1);
-    }
+    // the two real fighters, each in front of its own arena; only the VS emblem and the plates come from the picture
+    vsHalf(g, m.p1, true, 300);
+    vsHalf(g, m.p2, false, 1080);
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    const sl = g.createLinearGradient(vsSplit(0), 0, vsSplit(H), H);
+    sl.addColorStop(0, EL[m.p1].line);
+    sl.addColorStop(1, EL[m.p2].line);
+    g.strokeStyle = sl;
+    g.shadowColor = '#ffffff';
+    g.shadowBlur = 24;
+    g.lineWidth = 6;
+    g.beginPath();
+    g.moveTo(vsSplit(0), 0);
+    g.lineTo(vsSplit(H), H);
+    g.stroke();
+    g.restore();
+    stand(g, m.p1, 300, 552, 1.3, t, 'fight', 1);
+    stand(g, m.p2, 1080, 552, 1.3, t + 30, 'fight', -1);
+    vsCut(g, 520, 210, 340, 300, true);
+    vsCut(g, 56, 548, 420, 116, false);
+    vsCut(g, 904, 548, 420, 116, false);
     // left plate: the player
     label(g, P, 160, 568, 268, 48, 160, 566, local ? 'PLAYER 1' : profile.name.toUpperCase(), { size: 44, align: 'center', weight: 800, col: '#ffc93a' });
     label(g, P, 184, 624, 120, 24, 180, 624, m.p1.toUpperCase(), { size: 20, col: '#ff9a3a' });
@@ -728,10 +805,18 @@ pages.versus = {
     label(g, P, 982, 624, 120, 24, 976, 624, m.p2.toUpperCase(), { size: 20, col: '#5fdcff' });
     label(g, P, 1122, 624, 76, 24, 1202, 624, `Lv ${m.p2Lv}`, { size: 20, align: 'right', col: '#cfeeff' });
     if (m.p2 !== 'water') elementCoin(g, m.p2, 1258, 606, 34);
-    // partner chip under the player
-    const mate = local ? m.p2 : partnerOf();
-    label(g, P, 212, 696, 82, 26, 300, 690, NAMES[mate], { size: 20 });
-    if (mate !== 'lightning') elementCoin(g, mate, 175, 708, 19);
+    // each side's benched partner (tag swap in the fight)
+    const [ma, mb] = matesOf(m);
+    if (ma) {
+      vsCut(g, 146, 680, 166, 58, false);
+      label(g, P, 212, 696, 82, 26, 300, 690, NAMES[ma], { size: 20 });
+      elementCoin(g, ma, 175, 708, 19);
+    }
+    if (mb) {
+      vsCut(g, 1062, 678, 168, 62, false);
+      label(g, P, 1086, 696, 84, 26, 1078, 690, NAMES[mb], { size: 20 });
+      elementCoin(g, mb, 1196, 708, 19);
+    }
     const left = Math.max(0, Math.ceil((210 - vsT) / 60));
     text(g, `FIGHT IN ${left}  ·  TAP TO START`, W / 2, 742, { size: 20, align: 'center', col: '#eaf6ff', stroke: '#02060f', sw: 4 });
     drawSpots(g, [S(0, 0, W, H, go('fight'))]);

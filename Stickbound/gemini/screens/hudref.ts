@@ -64,6 +64,18 @@ export function drawStage(g: G, ground: number, frame: number, flash: number, st
   }
 }
 
+/** the plain picture of an element's arena (versus screen halves), cleaned of the generator mark */
+const arenaPics = new Map<El, HTMLCanvasElement>();
+export async function loadArenaPicture(el: El): Promise<void> {
+  if (arenaPics.has(el)) return;
+  const load = ARENA_DEFS[`${el}arena`] ?? ARENA_DEFS.lightningarena;
+  const b = await loadBackdrop(await load());
+  if (!b) return;
+  await cleanMark(b.img);
+  arenaPics.set(el, b.img);
+}
+export const arenaPicture = (el: El): HTMLCanvasElement | undefined => arenaPics.get(el);
+
 export const ARENA_URL = new URL('../stages/lightningarena/arena.png', import.meta.url).href;
 let arena: HTMLImageElement | null = null;
 export function loadArena(): Promise<void> {
