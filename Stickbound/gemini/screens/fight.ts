@@ -196,6 +196,8 @@ export class Hero implements Target {
   /** frames left of a beam power (Jet Lance, Sunlance, Chain Bolt) */
   beam = 0;
   slowAcc = 0;
+  /** called when a move starts (Daily Quests count powers and ultimates) */
+  onStart?: (name: string, cost: number) => void;
   /** vitality, might, spirit, guard, resolve, speed as multipliers of the plain value 80 */
   readonly st: number[];
   constructor(readonly el: El, public x: number, public facing: 1 | -1, readonly team: number, ground: number, lv = 1, cls?: string) {
@@ -270,6 +272,7 @@ export class Hero implements Target {
     if (this.mp < cost) return false;
     this.mp -= cost;
     this.play(name);
+    this.onStart?.(name, cost);
     if (cost > 0) blip('cast');
     return true;
   }

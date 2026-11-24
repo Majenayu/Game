@@ -6,16 +6,16 @@
  * in the picture's own colours: name, levels, rank, coins, streak, quests, and the player's own two heroes (drawn
  * with the hero rig, over a soft blur of the painted hero when the picture shows a different one).
  */
-import { EL, elementCoin, elementIcon, lock } from './art';
-import { fmt } from './common';
+import { EL, check, chest, coin, elementCoin, elementIcon, lock, xpStar } from './art';
+import { dim, fmt } from './common';
 import { sample } from '../trial/anims';
 import { clipsOf, kitOf, heroStats, CLASS_LIST, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
 import { arenaPicture, colourAt, loadArenaPicture, patch } from './hudref';
 import { Hero, drawEffects, drawFloaters, makeWorld, noKeys, stepWorld, type World } from './fight';
 import { matesOf, nav, pages, type Match } from './nav';
 import { S, drawPicture, drawSpots, drawToast, go, loadRef, ref, say, topRight, type Spot } from './refs';
-import { ELS, QUESTS, dailyClaim, profile, save, tierOf, today, xpNeed, type El } from './save';
-import { goldButton, neon } from './ui';
+import { ELS, STREAK_REWARDS, claimQuest, dailyClaim, profile, questProgress, questReady, questsToClaim, save, streakState, tierOf, todaysQuests, xpNeed, type El, type QuestDef } from './save';
+import { cyanButton, goldButton, hover, neon, panel, region, ring } from './ui';
 import { C, H, W, bar, chamfer, rrect, text, type G } from './ui';
 
 // ---------------------------------------------------------------- helpers
@@ -613,11 +613,9 @@ const lobbySpots = (): Spot[] => [
   S(663, 579, 185, 115, () => match('training', dummyFor(profile.hero), 'Sparring Dummy', 1, profile.hero)),
   S(866, 579, 245, 115, () => match('local', partnerOf(), 'Player 2', heroLv(partnerOf()), profile.hero)),
   S(1136, 579, 203, 115, go('roster')),
-  S(1136, 114, 202, 142, () => {
-    const r = dailyClaim();
-    say(r.ok ? `Daily Streak day ${r.day}: +${r.coins} coins!` : `Already claimed today (day ${r.day} of 7). Come back tomorrow.`);
-  }, { on: () => profile.claimed !== today() }),
-  S(1136, 276, 202, 150, () => say(QUESTS().map(([n, v, goal]) => `${n} ${Math.min(v, goal)}/${goal}`).join('  ·  '), 260)),
+  S(1136, 114, 202, 142, () => (pop = 'streak'), { on: () => streakState().canClaim }),
+  S(1136, 276, 202, 150, () => (pop = 'quests'), { on: () => questsToClaim() > 0 }),
+  S(955, 18, 140, 34, () => say(profile.streak > 0 ? `Win Streak ${profile.streak}: ${profile.streak} wins in a row. A loss sets it back to 0.` : 'Win Streak 0. Win Champion Road or Ranked fights in a row to build it.')),
   S(95, 610, 205, 52, go('roster')),
   S(372, 610, 205, 52, go('roster')),
   S(120, 210, 450, 360, go('roster')),
@@ -631,9 +629,10 @@ pages.lobby = {
   heroes: () => [profile.hero, partnerOf()],
   load: () => Promise.all([loadRef('lobby'), loadRef('fight-hud')]).then(() => undefined),
   enter() {
+    pop = null;
     if (!profile.registered) nav.go(profile.name ? 'starter' : 'register');
   },
-  key: (e) => (e.code === 'Escape' ? nav.go('title') : undefined),
+  key: (e) => (e.code === 'Escape' ? (pop ? (pop = null) : nav.go('title')) : undefined),
   draw(g, t) {
     const P = 'lobby';
     drawPicture(g, P);
@@ -649,13 +648,164 @@ pages.lobby = {
     if (lead !== 'fire') elementCoin(g, lead, 116, 630, 17);
     label(g, P, 414, 615, 152, 30, 420, 642, `${NAMES[mate]} - Lv ${heroLv(mate)}`, { size: 22 });
     if (mate !== 'lightning') elementCoin(g, mate, 392, 629, 17);
-    // daily quests progress
-    QUESTS().forEach(([, v, goal], i) => bar(g, 1183, 332 + i * 30.5, 138, 12, v / goal, i === 0 ? ['#1a9fd0', '#3fe6ff'] : ['#a64dff', '#ff4fd8'], { back: '#0a1430' }));
+    // daily quests progress: today's three quests
+    todaysQuests().forEach((q, i) => bar(g, 1183, 332 + i * 30.5, 138, 12, questProgress(q) / q.goal, profile.qDone.includes(q.id) ? ['#2fbf5a', '#7dff8a'] : i === 0 ? ['#1a9fd0', '#3fe6ff'] : ['#a64dff', '#ff4fd8'], { back: '#0a1430' }));
+    // the tiles say when something is waiting
+    const ss = streakState();
+    label(g, P, 1172, 155, 132, 22, 1238, 166, ss.canClaim ? `DAY ${ss.today} READY` : `DAY ${ss.done} OF 7 DONE`, { size: 15, align: 'center', col: ss.canClaim ? '#ffe08a' : '#9fd8ff', weight: 800 });
+    if (ss.canClaim) badge(g, 1326, 104, '!', t);
+    const qn = questsToClaim();
+    if (qn > 0) badge(g, 1326, 268, String(qn), t);
     topBar(g, P, { xp: [104, 29, 170, 24], rank: [345, 27, 100, 26], streak: [958, 22, 134, 28], coins: [1168, 22, 100, 28] });
     drawSpots(g, lobbySpots());
+    if (pop === 'streak') streakPopup(g, t);
+    else if (pop === 'quests') questsPopup(g, t);
     drawToast(g);
   },
 };
+
+// ---------------------------------------------------------------- Daily Streak and Daily Quests popups
+let pop: 'streak' | 'quests' | null = null;
+/** a red dot with a count on a lobby tile */
+function badge(g: G, x: number, y: number, s: string, t: number): void {
+  const r = 13 + Math.sin(t / 8) * 1.5;
+  g.save();
+  g.beginPath();
+  g.arc(x, y, r, 0, Math.PI * 2);
+  g.fillStyle = '#ff3b4a';
+  g.shadowColor = '#ff3b4a';
+  g.shadowBlur = 12;
+  g.fill();
+  g.lineWidth = 2;
+  g.strokeStyle = '#ffd0d4';
+  g.stroke();
+  g.restore();
+  text(g, s, x, y + 1, { size: 16, align: 'center', weight: 900 });
+}
+/** time left until the daily reset at local midnight */
+function untilMidnight(): string {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const s = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 1000));
+  return `${Math.floor(s / 3600)}h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}m`;
+}
+/** the popup frame: dim, panel, title and a close button; tapping outside closes it */
+function popFrame(g: G, x: number, y: number, w: number, h: number, title: string, sub: string, col: string): void {
+  dim(g, 0.62);
+  region(0, 0, W, H, () => (pop = null));
+  panel(g, x, y, w, h, { col, cut: 16, brackets: true });
+  region(x, y, w, h, () => undefined);
+  text(g, title, x + w / 2, y + 44, { size: 38, align: 'center', weight: 900, col: '#ffe08a', glow: '#ffb43a', blur: 14 });
+  text(g, sub, x + w / 2, y + 80, { size: 18, align: 'center', col: '#cfe4ff' });
+  const cx = x + w - 34;
+  const cy = y + 32;
+  g.save();
+  g.beginPath();
+  g.arc(cx, cy, 18, 0, Math.PI * 2);
+  g.fillStyle = hover(cx - 18, cy - 18, 36, 36) ? 'rgba(255,90,90,0.35)' : 'rgba(10,24,48,0.9)';
+  g.fill();
+  g.lineWidth = 2;
+  g.strokeStyle = '#9fd8ff';
+  g.stroke();
+  g.restore();
+  text(g, 'X', cx, cy + 1, { size: 20, align: 'center', weight: 900 });
+  region(cx - 18, cy - 18, 36, 36, () => (pop = null));
+}
+function streakPopup(g: G, t: number): void {
+  const s = streakState();
+  const X = 318;
+  const Y = 150;
+  const PW = 740;
+  const PH = 450;
+  popFrame(g, X, Y, PW, PH, 'DAILY STREAK', 'Claim a reward every day. Miss a day and the chain starts again from day 1.', '#ffb43a');
+  const tw = 90;
+  const gap = 8;
+  const x0 = X + (PW - (7 * tw + 6 * gap)) / 2;
+  STREAK_REWARDS.forEach((r, i) => {
+    const day = i + 1;
+    const x = x0 + i * (tw + gap);
+    const y = Y + 112;
+    const th = day === 7 ? 196 : 176;
+    const done = day <= s.done;
+    const now = s.canClaim && day === s.today;
+    g.save();
+    chamfer(g, x, y, tw, th, 8);
+    g.fillStyle = done ? 'rgba(20,70,48,0.9)' : now ? 'rgba(70,46,10,0.95)' : 'rgba(10,22,44,0.9)';
+    g.fill();
+    neon(g, done ? '#5dff7a' : now ? '#ffd24a' : 'rgba(120,170,220,0.5)', now ? 2.5 : 1.5, now ? 14 + Math.sin(t / 6) * 6 : 4);
+    g.restore();
+    text(g, `DAY ${day}`, x + tw / 2, y + 22, { size: 17, align: 'center', weight: 800, col: done ? '#aaffbb' : now ? '#ffe08a' : '#9fb8d8' });
+    if (day === 7) chest(g, x + tw / 2, y + 78, 34, done ? 1 : 0);
+    else coin(g, x + tw / 2, y + 72, 20);
+    text(g, `+${fmt(r.coins)}`, x + tw / 2, y + (day === 7 ? 124 : 112), { size: 19, align: 'center', weight: 800, col: '#ffe08a' });
+    if (r.xp > 0) text(g, `+${r.xp} XP`, x + tw / 2, y + (day === 7 ? 148 : 136), { size: 16, align: 'center', weight: 700, col: '#7fe9ff' });
+    if (done) check(g, x + tw / 2, y + th - 22, 12);
+    else if (!now) lock(g, x + tw / 2, y + th - 24, 0.7, 'rgba(200,215,240,0.6)');
+  });
+  const by = Y + PH - 104;
+  if (s.canClaim) {
+    if (s.broken) text(g, 'You missed a day, so the streak starts again at day 1.', X + PW / 2, by - 16, { size: 17, align: 'center', col: '#ffb0a0' });
+    goldButton(g, X + PW / 2 - 170, by, 340, 70, `CLAIM DAY ${s.today}`, { size: 32, t, act: () => {
+      const r = dailyClaim();
+      if (!r.ok) return;
+      say(`Daily Streak day ${r.day}: +${fmt(r.coins)} coins${r.xp ? ` and +${r.xp} XP` : ''}!`, 200);
+      if (r.levelUp) nav.go('levelup');
+    } });
+  } else {
+    text(g, s.done >= 7 ? 'Chain complete! A new 7-day chain starts tomorrow.' : `Claimed today. Day ${s.done + 1} unlocks tomorrow.`, X + PW / 2, by + 22, { size: 22, align: 'center', weight: 800, col: '#aaffbb' });
+    text(g, `Next reward in ${untilMidnight()}`, X + PW / 2, by + 54, { size: 18, align: 'center', col: '#cfe4ff' });
+  }
+}
+/** where GO takes the player for each quest */
+function questGo(q: QuestDef): void {
+  pop = null;
+  if (q.id === 'zombie') return nav.go('zombie');
+  if (q.id === 'train') return match('training', dummyFor(profile.hero), 'Sparring Dummy', 1, profile.hero);
+  if (q.id === 'road') return nav.go('road');
+  roadBattle();
+}
+function questsPopup(g: G, t: number): void {
+  const X = 318;
+  const Y = 130;
+  const PW = 740;
+  const PH = 500;
+  popFrame(g, X, Y, PW, PH, 'DAILY QUESTS', `New quests every day · reset in ${untilMidnight()}`, C.cyan);
+  todaysQuests().forEach((q, i) => {
+    const x = X + 30;
+    const y = Y + 108 + i * 122;
+    const w = PW - 60;
+    const h = 108;
+    const done = profile.qDone.includes(q.id);
+    const ready = questReady(q);
+    const v = questProgress(q);
+    g.save();
+    chamfer(g, x, y, w, h, 10);
+    g.fillStyle = done ? 'rgba(16,56,40,0.9)' : 'rgba(10,24,50,0.92)';
+    g.fill();
+    neon(g, done ? '#5dff7a' : ready ? '#ffd24a' : 'rgba(90,170,230,0.6)', ready ? 2.5 : 1.5, ready ? 14 : 4);
+    g.restore();
+    ring(g, x + 52, y + h / 2, 30, v / q.goal, done ? '#5dff7a' : i === 0 ? '#3fe6ff' : '#ff4fd8', 'rgba(255,255,255,0.12)', 6);
+    if (done) check(g, x + 52, y + h / 2, 14);
+    else text(g, `${Math.round((v / q.goal) * 100)}%`, x + 52, y + h / 2 + 1, { size: 17, align: 'center', weight: 800 });
+    text(g, q.text, x + 100, y + 32, { size: 24, weight: 800 });
+    bar(g, x + 100, y + 52, 300, 14, v / q.goal, done ? ['#2fbf5a', '#7dff8a'] : ['#1a9fd0', '#3fe6ff'], { back: '#050a18' });
+    text(g, `${fmt(v)} / ${fmt(q.goal)}`, x + 410, y + 60, { size: 17, col: '#cfe4ff' });
+    coin(g, x + 112, y + 86, 10);
+    text(g, `+${fmt(q.coins)}`, x + 128, y + 87, { size: 18, weight: 800, col: '#ffe08a' });
+    xpStar(g, x + 206, y + 86, 10);
+    text(g, `+${fmt(q.xp)} XP`, x + 222, y + 87, { size: 18, weight: 800, col: '#7fe9ff' });
+    const bx = x + w - 170;
+    if (done) text(g, 'CLAIMED', bx + 75, y + h / 2 + 1, { size: 24, align: 'center', weight: 900, col: '#7dff8a' });
+    else if (ready)
+      goldButton(g, bx, y + 24, 150, 60, 'CLAIM', { size: 28, t, act: () => {
+        const r = claimQuest(q);
+        if (!r) return;
+        say(`Quest done: +${fmt(q.coins)} coins and +${fmt(q.xp)} XP!`, 200);
+        if (r.levelUp) nav.go('levelup');
+      } });
+    else cyanButton(g, bx, y + 24, 150, 60, 'GO', { size: 28, act: () => questGo(q) });
+  });
+}
 
 // ---------------------------------------------------------------- Champion Road (champion-road-map.png)
 pages.road = {

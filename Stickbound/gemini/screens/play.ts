@@ -11,7 +11,7 @@ import { resumeFlags } from './refs';
 import { Hero, MP_ULT, blip, drawEffects, drawFloaters, floater, heroAI, makeWorld, noKeys, sparks, stepWorld, type Keys, type World } from './fight';
 import { NAMES, drawHero, stillPose } from './heroes';
 import { matesOf, nav, pages, type PageName } from './nav';
-import { addXp, profile, rollDay, save, type El } from './save';
+import { addXp, profile, questBest, questCount, rollDay, save, type El } from './save';
 import { C, H, W, bar, chamfer, cyanButton, goldButton, input, neon, panel, region, text, type G } from './ui';
 import { newZGame, stepZGame, type ZGame } from './zmode';
 
@@ -103,8 +103,24 @@ function newRound(f: FightState | null): FightState {
     ? { ...f, ...fresh, round: f.round + 1 }
     : { ...fresh, wins: [0, 0], round: 1, comboShow: 0, comboN: 0, comboSide: 1 };
   live.st = st;
-  w.onHit = (by) => {
-    if (by.team === 1) profile.qHits++;
+  // Daily Quests count the player's side (not Local 2P); training has its own hit quest, and the dummy's
+  // knock-outs and hits do not count for the fight quests
+  const counts = m.mode !== 'local';
+  if (counts)
+    for (const h of sa)
+      h.onStart = (name, cost) => {
+        if (name === 'ult') questCount('ult');
+        else if (cost > 0) questCount('powers');
+      };
+  w.onHit = (by, _dmg, t) => {
+    if (counts && by.team === 1) {
+      if (m.mode === 'training') questCount('train');
+      else if (!practice()) {
+        questCount('hits');
+        questBest('combo', by.chain, 5);
+        if (t instanceof Hero && t.ko) questCount('ko');
+      }
+    }
     st.comboN = by.chain;
     st.comboSide = by.team === 1 ? 1 : 2;
     if (by.chain >= 2) st.comboShow = 80;
@@ -141,6 +157,7 @@ function trySwap(f: FightState, side: 1 | 2, forced = false): boolean {
   else f.b = next;
   f.swapT[side - 1] = SWAP_COMMIT;
   f.downT[side - 1] = 0;
+  if (side === 1 && !forced && nav.match.mode !== 'local') questCount('swap');
   return true;
 }
 /** the benched hero slowly gets MP and a little HP back */
@@ -170,7 +187,8 @@ function finishMatch(f: FightState): void {
   if (m.mode !== 'local') {
     profile.streak = won ? profile.streak + 1 : 0;
     rollDay();
-    if (won) profile.qWins++;
+    if (won) questCount('win');
+    if (won && m.mode === 'road') questCount('road');
   }
   profile.wins += won ? 1 : 0;
   profile.coins += coins;
@@ -272,6 +290,8 @@ pages.fight = {
     tut.step = tut.held = tut.nice = 0;
   },
   leave(next: PageName) {
+    // keeps the Daily Quest counters when the player quits a fight from the pause menu
+    save();
     if (next === 'pause' || next === 'settings') pauseMusic();
     else stopMusic();
   },
@@ -531,7 +551,7 @@ pages.zombie = {
       profile.coins += coins;
       profile.best = Math.max(profile.best, Z.score);
       rollDay();
-      profile.qZombie++;
+      questCount('zombie');
       const up = addXp(xp);
       save();
       nav.result = { winner: 2, mode: 'quick', xp, coins, levelUp: up, score: Z.score, wave: Z.wave };

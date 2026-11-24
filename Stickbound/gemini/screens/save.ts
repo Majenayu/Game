@@ -16,13 +16,12 @@ export interface Profile {
   partner: El | null;
   /** day of the daily counters below (yyyy-mm-dd) */
   day: string;
-  /** today: fights won, hits landed, Zombie Survival runs */
-  qWins: number;
-  qHits: number;
-  qZombie: number;
+  /** today's Daily Quest counters (QuestId to count) and the quests already claimed today */
+  qc: Partial<Record<QuestId, number>>;
+  qDone: QuestId[];
   /** last day the Daily Streak reward was claimed */
   claimed: string;
-  /** days the Daily Streak reward was claimed */
+  /** days claimed in the current 7-day Daily Streak chain */
   daily: number;
   coins: number;
   embers: number;
@@ -45,7 +44,6 @@ export interface Profile {
   shake: boolean;
   colorblind: boolean;
   best: number;
-  quests: [number, number, number];
 }
 const KEY = 'ek.screens.player';
 const fresh = (): Profile => ({
@@ -55,9 +53,8 @@ const fresh = (): Profile => ({
   hero: 'fire',
   partner: null,
   day: '',
-  qWins: 0,
-  qHits: 0,
-  qZombie: 0,
+  qc: {},
+  qDone: [],
   claimed: '',
   daily: 0,
   coins: 1000,
@@ -80,7 +77,6 @@ const fresh = (): Profile => ({
   shake: true,
   colorblind: false,
   best: 0,
-  quests: [0.7, 0.45, 0.3],
 });
 export const profile: Profile = (() => {
   try {
@@ -99,34 +95,115 @@ export const today = (): string => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+/** the day before `day` (yyyy-mm-dd), local time */
+export function dayBefore(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  const p = new Date(y, m - 1, d - 1);
+  return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}-${String(p.getDate()).padStart(2, '0')}`;
+}
 /** starts the daily counters again on a new day */
 export function rollDay(): void {
   const t = today();
   if (profile.day === t) return;
   profile.day = t;
-  profile.qWins = profile.qHits = profile.qZombie = 0;
+  profile.qc = {};
+  profile.qDone = [];
   save();
 }
-/** the three Daily Quests: label, progress, goal */
-export const QUESTS = (): Array<[string, number, number]> => {
+
+// ---------------------------------------------------------------- Daily Quests
+/** a quest kind: what it counts (a daily counter in profile.qc), the goal and its reward */
+export interface QuestDef {
+  id: QuestId;
+  text: string;
+  goal: number;
+  coins: number;
+  xp: number;
+}
+export type QuestId = 'win' | 'hits' | 'zombie' | 'powers' | 'ult' | 'swap' | 'road' | 'ko' | 'combo' | 'train';
+export const QUEST_POOL: QuestDef[] = [
+  { id: 'win', text: 'Win 3 fights', goal: 3, coins: 300, xp: 400 },
+  { id: 'hits', text: 'Land 50 hits', goal: 50, coins: 200, xp: 250 },
+  { id: 'zombie', text: 'Play a Zombie Survival run', goal: 1, coins: 150, xp: 200 },
+  { id: 'powers', text: 'Use 15 powers', goal: 15, coins: 200, xp: 250 },
+  { id: 'ult', text: 'Fire 2 ultimates', goal: 2, coins: 250, xp: 300 },
+  { id: 'swap', text: 'Tag swap 5 times in fights', goal: 5, coins: 150, xp: 200 },
+  { id: 'road', text: 'Beat a Champion Road champion', goal: 1, coins: 300, xp: 350 },
+  { id: 'ko', text: 'Knock out 4 heroes', goal: 4, coins: 250, xp: 300 },
+  { id: 'combo', text: 'Land a 5-hit combo', goal: 1, coins: 200, xp: 250 },
+  { id: 'train', text: 'Land 30 hits in Training', goal: 30, coins: 100, xp: 150 },
+];
+/** today's three quests: picked from the pool by the date, so they are the same all day and change each day */
+export function todaysQuests(): QuestDef[] {
   rollDay();
-  return [
-    ['Win 3 fights', profile.qWins, 3],
-    ['Land 50 hits', profile.qHits, 50],
-    ['Play Zombie Survival', profile.qZombie, 1],
-  ];
-};
-/** Daily Streak: day 1 to 7 of the reward chain; claimable once a day */
-export function dailyClaim(): { ok: boolean; coins: number; day: number } {
+  let h = 2166136261;
+  for (const c of profile.day) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  const pool = [...QUEST_POOL];
+  const out: QuestDef[] = [];
+  for (let i = 0; i < 3; i++) {
+    h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0;
+    out.push(pool.splice(h % pool.length, 1)[0]);
+  }
+  return out;
+}
+/** counts something the quests track (today only) */
+export function questCount(id: QuestId, n = 1): void {
+  rollDay();
+  profile.qc[id] = (profile.qc[id] ?? 0) + n;
+}
+/** a quest's counter for a value that only needs to be reached once (combo length) */
+export function questBest(id: QuestId, v: number, goal: number): void {
+  rollDay();
+  if (v >= goal) profile.qc[id] = Math.max(profile.qc[id] ?? 0, 1);
+}
+export const questProgress = (q: QuestDef): number => Math.min(q.goal, profile.qc[q.id] ?? 0);
+export const questReady = (q: QuestDef): boolean => questProgress(q) >= q.goal && !profile.qDone.includes(q.id);
+/** quests finished but not yet claimed (the red dot on the lobby tile) */
+export const questsToClaim = (): number => todaysQuests().filter(questReady).length;
+/** pays a finished quest once; returns whether the player levelled up, or null if it cannot be claimed */
+export function claimQuest(q: QuestDef): { levelUp: boolean } | null {
+  if (!questReady(q)) return null;
+  profile.qDone.push(q.id);
+  profile.coins += q.coins;
+  return { levelUp: addXp(q.xp) };
+}
+
+// ---------------------------------------------------------------- Daily Streak
+/** the 7-day reward chain; day 7 is the chest */
+export const STREAK_REWARDS: Array<{ coins: number; xp: number }> = [
+  { coins: 100, xp: 0 },
+  { coins: 150, xp: 100 },
+  { coins: 200, xp: 0 },
+  { coins: 250, xp: 200 },
+  { coins: 300, xp: 0 },
+  { coins: 400, xp: 300 },
+  { coins: 1000, xp: 600 },
+];
+/**
+ * The streak state today: `done` days of the current 7-day chain are claimed. Missing a day breaks the chain
+ * (back to day 1); after day 7 a new chain starts.
+ */
+export function streakState(): { done: number; today: number; canClaim: boolean; broken: boolean } {
   const t = today();
-  const day = (profile.daily % 7) + 1;
-  if (profile.claimed === t) return { ok: false, coins: 0, day: profile.daily % 7 || 7 };
-  const coins = 100 * day;
-  profile.claimed = t;
-  profile.daily++;
-  profile.coins += coins;
-  save();
-  return { ok: true, coins, day };
+  if (profile.claimed === t) {
+    const done = ((profile.daily - 1) % 7) + 1;
+    return { done, today: done, canClaim: false, broken: false };
+  }
+  const kept = profile.claimed !== '' && profile.claimed === dayBefore(t);
+  const broken = profile.claimed !== '' && !kept;
+  const done = kept ? profile.daily % 7 : 0;
+  return { done, today: done + 1, canClaim: true, broken };
+}
+/** claims today's Daily Streak reward */
+export function dailyClaim(): { ok: boolean; coins: number; xp: number; day: number; levelUp: boolean } {
+  const s = streakState();
+  if (!s.canClaim) return { ok: false, coins: 0, xp: 0, day: s.today, levelUp: false };
+  const r = STREAK_REWARDS[s.today - 1];
+  profile.daily = s.done + 1;
+  profile.claimed = today();
+  profile.coins += r.coins;
+  const levelUp = r.xp > 0 ? addXp(r.xp) : (save(), false);
+  return { ok: true, coins: r.coins, xp: r.xp, day: s.today, levelUp };
 }
 /** XP needed for the next level */
 export const xpNeed = (lv: number) => 800 + lv * 40;
