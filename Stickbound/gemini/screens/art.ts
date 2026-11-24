@@ -1,7 +1,9 @@
 /**
  * Elementick screens: code-drawn art. Element icons, rank badges, coin, XP star, comet, chest, small UI icons,
- * cosmetic icons, the neon city backdrops, podiums, spotlights and particles. Original shapes, no images.
+ * cosmetic icons, the neon city backdrops, podiums, spotlights and particles. Element badges, coin, XP star and chest
+ * come from the owner's icon sheet (icons.ts) once it has loaded; the shapes here are drawn only until then.
  */
+import { icon } from './icons';
 import type { El, Tier } from './save';
 import { C, H, W, chamfer, glowDot, hexPath, neon, rng, text, type G } from './ui';
 
@@ -288,6 +290,7 @@ export function gearShape(g: G, x: number, y: number, r: number, teeth: number, 
 
 /** element badge: a framed hexagon in the element colour with the symbol (icons sheet, top row) */
 export function elementIcon(g: G, el: El, x: number, y: number, r: number, dim = false): void {
+  if (icon(g, el, x, y, r * 2.3, dim ? 0.45 : 1)) return;
   const c = EL[el];
   g.save();
   if (dim) g.globalAlpha = 0.45;
@@ -316,6 +319,7 @@ export function elementIcon(g: G, el: El, x: number, y: number, r: number, dim =
 }
 /** small round element badge (name plates, HUD portraits) */
 export function elementCoin(g: G, el: El, x: number, y: number, r: number): void {
+  if (icon(g, el, x, y, r * 2.2)) return;
   const c = EL[el];
   g.save();
   g.beginPath();
@@ -499,6 +503,7 @@ export function rankBadge(g: G, tier: Tier, x: number, y: number, s: number, wit
 
 // ---------------------------------------------------------------- currency and rewards
 export function coin(g: G, x: number, y: number, r: number): void {
+  if (icon(g, 'coin', x, y, r * 2.3)) return;
   g.save();
   g.beginPath();
   g.arc(x, y, r, 0, TAU);
@@ -524,6 +529,7 @@ export function coin(g: G, x: number, y: number, r: number): void {
   g.restore();
 }
 export function xpStar(g: G, x: number, y: number, r: number): void {
+  if (icon(g, 'xp', x, y, r * 2.4)) return;
   g.save();
   g.translate(x, y);
   g.beginPath();
@@ -575,6 +581,8 @@ export function comet(g: G, x: number, y: number, s: number, cols = ['#ff3b1a', 
   g.restore();
 }
 export function chest(g: G, x: number, y: number, s: number, open = 0): void {
+  if (open > 0) glowDot(g, x, y - s * 0.2, s * 1.4, 'rgb(255,200,80)', open * 0.8);
+  if (icon(g, 'chest', x, y, s * 2.2)) return;
   g.save();
   g.translate(x, y);
   // glow

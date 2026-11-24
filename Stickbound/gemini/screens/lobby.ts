@@ -10,6 +10,7 @@ import { EL, check, chest, coin, elementCoin, elementIcon, lock, xpStar } from '
 import { dim, fmt } from './common';
 import { sample } from '../trial/anims';
 import { clipsOf, kitOf, heroStats, CLASS_LIST, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
+import { loadIcons } from './icons';
 import { arenaPicture, colourAt, loadArenaPicture, patch } from './hudref';
 import { Hero, drawEffects, drawFloaters, makeWorld, noKeys, stepWorld, type World } from './fight';
 import { matesOf, nav, pages, type Match } from './nav';
@@ -520,7 +521,7 @@ function stageShow(el: El, tick = false): { w: World; h: Hero } {
 const rosterPage = (title: string) => ({
   title,
   heroes: () => ELS,
-  load: () => Promise.all([loadRef('hero-roster'), loadRef('fight-hud')]).then(() => undefined),
+  load: () => Promise.all([loadRef('hero-roster'), loadRef('fight-hud'), loadIcons()]).then(() => undefined),
   enter() {
     showT = 0;
     pick = nav.name === 'partner' ? (profile.partner ?? (profile.hero === 'water' ? 'lightning' : 'water')) : profile.hero;
@@ -627,7 +628,7 @@ const lobbySpots = (): Spot[] => [
 pages.lobby = {
   title: 'Lobby',
   heroes: () => [profile.hero, partnerOf()],
-  load: () => Promise.all([loadRef('lobby'), loadRef('fight-hud')]).then(() => undefined),
+  load: () => Promise.all([loadRef('lobby'), loadRef('fight-hud'), loadIcons()]).then(() => undefined),
   enter() {
     pop = null;
     if (!profile.registered) nav.go(profile.name ? 'starter' : 'register');
@@ -790,10 +791,10 @@ function questsPopup(g: G, t: number): void {
     text(g, q.text, x + 100, y + 32, { size: 24, weight: 800 });
     bar(g, x + 100, y + 52, 300, 14, v / q.goal, done ? ['#2fbf5a', '#7dff8a'] : ['#1a9fd0', '#3fe6ff'], { back: '#050a18' });
     text(g, `${fmt(v)} / ${fmt(q.goal)}`, x + 410, y + 60, { size: 17, col: '#cfe4ff' });
-    coin(g, x + 112, y + 86, 10);
-    text(g, `+${fmt(q.coins)}`, x + 128, y + 87, { size: 18, weight: 800, col: '#ffe08a' });
-    xpStar(g, x + 206, y + 86, 10);
-    text(g, `+${fmt(q.xp)} XP`, x + 222, y + 87, { size: 18, weight: 800, col: '#7fe9ff' });
+    coin(g, x + 114, y + 86, 14);
+    text(g, `+${fmt(q.coins)}`, x + 134, y + 87, { size: 18, weight: 800, col: '#ffe08a' });
+    xpStar(g, x + 216, y + 86, 14);
+    text(g, `+${fmt(q.xp)} XP`, x + 236, y + 87, { size: 18, weight: 800, col: '#7fe9ff' });
     const bx = x + w - 170;
     if (done) text(g, 'CLAIMED', bx + 75, y + h / 2 + 1, { size: 24, align: 'center', weight: 900, col: '#7dff8a' });
     else if (ready)
@@ -914,7 +915,7 @@ function vsCut(g: G, x: number, y: number, w: number, h: number, oval: boolean):
 pages.versus = {
   title: 'Versus',
   heroes: () => [nav.match.p1, nav.match.p2, ...matesOf(nav.match).filter((e): e is El => !!e)],
-  load: () => Promise.all([loadRef('versus-screen'), loadRef('fight-hud'), loadArenaPicture(nav.match.p1), loadArenaPicture(nav.match.p2)]).then(() => undefined),
+  load: () => Promise.all([loadRef('versus-screen'), loadRef('fight-hud'), loadArenaPicture(nav.match.p1), loadArenaPicture(nav.match.p2), loadIcons()]).then(() => undefined),
   enter: () => (vsT = 0),
   step() {
     if (++vsT > 210) nav.go('fight');

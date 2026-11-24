@@ -5,12 +5,13 @@
  * Player 2 (Local 2P): arrows, Numpad 1 attack, 2 heavy, 3 dash, 4 5 6 powers, 0 ultimate.
  */
 import { coin, elementCoin, rain } from './art';
+import { loadIcons } from './icons';
 import { fmt, dim } from './common';
 import { drawArena, drawCut, drawStage, loadHudRefs, patch, pauseMusic, startMusic, stopMusic, useStage } from './hudref';
 import { resumeFlags } from './refs';
-import { Hero, MP_ULT, blip, drawEffects, drawFloaters, floater, heroAI, makeWorld, noKeys, sparks, stepWorld, type Keys, type World } from './fight';
+import { Hero, MP_ULT, blip, drawEffects, drawFloaters, floater, heroAI, makeWorld, noKeys, seedSim, sparks, stepWorld, type Keys, type World } from './fight';
 import { NAMES, drawHero, stillPose } from './heroes';
-import { matesOf, nav, pages, type PageName } from './nav';
+import { matesOf, nav, pages, type NetSquad, type PageName } from './nav';
 import { addXp, profile, questBest, questCount, rollDay, save, type El } from './save';
 import { C, H, W, bar, chamfer, cyanButton, goldButton, input, neon, panel, region, text, type G } from './ui';
 import { newZGame, stepZGame, type ZGame } from './zmode';
@@ -84,6 +85,8 @@ let F: FightState | null = null;
 const FGROUND = 650;
 /** fighters at the size their moves were designed for (the labs use 0.74), so the arena has room to move */
 const FSCALE = 0.74;
+/** online matches even out levels (DECISIONS_LOG D9): a level 50 hero is at most about 15% stronger than level 1 */
+const rankedLv = (lv: number): number => 1 + (5 * Math.min(Math.max(1, lv) - 1, 49)) / 49;
 function newRound(f: FightState | null): FightState {
   const m = nav.match;
   // both sides fight with their real stats: hero level and chosen class (the roster panel shows the same numbers)
@@ -91,8 +94,12 @@ function newRound(f: FightState | null): FightState {
   const [ma, mb] = matesOf(m);
   const mine = (el: El, x: number) => new Hero(el, x, 1, 1, FGROUND, profile.heroLv[el], profile.cls[el]);
   const theirs = (el: El, x: number) => new Hero(el, x, -1, 2, FGROUND, local ? profile.heroLv[el] : m.p2Lv, local ? profile.cls[el] : undefined);
-  const sa = [mine(m.p1, 380), ...(ma ? [mine(ma, 380)] : [])];
-  const sb = [theirs(m.p2, 996), ...(mb ? [theirs(mb, 996)] : [])];
+  // online (gemini/ranked): both machines build the same squads and seed the fight's random numbers the same
+  const net = m.net;
+  if (net) seedSim(net.seed + (f ? f.round : 0) * 7919);
+  const netSide = (q: NetSquad, side: 1 | 2): Hero[] => [q.lead, q.mate].map((el, i) => new Hero(el, side === 1 ? 380 : 996, side === 1 ? 1 : -1, side, FGROUND, rankedLv(q.lv[i]), q.cls[i] ?? undefined));
+  const sa = net ? netSide(net.squads[0], 1) : [mine(m.p1, 380), ...(ma ? [mine(ma, 380)] : [])];
+  const sb = net ? netSide(net.squads[1], 2) : [theirs(m.p2, 996), ...(mb ? [theirs(mb, 996)] : [])];
   for (const h of [...sa, ...sb]) h.scale = FSCALE;
   const [a, b] = [sa[0], sb[0]];
   // the world reads the active heroes each frame, so a swap changes who can be hit
@@ -105,15 +112,16 @@ function newRound(f: FightState | null): FightState {
   live.st = st;
   // Daily Quests count the player's side (not Local 2P); training has its own hit quest, and the dummy's
   // knock-outs and hits do not count for the fight quests
+  const me = net?.side ?? 1;
   const counts = m.mode !== 'local';
   if (counts)
-    for (const h of sa)
+    for (const h of me === 1 ? sa : sb)
       h.onStart = (name, cost) => {
         if (name === 'ult') questCount('ult');
         else if (cost > 0) questCount('powers');
       };
   w.onHit = (by, _dmg, t) => {
-    if (counts && by.team === 1) {
+    if (counts && by.team === me) {
       if (m.mode === 'training') questCount('train');
       else if (!practice()) {
         questCount('hits');
@@ -157,7 +165,7 @@ function trySwap(f: FightState, side: 1 | 2, forced = false): boolean {
   else f.b = next;
   f.swapT[side - 1] = SWAP_COMMIT;
   f.downT[side - 1] = 0;
-  if (side === 1 && !forced && nav.match.mode !== 'local') questCount('swap');
+  if (side === (nav.match.net?.side ?? 1) && !forced && nav.match.mode !== 'local') questCount('swap');
   return true;
 }
 /** the benched hero slowly gets MP and a little HP back */
@@ -172,14 +180,25 @@ function restBench(f: FightState): void {
 }
 const sideDown = (list: Hero[]) => list.every((h) => h.ko);
 const hpShare = (list: Hero[]) => list.reduce((s, h) => s + h.hp, 0) / list.reduce((s, h) => s + h.maxHp, 0);
+/** a short text of the fight state; both machines of an online match must get the same one (desync check) */
+function fightHash(f: FightState): string {
+  let h = 2166136261;
+  const add = (v: number) => (h = Math.imul(h ^ Math.round(v * 100), 16777619) >>> 0);
+  [f.round, f.timer, f.wins[0], f.wins[1], f.w.frame, f.w.effects.length, f.a === f.sa[0] ? 0 : 1, f.b === f.sb[0] ? 0 : 1].forEach(add);
+  for (const x of [...f.sa, ...f.sb]) [x.x, x.feet, x.hp, x.mp, x.vx, x.vy, x.stun].forEach(add);
+  return h.toString(36);
+}
 function finishMatch(f: FightState): void {
   const m = nav.match;
   const winner: 1 | 2 = f.wins[0] > f.wins[1] ? 1 : 2;
-  const won = winner === 1;
-  const xp = m.mode === 'local' ? 300 : won ? 1500 : 400;
-  const coins = m.mode === 'local' ? 100 : won ? 500 : 100;
+  const won = winner === (m.net?.side ?? 1);
+  // friend rooms pay like Local 2P (no farming wins off a friend); Ranked's Practice vs Bot pays about half
+  const light = m.mode === 'local' || (!!m.net && !m.net.ranked);
+  const xp = light ? 300 : m.practice ? (won ? 700 : 200) : won ? 1500 : 400;
+  const coins = light ? 100 : m.practice ? (won ? 250 : 50) : won ? 500 : 100;
   let rp: number | undefined;
-  if (m.mode === 'ranked') {
+  if (m.net) rp = m.net.finish(winner);
+  else if (m.mode === 'ranked' && !m.practice) {
     rp = won ? 25 : -15;
     profile.rp = Math.max(0, profile.rp + rp);
   }
@@ -279,7 +298,7 @@ function tutorialPanel(g: G, f: FightState, t: number): void {
 pages.fight = {
   title: 'Fight',
   heroes: () => [nav.match.p1, nav.match.p2, ...matesOf(nav.match).filter((e): e is El => !!e)],
-  load: () => Promise.all([loadHudRefs(), useStage(nav.match.arena ?? nav.match.p2)]).then(() => undefined),
+  load: () => Promise.all([loadHudRefs(), useStage(nav.match.arena ?? nav.match.p2), loadIcons()]).then(() => undefined),
   enter() {
     startMusic();
     if (resumeFlags.fight && F) {
@@ -296,11 +315,21 @@ pages.fight = {
     else stopMusic();
   },
   key(e) {
-    if (e.code === 'Escape') pause();
+    if (e.code === 'Escape') (nav.match.net ? nav.match.net.escape() : pause());
   },
   step() {
     const f = F;
     if (!f) return;
+    // online: this tick's keys of both sides; the fight waits while the other side's have not arrived
+    const net = nav.match.net;
+    let io: [Keys, Keys] | null = null;
+    if (net) {
+      const own = f.phase === 'fight' ? read(P1, true) : noKeys();
+      if (f.tapSwap) own.swap = true;
+      f.tapSwap = false;
+      io = net.tick(own, () => fightHash(f));
+      if (!io) return;
+    }
     const { w, a, b } = f;
     f.phaseT++;
     if (f.comboShow > 0) f.comboShow--;
@@ -310,15 +339,15 @@ pages.fight = {
     }
     const mode = nav.match.mode;
     const local = mode === 'local';
-    const ka = f.phase === 'fight' ? read(P1, true) : noKeys();
-    const kb = f.phase !== 'fight' || practice() ? noKeys() : local ? read(P2) : heroAI(b, a, w, mode === 'road' ? 0.7 + Math.min(0.3, profile.road / 60) : 1);
+    const ka = f.phase === 'fight' ? (io ? io[0] : read(P1, true)) : noKeys();
+    const kb = f.phase !== 'fight' || practice() ? noKeys() : io ? io[1] : local ? read(P2) : heroAI(b, a, w, mode === 'road' ? 0.7 + Math.min(0.3, profile.road / 60) : 1);
     if (f.phase === 'fight') {
       // tag swap: a fresh press of Swap (or a tap on the partner chip)
       if ((ka.swap && !a.prev.swap) || f.tapSwap) trySwap(f, 1);
-      if (local && kb.swap && !b.prev.swap) trySwap(f, 2);
+      if ((local || io) && kb.swap && !b.prev.swap) trySwap(f, 2);
       // the AI brings its partner in when its hero is low and the partner is fresher
       const bb = benchOf(f, 2);
-      if (!local && bb && !bb.ko && b.hp / b.maxHp < 0.35 && bb.hp / bb.maxHp > 0.5 && w.frame % 45 === 0) trySwap(f, 2);
+      if (!local && !io && bb && !bb.ko && b.hp / b.maxHp < 0.35 && bb.hp / bb.maxHp > 0.5 && w.frame % 45 === 0) trySwap(f, 2);
       // a downed hero is replaced by the partner after the knock-down
       for (const side of [1, 2] as const) {
         const cur = side === 1 ? f.a : f.b;
@@ -407,6 +436,8 @@ pages.fight = {
     else if (nav.match.mode === 'training') {
       text(g, 'TRAINING · every skill is free · the dummy does not hit back · Esc to leave', W / 2, 165, { size: 20, align: 'center', col: '#cfe4ff', stroke: '#02060f', sw: 4 });
     }
+    // online: no pause (the other player keeps playing); the link draws its state and the forfeit button
+    if (nav.match.net) return nav.match.net.overlay(g, t);
     // pause button
     chamfer(g, W / 2 - 22, 104, 44, 30, 6);
     g.fillStyle = 'rgba(10,20,40,0.8)';
@@ -449,11 +480,12 @@ function benchChip(g: G, f: FightState, side: 1 | 2): void {
   g.restore();
   bar(g, cx - 32, cy + 40, 64, 8, h.hp / h.maxHp, profile.colorblind ? ['#2a6aff', '#7ab8ff'] : ['#3ad84a', '#d8ff4a'], { back: '#050a18', glow: false });
   const local = nav.match.mode === 'local';
-  if (side === 1 || local) {
+  const me = nav.match.net?.side ?? 1;
+  if (side === me || local) {
     const kx = side === 1 ? cx + 46 : cx - 46;
-    text(g, h.ko ? 'DOWN' : side === 1 ? 'Q SWAP' : '7 SWAP', kx, cy + 4, { size: 15, weight: 800, align: side === 1 ? 'left' : 'right', col: h.ko ? '#8a90a0' : '#ffe08a', stroke: '#02060f', sw: 4 });
+    text(g, h.ko ? 'DOWN' : side === me ? 'Q SWAP' : '7 SWAP', kx, cy + 4, { size: 15, weight: 800, align: side === 1 ? 'left' : 'right', col: h.ko ? '#8a90a0' : '#ffe08a', stroke: '#02060f', sw: 4 });
   }
-  if (side === 1) region(cx - 34, cy - 34, 68, 68, () => (f.tapSwap = true));
+  if (side === me) region(cx - 34, cy - 34, 68, 68, () => (f.tapSwap = true));
 }
 function fightHud(g: G, f: FightState, t: number): void {
   const N = 'fight-hud';
@@ -462,13 +494,15 @@ function fightHud(g: G, f: FightState, t: number): void {
   drawCut(g, N, 0, 0, W, 210, 'strip', [430, 946, 130]);
   if (f.a.el !== 'fire') elementCoin(g, f.a.el, 56, 65, 44);
   if (f.b.el !== 'water') elementCoin(g, f.b.el, 1320, 65, 44);
-  const n1 = local ? 'Player 1' : profile.name;
-  const n2 = local ? 'Player 2' : m.p2Name;
+  const net = m.net;
+  const n1 = net ? net.names[0] : local ? 'Player 1' : profile.name;
+  const n2 = net ? net.names[1] : local ? 'Player 2' : m.p2Name;
+  const netLv = (i: 0 | 1, el: El) => (net ? net.squads[i].lv[el === net.squads[i].lead ? 0 : 1] : 1);
   patch(g, N, 120, 22, 215, 28, 345, 36);
   text(g, n1, 124, 36, { size: 22 });
-  text(g, `Lv. ${profile.heroLv[f.a.el]}`, 132 + n1.length * 12, 36, { size: 22, col: '#ffd24a' });
+  text(g, `Lv. ${net ? netLv(0, f.a.el) : profile.heroLv[f.a.el]}`, 132 + n1.length * 12, 36, { size: 22, col: '#ffd24a' });
   patch(g, N, 1062, 22, 200, 28, 1040, 36);
-  text(g, `Lv. ${local ? profile.heroLv[f.b.el] : m.p2Lv}`, 1252, 36, { size: 22, align: 'right', col: '#ffd24a' });
+  text(g, `Lv. ${net ? netLv(1, f.b.el) : local ? profile.heroLv[f.b.el] : m.p2Lv}`, 1252, 36, { size: 22, align: 'right', col: '#ffd24a' });
   benchChip(g, f, 1);
   benchChip(g, f, 2);
   text(g, n2, 1176, 36, { size: 22, align: 'right' });
@@ -523,7 +557,7 @@ let zRewarded = false;
 pages.zombie = {
   title: 'Zombie Survival',
   heroes: () => [profile.hero],
-  load: () => Promise.all([loadHudRefs(), useStage('lightning')]).then(() => undefined),
+  load: () => Promise.all([loadHudRefs(), useStage('lightning'), loadIcons()]).then(() => undefined),
   leave(next: PageName) {
     if (next === 'pause' || next === 'settings') pauseMusic();
     else stopMusic();
