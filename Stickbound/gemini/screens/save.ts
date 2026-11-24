@@ -36,6 +36,8 @@ export interface Profile {
   equipped: Record<string, string>;
   squad: El[];
   heroLv: Record<El, number>;
+  /** class the player chose for each hero on the roster (unset: the hero's own class) */
+  cls: Partial<Record<El, string>>;
   music: number;
   sfx: number;
   graphics: 'high' | 'medium' | 'low';
@@ -70,6 +72,7 @@ const fresh = (): Profile => ({
   equipped: {},
   squad: [],
   heroLv: { fire: 1, water: 1, ice: 1, lightning: 1, wind: 1, earth: 1, leaf: 1, light: 1, gravity: 1, time: 1 },
+  cls: {},
   music: 0.8,
   sfx: 0.9,
   graphics: 'high',

@@ -6,15 +6,17 @@
  * in the picture's own colours: name, levels, rank, coins, streak, quests, and the player's own two heroes (drawn
  * with the hero rig, over a soft blur of the painted hero when the picture shows a different one).
  */
-import { elementCoin } from './art';
+import { EL, elementCoin, elementIcon, lock } from './art';
 import { fmt } from './common';
-import { kitOf, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
-import { patch } from './hudref';
+import { auraAt, chargeAt, sample } from '../trial/anims';
+import type { Face, Pose } from '../trial/rig';
+import { clipsOf, kitOf, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
+import { colourAt, patch } from './hudref';
 import { nav, pages, type Match } from './nav';
 import { S, drawPicture, drawSpots, drawToast, go, loadRef, ref, say, topRight, type Spot } from './refs';
 import { ELS, QUESTS, dailyClaim, profile, save, tierOf, today, xpNeed, type El } from './save';
 import { goldButton, neon } from './ui';
-import { C, H, W, bar, chamfer, text, type G } from './ui';
+import { C, H, W, bar, chamfer, rrect, text, type G } from './ui';
 
 // ---------------------------------------------------------------- helpers
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -201,20 +203,39 @@ pages.register = {
 pages.customise = pages.register;
 
 // ---------------------------------------------------------------- roster and partner pick (hero-roster.png)
-const CARDS: Array<[number, number, El]> = [
+/** the painted card frames; the picture has 11, the game has 10 heroes, so the last free one waits for a new hero */
+const CARDS: Array<[number, number, El | null]> = [
   [52, 103, 'fire'], [191, 103, 'water'], [331, 103, 'lightning'], [469, 103, 'ice'],
   [52, 298, 'earth'], [191, 298, 'wind'], [331, 298, 'leaf'], [469, 298, 'light'],
-  [52, 491, 'light'], [191, 491, 'gravity'], [331, 491, 'time'],
+  [52, 491, null], [191, 491, 'gravity'], [331, 491, 'time'],
 ];
-/** per-element stat lines for the stats panel: vitality, might, spirit, guard, resolve, speed */
+const CW = 126;
+const CH = 178;
+/** per-element base stats for the stats panel: vitality, might, spirit, guard, resolve, speed */
 const STATS: Record<El, number[]> = {
   fire: [84, 92, 70, 65, 78, 88], water: [86, 72, 90, 80, 84, 74], ice: [80, 76, 82, 92, 80, 64], lightning: [70, 84, 80, 62, 72, 96],
   wind: [72, 74, 78, 64, 76, 98], earth: [96, 90, 62, 94, 88, 56], leaf: [88, 68, 86, 78, 90, 72], light: [74, 80, 92, 70, 82, 86],
   gravity: [90, 88, 84, 82, 86, 60], time: [76, 78, 94, 74, 92, 80],
 };
+const CLASS_LIST = ['Vanguard', 'Striker', 'Warden'] as const;
+/** what each class adds to the six stats */
+const CLASS_MOD: Record<string, number[]> = {
+  Vanguard: [6, 6, -4, 6, 2, -8],
+  Striker: [-6, 4, 0, -6, -2, 10],
+  Warden: [4, -6, 6, 4, 6, -4],
+};
+export const classOf = (el: El): string => profile.cls[el] ?? CLASSES[el];
+function statsOf(el: El): number[] {
+  const own = CLASS_MOD[CLASSES[el]];
+  const now = CLASS_MOD[classOf(el)];
+  return STATS[el].map((v, i) => Math.max(10, Math.min(99, v - own[i] + now[i])));
+}
 let pick: El = 'fire';
 const partnerMode = () => nav.name === 'partner';
 const starterMode = () => nav.name === 'starter';
+/** after the partner pick the roster is view only */
+const viewOnly = () => !starterMode() && !partnerMode() && !!profile.partner;
+const inSquad = (el: El) => el === profile.hero || el === profile.partner;
 function choose(): void {
   if (starterMode()) {
     profile.hero = pick;
@@ -234,62 +255,160 @@ function choose(): void {
     nav.go('lobby');
     return;
   }
-  if (pick === profile.hero) return say(`${NAMES[pick]} already leads your squad`);
-  const old = profile.hero;
-  profile.hero = pick;
-  if (profile.partner === pick) profile.partner = old;
-  profile.squad = [profile.hero, partnerOf()];
-  save();
-  say(`${NAMES[pick]} now leads your squad`);
-}
-function addPartner(): void {
-  if (starterMode()) return say('Pick your first hero, then press SELECT');
-  if (pick === profile.hero) return say(`${NAMES[pick]} is your leader. Pick another hero as partner.`);
-  if (partnerMode()) return choose();
-  profile.partner = pick;
-  profile.squad = [profile.hero, pick];
-  save();
-  say(`${NAMES[pick]} joined your squad as partner`);
+  say(inSquad(pick) ? `${NAMES[pick]} is in your squad` : `${NAMES[pick]} is locked. View only for now.`);
 }
 const rosterSpots = (): Spot[] => [
   S(28, 18, 125, 42, () => (starterMode() ? nav.go('register') : partnerMode() && !profile.partner ? say('Pick a partner first, then press SELECT') : nav.go('lobby'))),
-  ...CARDS.map(([x, y, el], i) =>
-    S(x, y, 126, 178, () => ((pick = el), say(`${NAMES[el]} · ${cap(el)} · ${CLASSES[el]}`)), {
-      on: () => pick === el && CARDS.findIndex((c) => c[2] === el) === i,
-      off: () => partnerMode() && el === profile.hero,
+  ...CARDS.map(([x, y, el]) =>
+    S(x, y, CW, CH, () => {
+      if (!el) return say('A new hero is coming soon');
+      pick = el;
+      showT = 0;
+      say(`${NAMES[el]} · ${cap(el)} · ${classOf(el)}`);
+    }, {
+      on: () => el === pick,
+      off: () => !el || (partnerMode() && el === profile.hero),
     }),
   ),
   S(686, 655, 210, 72, choose),
-  S(1229, 617, 100, 102, addPartner),
-  ...(['Vanguard', 'Striker', 'Warden'] as const).map((c, i) => S(1009 + i * 99, 210, 92, 36, () => say(`${c}: ${ELS.filter((e) => CLASSES[e] === c).map((e) => NAMES[e]).join(', ')}`), { on: () => CLASSES[pick] === c })),
+  ...CLASS_LIST.map((c, i) =>
+    S(1009 + i * 104, 210, 104, 36, () => {
+      if (c === CLASSES[pick]) delete profile.cls[pick];
+      else profile.cls[pick] = c;
+      save();
+      say(`${NAMES[pick]} now plays as a ${c}`);
+    }),
+  ),
   ...topRight(),
 ];
+
+/** the card art: the hero's own rig in a celebration pose on a dark card in the element's colour */
+function card(g: G, x: number, y: number, el: El | null, t: number, i: number): void {
+  const ix = x + 7;
+  const iy = y + 7;
+  const iw = CW - 14;
+  const ih = CH - 14;
+  g.save();
+  rrect(g, ix, iy, iw, ih, 9);
+  g.clip();
+  const col = el ? EL[el] : null;
+  const gr = g.createLinearGradient(0, iy, 0, iy + ih);
+  gr.addColorStop(0, col ? col.deep : '#141a2c');
+  gr.addColorStop(1, '#04070f');
+  g.fillStyle = gr;
+  g.fillRect(ix, iy, iw, ih);
+  if (el) {
+    const glow = g.createRadialGradient(ix + iw / 2, iy + ih * 0.42, 4, ix + iw / 2, iy + ih * 0.42, iw * 0.75);
+    glow.addColorStop(0, hexA(col!.line, 0.45));
+    glow.addColorStop(1, hexA(col!.line, 0));
+    g.fillStyle = glow;
+    g.fillRect(ix, iy, iw, ih);
+    const c = clipsOf(el).victory;
+    const f = 30 + ((t + i * 23) % 60);
+    drawHero(g, el, { pose: sample(c, f), face: 'attack', x: ix + iw / 2 + 4, feet: iy + ih + 34, scale: 0.4, t, aura: 0.25 });
+    const locked = viewOnly() && !inSquad(el);
+    const off = partnerMode() && el === profile.hero;
+    if (locked || off) {
+      g.fillStyle = 'rgba(2,6,15,0.55)';
+      g.fillRect(ix, iy, iw, ih);
+    }
+    g.fillStyle = 'rgba(2,6,15,0.7)';
+    g.fillRect(ix + iw - 64, iy + ih - 32, 64, 32);
+    text(g, `Lv ${heroLv(el)}`, ix + iw - 6, iy + ih - 15, { size: 21, align: 'right', weight: 800 });
+    if (locked) lock(g, ix + iw - 16, iy + 18, 12);
+    if (off) text(g, 'LEADER', ix + iw / 2, iy + ih / 2, { size: 18, align: 'center', weight: 800, col: '#ffd24a', stroke: '#02060f', sw: 4 });
+  } else {
+    text(g, '?', ix + iw / 2, iy + ih / 2 - 10, { size: 64, align: 'center', weight: 800, col: '#3a4a6a' });
+    text(g, 'SOON', ix + iw / 2, iy + ih / 2 + 40, { size: 18, align: 'center', weight: 800, col: '#5a6a8a', spacing: 2 });
+  }
+  g.restore();
+  if (el) elementIcon(g, el, x + 24, y + 26, 13);
+}
+function hexA(hex: string, a: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
+/** fills a box by blending, row by row, the picture's colours just left and right of it */
+const fills = new Map<string, HTMLCanvasElement>();
+function inpaint(g: G, P: string, x: number, y: number, w: number, h: number): void {
+  const key = `${P}:${x}:${y}:${w}:${h}`;
+  let c = fills.get(key);
+  if (!c && ref(P)) {
+    c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const cg = c.getContext('2d')!;
+    for (let r = 0; r < h; r++) {
+      const gr = cg.createLinearGradient(0, 0, w, 0);
+      gr.addColorStop(0, colourAt(P, x - 4, y + r));
+      gr.addColorStop(1, colourAt(P, x + w + 4, y + r));
+      cg.fillStyle = gr;
+      cg.fillRect(0, r, w, 1);
+    }
+    cg.filter = 'blur(3px)';
+    cg.drawImage(c, 0, 0);
+    fills.set(key, c);
+  }
+  if (c) g.drawImage(c, x, y);
+}
+/** the stage show: a celebration, then the hero's moves, one after another */
+let showT = 0;
+function stageShow(el: El): { pose: Pose; face: Face; charge: number; aura: number; name: string } {
+  const c = clipsOf(el);
+  const k = kitOf(el);
+  const list = ['victory', 'jab', 'cross', 'kick', k.powers[0].clip, 'heavy', k.powers[1].clip, 'rising', k.powers[2].clip, 'taunt'].filter((n) => c[n]);
+  const GAP = 24;
+  const total = list.reduce((s, n) => s + c[n].frames + GAP, 0);
+  let f = showT % total;
+  for (const n of list) {
+    const cl = c[n];
+    if (f < cl.frames) return { pose: sample(cl, f), face: cl.face, charge: chargeAt(cl, f), aura: auraAt(cl, f), name: cl.name };
+    f -= cl.frames;
+    if (f < GAP) return { ...stillPose(el, 'fight', showT), charge: 0, aura: 0, name: '' };
+    f -= GAP;
+  }
+  return { ...stillPose(el, 'fight', showT), charge: 0, aura: 0, name: '' };
+}
 function rosterDraw(g: G, t: number): void {
   const P = 'hero-roster';
+  showT++;
   drawPicture(g, P);
-  // level on every card
-  for (const [x, y, el] of CARDS) label(g, P, x + 58, y + 140, 62, 28, x + 54, y + 150, `Lv ${heroLv(el)}`, { size: 22, align: 'right' });
-  // the picked hero on the stage
-  if (pick !== 'fire') {
-    veil(g, P, 790, 300, 210, 236);
-    stand(g, pick, 790, 492, 0.98, t);
-  }
+  CARDS.forEach(([x, y, el], i) => card(g, x, y, el, t, i));
+  // the picked hero on the stage, playing its celebration and moves
+  veil(g, P, 790, 300, 215, 240);
+  inpaint(g, P, 636, 531, 308, 113);
+  const s = stageShow(pick);
+  heroShadow(g, 790, 494, 0.8, 0.3);
+  drawHero(g, pick, { pose: s.pose, face: s.face, x: 790, feet: 494, scale: 0.8, t, aura: 0.12 + s.aura * 0.6, charge: s.charge });
+  if (s.name) text(g, s.name.toUpperCase(), 790, 600, { size: 22, align: 'center', weight: 800, col: EL[pick].light, stroke: '#02060f', sw: 4, spacing: 1 });
   // name, class and stats
   label(g, P, 1010, 124, 300, 42, 1320, 150, NAMES[pick].toUpperCase(), { size: 40, weight: 800, col: '#dff4ff' });
   patch(g, P, 1010, 168, 300, 26, 1320, 180);
   text(g, 'CLASS:', 1013, 181, { size: 21, col: '#dff4ff' });
-  text(g, CLASSES[pick].toUpperCase(), 1093, 181, { size: 21, col: '#ffc93a' });
-  STATS[pick].forEach((v, i) => {
+  text(g, classOf(pick).toUpperCase(), 1093, 181, { size: 21, col: '#ffc93a' });
+  patch(g, P, 1006, 206, 320, 44, 1003, 228);
+  CLASS_LIST.forEach((c, i) => {
+    const x = 1009 + i * 104;
+    const on = classOf(pick) === c;
+    chamfer(g, x + 2, 211, 100, 34, 6);
+    if (on) {
+      const gr = g.createLinearGradient(0, 211, 0, 245);
+      gr.addColorStop(0, '#f6c25a');
+      gr.addColorStop(1, '#b8741c');
+      g.fillStyle = gr;
+    } else g.fillStyle = 'rgba(16,40,72,0.92)';
+    g.fill();
+    g.strokeStyle = on ? '#ffe7a0' : 'rgba(90,170,230,0.55)';
+    g.lineWidth = 1.5;
+    g.stroke();
+    text(g, c, x + 52, 229, { size: 18, align: 'center', weight: 700, col: on ? '#2a1400' : '#cfe4ff' });
+  });
+  statsOf(pick).forEach((v, i) => {
     const y = 287 + i * 47.2;
     bar(g, 1056, y, 218, 12, v / 100, ['#ff8a1a', '#ffd24a'], { back: '#0a1430' });
     label(g, P, 1282, y - 22, 40, 30, 1330, y - 6, String(v), { size: 24, align: 'right' });
   });
-  // the three powers under the stage
-  const k = kitOf(pick);
-  if (pick !== 'fire') for (const x of [692, 789, 886]) elementCoin(g, pick, x, 590, 33);
-  patch(g, P, 640, 606, 300, 34, 650, 645);
-  k.powers.forEach((p, i) => text(g, p.name, [692, 789, 886][i], 618, { size: 14, align: 'center', max: 96 }));
-  // squad: leader and partner
+  // squad: leader and partner (the ADD slot is covered: the squad is two heroes)
   const slot = (x: number, el: El | null, sub: string) => {
     patch(g, P, x + 6, 622, 90, 90, x + 8, 626);
     if (el) {
@@ -299,19 +418,34 @@ function rosterDraw(g: G, t: number): void {
   };
   const lead = starterMode() ? pick : profile.hero;
   slot(995, lead, `Lv ${heroLv(lead)}`);
-  slot(1110, starterMode() ? null : profile.partner, profile.partner ? NAMES[profile.partner] : '');
+  slot(1110, starterMode() ? null : partnerMode() ? (pick === profile.hero ? null : pick) : profile.partner, partnerMode() ? NAMES[pick] : profile.partner ? NAMES[profile.partner] : '');
+  patch(g, P, 1228, 616, 102, 104, 1232, 612);
+  // SELECT: works in the starter and partner steps; afterwards the roster is view only
+  if (viewOnly()) {
+    inpaint(g, P, 678, 646, 226, 90);
+    chamfer(g, 692, 660, 196, 62, 10);
+    g.fillStyle = 'rgba(14,30,56,0.94)';
+    g.fill();
+    g.strokeStyle = 'rgba(120,170,220,0.6)';
+    g.lineWidth = 2;
+    g.stroke();
+    lock(g, 714, 690, 12);
+    text(g, inSquad(pick) ? 'IN SQUAD' : 'VIEW ONLY', 806, 692, { size: 24, align: 'center', weight: 800, col: '#9fb8d8' });
+  }
   // top bar
-  topBar(g, P, { xp: [804, 28, 136, 18], rank: [1012, 25, 88, 26], coins: [1168, 22, 100, 28] });
+  topBar(g, P, { xp: [804, 26, 138, 20], rank: [1012, 25, 88, 26], coins: [1168, 22, 100, 28] });
   if (starterMode()) text(g, 'STEP 2 OF 3 · PICK YOUR FIRST HERO, THEN SELECT', 172, 82, { size: 17, weight: 800, col: '#ffd24a', stroke: '#02060f', sw: 4, spacing: 1 });
   if (partnerMode()) text(g, 'STEP 3 OF 3 · PICK A PARTNER, THEN SELECT', 172, 82, { size: 17, weight: 800, col: '#ffd24a', stroke: '#02060f', sw: 4, spacing: 1 });
+  if (viewOnly()) text(g, 'VIEW ONLY · TAP A HERO TO SEE THEM · TAP A CLASS TO SWITCH', 172, 82, { size: 17, weight: 800, col: '#9fd8ff', stroke: '#02060f', sw: 4, spacing: 1 });
   drawSpots(g, rosterSpots());
-  drawToast(g, 104);
+  drawToast(g, 572);
 }
 const rosterPage = (title: string) => ({
   title,
   heroes: () => ELS,
   load: () => Promise.all([loadRef('hero-roster'), loadRef('fight-hud')]).then(() => undefined),
   enter() {
+    showT = 0;
     pick = nav.name === 'partner' ? (profile.partner ?? (profile.hero === 'water' ? 'lightning' : 'water')) : profile.hero;
     if (nav.name === 'starter') say(`Hi ${profile.name}! Pick the one hero you start with`, 300);
     if (nav.name === 'partner') say(`Tutorial done! Pick a partner hero to fight beside ${NAMES[profile.hero]}`, 300);
@@ -332,8 +466,10 @@ interface Bar {
 function topBar(g: G, P: string, b: Bar): void {
   if (b.xp) {
     const [x, y, w, h] = b.xp;
-    bar(g, x, y, w, h, profile.xp / xpNeed(profile.level), ['#1a9fd0', '#3fe6ff'], { skew: 6, back: '#06122a' });
+    const need = xpNeed(profile.level);
+    bar(g, x, y, w, h, profile.xp / need, ['#1a9fd0', '#3fe6ff'], { skew: 6, back: '#06122a' });
     text(g, `Lv ${profile.level}`, x + 8, y + h / 2 + 1, { size: Math.max(13, h - 4), weight: 800, col: '#ffffff', stroke: '#02060f', sw: 3 });
+    text(g, `${fmt(profile.xp)} / ${fmt(need)} XP`, x + w - 6, y + h / 2 + 1, { size: Math.max(11, h - 8), weight: 700, align: 'right', col: '#dff8ff', stroke: '#02060f', sw: 3 });
   }
   if (b.rank) {
     const [x, y, w, h] = b.rank;
