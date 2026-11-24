@@ -401,7 +401,7 @@ function drawBack(ctx: CanvasRenderingContext2D, el: ElementId, k: Kit, pc: Piec
     const c = add(add(headC, s.nrm, -BONES.head * 0.28), s.up, BONES.head * 0.16);
     pic(ctx, pc.back, c, BONES.head * 1.05, (st.t / 90) % (Math.PI * 2));
   }
-  if (el === 'gravity') orbitRing(ctx, k, s, st.t, -1);
+  if (el === 'gravity' && k.orbit !== false) orbitRing(ctx, k, s, st.t, -1);
 }
 /** Gravity: a tilted ring orbiting the shoulders with small debris; side -1 draws the back half. */
 function orbitRing(ctx: CanvasRenderingContext2D, k: Kit, s: Skeleton, t: number, side: -1 | 1): void {
@@ -580,7 +580,7 @@ export function drawRig(ctx: CanvasRenderingContext2D, skin: Skin, p: Pose, o: D
   // wind: the scarf wrap sits round the neck, over the chin edge
   if (el === 'wind' && pc.neck) pic(ctx, pc.neck, add(s.hip, s.up, BONES.torso * 0.97), 72, p.lean * 0.4 * D2R, 0.5, 0.4);
   if (!armUp) frontArm();
-  if (kit && el === 'gravity') orbitRing(ctx, kit, s, t, 1);
+  if (kit && el === 'gravity' && kit.orbit !== false) orbitRing(ctx, kit, s, t, 1);
   if (charge > 0.25 && kit) crackles(ctx, kit, s, t, charge);
   if (o.bones) drawBones(ctx, s);
   ctx.restore();

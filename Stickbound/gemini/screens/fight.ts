@@ -8,7 +8,7 @@ import { bubble, clockRing, flames, flare, glow, iceSpike, lotus, projectile, ro
 import type { Kit } from '../trial/kits';
 import { lerpPose, type Face, type Pose } from '../trial/rig';
 import { bolt } from './art';
-import { clipsOf, drawHero, heroShadow, hipLift, kitOf } from './heroes';
+import { clipsOf, drawHero, heroShadow, heroStats, hipLift, kitOf } from './heroes';
 import { profile, type El } from './save';
 import { rng, type G } from './ui';
 
@@ -176,7 +176,11 @@ export class Hero implements Target {
   chainTimer = 0;
   lastHitBy = 0;
   scale = SC;
-  constructor(readonly el: El, public x: number, public facing: 1 | -1, readonly team: number, ground: number, hp = 1000) {
+  /** vitality, might, spirit, guard, resolve, speed as multipliers of the plain value 80 */
+  readonly st: number[];
+  constructor(readonly el: El, public x: number, public facing: 1 | -1, readonly team: number, ground: number, lv = 1, cls?: string) {
+    this.st = heroStats(el, lv, cls).map((v) => v / 80);
+    const hp = Math.round(this.st[0] * 80 * 12);
     this.kit = kitOf(el);
     this.clips = clipsOf(el);
     this.feet = ground;
@@ -245,6 +249,7 @@ export class Hero implements Target {
   }
   hurt(dmg: number, kb: number, lift: number, fromX: number, stun: number, w: World): number {
     if (this.ko || this.invuln > 0) return 0;
+    dmg = Math.max(1, Math.round(dmg / this.st[3]));
     const fromFront = (fromX - this.x) * this.facing > 0;
     if (this.guarding && fromFront && this.grounded) {
       this.guardHit = 10;
@@ -264,7 +269,7 @@ export class Hero implements Target {
     }
     this.clip = null;
     this.chain = 0;
-    this.mp = Math.min(100, this.mp + dmg * 0.02);
+    this.mp = Math.min(100, this.mp + dmg * 0.02 * this.st[4]);
     this.play('hurt');
     blip('hurt');
     if (this.hp <= 0) {
@@ -291,14 +296,14 @@ export class Hero implements Target {
       this.prev = { ...k };
       return;
     }
-    this.mp = Math.min(100, this.mp + 0.06);
+    this.mp = Math.min(100, this.mp + 0.06 * this.st[4]);
     if (this.stun > 0) this.stun--;
     const busy = !!this.clip && this.clipName !== 'hurt';
     this.guarding = !busy && this.stun <= 0 && this.grounded && k.guard;
     if (this.comboWindow > 0) this.comboWindow--;
     if (!busy && this.stun <= 0 && !this.guarding) {
       const dir = (k.right ? 1 : 0) - (k.left ? 1 : 0);
-      const run = 7.5;
+      const run = 7.5 * this.st[5];
       this.vx += (dir * run - this.vx) * (this.grounded ? 0.3 : 0.08);
       if (dir) this.facing = dir as 1 | -1;
       if (pressed('up') && this.grounded) {
@@ -372,7 +377,7 @@ export class Hero implements Target {
         if (this.hitDone.has(key)) continue;
         if (!overlap(hb, t.box())) continue;
         this.hitDone.add(key);
-        const dmg = Math.round(h.dmg * 10 * (0.9 + Math.random() * 0.2));
+        const dmg = Math.round(h.dmg * 10 * this.st[1] * (0.9 + Math.random() * 0.2));
         this.land(w, t, dmg, h.kb, h.lift, h.stun, hb.x + hb.w / 2, hb.y + hb.h / 2, h.fx === 'big');
       }
     });
@@ -380,7 +385,7 @@ export class Hero implements Target {
   land(w: World, t: Target, dmg: number, kb: number, lift: number, stun: number, x: number, y: number, big: boolean): void {
     const got = t.hurt(dmg, kb, lift, this.x, stun, w);
     if (got <= 0) return;
-    this.mp = Math.min(100, this.mp + 3);
+    this.mp = Math.min(100, this.mp + 3 * this.st[4]);
     this.chain++;
     this.chainTimer = 70;
     w.hitstop = Math.max(w.hitstop, big ? 6 : 3);
@@ -484,7 +489,7 @@ export function stepWorld(w: World, heroes: Hero[]): void {
       if (!overlap(hb, t.box())) continue;
       e.done.add(t.id);
       const owner = heroes.find((h) => h.id === e.owner);
-      const dmg = Math.round(e.dmg * (0.9 + Math.random() * 0.2));
+      const dmg = Math.round(e.dmg * (owner ? owner.st[2] : 1) * (0.9 + Math.random() * 0.2));
       const big = e.kind === 'burst' || e.kind === 'boom';
       if (owner) owner.land(w, t, dmg, big ? 16 : 10, big ? 12 : 4, 24, t.x, hb.y + hb.h / 2, big);
       else {

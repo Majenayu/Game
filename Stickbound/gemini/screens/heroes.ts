@@ -1,10 +1,9 @@
 /**
  * Heroes on the screens: the Hero Trial rig and its picture heads (gemini/trial, gemini/characters), posed with the
- * trial clips. Lightning uses the code-drawn visor head in his colours, because his own lab runs on another rig.
+ * trial clips. Lightning has no cut parts for this rig, so his own sheet head, hair and core are put together below.
  */
 import { guardPose, idlePose, makeClips, sample, type Clip } from '../trial/anims';
 import { aura } from '../trial/fx';
-import { makeHeads } from '../trial/heads';
 import { KITS, type Kit } from '../trial/kits';
 import { drawRig, footDrop, heroPalette, lerpPose, loadTrialParts, solve, type Face, type Pose, type Skin } from '../trial/rig';
 import type { El } from './save';
@@ -18,6 +17,7 @@ export const CLASSES: Record<El, string> = {
 };
 const LIGHTNING: Kit = {
   ...KITS.gravity,
+  orbit: false,
   name: 'Lightning',
   icon: '⚡',
   line: '#3fe0ff',
@@ -34,6 +34,63 @@ const LIGHTNING: Kit = {
     { ...KITS.light.powers[2], name: 'Static Guard' },
   ],
 };
+/**
+ * Lightning's own sheet pictures (gemini/characters/lightning/out) were cut for another rig, so they are put
+ * together here in the same layout as the other heroes' heads: the hair trails back behind the head circle,
+ * and the core is the chest emblem.
+ */
+const lpart = (n: string) => new URL(`../characters/lightning/out/${n}.png`, import.meta.url).href;
+function img(url: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error(`missing part ${url}`));
+    im.src = url;
+  });
+}
+async function lightningSkin(k: Kit): Promise<Skin> {
+  const [normal, attack, ko, hair, core] = await Promise.all(['head_attack', 'head_normal', 'head_ko', 'hair', 'core'].map((n) => img(lpart(n))));
+  const head = (face: HTMLImageElement): HTMLCanvasElement => {
+    const c = document.createElement('canvas');
+    c.width = 240;
+    c.height = 210;
+    const g = c.getContext('2d')!;
+    g.save();
+    g.translate(8 + 182, 6);
+    g.scale(-1, 1);
+    g.drawImage(hair, 0, 0, 182, 142);
+    g.restore();
+    g.drawImage(face, 80, 50, 154, 158);
+    return c;
+  };
+  const heads = { normal: head(normal), attack: head(attack), hurt: head(ko), ko: head(ko) };
+  const circle = { cx: 157, cy: 129, r: 75 };
+  return { heads, circles: { normal: circle, attack: circle, hurt: circle, ko: circle }, pieces: { emblem: core }, pal: heroPalette(k), kit: k };
+}
+/**
+ * Hero stats: vitality, might, spirit, guard, resolve, speed. The fights use them (Hero in fight.ts):
+ * vitality x12 = HP, might = hit damage, spirit = power damage, guard = damage taken, resolve = MP gain,
+ * speed = run speed; 80 is the plain value. Each hero level adds 3% to the element base, the class shifts it.
+ */
+export const STAT_NAMES = ['Vitality', 'Might', 'Spirit', 'Guard', 'Resolve', 'Speed'] as const;
+const BASE: Record<El, number[]> = {
+  fire: [84, 92, 70, 65, 78, 88], water: [86, 72, 90, 80, 84, 74], ice: [80, 76, 82, 92, 80, 64], lightning: [70, 84, 80, 62, 72, 96],
+  wind: [72, 74, 78, 64, 76, 98], earth: [96, 90, 62, 94, 88, 56], leaf: [88, 68, 86, 78, 90, 72], light: [74, 80, 92, 70, 82, 86],
+  gravity: [90, 88, 84, 82, 86, 60], time: [76, 78, 94, 74, 92, 80],
+};
+export const CLASS_LIST = ['Vanguard', 'Striker', 'Warden'] as const;
+/** what each class adds to the six stats */
+const CLASS_MOD: Record<string, number[]> = {
+  Vanguard: [6, 6, -4, 6, 2, -8],
+  Striker: [-6, 4, 0, -6, -2, 10],
+  Warden: [4, -6, 6, 4, 6, -4],
+};
+export function heroStats(el: El, lv = 1, cls: string = CLASSES[el]): number[] {
+  const own = CLASS_MOD[CLASSES[el]];
+  const now = CLASS_MOD[cls] ?? own;
+  const grow = 1 + 0.03 * (Math.max(1, lv) - 1);
+  return BASE[el].map((v, i) => Math.max(10, Math.round((v - own[i]) * grow) + now[i]));
+}
 export function kitOf(el: El): Kit {
   return el === 'lightning' ? LIGHTNING : KITS[el];
 }
@@ -44,7 +101,7 @@ export async function loadHero(el: El): Promise<Skin> {
   if (hit) return hit;
   const k = kitOf(el);
   let s: Skin;
-  if (el === 'lightning') s = { heads: makeHeads(k), pal: heroPalette(k), kit: k };
+  if (el === 'lightning') s = await lightningSkin(k);
   else {
     const parts = await loadTrialParts(el);
     s = { heads: parts.heads, circles: parts.circles, pieces: parts.pieces, pal: heroPalette(k), kit: k };

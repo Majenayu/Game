@@ -10,7 +10,7 @@ import { EL, elementCoin, elementIcon, lock } from './art';
 import { fmt } from './common';
 import { auraAt, chargeAt, sample } from '../trial/anims';
 import type { Face, Pose } from '../trial/rig';
-import { clipsOf, kitOf, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
+import { clipsOf, kitOf, heroStats, CLASS_LIST, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
 import { colourAt, patch } from './hudref';
 import { nav, pages, type Match } from './nav';
 import { S, drawPicture, drawSpots, drawToast, go, loadRef, ref, say, topRight, type Spot } from './refs';
@@ -203,33 +203,17 @@ pages.register = {
 pages.customise = pages.register;
 
 // ---------------------------------------------------------------- roster and partner pick (hero-roster.png)
-/** the painted card frames; the picture has 11, the game has 10 heroes, so the last free one waits for a new hero */
-const CARDS: Array<[number, number, El | null]> = [
+/** the painted card frames hold the 10 heroes; the picture's 11th frame (52, 491) is painted over with the background */
+const CARDS: Array<[number, number, El]> = [
   [52, 103, 'fire'], [191, 103, 'water'], [331, 103, 'lightning'], [469, 103, 'ice'],
   [52, 298, 'earth'], [191, 298, 'wind'], [331, 298, 'leaf'], [469, 298, 'light'],
-  [52, 491, null], [191, 491, 'gravity'], [331, 491, 'time'],
+  [191, 491, 'gravity'], [331, 491, 'time'],
 ];
 const CW = 126;
 const CH = 178;
-/** per-element base stats for the stats panel: vitality, might, spirit, guard, resolve, speed */
-const STATS: Record<El, number[]> = {
-  fire: [84, 92, 70, 65, 78, 88], water: [86, 72, 90, 80, 84, 74], ice: [80, 76, 82, 92, 80, 64], lightning: [70, 84, 80, 62, 72, 96],
-  wind: [72, 74, 78, 64, 76, 98], earth: [96, 90, 62, 94, 88, 56], leaf: [88, 68, 86, 78, 90, 72], light: [74, 80, 92, 70, 82, 86],
-  gravity: [90, 88, 84, 82, 86, 60], time: [76, 78, 94, 74, 92, 80],
-};
-const CLASS_LIST = ['Vanguard', 'Striker', 'Warden'] as const;
-/** what each class adds to the six stats */
-const CLASS_MOD: Record<string, number[]> = {
-  Vanguard: [6, 6, -4, 6, 2, -8],
-  Striker: [-6, 4, 0, -6, -2, 10],
-  Warden: [4, -6, 6, 4, 6, -4],
-};
 export const classOf = (el: El): string => profile.cls[el] ?? CLASSES[el];
-function statsOf(el: El): number[] {
-  const own = CLASS_MOD[CLASSES[el]];
-  const now = CLASS_MOD[classOf(el)];
-  return STATS[el].map((v, i) => Math.max(10, Math.min(99, v - own[i] + now[i])));
-}
+/** the same numbers the fights use (heroStats in heroes.ts): they grow with the hero's level and follow the class */
+const statsOf = (el: El): number[] => heroStats(el, heroLv(el), classOf(el));
 let pick: El = 'fire';
 const partnerMode = () => nav.name === 'partner';
 const starterMode = () => nav.name === 'starter';
@@ -261,13 +245,13 @@ const rosterSpots = (): Spot[] => [
   S(28, 18, 125, 42, () => (starterMode() ? nav.go('register') : partnerMode() && !profile.partner ? say('Pick a partner first, then press SELECT') : nav.go('lobby'))),
   ...CARDS.map(([x, y, el]) =>
     S(x, y, CW, CH, () => {
-      if (!el) return say('A new hero is coming soon');
+      if (partnerMode() && el === profile.hero) return say(`${NAMES[el]} already leads your squad. Pick a partner.`);
       pick = el;
       showT = 0;
       say(`${NAMES[el]} · ${cap(el)} · ${classOf(el)}`);
     }, {
       on: () => el === pick,
-      off: () => !el || (partnerMode() && el === profile.hero),
+      off: () => false,
     }),
   ),
   S(686, 655, 210, 72, choose),
@@ -283,7 +267,7 @@ const rosterSpots = (): Spot[] => [
 ];
 
 /** the card art: the hero's own rig in a celebration pose on a dark card in the element's colour */
-function card(g: G, x: number, y: number, el: El | null, t: number, i: number): void {
+function card(g: G, x: number, y: number, el: El, t: number, i: number): void {
   const ix = x + 7;
   const iy = y + 7;
   const iw = CW - 14;
@@ -291,38 +275,44 @@ function card(g: G, x: number, y: number, el: El | null, t: number, i: number): 
   g.save();
   rrect(g, ix, iy, iw, ih, 9);
   g.clip();
-  const col = el ? EL[el] : null;
+  const col = EL[el];
   const gr = g.createLinearGradient(0, iy, 0, iy + ih);
-  gr.addColorStop(0, col ? col.deep : '#141a2c');
+  gr.addColorStop(0, col.deep);
   gr.addColorStop(1, '#04070f');
   g.fillStyle = gr;
   g.fillRect(ix, iy, iw, ih);
   if (el) {
     const glow = g.createRadialGradient(ix + iw / 2, iy + ih * 0.42, 4, ix + iw / 2, iy + ih * 0.42, iw * 0.75);
-    glow.addColorStop(0, hexA(col!.line, 0.45));
-    glow.addColorStop(1, hexA(col!.line, 0));
+    glow.addColorStop(0, hexA(col.line, 0.45));
+    glow.addColorStop(1, hexA(col.line, 0));
     g.fillStyle = glow;
     g.fillRect(ix, iy, iw, ih);
     const c = clipsOf(el).victory;
     const f = 30 + ((t + i * 23) % 60);
     drawHero(g, el, { pose: sample(c, f), face: 'attack', x: ix + iw / 2 + 4, feet: iy + ih + 34, scale: 0.4, t, aura: 0.25 });
     const locked = viewOnly() && !inSquad(el);
-    const off = partnerMode() && el === profile.hero;
-    if (locked || off) {
+    // the leader, while a partner is picked: shown bright, with a gold band at the foot instead of the level box
+    const lead = partnerMode() && el === profile.hero;
+    if (locked) {
       g.fillStyle = 'rgba(2,6,15,0.55)';
       g.fillRect(ix, iy, iw, ih);
     }
-    g.fillStyle = 'rgba(2,6,15,0.7)';
-    g.fillRect(ix + iw - 64, iy + ih - 32, 64, 32);
-    text(g, `Lv ${heroLv(el)}`, ix + iw - 6, iy + ih - 15, { size: 21, align: 'right', weight: 800 });
+    if (lead) {
+      const gb = g.createLinearGradient(0, iy + ih - 30, 0, iy + ih);
+      gb.addColorStop(0, '#f6c25a');
+      gb.addColorStop(1, '#b8741c');
+      g.fillStyle = gb;
+      g.fillRect(ix, iy + ih - 30, iw, 30);
+      text(g, `LEADER · Lv ${heroLv(el)}`, ix + iw / 2, iy + ih - 14, { size: 16, align: 'center', weight: 800, col: '#2a1400', max: iw - 8 });
+    } else {
+      g.fillStyle = 'rgba(2,6,15,0.7)';
+      g.fillRect(ix + iw - 64, iy + ih - 32, 64, 32);
+      text(g, `Lv ${heroLv(el)}`, ix + iw - 6, iy + ih - 15, { size: 21, align: 'right', weight: 800 });
+    }
     if (locked) lock(g, ix + iw - 16, iy + 18, 12);
-    if (off) text(g, 'LEADER', ix + iw / 2, iy + ih / 2, { size: 18, align: 'center', weight: 800, col: '#ffd24a', stroke: '#02060f', sw: 4 });
-  } else {
-    text(g, '?', ix + iw / 2, iy + ih / 2 - 10, { size: 64, align: 'center', weight: 800, col: '#3a4a6a' });
-    text(g, 'SOON', ix + iw / 2, iy + ih / 2 + 40, { size: 18, align: 'center', weight: 800, col: '#5a6a8a', spacing: 2 });
   }
   g.restore();
-  if (el) elementIcon(g, el, x + 24, y + 26, 13);
+  elementIcon(g, el, x + 24, y + 26, 13);
 }
 function hexA(hex: string, a: number): string {
   const n = parseInt(hex.slice(1), 16);
@@ -373,6 +363,8 @@ function rosterDraw(g: G, t: number): void {
   const P = 'hero-roster';
   showT++;
   drawPicture(g, P);
+  // the picture's empty 11th frame is painted over with the background round it
+  inpaint(g, P, 44, 484, 140, 194);
   CARDS.forEach(([x, y, el], i) => card(g, x, y, el, t, i));
   // the picked hero on the stage, playing its celebration and moves
   veil(g, P, 790, 300, 215, 240);
@@ -403,18 +395,32 @@ function rosterDraw(g: G, t: number): void {
     g.stroke();
     text(g, c, x + 52, 229, { size: 18, align: 'center', weight: 700, col: on ? '#2a1400' : '#cfe4ff' });
   });
+  // bars are full at 150, so they keep filling as the hero levels up
   statsOf(pick).forEach((v, i) => {
     const y = 287 + i * 47.2;
-    bar(g, 1056, y, 218, 12, v / 100, ['#ff8a1a', '#ffd24a'], { back: '#0a1430' });
+    bar(g, 1056, y, 218, 12, Math.min(1, v / 150), ['#ff8a1a', '#ffd24a'], { back: '#0a1430' });
     label(g, P, 1282, y - 22, 40, 30, 1330, y - 6, String(v), { size: 24, align: 'right' });
   });
   // squad: leader and partner (the ADD slot is covered: the squad is two heroes)
+  // each slot's inside is filled edge to edge, so none of the painted heroes shows round our own
   const slot = (x: number, el: El | null, sub: string) => {
-    patch(g, P, x + 6, 622, 90, 90, x + 8, 626);
+    const sx = x + 2;
+    g.save();
+    rrect(g, sx, 619, 97, 97, 8);
+    g.clip();
+    const gr = g.createLinearGradient(0, 619, 0, 716);
+    gr.addColorStop(0, el ? EL[el].deep : '#141a2c');
+    gr.addColorStop(1, '#04070f');
+    g.fillStyle = gr;
+    g.fillRect(sx, 619, 97, 97);
     if (el) {
-      stand(g, el, x + 51, 700, 0.27, t, 'idle');
-      text(g, sub, x + 51, 704, { size: 15, align: 'center', col: '#eaf6ff', stroke: '#02060f', sw: 3, max: 88 });
-    } else text(g, '?', x + 51, 666, { size: 40, align: 'center', col: '#6a8ab0' });
+      stand(g, el, sx + 52, 712, 0.27, t, 'idle');
+      g.fillStyle = 'rgba(2,6,15,0.7)';
+      g.fillRect(sx, 690, 97, 26);
+      text(g, sub, sx + 92, 704, { size: 17, align: 'right', weight: 800, col: '#eaf6ff', max: 66 });
+    } else text(g, '?', sx + 48, 668, { size: 40, align: 'center', col: '#6a8ab0' });
+    g.restore();
+    if (el) elementIcon(g, el, sx + 14, 703, 10);
   };
   const lead = starterMode() ? pick : profile.hero;
   slot(995, lead, `Lv ${heroLv(lead)}`);
@@ -434,6 +440,7 @@ function rosterDraw(g: G, t: number): void {
   }
   // top bar
   topBar(g, P, { xp: [804, 26, 138, 20], rank: [1012, 25, 88, 26], coins: [1168, 22, 100, 28] });
+  xpExtras(g, 767.5, 39, 802, 54, 120);
   if (starterMode()) text(g, 'STEP 2 OF 3 · PICK YOUR FIRST HERO, THEN SELECT', 172, 82, { size: 17, weight: 800, col: '#ffd24a', stroke: '#02060f', sw: 4, spacing: 1 });
   if (partnerMode()) text(g, 'STEP 3 OF 3 · PICK A PARTNER, THEN SELECT', 172, 82, { size: 17, weight: 800, col: '#ffd24a', stroke: '#02060f', sw: 4, spacing: 1 });
   if (viewOnly()) text(g, 'VIEW ONLY · TAP A HERO TO SEE THEM · TAP A CLASS TO SWITCH', 172, 82, { size: 17, weight: 800, col: '#9fd8ff', stroke: '#02060f', sw: 4, spacing: 1 });
@@ -462,6 +469,41 @@ interface Bar {
   rank?: [number, number, number, number];
   streak?: [number, number, number, number];
   coins?: [number, number, number, number];
+}
+/**
+ * The painted XP badge also has a half-full ring and a row of four dashes that never change. Both are painted over
+ * here and drawn again from the real XP: the ring and the dashes fill with xp / xpNeed(level).
+ */
+function xpExtras(g: G, cx: number, cy: number, dx: number, dy: number, dw: number): void {
+  const k = Math.max(0, Math.min(1, profile.xp / xpNeed(profile.level)));
+  g.save();
+  g.lineCap = 'butt';
+  g.lineWidth = 7;
+  g.strokeStyle = '#0b1d38';
+  g.beginPath();
+  g.arc(cx, cy, 24.5, 0, Math.PI * 2);
+  g.stroke();
+  if (k > 0) {
+    g.lineWidth = 5;
+    g.strokeStyle = '#3fe6ff';
+    g.shadowColor = '#3fe6ff';
+    g.shadowBlur = 6;
+    g.beginPath();
+    g.arc(cx, cy, 24.5, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2);
+    g.stroke();
+  }
+  g.restore();
+  const seg = (dw - 9) / 4;
+  for (let i = 0; i < 4; i++) {
+    const x = dx + i * (seg + 3);
+    const fill = Math.max(0, Math.min(1, k * 4 - i));
+    g.fillStyle = '#0a1a33';
+    g.fillRect(x - 1, dy - 1, seg + 2, 9);
+    if (fill > 0) {
+      g.fillStyle = '#3fd0f0';
+      g.fillRect(x, dy + 1, seg * fill, 5);
+    }
+  }
 }
 function topBar(g: G, P: string, b: Bar): void {
   if (b.xp) {

@@ -39,6 +39,8 @@ export interface Kit {
   powers: [PowerInfo, PowerInfo, PowerInfo];
   /** combo shout labels at 3, 5 and 8 hits */
   shouts: [string, string, string];
+  /** false hides the gravity orbit ring (Lightning borrows the gravity moves) */
+  orbit?: false;
 }
 
 const P = (key: PowerInfo['key'], clip: string, name: string, mp: number, text: string): PowerInfo => ({ key, clip, name, mp, text });

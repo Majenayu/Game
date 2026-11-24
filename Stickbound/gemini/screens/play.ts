@@ -83,8 +83,10 @@ let F: FightState | null = null;
 const FGROUND = 650;
 function newRound(f: FightState | null): FightState {
   const m = nav.match;
-  const a = new Hero(m.p1, 420, 1, 1, FGROUND, 1000);
-  const b = new Hero(m.p2, 956, -1, 2, FGROUND, 1000);
+  // both sides fight with their real stats: hero level and chosen class (the roster panel shows the same numbers)
+  const local = m.mode === 'local';
+  const a = new Hero(m.p1, 420, 1, 1, FGROUND, profile.heroLv[m.p1], profile.cls[m.p1]);
+  const b = new Hero(m.p2, 956, -1, 2, FGROUND, local ? profile.heroLv[m.p2] : m.p2Lv, local ? profile.cls[m.p2] : undefined);
   a.scale = b.scale = 1.05;
   const w = makeWorld(FGROUND, 70, 1306, () => [a, b]);
   const st: FightState = f

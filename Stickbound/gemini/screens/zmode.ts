@@ -5,7 +5,7 @@
  */
 import { Hero, effect, floater, sparks, stepWorld, makeWorld, blip, type Box, type Target, type World, type Keys } from './fight';
 import { ZSPEC, drawZombie, type ZLook, type ZType } from './zombies';
-import type { El } from './save';
+import { profile, type El } from './save';
 
 let ZID = 1000;
 export class Zombie implements Target, ZLook {
@@ -221,7 +221,7 @@ export interface ZGame {
 export const ZGROUND = 668;
 export function newZGame(el: El, wave = 1): ZGame {
   const zs: Zombie[] = [];
-  const hero = new Hero(el, 420, 1, 1, ZGROUND, 1000);
+  const hero = new Hero(el, 420, 1, 1, ZGROUND, profile.heroLv[el], profile.cls[el]);
   hero.scale = 0.8;
   hero.mp = 60;
   const w = makeWorld(ZGROUND, 60, 1316, () => [hero, ...zs]);
