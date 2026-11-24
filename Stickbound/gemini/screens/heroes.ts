@@ -20,9 +20,10 @@ const LIGHTNING: Kit = {
   orbit: false,
   name: 'Lightning',
   icon: '⚡',
-  line: '#3fe0ff',
-  light: '#fff36a',
-  accent: '#ffe23a',
+  // body outline in his element yellow, the same as his head ring, like every other hero; cyan stays as the accent
+  line: '#ffe23a',
+  light: '#fffbd0',
+  accent: '#3fe0ff',
   fill: '#0a1020',
   fx: { glow: '60,200,255', mid: '150,240,255', core: '255,255,230' },
   fx2: { glow: '255,210,40', mid: '255,240,120', core: '255,255,230' },
@@ -55,14 +56,27 @@ async function lightningSkin(k: Kit): Promise<Skin> {
     c.width = 240;
     c.height = 210;
     const g = c.getContext('2d')!;
-    g.save();
-    g.translate(8 + 182, 6);
-    g.scale(-1, 1);
-    g.drawImage(hair, 0, 0, 182, 142);
-    g.restore();
+    g.drawImage(goldHair, 44, 4);
     g.drawImage(face, 80, 50, 154, 158);
     return c;
   };
+  // the sheet hair is pale cream; tinted to his glowing yellow and swept back so it reads like the other heroes' head pieces
+  const goldHair = document.createElement('canvas');
+  goldHair.width = 150;
+  goldHair.height = 117;
+  {
+    const hg = goldHair.getContext('2d')!;
+    hg.translate(150, 0);
+    hg.scale(-1, 1);
+    hg.drawImage(hair, 0, 0, 150, 117);
+    hg.setTransform(1, 0, 0, 1, 0, 0);
+    hg.globalCompositeOperation = 'source-atop';
+    const gr = hg.createLinearGradient(0, 0, 0, 117);
+    gr.addColorStop(0, 'rgba(255,246,170,0.55)');
+    gr.addColorStop(1, 'rgba(255,200,30,0.75)');
+    hg.fillStyle = gr;
+    hg.fillRect(0, 0, 150, 117);
+  }
   const heads = { normal: head(normal), attack: head(attack), hurt: head(ko), ko: head(ko) };
   const circle = { cx: 157, cy: 129, r: 75 };
   return { heads, circles: { normal: circle, attack: circle, hurt: circle, ko: circle }, pieces: { emblem: core }, pal: heroPalette(k), kit: k };

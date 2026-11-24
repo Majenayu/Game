@@ -341,6 +341,51 @@ function inpaint(g: G, P: string, x: number, y: number, w: number, h: number): v
   }
   if (c) g.drawImage(c, x, y);
 }
+/**
+ * The painted fire hero and his orange glow are removed from the whole stage: the area above the platform is filled
+ * from the colours either side, the spotlight is drawn again, and the platform top glows in the picked hero's colour.
+ */
+function stageBack(g: G, P: string, el: El): void {
+  inpaint(g, P, 604, 90, 372, 378);
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  const cone = g.createLinearGradient(0, 0, 0, 480);
+  cone.addColorStop(0, 'rgba(90,170,255,0.30)');
+  cone.addColorStop(1, 'rgba(60,140,255,0.06)');
+  g.fillStyle = cone;
+  g.filter = 'blur(18px)';
+  g.beginPath();
+  g.moveTo(712, 0);
+  g.lineTo(868, 0);
+  g.lineTo(958, 480);
+  g.lineTo(622, 480);
+  g.closePath();
+  g.fill();
+  g.restore();
+  // platform top
+  g.save();
+  g.beginPath();
+  g.ellipse(792, 490, 150, 24, 0, 0, Math.PI * 2);
+  const top = g.createRadialGradient(792, 490, 10, 792, 490, 150);
+  top.addColorStop(0, hexA(EL[el].light, 0.55));
+  top.addColorStop(0.55, hexA(EL[el].line, 0.35));
+  top.addColorStop(1, '#0a1838');
+  g.fillStyle = '#0a1838';
+  g.fill();
+  g.fillStyle = top;
+  g.fill();
+  g.shadowColor = EL[el].line;
+  g.shadowBlur = 16;
+  g.strokeStyle = EL[el].line;
+  g.lineWidth = 3;
+  g.stroke();
+  g.beginPath();
+  g.ellipse(792, 490, 112, 17, 0, 0, Math.PI * 2);
+  g.lineWidth = 2;
+  g.strokeStyle = hexA(EL[el].light, 0.8);
+  g.stroke();
+  g.restore();
+}
 /** the stage show: a celebration, then the hero's moves, one after another */
 let showT = 0;
 function stageShow(el: El): { pose: Pose; face: Face; charge: number; aura: number; name: string } {
@@ -367,12 +412,12 @@ function rosterDraw(g: G, t: number): void {
   inpaint(g, P, 44, 484, 140, 194);
   CARDS.forEach(([x, y, el], i) => card(g, x, y, el, t, i));
   // the picked hero on the stage, playing its celebration and moves
-  veil(g, P, 790, 300, 215, 240);
+  stageBack(g, P, pick);
   inpaint(g, P, 636, 531, 308, 113);
   const s = stageShow(pick);
   heroShadow(g, 790, 494, 0.8, 0.3);
   drawHero(g, pick, { pose: s.pose, face: s.face, x: 790, feet: 494, scale: 0.8, t, aura: 0.12 + s.aura * 0.6, charge: s.charge });
-  if (s.name) text(g, s.name.toUpperCase(), 790, 600, { size: 22, align: 'center', weight: 800, col: EL[pick].light, stroke: '#02060f', sw: 4, spacing: 1 });
+  if (s.name) text(g, s.name.toUpperCase(), 790, 568, { size: 22, align: 'center', weight: 800, col: EL[pick].light, stroke: '#02060f', sw: 4, spacing: 1 });
   // name, class and stats
   label(g, P, 1010, 124, 300, 42, 1320, 150, NAMES[pick].toUpperCase(), { size: 40, weight: 800, col: '#dff4ff' });
   patch(g, P, 1010, 168, 300, 26, 1320, 180);
@@ -445,7 +490,8 @@ function rosterDraw(g: G, t: number): void {
   if (partnerMode()) text(g, 'STEP 3 OF 3 · PICK A PARTNER, THEN SELECT', 172, 82, { size: 17, weight: 800, col: '#ffd24a', stroke: '#02060f', sw: 4, spacing: 1 });
   if (viewOnly()) text(g, 'VIEW ONLY · TAP A HERO TO SEE THEM · TAP A CLASS TO SWITCH', 172, 82, { size: 17, weight: 800, col: '#9fd8ff', stroke: '#02060f', sw: 4, spacing: 1 });
   drawSpots(g, rosterSpots());
-  drawToast(g, 572);
+  // the message sits under the stage, between the cards and the panel, so it covers no card or name
+  drawToast(g, 590, 790, 380);
 }
 const rosterPage = (title: string) => ({
   title,

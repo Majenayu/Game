@@ -150,19 +150,19 @@ export function drawSpots(g: G, spots: Spot[]): void {
   }
 }
 /** the message box (call last so it sits on top) */
-/** y is the top of the box; pages with buttons at the bottom centre pass a higher one */
-export function drawToast(g: G, y = H - 92): void {
+/** y is the top of the box; pages with buttons at the bottom centre pass a higher one; cx and maxW keep it inside a free area */
+export function drawToast(g: G, y = H - 92, cx = W / 2, maxW = W - 40): void {
   if (toastT <= 0) return;
   toastT--;
   g.save();
   g.globalAlpha = Math.min(1, toastT / 20);
   g.font = `700 24px Bahnschrift, sans-serif`;
-  const w = Math.max(520, g.measureText(toast).width + 60);
-  chamfer(g, W / 2 - w / 2, y, w, 52, 10);
+  const w = Math.min(maxW, Math.max(Math.min(520, maxW), g.measureText(toast).width + 60));
+  chamfer(g, cx - w / 2, y, w, 52, 10);
   g.fillStyle = 'rgba(6,14,32,0.92)';
   g.fill();
   neon(g, C.cyan, 2, 12);
-  text(g, toast, W / 2, y + 27, { size: 24, align: 'center' });
+  text(g, toast, cx, y + 27, { size: 24, align: 'center', max: w - 28 });
   g.restore();
 }
 export function drawRef(g: G, name: string, spots: Spot[], fit: 'full' | 'portrait' = 'full'): void {
