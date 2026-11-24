@@ -1,9 +1,11 @@
 /**
  * Heroes on the screens: the Hero Trial rig and its picture heads (gemini/trial, gemini/characters), posed with the
- * trial clips. Lightning has no cut parts for this rig, so his own sheet head, hair and core are put together below.
+ * trial clips. Lightning (Tadan) uses his base-design head and his own Lightning lab moves (see LIGHTNING below).
  */
 import { guardPose, idlePose, makeClips, sample, type Clip } from '../trial/anims';
+import { CLIPS as LAB } from '../trial/base';
 import { aura } from '../trial/fx';
+import { drawAura } from '../stages/engine/fx';
 import { KITS, type Kit } from '../trial/kits';
 import { drawRig, footDrop, heroPalette, lerpPose, loadTrialParts, solve, type Face, type Pose, type Skin } from '../trial/rig';
 import type { El } from './save';
@@ -15,32 +17,78 @@ export const NAMES: Record<El, string> = {
 export const CLASSES: Record<El, string> = {
   fire: 'Vanguard', water: 'Warden', ice: 'Warden', lightning: 'Striker', wind: 'Striker', earth: 'Vanguard', leaf: 'Warden', light: 'Striker', gravity: 'Vanguard', time: 'Striker',
 };
+/**
+ * Lightning (Tadan) is the hero of the Lightning lab (gemini/stages/engine), built before the Hero Trial. His kit,
+ * names and moves are that lab's: Spark Step, Chain Bolt, Skyfall Strike, Volt Hammer, Bolt Dash, Thunder God.
+ * The kit borrows gravity's id only for the shared types (the orbit ring is switched off).
+ */
 const LIGHTNING: Kit = {
   ...KITS.gravity,
   orbit: false,
   name: 'Lightning',
   icon: '⚡',
-  // body outline in his element yellow, the same as his head ring, like every other hero; cyan stays as the accent
-  line: '#ffe23a',
+  // his base design: yellow body outline and head ring, cyan visor, headphone and sparks
+  line: '#ffe27a',
   light: '#fffbd0',
-  accent: '#3fe0ff',
-  fill: '#0a1020',
+  accent: '#7fe9ff',
+  fill: '#141833',
   fx: { glow: '60,200,255', mid: '150,240,255', core: '255,255,230' },
   fx2: { glow: '255,210,40', mid: '255,240,120', core: '255,255,230' },
+  heavy: 'Volt Hammer',
+  kick: 'Thunder Kick',
+  rising: 'Rising Volt',
+  dash: 'Bolt Dash',
+  shield: 'lightning shield',
   ult: 'Thunder God',
   ultBanner: 'THUNDER GOD',
+  passive: 'Fastest hero on the roster',
+  shouts: ['ZAP', 'OVERCHARGED!', 'THUNDERSTRUCK!'],
   powers: [
-    { ...KITS.light.powers[0], name: 'Volt Dart' },
-    { ...KITS.light.powers[1], name: 'Arc Lance' },
-    { ...KITS.light.powers[2], name: 'Static Guard' },
+    { key: 'KeyU', clip: 'sparkStep', name: 'Spark Step', mp: 20, text: 'turns into a bolt, reappears behind the foe and strikes' },
+    { key: 'KeyI', clip: 'chainBolt', name: 'Chain Bolt', mp: 30, text: 'a living bolt from the palm, three hits' },
+    { key: 'KeyO', clip: 'skyfall', name: 'Skyfall Strike', mp: 50, text: 'marks the foe, then a bolt falls from the storm cloud' },
   ],
 };
+/** his own clips from the Lightning lab (gemini/trial/base.ts is that lab's copy) */
+function lightningClips(): Record<string, Clip> {
+  const n = (key: string, name: string, extra: Partial<Clip> = {}): Clip => ({ ...(JSON.parse(JSON.stringify(LAB[key])) as Clip), name, ...extra });
+  return {
+    jab: n('jab', 'Jab'),
+    cross: n('cross', 'Cross'),
+    kick: n('kick', 'Thunder Kick'),
+    rising: n('rising', 'Rising Volt'),
+    heavy: n('heavy', 'Volt Hammer', { mp: 0 }),
+    dash: n('dash', 'Bolt Dash'),
+    hurt: n('hurt', 'Hurt'),
+    ko: n('ko', 'KO fall'),
+    victory: n('victory', 'Victory'),
+    taunt: n('taunt', 'Taunt'),
+    sparkStep: n('sparkStep', 'Spark Step', { mp: 20 }),
+    chainBolt: n('chainBolt', 'Chain Bolt', { mp: 30 }),
+    skyfall: n('skyfall', 'Skyfall Strike', { mp: 50 }),
+    ult: n('thunderGod', 'Thunder God'),
+  };
+}
 /**
- * Lightning's own sheet pictures (gemini/characters/lightning/out) were cut for another rig, so they are put
- * together here in the same layout as the other heroes' heads: the hair trails back behind the head circle,
- * and the core is the chest emblem.
+ * His base-design head (gemini/characters/lightning/body/head.png): side view facing right, spiky yellow hair,
+ * cyan headphone, yellow-and-cyan visor with the bolt. The sheet has one expression, so the hurt and KO faces are
+ * the same head dimmed. The head circle was measured from the picture's outline (centre 108,118, radius 84).
  */
-const lpart = (n: string) => new URL(`../characters/lightning/out/${n}.png`, import.meta.url).href;
+async function lightningSkin(k: Kit): Promise<Skin> {
+  const [head, core] = await Promise.all([img(new URL('../characters/lightning/body/head.png', import.meta.url).href), img(new URL('../characters/lightning/out/core.png', import.meta.url).href)]);
+  const dim = (f: string): HTMLCanvasElement => {
+    const c = document.createElement('canvas');
+    c.width = head.width;
+    c.height = head.height;
+    const g = c.getContext('2d')!;
+    g.filter = f;
+    g.drawImage(head, 0, 0);
+    return c;
+  };
+  const heads = { normal: head, attack: head, hurt: dim('brightness(0.8) saturate(0.8)'), ko: dim('brightness(0.6) saturate(0.5)') };
+  const circle = { cx: 108, cy: 118, r: 84 };
+  return { heads, circles: { normal: circle, attack: circle, hurt: circle, ko: circle }, pieces: { emblem: core }, pal: heroPalette(k), kit: k };
+}
 function img(url: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
     const im = new Image();
@@ -48,40 +96,7 @@ function img(url: string): Promise<HTMLImageElement> {
     im.onerror = () => rej(new Error(`missing part ${url}`));
     im.src = url;
   });
-}
-async function lightningSkin(k: Kit): Promise<Skin> {
-  const [normal, attack, ko, hair, core] = await Promise.all(['head_attack', 'head_normal', 'head_ko', 'hair', 'core'].map((n) => img(lpart(n))));
-  const head = (face: HTMLImageElement): HTMLCanvasElement => {
-    const c = document.createElement('canvas');
-    c.width = 240;
-    c.height = 210;
-    const g = c.getContext('2d')!;
-    g.drawImage(goldHair, 44, 4);
-    g.drawImage(face, 80, 50, 154, 158);
-    return c;
-  };
-  // the sheet hair is pale cream; tinted to his glowing yellow and swept back so it reads like the other heroes' head pieces
-  const goldHair = document.createElement('canvas');
-  goldHair.width = 150;
-  goldHair.height = 117;
-  {
-    const hg = goldHair.getContext('2d')!;
-    hg.translate(150, 0);
-    hg.scale(-1, 1);
-    hg.drawImage(hair, 0, 0, 150, 117);
-    hg.setTransform(1, 0, 0, 1, 0, 0);
-    hg.globalCompositeOperation = 'source-atop';
-    const gr = hg.createLinearGradient(0, 0, 0, 117);
-    gr.addColorStop(0, 'rgba(255,246,170,0.55)');
-    gr.addColorStop(1, 'rgba(255,200,30,0.75)');
-    hg.fillStyle = gr;
-    hg.fillRect(0, 0, 150, 117);
-  }
-  const heads = { normal: head(normal), attack: head(attack), hurt: head(ko), ko: head(ko) };
-  const circle = { cx: 157, cy: 129, r: 75 };
-  return { heads, circles: { normal: circle, attack: circle, hurt: circle, ko: circle }, pieces: { emblem: core }, pal: heroPalette(k), kit: k };
-}
-/**
+}/**
  * Hero stats: vitality, might, spirit, guard, resolve, speed. The fights use them (Hero in fight.ts):
  * vitality x12 = HP, might = hit damage, spirit = power damage, guard = damage taken, resolve = MP gain,
  * speed = run speed; 80 is the plain value. Each hero level adds 3% to the element base, the class shifts it.
@@ -129,7 +144,7 @@ export async function loadHeroes(els: El[]): Promise<void> {
 export function clipsOf(el: El): Record<string, Clip> {
   let c = clips.get(el);
   if (!c) {
-    c = makeClips(kitOf(el));
+    c = el === 'lightning' ? lightningClips() : makeClips(kitOf(el));
     clips.set(el, c);
   }
   return c;
@@ -200,13 +215,14 @@ export function drawHero(g: G, el: El, d: HeroDraw): void {
   const hx = d.x + d.pose.x * s * facing;
   const au = d.aura ?? 0;
   const t = d.t ?? 0;
-  if (au > 0) aura(g, k, hx, d.feet, 360 * s * (0.9 + au * 0.4), au, Math.floor(t), -1);
+  const aur = (side: -1 | 1) => (el === 'lightning' ? drawAura(g, hx, d.feet, 360 * s * (0.9 + au * 0.4), au, Math.floor(t), side) : aura(g, k, hx, d.feet, 360 * s * (0.9 + au * 0.4), au, Math.floor(t), side));
+  if (au > 0) aur(-1);
   g.save();
   g.translate(hx, hipY);
   g.scale(s * facing, s);
   drawRig(g, skin, d.pose, { face: d.face, alpha: d.alpha, charge: d.charge, t, speed: d.speed ?? 0, vy: d.vy ?? 0 });
   g.restore();
-  if (au > 0) aura(g, k, hx, d.feet, 360 * s * (0.9 + au * 0.4), au, Math.floor(t), 1);
+  if (au > 0) aur(1);
 }
 /** shadow ellipse under a hero */
 export function heroShadow(g: G, x: number, feet: number, scale: number, a = 0.35): void {

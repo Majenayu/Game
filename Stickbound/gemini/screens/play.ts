@@ -80,6 +80,8 @@ interface FightState {
   comboSide: 1 | 2;
 }
 let F: FightState | null = null;
+/** test hook for the move checks (gemini/screens shots): the running fight */
+(window as unknown as Record<string, unknown>).__fight = () => F;
 const FGROUND = 650;
 function newRound(f: FightState | null): FightState {
   const m = nav.match;

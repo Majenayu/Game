@@ -3,14 +3,15 @@
  * hits from the clips' hit boxes, the three powers and the ultimate as element effects, projectiles, floating damage
  * numbers and sparks. Fixed 60 Hz steps; rendering only reads state.
  */
-import { airPose, auraAt, chargeAt, guardPose, idlePose, moveAt, sample, walkPose, type Clip } from '../trial/anims';
+import { airPose, auraAt, chargeAt, guardPose, idlePose, moveAt, sample, walkPose, type Clip, type Status } from '../trial/anims';
 import { bubble, clockRing, flames, flare, glow, iceSpike, lotus, projectile, rockSpike, shield, streak, swirl, vineLine, wave, well, type ProjKind } from '../trial/fx';
 import type { Kit } from '../trial/kits';
-import { lerpPose, type Face, type Pose } from '../trial/rig';
+import { jointWorld, lerpPose, solve, type Face, type Pose } from '../trial/rig';
 import { bolt } from './art';
 import { clipsOf, drawHero, heroShadow, heroStats, hipLift, kitOf } from './heroes';
 import { profile, type El } from './save';
 import { rng, type G } from './ui';
+import { clipTick, drawHeroExtras, drawMovesBack, drawMovesFront, moveEvent, newMoveFx, statusTick, stepMoves, type Ghost, type MoveFx } from './moves';
 
 export interface Box {
   x: number;
@@ -97,11 +98,15 @@ export interface World {
   floaters: Floater[];
   sparks: Spark[];
   targets: () => Target[];
+  /** each hero's designed power effects (moves.ts) */
+  mv: MoveFx;
+  /** shrinks how far powers reach (the roster stage is narrow); 1 in fights */
+  span?: number;
   /** called when a hero lands a hit (combo counters, score) */
   onHit?: (by: Hero, dmg: number, t: Target) => void;
 }
 export function makeWorld(ground: number, left: number, right: number, targets: () => Target[]): World {
-  return { ground, left, right, frame: 0, hitstop: 0, shake: 0, dim: 0, flash: 0, effects: [], floaters: [], sparks: [], targets };
+  return { ground, left, right, frame: 0, hitstop: 0, shake: 0, dim: 0, flash: 0, effects: [], floaters: [], sparks: [], targets, mv: newMoveFx() };
 }
 export function floater(w: World, x: number, y: number, text: string, col = '#ffb43a', size = 34): void {
   w.floaters.push({ x: x + (Math.random() - 0.5) * 30, y, text, col, size, life: 50, max: 50 });
@@ -140,8 +145,6 @@ export function blip(kind: 'hit' | 'big' | 'cast' | 'boom' | 'ui' | 'hurt'): voi
 // ---------------------------------------------------------------- hero
 let NEXT_ID = 1;
 export const SC = 0.62;
-const PROJ: Record<El, ProjKind> = { fire: 'fireball', water: 'jet', ice: 'shard', lightning: 'dart', wind: 'blade', earth: 'boulder', leaf: 'dart', light: 'dart', gravity: 'well', time: 'freeze' };
-const RELEASE = new Set(['shoot', 'trail', 'column', 'jet', 'slam', 'cast', 'whirl', 'fist', 'vine', 'mine', 'beam', 'well', 'drop', 'rewind']);
 const COMBO = ['jab', 'cross', 'kick', 'rising'];
 export const MP_ULT = 100;
 export class Hero implements Target {
@@ -176,6 +179,16 @@ export class Hero implements Target {
   chainTimer = 0;
   lastHitBy = 0;
   scale = SC;
+  /** statuses from the foe's powers: frames left */
+  status: Partial<Record<Status, number>> = {};
+  /** Shine Shield: blocks one whole hit */
+  barrier = 0;
+  /** recent positions (Rewind Step) */
+  history: Array<{ x: number; feet: number }> = [];
+  ghosts: Ghost[] = [];
+  /** frames left of a beam power (Jet Lance, Sunlance, Chain Bolt) */
+  beam = 0;
+  slowAcc = 0;
   /** vitality, might, spirit, guard, resolve, speed as multipliers of the plain value 80 */
   readonly st: number[];
   constructor(readonly el: El, public x: number, public facing: 1 | -1, readonly team: number, ground: number, lv = 1, cls?: string) {
@@ -233,6 +246,12 @@ export class Hero implements Target {
   chest(): { x: number; y: number } {
     return { x: this.hipX(this.shown), y: this.hipY(this.shown) - 130 * this.scale };
   }
+  /** a rig joint on the screen (hands for shots and beams) */
+  joint(name: 'fw' | 'bw' | 'fa' | 'ba' | 'fe' | 'be' | 'fs' | 'bs' | 'fk' | 'bk' | 'neck' | 'hip'): { x: number; y: number } {
+    const p = this.shown;
+    const j = jointWorld(p, solve(p)[name]);
+    return { x: this.hipX(p) + j.x * this.scale * this.facing, y: this.hipY(p) + j.y * this.scale };
+  }
   face(): Face {
     if (this.ko) return 'ko';
     if (this.clip) return this.clip.face;
@@ -249,8 +268,31 @@ export class Hero implements Target {
   }
   hurt(dmg: number, kb: number, lift: number, fromX: number, stun: number, w: World): number {
     if (this.ko || this.invuln > 0) return 0;
-    dmg = Math.max(1, Math.round(dmg / this.st[3]));
+    const ci = this.clip?.invuln;
+    if (ci && this.frame >= ci[0] && this.frame <= ci[1]) return 0;
+    if (this.barrier > 0) {
+      // Shine Shield takes the whole hit and heals a little
+      this.barrier = 0;
+      const heal = Math.round(this.maxHp * 0.06);
+      this.hp = Math.min(this.maxHp, this.hp + heal);
+      floater(w, this.x, this.chest().y - 60, `BLOCKED +${heal}`, `rgb(${this.kit.fx.mid})`, 30);
+      return 0;
+    }
+    // Weightless: a floating hero takes 25% more
+    dmg = Math.max(1, Math.round((dmg * (this.status.float ? 1.25 : 1)) / this.st[3]));
+    const held = !!(this.status.freeze || this.status.stop || this.status.bubble);
     const fromFront = (fromX - this.x) * this.facing > 0;
+    const ca = this.clip?.armor;
+    const armored = !!ca && this.frame >= ca[0] && this.frame <= ca[1];
+    if ((held || armored) && this.hp > dmg) {
+      // frozen, stopped or trapped heroes (and armoured moves) take the hit without flinching
+      this.hp -= dmg;
+      this.flash = 4;
+      this.mp = Math.min(100, this.mp + dmg * 0.02 * this.st[4]);
+      blip('hurt');
+      return dmg;
+    }
+    if (held) this.status = {};
     if (this.guarding && fromFront && this.grounded) {
       this.guardHit = 10;
       this.x -= Math.sign(fromX - this.x) * kb * 0.4;
@@ -268,6 +310,7 @@ export class Hero implements Target {
       this.grounded = false;
     }
     this.clip = null;
+    this.beam = 0;
     this.chain = 0;
     this.mp = Math.min(100, this.mp + dmg * 0.02 * this.st[4]);
     this.play('hurt');
@@ -281,6 +324,15 @@ export class Hero implements Target {
   }
   /** one 60 Hz step */
   step(w: World, k: Keys): void {
+    this.ghosts = this.ghosts.filter((gh) => --gh.life > 0);
+    if (!this.ko) {
+      const st = statusTick(w, this);
+      if (st === 'stop' || st === 'skip') {
+        this.prev = { ...k };
+        return;
+      }
+      if (st === 'held') k = noKeys();
+    }
     this.t++;
     if (this.flash > 0) this.flash--;
     if (this.guardHit > 0) this.guardHit--;
@@ -333,9 +385,10 @@ export class Hero implements Target {
     if (this.clip) {
       const c = this.clip;
       this.vx *= 0.82;
-      this.x += moveAt(c, this.frame) * this.scale * this.facing * 1.4;
+      if (!this.status.root) this.x += moveAt(c, this.frame) * this.scale * this.facing * 1.4;
       this.hits(w, c);
       for (const [f, ev] of c.events ?? []) if (f === this.frame) this.event(w, ev);
+      clipTick(w, this, c, this.frame);
       this.frame++;
       if (this.frame >= c.frames) {
         if (COMBO.includes(this.clipName)) this.comboWindow = 18;
@@ -355,7 +408,8 @@ export class Hero implements Target {
   }
   physics(w: World): void {
     if (!this.grounded) {
-      this.vy += 0.9;
+      // floating and bubbled heroes hover (statusTick steers vy); everyone else falls
+      if (!(this.status.float || this.status.bubble)) this.vy += 0.9;
       this.feet += this.vy;
       if (this.feet >= w.ground) {
         this.feet = w.ground;
@@ -378,13 +432,18 @@ export class Hero implements Target {
         if (!overlap(hb, t.box())) continue;
         this.hitDone.add(key);
         const dmg = Math.round(h.dmg * 10 * this.st[1] * (0.9 + Math.random() * 0.2));
-        this.land(w, t, dmg, h.kb, h.lift, h.stun, hb.x + hb.w / 2, hb.y + hb.h / 2, h.fx === 'big');
+        // the clips give lift as an upward speed (negative); hurt() takes it as a positive launch
+        const got = this.land(w, t, dmg, Math.abs(h.kb), Math.max(0, -h.lift), h.stun, hb.x + hb.w / 2, hb.y + hb.h / 2, h.fx === 'big');
+        if (got > 0 && h.status && t instanceof Hero) {
+          t.status[h.status] = Math.max(t.status[h.status] ?? 0, h.dur ?? 60);
+          floater(w, t.x, t.chest().y - 150 * t.scale, h.status.toUpperCase(), `rgb(${this.kit.fx.mid})`, 24);
+        }
       }
     });
   }
-  land(w: World, t: Target, dmg: number, kb: number, lift: number, stun: number, x: number, y: number, big: boolean): void {
+  land(w: World, t: Target, dmg: number, kb: number, lift: number, stun: number, x: number, y: number, big: boolean): number {
     const got = t.hurt(dmg, kb, lift, this.x, stun, w);
-    if (got <= 0) return;
+    if (got <= 0) return 0;
     this.mp = Math.min(100, this.mp + 3 * this.st[4]);
     this.chain++;
     this.chainTimer = 70;
@@ -394,45 +453,20 @@ export class Hero implements Target {
     sparks(w, x, y, big ? 16 : 9, `rgb(${this.kit.fx.mid})`);
     blip(big ? 'big' : 'hit');
     w.onHit?.(this, got, t);
+    return got;
   }
+  /** a clip event: each hero's designed power effect (moves.ts) */
   event(w: World, ev: string): void {
-    const foe = nearestFoe(w, this);
-    const tx = foe ? foe.x : this.x + this.facing * 400;
-    if (ev === 'ultHit' || ev === 'ultFinal') {
-      const fin = ev === 'ultFinal';
-      w.effects.push(effect(fin ? 'burst' : 'burst', this.el, tx, w.ground, 0, 0, fin ? 50 : 26, fin ? 140 : 90, fin ? 260 : 90, this, fin ? 8 : 4));
-      if (fin) {
-        w.flash = 12;
-        w.shake = 22;
-      } else w.shake = Math.max(w.shake, 8);
-      return;
-    }
-    if (!RELEASE.has(ev)) return;
-    const idx = this.powerIndex(this.clipName);
-    if (idx < 0) {
-      // heavy slam: shock ring at the feet
-      if (ev === 'slam') w.effects.push(effect('burst', this.el, this.x + this.facing * 90, w.ground, 0, 0, 24, 110, 140, this, 6));
-      return;
-    }
-    const c = this.chest();
-    if (idx === 0) {
-      const e = effect('proj', this.el, c.x + this.facing * 50, c.y - 10, this.facing * 15, 0, 90, 22, 150, this, 0);
-      e.pk = PROJ[this.el];
-      w.effects.push(e);
-    } else if (idx === 1) {
-      if (this.el === 'light' || this.el === 'lightning') {
-        w.effects.push(effect('beam', this.el, c.x + this.facing * 40, c.y, 0, 0, 26, 30, 220, this, 4));
-      } else w.effects.push(effect('wave', this.el, this.x + this.facing * 60, w.ground, this.facing * 10, 0, 70, 60, 200, this, 0));
-    } else {
-      w.effects.push(effect('burst', this.el, tx, w.ground, 0, 0, 44, 110, 260, this, 14));
-    }
+    moveEvent(w, this, ev);
   }
   draw(g: G, w: World): void {
     const p = this.shown;
     heroShadow(g, this.hipX(p), w.ground, this.scale * (1 - Math.min(0.5, (w.ground - this.feet) / 400)));
     const au = this.clip ? auraAt(this.clip, this.frame) : 0;
     const charge = this.clip ? chargeAt(this.clip, this.frame) : 0;
-    drawHero(g, this.el, { pose: p, face: this.face(), x: this.x, feet: this.feet, scale: this.scale, facing: this.facing, t: this.t, aura: au, charge, speed: this.vx * this.facing, vy: this.vy, alpha: this.flash > 0 ? 0.6 : 1 });
+    for (const gh of this.ghosts) drawHero(g, this.el, { pose: gh.pose, face: 'normal', x: gh.x, feet: gh.feet, scale: this.scale, facing: gh.facing, t: this.t, alpha: (gh.life / gh.max) * 0.45 });
+    drawHero(g, this.el, { pose: p, face: this.face(), x: this.x, feet: this.feet, scale: this.scale, facing: this.facing, t: this.status.stop || this.status.freeze ? 0 : this.t, aura: au, charge, speed: this.vx * this.facing, vy: this.vy, alpha: this.flash > 0 ? 0.6 : 1 });
+    drawHeroExtras(g, w, this);
     if (this.guarding) {
       const c = this.chest();
       shield(g, this.kit, c.x, c.y, this.facing, 140 * this.scale, 1, this.guardHit / 10, w.frame, false);
@@ -517,6 +551,7 @@ export function stepWorld(w: World, heroes: Hero[]): void {
     s.life--;
   }
   w.sparks = w.sparks.filter((s) => s.life > 0);
+  stepMoves(w, heroes);
 }
 function boxOf(e: Effect, w: World): Box | null {
   switch (e.kind) {
@@ -539,6 +574,8 @@ const fxOf = (el: Effect['el']): Kit['fx'] =>
   el === 'acid' ? { glow: '90,255,60', mid: '170,255,90', core: '235,255,200' } : el === 'rock' ? { glow: '255,90,40', mid: '255,170,90', core: '255,240,200' } : el === 'boom' ? { glow: '255,60,90', mid: '255,160,80', core: '255,250,220' } : kitOf(el).fx;
 
 export function drawEffects(g: G, w: World, front: boolean): void {
+  if (front) drawMovesFront(g, w);
+  else drawMovesBack(g, w);
   for (const e of w.effects) {
     const age = e.max - e.life;
     const k = age / e.max;

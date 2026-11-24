@@ -8,10 +8,10 @@
  */
 import { EL, elementCoin, elementIcon, lock } from './art';
 import { fmt } from './common';
-import { auraAt, chargeAt, sample } from '../trial/anims';
-import type { Face, Pose } from '../trial/rig';
+import { sample } from '../trial/anims';
 import { clipsOf, kitOf, heroStats, CLASS_LIST, CLASSES, NAMES, drawHero, heroShadow, stillPose, type Still } from './heroes';
 import { colourAt, patch } from './hudref';
+import { Hero, drawEffects, drawFloaters, makeWorld, noKeys, stepWorld, type World } from './fight';
 import { nav, pages, type Match } from './nav';
 import { S, drawPicture, drawSpots, drawToast, go, loadRef, ref, say, topRight, type Spot } from './refs';
 import { ELS, QUESTS, dailyClaim, profile, save, tierOf, today, xpNeed, type El } from './save';
@@ -386,27 +386,43 @@ function stageBack(g: G, P: string, el: El): void {
   g.stroke();
   g.restore();
 }
-/** the stage show: a celebration, then the hero's moves, one after another */
+/**
+ * The stage show: the picked hero plays a celebration, then every move one after another, with the same designed
+ * effects as in a fight (a real Hero in a small World, see fight.ts and moves.ts). The world is narrow (span) so the
+ * powers land on the platform.
+ */
 let showT = 0;
-function stageShow(el: El): { pose: Pose; face: Face; charge: number; aura: number; name: string } {
-  const c = clipsOf(el);
-  const k = kitOf(el);
-  const list = ['victory', 'jab', 'cross', 'kick', k.powers[0].clip, 'heavy', k.powers[1].clip, 'rising', k.powers[2].clip, 'taunt'].filter((n) => c[n]);
-  const GAP = 24;
-  const total = list.reduce((s, n) => s + c[n].frames + GAP, 0);
-  let f = showT % total;
-  for (const n of list) {
-    const cl = c[n];
-    if (f < cl.frames) return { pose: sample(cl, f), face: cl.face, charge: chargeAt(cl, f), aura: auraAt(cl, f), name: cl.name };
-    f -= cl.frames;
-    if (f < GAP) return { ...stillPose(el, 'fight', showT), charge: 0, aura: 0, name: '' };
-    f -= GAP;
+let show: { el: El; cls: string; w: World; h: Hero; list: string[]; i: number; gap: number } | null = null;
+function stageShow(el: El, tick = false): { w: World; h: Hero } {
+  if (!show || show.el !== el || show.cls !== classOf(el)) {
+    const h = new Hero(el, 790, 1, 1, 494, heroLv(el), classOf(el));
+    h.scale = 0.8;
+    const w = makeWorld(494, 670, 910, () => [h]);
+    w.span = 0.3;
+    const c = clipsOf(el);
+    const k = kitOf(el);
+    const list = ['victory', 'jab', 'cross', 'kick', 'heavy', k.powers[0].clip, k.powers[1].clip, k.powers[2].clip, 'rising', 'dash', 'ult', 'taunt'].filter((n) => c[n]);
+    show = { el, cls: classOf(el), w, h, list, i: -1, gap: 0 };
   }
-  return { ...stillPose(el, 'fight', showT), charge: 0, aura: 0, name: '' };
-}
-function rosterDraw(g: G, t: number): void {
+  const s = show;
+  if (!tick) return s;
+  if (showT <= 1) {
+    s.i = -1;
+    s.gap = 0;
+  }
+  if (!s.h.clip && ++s.gap >= 24) {
+    s.gap = 0;
+    s.i = (s.i + 1) % s.list.length;
+    s.h.x = 790;
+    s.h.facing = 1;
+    s.h.mp = 100;
+    s.h.start(s.list[s.i]);
+  }
+  s.h.step(s.w, noKeys());
+  stepWorld(s.w, [s.h]);
+  return s;
+}function rosterDraw(g: G, t: number): void {
   const P = 'hero-roster';
-  showT++;
   drawPicture(g, P);
   // the picture's empty 11th frame is painted over with the background round it
   inpaint(g, P, 44, 484, 140, 194);
@@ -415,9 +431,17 @@ function rosterDraw(g: G, t: number): void {
   stageBack(g, P, pick);
   inpaint(g, P, 636, 531, 308, 113);
   const s = stageShow(pick);
-  heroShadow(g, 790, 494, 0.8, 0.3);
-  drawHero(g, pick, { pose: s.pose, face: s.face, x: 790, feet: 494, scale: 0.8, t, aura: 0.12 + s.aura * 0.6, charge: s.charge });
-  if (s.name) text(g, s.name.toUpperCase(), 790, 568, { size: 22, align: 'center', weight: 800, col: EL[pick].light, stroke: '#02060f', sw: 4, spacing: 1 });
+  g.save();
+  g.beginPath();
+  g.rect(604, 40, 372, 520);
+  g.clip();
+  drawEffects(g, s.w, false);
+  s.h.draw(g, s.w);
+  drawEffects(g, s.w, true);
+  drawFloaters(g, s.w);
+  g.restore();
+  const mv = s.h.clip && !['hurt', 'ko'].includes(s.h.clipName) ? s.h.clip.name : '';
+  if (mv) text(g, mv.toUpperCase(), 790, 568, { size: 22, align: 'center', weight: 800, col: EL[pick].light, stroke: '#02060f', sw: 4, spacing: 1 });
   // name, class and stats
   label(g, P, 1010, 124, 300, 42, 1320, 150, NAMES[pick].toUpperCase(), { size: 40, weight: 800, col: '#dff4ff' });
   patch(g, P, 1010, 168, 300, 26, 1320, 180);
@@ -502,6 +526,11 @@ const rosterPage = (title: string) => ({
     pick = nav.name === 'partner' ? (profile.partner ?? (profile.hero === 'water' ? 'lightning' : 'water')) : profile.hero;
     if (nav.name === 'starter') say(`Hi ${profile.name}! Pick the one hero you start with`, 300);
     if (nav.name === 'partner') say(`Tutorial done! Pick a partner hero to fight beside ${NAMES[profile.hero]}`, 300);
+  },
+  // the stage hero runs at the fixed 60 Hz step, not at the screen's draw rate
+  step() {
+    showT++;
+    stageShow(pick, true);
   },
   draw: rosterDraw,
 });
